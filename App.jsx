@@ -735,11 +735,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           <LocFilter icon="🗺" label="المنطقة"   value={fRegion}  onChange={v=>{setFRegion(v);setFGov("");setFCenter("");setFVillage("");}}  options={allLoc.map(r=>r.region)} all="كل المناطق"/>
           {fRegion&&<LocFilter icon="🏛" label="المحافظة"  value={fGov} onChange={v=>{setFGov(v);setFCenter("");setFVillage("");}} options={govList.map(g=>g.name||g)} all="كل المحافظات"/>}
           {fGov&&centerList2.length>0&&<LocFilter icon="🏘" label="المركز" value={fCenter} onChange={v=>{setFCenter(v);setFVillage("");}} options={centerList2} all="كل المراكز"/>}
-          {fCenter&&<div style={{display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
-            <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>📍</span>
-            <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث بالحي أو القرية..." value={fVillage} onChange={e=>setFVillage(e.target.value)}/>
-            {fVillage&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0}} onClick={()=>setFVillage("")}>✕</button>}
-          </div>}
+          {fCenter&&(()=>{const villages=[...new Set(approvedSalons.filter(s=>s.center===fCenter&&s.village).map(s=>s.village))];return villages.length>0?<LocFilter icon="📍" label="الحي / القرية" value={fVillage} onChange={setFVillage} options={villages} all="كل الأحياء"/>:null;})()}
         </div>
       </div>
 
