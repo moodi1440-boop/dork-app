@@ -536,9 +536,8 @@ export default function App(){
       if(!ri){ri={region:r,govs:[]};copy.push(ri);}
       let gi=ri.govs.find(x=>(x.name||x)===g);
       if(!gi){gi={name:g,centers:[]};ri.govs.push(gi);}
-      let ci=gi.villages.find(x=>x.center===c);
-      if(!ci){ci={center:c,villages:[]};gi.villages.push(ci);}
-      if(v&&!ci.villages.includes(v))ci.villages.push(v);
+      let ci=gi.centers?.find(x=>x===c);
+      if(!ci&&c){gi.centers=gi.centers||[];if(!gi.centers.includes(c))gi.centers.push(c);}
       return copy;
     });
   };
@@ -1100,22 +1099,40 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
             <option value="">اختر المحافظة</option>{govList.map(g=><option key={g.name||g} value={g.name||g}>{g.name||g}</option>)}
           </select>
         </F>}
-        {form.gov&&centerList.length>0&&<F label="المركز الإداري">
+        {form.gov&&<F label="المركز الإداري">
           <select style={fi()} value={form.center} onChange={e=>setForm(p=>({...p,center:e.target.value,village:""}))}>
-            <option value="">اختر المركز (اختياري)</option>{centerList.map(c=><option key={c} value={c}>{c}</option>)}
+            <option value="">اختر المركز (اختياري)</option>
+            {centerList.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
         </F>}
-        {form.gov&&<F label="الحي / القرية / التفصيل">
+        {form.center&&<F label="الحي / القرية">
           <input style={fi()} placeholder="مثال: حي النزهة، قرية الرشيدية..." value={form.village} onChange={e=>setForm(p=>({...p,village:e.target.value}))}/>
         </F>}
-        <button style={G.otherBtn} onClick={()=>setShowAddLoc(s=>!s)}>+ إضافة منطقة / محافظة / مركز جديد</button>
-        {showAddLoc&&<div style={{background:"rgba(42,109,217,.06)",border:"1px solid #2a6dd9",borderRadius:10,padding:12,marginTop:8}}>
-          <div style={{fontSize:12,color:"#6aadff",marginBottom:8}}>أضف تسلسل إداري جديد</div>
-          {[["المنطقة",newR,setNewR,"منطقة القصيم"],["المحافظة",newG,setNewG,"محافظة بريدة"],["الحي / القرية",newC,setNewC,"مركز بريدة"],["الحي/القرية",newV,setNewV,"حي النزهة (اختياري)"]].map(([l,v,fn,ph])=>(
-            <div key={l} style={{marginBottom:7}}><div style={{fontSize:11,color:"#aaa",marginBottom:3}}>{l}</div><input style={fi()} placeholder={ph} value={v} onChange={e=>fn(e.target.value)}/></div>
-          ))}
-          <button style={{...G.sub,background:"linear-gradient(135deg,#2a6dd9,#4a9eff)"}} onClick={applyNewLoc}>✓ إضافة وتطبيق</button>
+        {form.center&&<button style={G.otherBtn} onClick={()=>setShowAddLoc(s=>!s)}>
+          {showAddLoc?"✕ إغلاق":"+ حيك / قريتك مو موجودة؟ أضفها هنا"}
+        </button>}
+        {showAddLoc&&form.center&&<div style={{background:"rgba(42,109,217,.06)",border:"1px solid #2a6dd9",borderRadius:10,padding:12,marginTop:4}}>
+          <div style={{fontSize:12,color:"#6aadff",marginBottom:8,fontWeight:700}}>➕ إضافة حي / قرية جديدة</div>
+          <div style={{fontSize:11,color:"#aaa",marginBottom:6}}>
+            ستُضاف تحت <b style={{color:"var(--p)"}}>{form.center}</b> وتظهر للجميع
+          </div>
+          <div style={{display:"flex",gap:7}}>
+            <input style={{...fi(),flex:1}} placeholder="اسم الحي أو القرية..." value={newC} onChange={e=>setNewC(e.target.value)}/>
+            <button style={{background:"var(--grad)",color:"#000",border:"none",borderRadius:9,padding:"0 14px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",flexShrink:0}} onClick={async()=>{
+              if(!newC.trim()){alert("أدخل اسم الحي أو القرية");return;}
+              try{
+                await sb("centers","POST",{name:newC.trim(),governorate_id:null},"");
+              }catch(e){}
+              addExtraLoc(form.region,form.gov,form.center,newC.trim());
+              setForm(p=>({...p,village:newC.trim()}));
+              setNewC("");setShowAddLoc(false);
+              alert("✅ تم الإضافة بنجاح!");
+            }}>✓ إضافة</button>
+          </div>
         </div>}
+        {!form.center&&form.gov&&<F label="الحي / القرية / التفصيل">
+          <input style={fi()} placeholder="مثال: حي النزهة، قرية الرشيدية..." value={form.village} onChange={e=>setForm(p=>({...p,village:e.target.value}))}/>
+        </F>}
       </div>
 
       <div style={G.fc}>
