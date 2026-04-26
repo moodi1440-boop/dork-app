@@ -385,7 +385,13 @@ const DEMO_SALONS=[
 export default function App(){
   const[salons,setSalons]=useState([]);
   const[customers,setCustomers]=useState([]);
-  const[extraLoc,setExtraLoc]=useState(()=>{try{const s=localStorage.getItem("bbv6_loc");return s?JSON.parse(s):[];}catch{return[];}});
+  const[extraLoc,setExtraLoc]=useState(()=>{
+    try{
+      // امسح أي إضافات قديمة غلط وابدأ نظيف
+      localStorage.removeItem("bbv6_loc");
+      return [];
+    }catch{return[];}
+  });
   const[loading,setLoading]=useState(true);
   const[dbError,setDbError]=useState(null);
   const[view,setView]=useState("home");
@@ -1119,16 +1125,25 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
             ستُضاف تحت <b style={{color:"var(--p)"}}>{form.center}</b> وتظهر للجميع
           </div>
           <div style={{display:"flex",gap:7}}>
-            <input style={{...fi(),flex:1}} placeholder="اسم الحي أو القرية..." value={newC} onChange={e=>setNewC(e.target.value)}/>
+            <input style={{...fi(),flex:1}} placeholder="مثال: حي النزهة، الروضة، العزيزية..." value={newC} onChange={e=>setNewC(e.target.value)}/>
             <button style={{background:"var(--grad)",color:"#000",border:"none",borderRadius:9,padding:"0 14px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",flexShrink:0}} onClick={async()=>{
-              if(!newC.trim()){alert("أدخل اسم الحي أو القرية");return;}
+              const val=newC.trim();
+              if(!val){alert("أدخل اسم الحي أو القرية");return;}
+              // منع إضافة اسم منطقة أو محافظة أو مركز موجود
+              const allRegions=allLoc.map(r=>r.region);
+              const allGovs=allLoc.flatMap(r=>r.govs.map(g=>g.name||g));
+              const allCenters=allLoc.flatMap(r=>r.govs.flatMap(g=>g.centers||[]));
+              if(allRegions.includes(val)||allGovs.includes(val)||allCenters.includes(val)){
+                alert("⚠️ هذا الاسم موجود بالفعل كمنطقة أو محافظة أو مركز!\nأدخل اسم الحي أو القرية فقط.");
+                return;
+              }
               try{
-                await sb("centers","POST",{name:newC.trim(),governorate_id:null},"");
+                await sb("centers","POST",{name:val,governorate_id:null},"");
               }catch(e){}
-              addExtraLoc(form.region,form.gov,form.center,newC.trim());
-              setForm(p=>({...p,village:newC.trim()}));
+              addExtraLoc(form.region,form.gov,form.center,val);
+              setForm(p=>({...p,village:val}));
               setNewC("");setShowAddLoc(false);
-              alert("✅ تم الإضافة بنجاح!");
+              alert("✅ تم إضافة الحي/القرية بنجاح!");
             }}>✓ إضافة</button>
           </div>
         </div>}
