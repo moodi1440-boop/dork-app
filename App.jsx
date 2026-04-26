@@ -401,6 +401,7 @@ export default function App(){
   const[fRegion,setFRegion]=useState("");
   const[fGov,setFGov]=useState("");
   const[fVillage,setFVillage]=useState("");
+  const[fCenter,setFCenter]=useState("");
   const[showFavs,setShowFavs]=useState(false);
   const[search,setSearch]=useState("");
   const[sortBy,setSortBy]=useState("default");
@@ -543,23 +544,22 @@ export default function App(){
   };
 
   const govList    =fRegion?(allLoc.find(r=>r.region===fRegion)?.govs||[]):[];
-  const villageList =fGov   ?(govList.find(g=>(g.name||g)===fGov)?.centers||[]):[];
+  const centerList2=fGov   ?(govList.find(g=>(g.name||g)===fGov)?.centers||[]):[];
+  const villageList=[];
 
   const customer=getCustomer();
   const favSet=new Set(customerFavs());
 
   const approvedSalons=salons.filter(s=>s.status==="approved");
-  // helper: parse lat/lng from locationUrl  
   const parseLatLng=url=>{ if(!url)return null; const m=url.match(/[?&q=]*(-?\d+\.?\d*),(-?\d+\.?\d*)/); return m?{lat:+m[1],lng:+m[2]}:null; };
-  const distance=(a,b)=>{ if(!a||!b)return Infinity; const dx=a.lat-b.lat,dy=a.lng-b.lng; return Math.sqrt(dx*dx+dy*dy)*111; }; // km approx
-  // min/max prices for sort
+  const distance=(a,b)=>{ if(!a||!b)return Infinity; const dx=a.lat-b.lat,dy=a.lng-b.lng; return Math.sqrt(dx*dx+dy*dy)*111; };
   const minPrice=s=>{ const v=Object.values(s.prices||{}); return v.length?Math.min(...v):0; };
   const maxPrice=s=>{ const v=Object.values(s.prices||{}); return v.length?Math.max(...v):0; };
   
   let displaySalons=approvedSalons.filter(s=>{
     if(fRegion&&s.region!==fRegion)return false;
     if(fGov&&s.gov!==fGov)return false;
-    if(fVillage&&s.center!==fVillage)return false;
+    if(fCenter&&s.center!==fCenter)return false;
     if(fVillage&&s.village!==fVillage)return false;
     if(search.trim()){
       const q=search.trim().toLowerCase();
@@ -586,10 +586,11 @@ export default function App(){
     selSalon,setSelSalon,
     onEnter:()=>setAdminSession(true),
     onPage:(s)=>{setSelSalon(s);setView("salon");},
-    fRegion,setFRegion:v=>{setFRegion(v);setFGov("");setFVillage("");},
-    fGov,setFGov:v=>{setFGov(v);setFVillage("");},
+    fRegion,setFRegion:v=>{setFRegion(v);setFGov("");setFCenter("");setFVillage("");},
+    fGov,setFGov:v=>{setFGov(v);setFCenter("");setFVillage("");},
+    fCenter,setFCenter,
     fVillage,setFVillage,
-    govList,villageList,
+    govList,villageList,centerList2,
     showFavs,setShowFavs,
     displaySalons,
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
@@ -700,7 +701,7 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
 // ══════════════════════════════════════════════
 //  HOME
 // ══════════════════════════════════════════════
-function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fVillage,setFVillage,govList,villageList,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$}){
+function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$}){
   const detectUserLoc=()=>{
     if(!navigator.geolocation){alert("⚠️ المتصفح لا يدعم تحديد الموقع");return;}
     navigator.geolocation.getCurrentPosition(
@@ -731,9 +732,14 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           <button style={{background:"var(--pa12)",border:"1px solid var(--pa25)",borderRadius:9,padding:"6px 10px",color:"var(--p)",fontSize:11,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",fontWeight:600}} onClick={()=>{setSearch("");setSortBy("default");}}>🏠 رئيسي</button>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:6,paddingBottom:14}}>
-          <LocFilter icon="🗺" label="المنطقة"   value={fRegion}  onChange={setFRegion}  options={allLoc.map(r=>r.region)}           all="كل المناطق"/>
-          {fRegion&&<LocFilter icon="🏛" label="المحافظة"  value={fGov}     onChange={setFGov}     options={govList.map(g=>g.name||g)}               all="كل المحافظات"/>}
-          {fGov&&villageList.length>0&&<LocFilter icon="🏘" label="المركز" value={fVillage} onChange={setFVillage} options={villageList} all="كل المراكز"/>}
+          <LocFilter icon="🗺" label="المنطقة"   value={fRegion}  onChange={v=>{setFRegion(v);setFGov("");setFCenter("");setFVillage("");}}  options={allLoc.map(r=>r.region)} all="كل المناطق"/>
+          {fRegion&&<LocFilter icon="🏛" label="المحافظة"  value={fGov} onChange={v=>{setFGov(v);setFCenter("");setFVillage("");}} options={govList.map(g=>g.name||g)} all="كل المحافظات"/>}
+          {fGov&&centerList2.length>0&&<LocFilter icon="🏘" label="المركز" value={fCenter} onChange={v=>{setFCenter(v);setFVillage("");}} options={centerList2} all="كل المراكز"/>}
+          {fCenter&&<div style={{display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
+            <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>📍</span>
+            <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث بالحي أو القرية..." value={fVillage} onChange={e=>setFVillage(e.target.value)}/>
+            {fVillage&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0}} onClick={()=>setFVillage("")}>✕</button>}
+          </div>}
         </div>
       </div>
 
