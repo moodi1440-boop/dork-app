@@ -486,9 +486,9 @@ export default function App(){
   }, []);
 
   useEffect(()=>{ loadData(); }, [loadData]);
-  // تحديث تلقائي كل 30 ثانية
+  // تحديث تلقائي كل 5 ثواني
   useEffect(()=>{
-    const t=setInterval(()=>loadData(),30000);
+    const t=setInterval(()=>loadData(),5000);
     return()=>clearInterval(t);
   },[loadData]);
 
@@ -1978,9 +1978,12 @@ function CustomerDash({customer,salons,setView,setCustomerSession,setSelSalon,to
         {history.length===0?<div style={G.empty}>لا توجد حجوزات سابقة</div>:
           <div style={{display:"flex",flexDirection:"column",gap:9}}>
             {[...history].reverse().map((h,i)=>{
-              const s=salons.find(x=>x.id===h.salonId);
-              // نجيب الحالة الحقيقية من بيانات الصالون
-              const realBooking=s?.bookings?.find(b=>b.date===h.date&&b.time===h.time&&b.phone===h.phone);
+              const s=salons.find(x=>x.id===h.salonId||x.id===Number(h.salonId));
+              // نجيب الحالة الحقيقية من بيانات الصالون بمقارنة مرنة
+              const realBooking=s?.bookings?.find(b=>
+                b.date===h.date && b.time===h.time &&
+                (b.phone===h.phone || b.name===customer.name)
+              ) || s?.bookings?.find(b=>b.date===h.date&&b.time===h.time);
               const status=realBooking?.status||h.status||"pending";
               const stColor=status==="approved"?"#27ae60":status==="rejected"?"#e74c3c":"#f39c12";
               const stLabel=status==="approved"?"✅ مقبول":status==="rejected"?"❌ مرفوض":"⏳ بانتظار الموافقة";
