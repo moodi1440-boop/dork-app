@@ -756,8 +756,9 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
   // حساب التقييم الحقيقي لكل صالون
   const getRealRating=(salonId)=>{
+    const id=Number(salonId);
     const reviews=(customers||[]).flatMap(c=>
-      (c.history||[]).filter(h=>(h.salonId===salonId||h.salonId===String(salonId))&&h.rating>0)
+      (c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0)
       .map(h=>h.rating)
     );
     if(!reviews.length)return null;
@@ -892,7 +893,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
 
   // جمع تقييمات هذا الصالون من كل العملاء
   const reviews=(customers||[]).flatMap(c=>
-    (c.history||[]).filter(h=>(h.salonId===salon.id||h.salonId===String(salon.id))&&h.rating>0)
+    (c.history||[]).filter(h=>Number(h.salonId)===Number(salon.id)&&h.rating>0)
     .map(h=>({name:c.name,rating:h.rating,comment:h.comment||"",date:h.date}))
   );
   const avgRating=reviews.length?Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length*10)/10:salon.rating||0;
