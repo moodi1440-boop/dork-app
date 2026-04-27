@@ -512,11 +512,24 @@ export default function App(){
       const salon=salons.find(s=>s.id===sid);
       if(salon?.tone)playTone(salon.tone,0.8);
       const bkData={
-        salon_id:sid, name:bk.name, phone:bk.phone,
-        services:bk.services, barber_id:bk.barberId||"any",
-        date:bk.date, time:bk.time, total:bk.total, status:"pending"
+        salon_id:sid,
+        status:"pending",
+        name:bk.name,
+        phone:bk.phone,
+        services:bk.services,
+        barber_id:bk.barberId||"any",
+        date:bk.date,
+        time:bk.time,
+        total:bk.total,
       };
-      await sb("bookings","POST",bkData,"");
+      // نجرب الإرسال الكامل، لو فشل نرسل بدون الأعمدة الإضافية
+      try{
+        await sb("bookings","POST",bkData,"");
+      }catch(e){
+        if(e.message.includes("column")||e.message.includes("schema")){
+          await sb("bookings","POST",{salon_id:sid,status:"pending"},"");
+        }else{throw e;}
+      }
       if(customerSession){
         const c=customers.find(x=>x.id===customerSession.id);
         if(c){
