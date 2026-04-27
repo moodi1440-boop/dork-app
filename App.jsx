@@ -514,8 +514,7 @@ export default function App(){
       const bkData={
         salon_id:sid, name:bk.name, phone:bk.phone,
         services:bk.services, barber_id:bk.barberId||"any",
-        barber_name:bk.barberName||"", date:bk.date,
-        time:bk.time, total:bk.total, status:"pending"
+        date:bk.date, time:bk.time, total:bk.total, status:"pending"
       };
       await sb("bookings","POST",bkData,"");
       if(customerSession){
@@ -1238,7 +1237,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 // ══════════════════════════════════════════════
 //  ADMIN VIEW
 // ══════════════════════════════════════════════
-function AdminView({salons,setSalons,customers,setView,deleteSalon,approveSalon,onEnter,adminSession,onPage,setSelSalon,toast$}){
+function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,approveSalon,onEnter,adminSession,onPage,setSelSalon,toast$}){
   const[pw,setPw]=useState(""); const[err,setErr]=useState(false);
   const[tab,setTab]=useState("pending");
   const[search,setSearch]=useState("");
@@ -1276,9 +1275,35 @@ function AdminView({salons,setSalons,customers,setView,deleteSalon,approveSalon,
   const filteredBookings=!q?allBookings:allBookings.filter(b=>[b.name,b.phone,b.salonName,b.date].join(" ").toLowerCase().includes(q));
   const filteredCustomers=!q?customers:customers.filter(c=>[c.name,c.phone].join(" ").toLowerCase().includes(q));
 
+  // رسم بياني — آخر 6 أشهر
+  const monthlyData=(()=>{
+    const months=[];
+    for(let i=5;i>=0;i--){
+      const d=new Date(); d.setMonth(d.getMonth()-i);
+      const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      const label=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"][d.getMonth()];
+      const count=allBookings.filter(b=>b.date?.startsWith(key)).length;
+      months.push({label,count,key});
+    }
+    return months;
+  })();
+  const maxCount=Math.max(...monthlyData.map(m=>m.count),1);
+
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={G.ft}>🔐 لوحة الإدارة</h2></div>
+
+      {/* إشعار صالون جديد */}
+      {pending.length>0&&(
+        <div style={{background:"rgba(212,160,23,.1)",border:"1.5px solid var(--pa4)",borderRadius:11,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:20}}>🔔</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:700,color:"var(--p)"}}>يوجد {pending.length} طلب {pending.length===1?"جديد":"جديدة"} بانتظار مراجعتك</div>
+            <div style={{fontSize:11,color:"#888"}}>{pending.map(s=>s.name).join(" · ")}</div>
+          </div>
+          <button style={{...G.tabBtn,...G.tabOn,fontSize:11,padding:"5px 10px",flexShrink:0}} onClick={()=>setTab("pending")}>عرض</button>
+        </div>
+      )}
 
       {/* احصائيات */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
@@ -1296,6 +1321,20 @@ function AdminView({salons,setSalons,customers,setView,deleteSalon,approveSalon,
             <div style={{fontSize:10,color:"#888"}}>{l}</div>
           </div>
         ))}
+      </div>
+
+      {/* رسم بياني — الحجوزات الشهرية */}
+      <div style={{background:"#13131f",borderRadius:13,padding:"14px 12px",marginBottom:12,border:"1px solid #2a2a3a"}}>
+        <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:12}}>📈 الحجوزات — آخر 6 أشهر</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:6,height:70}}>
+          {monthlyData.map((m,i)=>(
+            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+              <div style={{fontSize:10,color:"var(--p)",fontWeight:700}}>{m.count||""}</div>
+              <div style={{width:"100%",background:`linear-gradient(180deg,var(--p),var(--pd))`,borderRadius:"4px 4px 0 0",height:`${Math.max((m.count/maxCount)*50,m.count?4:0)}px`,minHeight:m.count?4:0,transition:"height .3s"}}/>
+              <div style={{fontSize:9,color:"#555",textAlign:"center",lineHeight:1.2}}>{m.label.slice(0,3)}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* بحث */}
@@ -1833,14 +1872,21 @@ function CustomerDash({customer,salons,setView,setCustomerSession,setSelSalon,to
       {tab==="hist"&&<>
         {/* إعداد التذكير */}
         <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",marginBottom:10,border:"1px solid #2a2a3a"}}>
-          <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:6}}>🔔 وقت التذكير بالمواعيد</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {[{v:30,l:"قبل 30 د"},{v:60,l:"قبل ساعة"},{v:120,l:"قبل ساعتين"},{v:1440,l:"قبل يوم"}].map(({v,l})=>(
+          <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:8}}>🔔 وقت التذكير بالمواعيد</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+            {[{v:30,l:"30 د"},{v:60,l:"ساعة"},{v:120,l:"ساعتين"},{v:1440,l:"يوم"}].map(({v,l})=>(
               <button key={v} onClick={()=>setReminderMins(v)}
                 style={{padding:"5px 10px",borderRadius:20,border:`1.5px solid ${reminderMins===v?"var(--p)":"#2a2a3a"}`,background:reminderMins===v?"var(--pa12)":"#1a1a2e",color:reminderMins===v?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:700}}>
                 {l}
               </button>
             ))}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:11,color:"#888",flexShrink:0}}>أو أدخل دقائق:</span>
+            <input type="number" min="1" max="10080"
+              style={{width:80,padding:"6px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"var(--p)",fontSize:13,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
+              value={reminderMins} onChange={e=>setReminderMins(Math.max(1,+e.target.value))}/>
+            <span style={{fontSize:11,color:"#888"}}>دقيقة</span>
           </div>
         </div>
         {history.length===0?<div style={G.empty}>لا توجد حجوزات سابقة</div>:
@@ -2026,7 +2072,22 @@ function AdminCustomerList({customers,salons,toast$,setCustomers}){
 function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toast$}){
   const[editId,setEditId]=useState(null);
   const[ef,setEf]=useState(null);
+  const[pinned,setPinned]=useState(()=>{try{return JSON.parse(localStorage.getItem("pinned_salons")||"[]");}catch{return[];}});
   const sel=editId?salons.find(s=>s.id===editId):null;
+
+  const togglePin=(id)=>{
+    const newPinned=pinned.includes(id)?pinned.filter(x=>x!==id):[...pinned,id];
+    setPinned(newPinned);
+    localStorage.setItem("pinned_salons",JSON.stringify(newPinned));
+    toast$&&toast$(pinned.includes(id)?"📌 تم إلغاء التثبيت":"📌 تم تثبيت الصالون");
+  };
+
+  // ترتيب: المثبتة أولاً
+  const sortedSalons=[...salons].sort((a,b)=>{
+    const ap=pinned.includes(a.id)?1:0;
+    const bp=pinned.includes(b.id)?1:0;
+    return bp-ap;
+  });
 
   const startEdit=s=>{setEditId(s.id);setEf({name:s.name,owner:s.owner,phone:s.phone,ownerPhone:s.ownerPhone||s.phone,address:s.address,rating:s.rating||5});};
   const save=async()=>{
@@ -2060,7 +2121,7 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
         </div>
         <div style={{display:"flex",gap:8}}>
           <button style={G.sub} onClick={save}>💾 حفظ التعديلات</button>
-          <button style={{...G.delBtn,padding:"12px 14px",flexShrink:0}} onClick={()=>{if(confirm("حذف هذا الصالون نهائياً؟")){deleteSalon(editId);setEditId(null);setEf(null);}}}>🗑</button>
+          <button style={{...G.delBtn,padding:"12px 14px",flexShrink:0}} onClick={()=>{const r=prompt("سبب الحذف (اختياري):");if(confirm(`حذف هذا الصالون نهائياً؟${r?"\nالسبب: "+r:""}`)){deleteSalon(editId);setEditId(null);setEf(null);}}}>🗑</button>
         </div>
       </div>
     </div>
@@ -2068,27 +2129,36 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
 
   return(
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
-      {salons.map(s=>(
-        <div key={s.id} style={{...G.bItem,borderRight:"3px solid #27ae60"}}>
+      {sortedSalons.map(s=>{
+        const isPinned=pinned.includes(s.id);
+        const lastBk=s.bookings.length?[...s.bookings].sort((a,b)=>b.date>a.date?1:-1)[0]:null;
+        return(
+        <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${isPinned?"#f0c040":"#27ae60"}`}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+                {isPinned&&<span style={{fontSize:10,color:"#f0c040"}}>📌</span>}
+              </div>
               <div style={{fontSize:11,color:"#888"}}>👤 {s.owner} · 📞 {s.phone}</div>
               {s.ownerPhone&&s.ownerPhone!==s.phone&&<div style={{fontSize:11,color:"#888"}}>📱 مالك: {s.ownerPhone}</div>}
               <div style={{fontSize:11,color:"#888"}}>📍 {s.gov||s.region}{s.village?" · "+s.village:""}</div>
-              <div style={{display:"flex",gap:8,marginTop:3}}>
+              <div style={{display:"flex",gap:8,marginTop:3,flexWrap:"wrap"}}>
                 <span style={{fontSize:10,color:"#4caf50"}}>📅 {s.bookings.length} حجز</span>
                 <span style={{fontSize:10,color:"var(--p)"}}>⭐ {s.rating}</span>
+                {lastBk&&<span style={{fontSize:10,color:"#6aadff"}}>🕐 آخر نشاط: {lastBk.date}</span>}
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isPinned?"rgba(240,192,64,.15)":"rgba(100,60,180,.15)",border:`1px solid ${isPinned?"#f0c040":"#7c4dff"}`,color:isPinned?"#f0c040":"#b39ddb"}} onClick={()=>togglePin(s.id)}>{isPinned?"📌 مثبت":"📌 تثبيت"}</button>
               <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:"rgba(212,160,23,.12)",border:"1px solid var(--p)",color:"var(--p)"}} onClick={()=>startEdit(s)}>✏️ تعديل</button>
               <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋 صفحة</button>
-              <button style={{...G.delBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{if(confirm("حذف؟"))deleteSalon(s.id);}}>🗑</button>
+              <button style={{...G.delBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{const r=prompt("سبب الحذف (اختياري):");if(confirm(`حذف؟${r?"\nالسبب: "+r:""}`))deleteSalon(s.id);}}>🗑</button>
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
