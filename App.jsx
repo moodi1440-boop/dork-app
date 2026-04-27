@@ -1324,32 +1324,49 @@ function AdminView({salons,setSalons,customers,setView,deleteSalon,approveSalon,
       {/* الطلبات */}
       {tab==="pending"&&(filterSalons(pending).length===0
         ?<div style={G.empty}>{search?"لا نتائج":"لا توجد طلبات معلّقة 🎉"}</div>
-        :filterSalons(pending).map(s=>(
-          <div key={s.id} style={{...G.bItem,marginBottom:10,border:"1px solid var(--pa25)",borderRight:"4px solid var(--p)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-              <div>
-                <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
-                <div style={{fontSize:11,color:"#aaa"}}>👤 {s.owner} · 📞 {s.phone}</div>
-                <div style={{fontSize:11,color:"#aaa"}}>📍 {s.gov||s.region}{s.village?` · ${s.village}`:""}</div>
-                <div style={{fontSize:11,color:"#aaa"}}>🕐 {s.shiftEnabled?`${s.shift1Start}-${s.shift1End} | ${s.shift2Start}-${s.shift2End}`:`${s.workStart}-${s.workEnd}`}</div>
+        :<>
+          {filterSalons(pending).length>1&&(
+            <button style={{...G.accBtn,width:"100%",marginBottom:10,padding:10}} onClick={()=>{if(confirm(`قبول جميع الطلبات (${filterSalons(pending).length}) دفعة واحدة؟`))filterSalons(pending).forEach(s=>approveSalon(s.id,"approved"));}}>
+              ✅ قبول الكل ({filterSalons(pending).length})
+            </button>
+          )}
+          {filterSalons(pending).map(s=>(
+            <div key={s.id} style={{...G.bItem,marginBottom:10,border:"1px solid var(--pa25)",borderRight:"4px solid var(--p)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+                  <div style={{fontSize:11,color:"#aaa"}}>👤 {s.owner} · 📞 {s.phone}</div>
+                  <div style={{fontSize:11,color:"#aaa"}}>📍 {s.gov||s.region}{s.village?` · ${s.village}`:""}</div>
+                  <div style={{fontSize:11,color:"#aaa"}}>🕐 {s.shiftEnabled?`${s.shift1Start}-${s.shift1End} | ${s.shift2Start}-${s.shift2End}`:`${s.workStart}-${s.workEnd}`}</div>
+                </div>
+                <button style={G.pageBtn} onClick={()=>{setSelSalon(s);setView("salon");}}>معاينة</button>
               </div>
-              <button style={G.pageBtn} onClick={()=>{setSelSalon(s);setView("salon");}}>معاينة</button>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
+                {(s.services||[]).map(sv=><span key={sv} style={G.tag}>{sv}</span>)}
+              </div>
+              <div style={{display:"flex",gap:7}}>
+                <button style={{...G.accBtn,flex:2}} onClick={()=>approveSalon(s.id,"approved")}>✅ قبول ونشر</button>
+                <button style={{...G.rejBtn,flex:1}} onClick={()=>{
+                  const reason=prompt("سبب الرفض (اختياري):");
+                  approveSalon(s.id,"rejected",reason||"");
+                }}>❌ رفض</button>
+              </div>
             </div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
-              {(s.services||[]).map(sv=><span key={sv} style={G.tag}>{sv}</span>)}
-            </div>
-            <div style={{display:"flex",gap:7}}>
-              <button style={{...G.accBtn,flex:2}} onClick={()=>approveSalon(s.id,"approved")}>✅ قبول ونشر</button>
-              <button style={{...G.rejBtn,flex:1}} onClick={()=>approveSalon(s.id,"rejected")}>❌ رفض</button>
-            </div>
-          </div>
-        ))
+          ))}
+        </>
       )}
 
       {/* المفعّلة */}
       {tab==="approved"&&(filterSalons(approved).length===0
         ?<div style={G.empty}>{search?"لا نتائج":"لا توجد صالونات مفعّلة"}</div>
-        :<AdminApprovedList salons={filterSalons(approved)} setSalons={setSalons} deleteSalon={deleteSalon} setSelSalon={setSelSalon} setView={setView} toast$={toast$}/>
+        :<>
+          <button style={{...G.sub,marginBottom:10,background:"#1a3a1a",border:"1px solid #27ae60",color:"#4caf50"}} onClick={()=>{
+            const rows=[["الاسم","المالك","الجوال","المنطقة","المحافظة","الحجوزات","التقييم"],...filterSalons(approved).map(s=>[s.name,s.owner,s.phone,s.region,s.gov||"",s.bookings.length,s.rating||""])];
+            const csv=rows.map(r=>r.join(",")).join("\n");
+            const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download="salons.csv";a.click();
+          }}>📥 تصدير CSV</button>
+          <AdminApprovedList salons={filterSalons(approved)} setSalons={setSalons} deleteSalon={deleteSalon} setSelSalon={setSelSalon} setView={setView} toast$={toast$}/>
+        </>
       )}
 
       {/* المرفوضة */}
@@ -1358,7 +1375,10 @@ function AdminView({salons,setSalons,customers,setView,deleteSalon,approveSalon,
         :filterSalons(rejected).map(s=>(
           <div key={s.id} style={{...G.bItem,marginBottom:8,borderRight:"3px solid #e74c3c"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div><div style={{fontSize:11,color:"#888"}}>{s.phone}</div></div>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+                <div style={{fontSize:11,color:"#888"}}>{s.phone}</div>
+              </div>
               <div style={{display:"flex",gap:5}}>
                 <button style={G.accBtn} onClick={()=>approveSalon(s.id,"approved")}>✅ قبول</button>
                 <button style={G.delBtn} onClick={()=>deleteSalon(s.id)}>🗑</button>
@@ -1406,9 +1426,17 @@ function AdminView({salons,setSalons,customers,setView,deleteSalon,approveSalon,
                   <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {c.name}</div>
                   <div style={{fontSize:11,color:"#888"}}>📞 {c.phone}</div>
                 </div>
-                <div style={{textAlign:"left",flexShrink:0}}>
-                  <div style={{fontSize:11,color:"#a78bfa"}}>📋 {(c.history||[]).length} حجز</div>
-                  <div style={{fontSize:11,color:"#e74c3c",marginTop:2}}>♥ {(c.favs||[]).length} مفضلة</div>
+                <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                  <div style={{textAlign:"left"}}>
+                    <div style={{fontSize:11,color:"#a78bfa"}}>📋 {(c.history||[]).length} حجز</div>
+                    <div style={{fontSize:11,color:"#e74c3c",marginTop:2}}>♥ {(c.favs||[]).length} مفضلة</div>
+                  </div>
+                  <button style={G.delBtn} onClick={async()=>{
+                    if(confirm(`حذف العميل "${c.name}"؟`)){
+                      try{await sb("customers","DELETE",null,`?id=eq.${c.id}`);toast$&&toast$("🗑 تم حذف العميل");}
+                      catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
+                    }
+                  }}>🗑</button>
                 </div>
               </div>
             </div>
