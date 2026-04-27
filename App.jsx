@@ -486,11 +486,6 @@ export default function App(){
   }, []);
 
   useEffect(()=>{ loadData(); }, [loadData]);
-  // تحديث تلقائي كل 5 ثواني
-  useEffect(()=>{
-    const t=setInterval(()=>loadData(),5000);
-    return()=>clearInterval(t);
-  },[loadData]);
 
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
@@ -1005,12 +1000,12 @@ function NotifPanel({salon,onUpdate}){
   const bks=[...salon.bookings].reverse();
   if(!bks.length)return <div style={G.empty}>لا توجد حجوزات</div>;
   return <div style={{display:"flex",flexDirection:"column",gap:8,paddingTop:4}}>{bks.map(b=>(
-    <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="accepted"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
+    <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
       <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {b.name}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` · ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} · {b.total||0} ر</div></div>
-        <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="accepted"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="accepted"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="accepted"?"✅":b.status==="rejected"?"❌":"⏳"}</span>
+        <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
       </div>
-      {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"accepted")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
+      {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
     </div>
   ))}</div>;
 }
