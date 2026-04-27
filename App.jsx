@@ -2113,4 +2113,4 @@ ratingBadge:{background:“var(–pa15)”,border:“1px solid rgba(var(–pr),.
 heartCardBtn:{width:36,height:36,borderRadius:9,border:“1.5px solid #2a2a3a”,background:”#1a1a2e”,color:”#888”,cursor:“pointer”,fontSize:20,display:“flex”,alignItems:“center”,justifyContent:“center”,flexShrink:0,fontFamily:”‘Cairo’,sans-serif”},
 heartCardOn:{border:“1.5px solid #e74c3c”,background:“rgba(231,76,60,.1)”,color:”#e74c3c”},
 xBtn:{width:26,height:26,borderRadius:7,border:“1.5px solid #c0392b”,background:“transparent”,color:”#e74c3c”,cursor:“pointer”,fontSize:12,display:“flex”,alignItems:“center”,justifyContent:“center”,fontFamily:”‘Cairo’,sans-serif”,flexShrink:0},
-};
+}
