@@ -1974,14 +1974,20 @@ function CustomerDash({customer,salons,setView,setCustomerSession,setSelSalon,to
           <div style={{display:"flex",flexDirection:"column",gap:9}}>
             {[...history].reverse().map((h,i)=>{
               const s=salons.find(x=>x.id===h.salonId);
+              // نجيب الحالة الحقيقية من بيانات الصالون
+              const realBooking=s?.bookings?.find(b=>b.date===h.date&&b.time===h.time&&b.phone===h.phone);
+              const status=realBooking?.status||h.status||"pending";
+              const stColor=status==="approved"?"#27ae60":status==="rejected"?"#e74c3c":"#f39c12";
+              const stLabel=status==="approved"?"✅ مقبول":status==="rejected"?"❌ مرفوض":"⏳ بانتظار الموافقة";
               return(
-                <div key={i} style={{...G.bItem,borderRight:`3px solid ${h.rating?"var(--p)":"#2a2a3a"}`}}>
+                <div key={i} style={{...G.bItem,borderRight:`3px solid ${stColor}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                     <div>
-                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s?.name||"صالون محذوف"}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s?.name||h.salonName||"صالون"}</div>
                       <div style={{fontSize:11,color:"#aaa"}}>📅 {h.date} · 🕐 {h.time}</div>
                       <div style={{fontSize:11,color:"#aaa"}}>{Array.isArray(h.services)?h.services.join(" + "):h.service||""}</div>
                       <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>💰 {h.total||0} ريال</div>
+                      <div style={{fontSize:11,fontWeight:700,color:stColor,marginTop:3}}>{stLabel}</div>
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
                       {h.rating>0&&<div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><span key={n} style={{fontSize:12,color:n<=h.rating?"#f0c040":"#333"}}>★</span>)}</div>}
@@ -1989,13 +1995,14 @@ function CustomerDash({customer,salons,setView,setCustomerSession,setSelSalon,to
                       <button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>scheduleReminder({...h,salonName:s?.name})}>🔔 ذكّرني</button>
                     </div>
                   </div>
-                  <InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={(r,comment)=>{
+                  {/* التقييم فقط بعد القبول */}
+                  {status==="approved"&&<InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={(r,comment)=>{
                     const rev=[...history].reverse();
                     rev[i]={...rev[i],rating:r,comment};
                     const updated=[...rev].reverse();
                     setCustomers(p=>p.map(c=>c.id===customer.id?{...c,history:updated}:c));
                     sb("customers","PATCH",{history:updated},`?id=eq.${customer.id}`).catch(console.error);
-                  }}/>
+                  }}/>}
                 </div>
               );
             })}
