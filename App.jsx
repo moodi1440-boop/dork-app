@@ -486,6 +486,11 @@ export default function App(){
   }, []);
 
   useEffect(()=>{ loadData(); }, [loadData]);
+  // تحديث تلقائي كل 30 ثانية
+  useEffect(()=>{
+    const t=setInterval(()=>loadData(),30000);
+    return()=>clearInterval(t);
+  },[loadData]);
 
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
