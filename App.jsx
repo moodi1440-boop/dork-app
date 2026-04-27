@@ -1678,7 +1678,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     try{
       const exists=await sb("customers","GET",null,`?phone=eq.${encodeURIComponent(phone.trim())}`);
       if(exists.length){setErr("الرقم مسجل بالفعل");return;}
-      const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),favs:[],history:[]},"");
+      const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim()},"");
       const nc=toAppCustomer(rows[0]);
       setCustomerSession(nc); setView("custDash");
     }catch(e){setErr("خطأ: "+e.message);}
