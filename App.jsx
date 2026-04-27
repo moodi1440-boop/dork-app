@@ -752,7 +752,17 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
 // ══════════════════════════════════════════════
 //  HOME
 // ══════════════════════════════════════════════
-function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$}){
+function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers}){
+
+  // حساب التقييم الحقيقي لكل صالون
+  const getRealRating=(salonId)=>{
+    const reviews=(customers||[]).flatMap(c=>
+      (c.history||[]).filter(h=>(h.salonId===salonId||h.salonId===String(salonId))&&h.rating>0)
+      .map(h=>h.rating)
+    );
+    if(!reviews.length)return null;
+    return Math.round(reviews.reduce((a,r)=>a+r,0)/reviews.length*10)/10;
+  };
   const detectUserLoc=()=>{
     if(!navigator.geolocation){alert("⚠️ المتصفح لا يدعم تحديد الموقع");return;}
     navigator.geolocation.getCurrentPosition(
@@ -818,6 +828,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           :<div style={{display:"flex",flexDirection:"column",gap:11}}>
             {displaySalons.map(s=>(
               <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
+                realRating={getRealRating(s.id)}
                 onBook={()=>{setSelSalon(s);setView("book");}}/>
             ))}
           </div>
@@ -838,8 +849,9 @@ function LocFilter({icon,label,value,onChange,options,all}){
     </div>
   );
 }
-function SalonCard({salon,fav,onFav,onBook}){
+function SalonCard({salon,fav,onFav,onBook,realRating}){
   const slots=getSlotsForSalon(salon);
+  const displayRating=realRating||salon.rating||"5.0";
   return(
     <div style={G.card} className="hcard">
       <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:6}}>
@@ -848,7 +860,7 @@ function SalonCard({salon,fav,onFav,onBook}){
           <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div>
           <div style={{fontSize:11,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
         </div>
-        <div style={G.ratingBadge}>⭐ {salon.rating||"5.0"}</div>
+        <div style={{...G.ratingBadge,background:realRating?"rgba(240,192,64,.2)":"rgba(100,100,100,.2)"}}>⭐ {displayRating}</div>
       </div>
       <div style={{fontSize:11,color:"#555",marginBottom:4,fontStyle:"italic"}}>{salon.region}</div>
       <div style={{fontSize:11,color:"#aaa",marginBottom:2}}>🏠 {salon.address}</div>
