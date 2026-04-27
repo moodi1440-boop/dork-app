@@ -101,13 +101,22 @@ function toAppBooking(row) {
 }
 
 function toAppCustomer(row) {
+  let history=row.history||[];
+  let favs=row.favs||[];
+  // لو ما في history في Supabase نجيبها من localStorage
+  if(!history.length){
+    try{const h=localStorage.getItem(`hist_${row.id}`);if(h)history=JSON.parse(h);}catch{}
+  }
+  if(!favs.length){
+    try{const f=localStorage.getItem(`favs_${row.id}`);if(f)favs=JSON.parse(f);}catch{}
+  }
   return {
     id: row.id,
     name: row.name,
     phone: row.phone,
     password: row.password,
-    favs: row.favs || [],
-    history: row.history || [],
+    favs,
+    history,
   };
 }
 
@@ -541,8 +550,22 @@ export default function App(){
       if(customerSession){
         const c=customers.find(x=>x.id===customerSession.id);
         if(c){
-          const hist=[...(c.history||[]),{salonId:sid,date:bk.date,time:bk.time,services:bk.services,total:bk.total}];
-          try{await sb("customers","PATCH",{history:hist},`?id=eq.${c.id}`);}catch{}
+          const histItem={
+            salonId:sid,
+            salonName:salon?.name||"",
+            date:bk.date,
+            time:bk.time,
+            services:bk.services,
+            total:bk.total,
+            rating:0,
+            comment:"",
+          };
+          const hist=[...(c.history||[]),histItem];
+          // نحفظ في localStorage كحل احتياطي
+          try{localStorage.setItem(`hist_${c.id}`,JSON.stringify(hist));}catch{}
+          // نجرب Supabase — لو فشل نكمل بدونه
+          try{await sb("customers","PATCH",{history:hist,favs:c.favs||[]},`?id=eq.${c.id}`);}catch{}
+          setCustomers(p=>p.map(x=>x.id===c.id?{...x,history:hist}:x));
         }
       }
       toast$("🎉 تم إرسال طلب الحجز!");
@@ -1966,9 +1989,9 @@ function CustomerDash({customer,salons,setView,setCustomerSession,setSelSalon,to
                       <button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>scheduleReminder({...h,salonName:s?.name})}>🔔 ذكّرني</button>
                     </div>
                   </div>
-                  <InlineStarRating rated={h.rating||0} onRate={r=>{
+                  <InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={(r,comment)=>{
                     const rev=[...history].reverse();
-                    rev[i]={...rev[i],rating:r};
+                    rev[i]={...rev[i],rating:r,comment};
                     const updated=[...rev].reverse();
                     setCustomers(p=>p.map(c=>c.id===customer.id?{...c,history:updated}:c));
                     sb("customers","PATCH",{history:updated},`?id=eq.${customer.id}`).catch(console.error);
@@ -2001,23 +2024,42 @@ function CustomerDash({customer,salons,setView,setCustomerSession,setSelSalon,to
 
 
 
-function InlineStarRating({rated,onRate}){
+function InlineStarRating({rated,comment,onRate}){
   const[hover,setHover]=useState(0);
+  const[sel,setSel]=useState(0);
+  const[txt,setTxt]=useState("");
   const labels=["","ضعيف","مقبول","جيد","جيد جداً","ممتاز"];
-  if(rated>0) return null;
+  if(rated>0) return(
+    <div style={{marginTop:8,borderTop:"1px solid #1e1e2e",paddingTop:8}}>
+      <div style={{display:"flex",gap:1,marginBottom:comment?4:0}}>
+        {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:18,color:n<=rated?"#f0c040":"#333"}}>★</span>)}
+        <span style={{fontSize:11,color:"#888",marginRight:6,alignSelf:"center"}}>{labels[rated]}</span>
+      </div>
+      {comment&&<div style={{fontSize:12,color:"#aaa",fontStyle:"italic"}}>"{comment}"</div>}
+    </div>
+  );
   return(
     <div style={{marginTop:8,borderTop:"1px solid #1e1e2e",paddingTop:8}}>
       <div style={{fontSize:11,color:"#666",marginBottom:5}}>قيّم تجربتك في هذا الصالون:</div>
-      <div style={{display:"flex",alignItems:"center",gap:3}}>
+      <div style={{display:"flex",alignItems:"center",gap:3,marginBottom:8}}>
         {[1,2,3,4,5].map(n=>(
           <span key={n}
-            style={{fontSize:28,cursor:"pointer",color:n<=(hover)?"#f0c040":"#2a2a3a",transition:"color .1s",lineHeight:1,userSelect:"none"}}
+            style={{fontSize:28,cursor:"pointer",color:n<=(hover||sel)?"#f0c040":"#2a2a3a",transition:"color .1s",lineHeight:1,userSelect:"none"}}
             onMouseEnter={()=>setHover(n)}
             onMouseLeave={()=>setHover(0)}
-            onClick={()=>onRate(n)}>★</span>
+            onClick={()=>setSel(n)}>★</span>
         ))}
-        {hover>0&&<span style={{fontSize:11,color:"var(--p)",marginRight:6,fontWeight:600}}>{labels[hover]}</span>}
+        {(hover||sel)>0&&<span style={{fontSize:11,color:"var(--p)",marginRight:6,fontWeight:600}}>{labels[hover||sel]}</span>}
       </div>
+      {sel>0&&<>
+        <textarea
+          style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl",resize:"none",minHeight:60,marginBottom:8}}
+          placeholder="أضف تعليقاً (اختياري)..."
+          value={txt} onChange={e=>setTxt(e.target.value)}/>
+        <button style={{...G.sub,padding:"8px 0",fontSize:12}} onClick={()=>onRate(sel,txt)}>
+          إرسال التقييم ⭐
+        </button>
+      </>}
     </div>
   );
 }
