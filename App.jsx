@@ -1418,30 +1418,7 @@ function AdminView({salons,setSalons,customers,setView,deleteSalon,approveSalon,
       {/* العملاء */}
       {tab==="customers"&&(filteredCustomers.length===0
         ?<div style={G.empty}>{search?"لا نتائج":"لا يوجد عملاء مسجلون"}</div>
-        :<div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {filteredCustomers.map(c=>(
-            <div key={c.id} style={{...G.bItem,borderRight:"3px solid #6aadff"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div>
-                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {c.name}</div>
-                  <div style={{fontSize:11,color:"#888"}}>📞 {c.phone}</div>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-                  <div style={{textAlign:"left"}}>
-                    <div style={{fontSize:11,color:"#a78bfa"}}>📋 {(c.history||[]).length} حجز</div>
-                    <div style={{fontSize:11,color:"#e74c3c",marginTop:2}}>♥ {(c.favs||[]).length} مفضلة</div>
-                  </div>
-                  <button style={G.delBtn} onClick={async()=>{
-                    if(confirm(`حذف العميل "${c.name}"؟`)){
-                      try{await sb("customers","DELETE",null,`?id=eq.${c.id}`);toast$&&toast$("🗑 تم حذف العميل");}
-                      catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
-                    }
-                  }}>🗑</button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        :<AdminCustomerList customers={filteredCustomers} salons={salons} toast$={toast$} setCustomers={setCustomers}/>
       )}
 
       {/* كلمة المرور */}
@@ -1735,23 +1712,113 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 }
 function CustomerDash({customer,salons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers}){
   const[tab,setTab]=useState("favs");
+  const[editMode,setEditMode]=useState(false);
+  const[editName,setEditName]=useState(customer?.name||"");
+  const[editPhone,setEditPhone]=useState(customer?.phone||"");
+  const[reminderMins,setReminderMins]=useState(60);
   if(!customer)return null;
+
   const favSalons=salons.filter(s=>favSet.has(s.id)&&s.status==="approved");
   const history=customer.history||[];
+  const totalSpent=history.reduce((a,h)=>a+(h.total||0),0);
+  const points=history.length*10;
+  const badge=history.length>=10?"🏆 عميل مميز":history.length>=5?"⭐ عميل نشط":"🆕 عميل جديد";
+
+  // avatar بالحرف الأول
+  const initials=(customer.name||"?")[0];
+  const avatarColors=["#d4a017","#27ae60","#3b82f6","#8b5cf6","#e74c3c"];
+  const avatarColor=avatarColors[customer.name?.charCodeAt(0)%avatarColors.length||0];
+
+  const saveEdit=async()=>{
+    if(!editName.trim()){return;}
+    try{
+      await sb("customers","PATCH",{name:editName.trim(),phone:editPhone.trim()},`?id=eq.${customer.id}`);
+      setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:editName.trim(),phone:editPhone.trim()}:c));
+      setEditMode(false);
+    }catch(e){alert("خطأ: "+e.message);}
+  };
+
+  const deleteAccount=async()=>{
+    if(!confirm("حذف حسابك نهائياً؟ لا يمكن التراجع!")){return;}
+    try{
+      await sb("customers","DELETE",null,`?id=eq.${customer.id}`);
+      setCustomerSession(null);setView("home");
+    }catch(e){alert("خطأ: "+e.message);}
+  };
+
+  const scheduleReminder=(h)=>{
+    const dt=new Date(`${h.date}T${h.time}`);
+    dt.setMinutes(dt.getMinutes()-reminderMins);
+    const now=new Date();
+    const diff=dt-now;
+    if(diff<=0){alert("الموعد قريب جداً أو مضى!");return;}
+    setTimeout(()=>{
+      if(Notification.permission==="granted"){
+        new Notification("تذكير موعدك في دورك ✂",{body:`موعدك في ${h.salonName||"الصالون"} الساعة ${h.time}`,icon:"/favicon.ico"});
+      }else{alert(`تذكير: موعدك في ${h.salonName||"الصالون"} الساعة ${h.time}`);}
+    },diff);
+    Notification.requestPermission();
+    alert(`✅ سيتم تذكيرك قبل ${reminderMins>=60?reminderMins/60+" ساعة":reminderMins+" دقيقة"} من موعدك!`);
+  };
+
+  const inp2={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
+
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={{...G.ft,flex:1}}>مرحباً، {customer.name} 👋</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("home");}}>خروج</button></div>
-      <div style={G.tabRow}>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={{...G.ft,flex:1}}>حسابي</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("home");}}>خروج</button></div>
+
+      {/* بروفايل العميل */}
+      {!editMode?(
+        <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1px solid #2a2a3a",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+            <div style={{width:52,height:52,borderRadius:"50%",background:avatarColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#000",flexShrink:0}}>{initials}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{customer.name}</div>
+              <div style={{fontSize:12,color:"#888"}}>📞 {customer.phone}</div>
+              <div style={{fontSize:11,color:avatarColor,marginTop:2}}>{badge}</div>
+            </div>
+            <button style={{...G.pageBtn,fontSize:11}} onClick={()=>setEditMode(true)}>✏️ تعديل</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+            {[{v:history.length,l:"حجز",c:"#6aadff"},{v:totalSpent+" ر",l:"إجمالي",c:"#f0c040"},{v:points,l:"نقطة 🎁",c:"#27ae60"}].map(({v,l,c})=>(
+              <div key={l} style={{background:"#0d0d1a",borderRadius:10,padding:"10px 6px",textAlign:"center",border:`1px solid ${c}33`}}>
+                <div style={{fontSize:18,fontWeight:900,color:c}}>{v}</div>
+                <div style={{fontSize:10,color:"#888"}}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ):(
+        <div style={{background:"#13131f",borderRadius:16,padding:16,border:"1px solid var(--pa25)",marginBottom:12}}>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12}}>✏️ تعديل البيانات</div>
+          <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>الاسم</label><input style={inp2} value={editName} onChange={e=>setEditName(e.target.value)}/></div>
+          <div style={{marginBottom:12}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>رقم الجوال</label><input style={inp2} value={editPhone} onChange={e=>setEditPhone(e.target.value)}/></div>
+          <div style={{display:"flex",gap:8}}>
+            <button style={G.sub} onClick={saveEdit}>💾 حفظ</button>
+            <button style={{...G.delBtn,padding:"12px 14px"}} onClick={()=>setEditMode(false)}>إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      {/* تبويبات */}
+      <div style={{...G.tabRow,flexWrap:"nowrap"}}>
         <button style={{...G.tabBtn,...(tab==="favs"?G.tabOn:{})}} onClick={()=>setTab("favs")}>♥ المفضلة {favSalons.length>0&&<span style={G.notifDot}>{favSalons.length}</span>}</button>
         <button style={{...G.tabBtn,...(tab==="hist"?G.tabOn:{})}} onClick={()=>setTab("hist")}>📋 حجوزاتي</button>
+        <button style={{...G.tabBtn,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙️ الحساب</button>
       </div>
+
+      {/* المفضلة */}
       {tab==="favs"&&<>
         {favSalons.length===0?<div style={G.empty}>لم تضف صالوناً للمفضلة بعد</div>:
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {favSalons.map(s=>(
               <div key={s.id} style={G.bItem}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div><div style={{fontSize:14,fontWeight:700,color:"#fff"}}>✂ {s.name}</div><div style={{fontSize:11,color:"#888"}}>📍 {s.gov||s.region}{s.village?` · ${s.village}`:""}</div></div>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+                    <div style={{fontSize:11,color:"#888"}}>📍 {s.gov||s.region}{s.village?` · ${s.village}`:""}</div>
+                    <div style={{fontSize:11,color:"var(--p)"}}>⭐ {s.rating}</div>
+                  </div>
                   <div style={{display:"flex",gap:6}}>
                     <button style={G.bookBtn} onClick={()=>{setSelSalon(s);setView("book");}}>احجز</button>
                     <button style={{...G.favBtn,fontSize:18,color:"#e74c3c"}} onClick={()=>toggleFav(s.id)}>♥</button>
@@ -1761,38 +1828,69 @@ function CustomerDash({customer,salons,setView,setCustomerSession,setSelSalon,to
             ))}
           </div>}
       </>}
+
+      {/* الحجوزات */}
       {tab==="hist"&&<>
+        {/* إعداد التذكير */}
+        <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",marginBottom:10,border:"1px solid #2a2a3a"}}>
+          <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:6}}>🔔 وقت التذكير بالمواعيد</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {[{v:30,l:"قبل 30 د"},{v:60,l:"قبل ساعة"},{v:120,l:"قبل ساعتين"},{v:1440,l:"قبل يوم"}].map(({v,l})=>(
+              <button key={v} onClick={()=>setReminderMins(v)}
+                style={{padding:"5px 10px",borderRadius:20,border:`1.5px solid ${reminderMins===v?"var(--p)":"#2a2a3a"}`,background:reminderMins===v?"var(--pa12)":"#1a1a2e",color:reminderMins===v?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:700}}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
         {history.length===0?<div style={G.empty}>لا توجد حجوزات سابقة</div>:
           <div style={{display:"flex",flexDirection:"column",gap:9}}>
             {[...history].reverse().map((h,i)=>{
               const s=salons.find(x=>x.id===h.salonId);
-              return <div key={i} style={{...G.bItem,borderRight:`3px solid ${h.rating?"var(--p)":"#2a2a3a"}`}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s?.name||"صالون محذوف"}</div>
-                    <div style={{fontSize:11,color:"#aaa"}}>📅 {h.date} {h.time}</div>
-                    <div style={{fontSize:11,color:"#aaa"}}>{Array.isArray(h.services)?h.services.join(" + "):h.service||""}</div>
-                    <div style={{fontSize:11,color:"var(--p)"}}>💰 {h.total||0} ريال</div>
+              return(
+                <div key={i} style={{...G.bItem,borderRight:`3px solid ${h.rating?"var(--p)":"#2a2a3a"}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s?.name||"صالون محذوف"}</div>
+                      <div style={{fontSize:11,color:"#aaa"}}>📅 {h.date} · 🕐 {h.time}</div>
+                      <div style={{fontSize:11,color:"#aaa"}}>{Array.isArray(h.services)?h.services.join(" + "):h.service||""}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>💰 {h.total||0} ريال</div>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+                      {h.rating>0&&<div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><span key={n} style={{fontSize:12,color:n<=h.rating?"#f0c040":"#333"}}>★</span>)}</div>}
+                      {s&&<button style={{...G.bookBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setSelSalon(s);setView("book");}}>🔄 احجز مجدداً</button>}
+                      <button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>scheduleReminder({...h,salonName:s?.name})}>🔔 ذكّرني</button>
+                    </div>
                   </div>
-                  {h.rating>0&&<div style={{display:"flex",gap:1}}>
-                    {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:14,color:n<=h.rating?"#f0c040":"#333"}}>★</span>)}
-                  </div>}
-                </div>
-                <InlineStarRating
-                  rated={h.rating||0}
-                  onRate={r=>{
+                  <InlineStarRating rated={h.rating||0} onRate={r=>{
                     const rev=[...history].reverse();
                     rev[i]={...rev[i],rating:r};
                     const updated=[...rev].reverse();
                     setCustomers(p=>p.map(c=>c.id===customer.id?{...c,history:updated}:c));
-                    // حفظ التقييم في Supabase
                     sb("customers","PATCH",{history:updated},`?id=eq.${customer.id}`).catch(console.error);
-                  }}
-                />
-              </div>;
+                  }}/>
+                </div>
+              );
             })}
           </div>}
       </>}
+
+      {/* إعدادات الحساب */}
+      {tab==="settings"&&(
+        <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:14,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>⚙️ إعدادات الحساب</div>
+          <div style={{fontSize:12,color:"#888",marginBottom:16,lineHeight:1.8}}>
+            <div>👤 الاسم: <span style={{color:"#fff",fontWeight:700}}>{customer.name}</span></div>
+            <div>📞 الجوال: <span style={{color:"#fff",fontWeight:700}}>{customer.phone}</span></div>
+            <div>🎁 النقاط: <span style={{color:"#27ae60",fontWeight:700}}>{points} نقطة</span></div>
+            <div>📋 الحجوزات: <span style={{color:"var(--p)",fontWeight:700}}>{history.length} حجز</span></div>
+          </div>
+          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>{setTab("favs");setEditMode(true);}}>✏️ تعديل البيانات</button>
+          <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13}} onClick={deleteAccount}>🗑 حذف الحساب نهائياً</button>
+          <div style={{fontSize:10,color:"#555",marginTop:8,textAlign:"center"}}>تحذير: حذف الحساب لا يمكن التراجع عنه</div>
+        </div>
+      )}
+
     </div></div>
   );
 }
@@ -1816,6 +1914,111 @@ function InlineStarRating({rated,onRate}){
         ))}
         {hover>0&&<span style={{fontSize:11,color:"var(--p)",marginRight:6,fontWeight:600}}>{labels[hover]}</span>}
       </div>
+    </div>
+  );
+}
+
+function AdminCustomerList({customers,salons,toast$,setCustomers}){
+  const[selId,setSelId]=useState(null);
+  const[note,setNote]=useState("");
+  const[notes,setNotes]=useState({});
+  const[blocked,setBlocked]=useState({});
+  const sel=selId?customers.find(c=>c.id===selId):null;
+
+  if(sel){
+    const history=sel.history||[];
+    const favs=sel.favs||[];
+    const totalSpent=history.reduce((a,h)=>a+(h.total||0),0);
+    const isBlocked=blocked[sel.id];
+    return(
+      <div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+          <button style={G.bb} onClick={()=>setSelId(null)}>→</button>
+          <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>👤 {sel.name}</span>
+          {isBlocked&&<span style={{fontSize:11,background:"rgba(231,76,60,.2)",color:"#e74c3c",padding:"2px 8px",borderRadius:20,fontWeight:700}}>محظور</span>}
+        </div>
+
+        {/* معلومات */}
+        <div style={{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #2a2a3a",marginBottom:10}}>
+          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:10,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>معلومات العميل</div>
+          <div style={{fontSize:13,color:"#fff",marginBottom:4}}>👤 {sel.name}</div>
+          <div style={{fontSize:12,color:"#888",marginBottom:4}}>📞 {sel.phone}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:10}}>
+            {[{v:history.length,l:"حجز",c:"#6aadff"},{v:totalSpent+" ر",l:"إجمالي",c:"#f0c040"},{v:favs.length,l:"مفضلة",c:"#e74c3c"}].map(({v,l,c})=>(
+              <div key={l} style={{background:"#0d0d1a",borderRadius:9,padding:"9px 6px",textAlign:"center",border:`1px solid ${c}33`}}>
+                <div style={{fontSize:16,fontWeight:900,color:c}}>{v}</div>
+                <div style={{fontSize:10,color:"#888"}}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* سجل الحجوزات */}
+        {history.length>0&&<div style={{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #2a2a3a",marginBottom:10}}>
+          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:10,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>📋 سجل الحجوزات</div>
+          {[...history].reverse().slice(0,5).map((h,i)=>{
+            const s=salons.find(x=>x.id===h.salonId);
+            return(
+              <div key={i} style={{padding:"7px 0",borderBottom:"1px solid #1e1e2e"}}>
+                <div style={{fontSize:12,color:"#fff",fontWeight:600}}>✂ {s?.name||"صالون محذوف"}</div>
+                <div style={{fontSize:11,color:"#888"}}>📅 {h.date} · 💰 {h.total||0} ر</div>
+              </div>
+            );
+          })}
+        </div>}
+
+        {/* ملاحظة */}
+        <div style={{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #2a2a3a",marginBottom:10}}>
+          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>📝 ملاحظة داخلية</div>
+          <textarea style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl",resize:"vertical",minHeight:70}}
+            placeholder="ملاحظة خاصة عن هذا العميل..." value={notes[sel.id]||""}
+            onChange={e=>setNotes(p=>({...p,[sel.id]:e.target.value}))}/>
+          <button style={{...G.sub,marginTop:6}} onClick={()=>toast$&&toast$("✅ تم حفظ الملاحظة")}>💾 حفظ الملاحظة</button>
+        </div>
+
+        {/* أزرار الإجراءات */}
+        <div style={{display:"flex",gap:8}}>
+          <button style={{flex:1,padding:"10px 0",borderRadius:9,border:`1.5px solid ${isBlocked?"#27ae60":"#f39c12"}`,background:isBlocked?"rgba(39,174,96,.12)":"rgba(243,156,18,.12)",color:isBlocked?"#27ae60":"#f39c12",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}
+            onClick={()=>{setBlocked(p=>({...p,[sel.id]:!isBlocked}));toast$&&toast$(isBlocked?"✅ تم رفع الحظر":"🚫 تم حظر العميل");}}>
+            {isBlocked?"✅ رفع الحظر":"🚫 حظر العميل"}
+          </button>
+          <button style={{...G.delBtn,flex:1,padding:"10px 0",textAlign:"center"}} onClick={async()=>{
+            const reason=prompt("سبب الحذف (اختياري):");
+            if(!confirm(`حذف العميل "${sel.name}"؟${reason?"\nالسبب: "+reason:""}`))return;
+            try{
+              await sb("customers","DELETE",null,`?id=eq.${sel.id}`);
+              setCustomers(p=>p.filter(c=>c.id!==sel.id));
+              toast$&&toast$("🗑 تم حذف العميل"+(reason?" — السبب: "+reason:""));
+              setSelId(null);
+            }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
+          }}>🗑 حذف</button>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {customers.map(c=>{
+        const isBlocked=blocked[c.id];
+        return(
+          <div key={c.id} style={{...G.bItem,borderRight:`3px solid ${isBlocked?"#e74c3c":"#6aadff"}`,cursor:"pointer"}} onClick={()=>setSelId(c.id)}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {c.name}</div>
+                  {isBlocked&&<span style={{fontSize:10,background:"rgba(231,76,60,.2)",color:"#e74c3c",padding:"1px 6px",borderRadius:20}}>محظور</span>}
+                </div>
+                <div style={{fontSize:11,color:"#888"}}>📞 {c.phone}</div>
+              </div>
+              <div style={{textAlign:"left",flexShrink:0}}>
+                <div style={{fontSize:11,color:"#a78bfa"}}>📋 {(c.history||[]).length} حجز</div>
+                <div style={{fontSize:11,color:"#e74c3c",marginTop:2}}>♥ {(c.favs||[]).length} مفضلة</div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
