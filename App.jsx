@@ -446,10 +446,22 @@ export default function App(){
     try {
       setLoading(true);
       const salonRows = await sb("salons", "GET", null, "?order=id.desc");
-      const bookingRows = await sb("bookings", "GET", null, "?order=id.desc");
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
-        salon.bookings = bookingRows.filter(b => b.salon_id === row.id).map(toAppBooking);
+        // الحجوزات محفوظة داخل الصالون مباشرة
+        salon.bookings = (row.bookings || []).map(b=>({
+          id: b.id||Date.now(),
+          salonId: b.salonId||row.id,
+          name: b.name||"",
+          phone: b.phone||"",
+          services: b.services||[],
+          barberId: b.barberId||"any",
+          barberName: b.barberName||"",
+          date: b.date||"",
+          time: b.time||"",
+          total: b.total||0,
+          status: b.status||"pending",
+        }));
         return salon;
       });
       setSalons(salonsWithBookings);
@@ -511,30 +523,26 @@ export default function App(){
     try{
       const salon=salons.find(s=>s.id===sid);
       if(salon?.tone)playTone(salon.tone,0.8);
-      const bkData={
-        salon_id:sid,
-        status:"pending",
+      const newBooking={
+        id:Date.now(),
+        salonId:sid,
         name:bk.name,
         phone:bk.phone,
         services:bk.services,
-        barber_id:bk.barberId||"any",
+        barberId:bk.barberId||"any",
+        barberName:bk.barberName||"",
         date:bk.date,
         time:bk.time,
         total:bk.total,
+        status:"pending",
       };
-      // نجرب الإرسال الكامل، لو فشل نرسل بدون الأعمدة الإضافية
-      try{
-        await sb("bookings","POST",bkData,"");
-      }catch(e){
-        if(e.message.includes("column")||e.message.includes("schema")){
-          await sb("bookings","POST",{salon_id:sid,status:"pending"},"");
-        }else{throw e;}
-      }
+      const updatedBookings=[...(salon.bookings||[]),newBooking];
+      await sb("salons","PATCH",{bookings:updatedBookings},`?id=eq.${sid}`);
       if(customerSession){
         const c=customers.find(x=>x.id===customerSession.id);
         if(c){
           const hist=[...(c.history||[]),{salonId:sid,date:bk.date,time:bk.time,services:bk.services,total:bk.total}];
-          await sb("customers","PATCH",{history:hist},`?id=eq.${c.id}`);
+          try{await sb("customers","PATCH",{history:hist},`?id=eq.${c.id}`);}catch{}
         }
       }
       toast$("🎉 تم إرسال طلب الحجز!");
@@ -544,7 +552,10 @@ export default function App(){
   };
   const updateBookingStatus=async(sid,bid,status)=>{
     try{
-      await sb("bookings","PATCH",{status},`?id=eq.${bid}`);
+      const salon=salons.find(s=>s.id===sid);
+      if(!salon)return;
+      const updatedBookings=salon.bookings.map(b=>b.id===bid?{...b,status}:b);
+      await sb("salons","PATCH",{bookings:updatedBookings},`?id=eq.${sid}`);
       await loadData();
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
