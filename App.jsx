@@ -515,7 +515,6 @@ export default function App(){
   };
   const deleteSalon=async(id)=>{
     try{
-      await sb("bookings","DELETE",null,`?salon_id=eq.${id}`);
       await sb("salons","DELETE",null,`?id=eq.${id}`);
       toast$("🗑 تم الحذف","warn");
       await loadData();
@@ -873,11 +872,19 @@ function SalonCard({salon,fav,onFav,onBook}){
 // ══════════════════════════════════════════════
 //  SALON PAGE
 // ══════════════════════════════════════════════
-function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,adminSession,ownerSession,deleteSalon}){
+function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,adminSession,ownerSession,deleteSalon,customers}){
   const[tab,setTab]=useState("book");
   const fav=favSet.has(salon.id);
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
   const canManage=adminSession||(ownerSession===salon.id);
+
+  // جمع تقييمات هذا الصالون من كل العملاء
+  const reviews=(customers||[]).flatMap(c=>
+    (c.history||[]).filter(h=>(h.salonId===salon.id||h.salonId===String(salon.id))&&h.rating>0)
+    .map(h=>({name:c.name,rating:h.rating,comment:h.comment||"",date:h.date}))
+  );
+  const avgRating=reviews.length?Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length*10)/10:salon.rating||0;
+
   return(
     <div style={G.page}>
       <div style={G.fp}>
@@ -893,17 +900,47 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
             <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div>
             <div style={{fontSize:11,color:"#888"}}>{salon.gov||salon.region}{salon.village?` › ${salon.village}`:""}</div>
             <div style={{fontSize:11,color:"#888"}}>👤 {salon.owner} · 📞 {salon.phone}</div>
+            {reviews.length>0&&<div style={{fontSize:12,color:"#f0c040",marginTop:2}}>⭐ {avgRating} ({reviews.length} تقييم)</div>}
           </div>
           <button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>🗺</button>
         </div>
         <div style={G.tabRow}>
           <button style={{...G.tabBtn,...(tab==="book"?G.tabOn:{})}} onClick={()=>setTab("book")}>📅 حجز</button>
-          {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>
-            🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}
-          </button>}
+          <button style={{...G.tabBtn,...(tab==="reviews"?G.tabOn:{})}} onClick={()=>setTab("reviews")}>⭐ تقييمات {reviews.length>0&&<span style={G.notifDot}>{reviews.length}</span>}</button>
+          {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}</button>}
           {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>}
         </div>
         {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView}/>}
+        {tab==="reviews"&&(
+          <div>
+            {reviews.length===0
+              ?<div style={G.empty}>لا توجد تقييمات بعد — كن أول من يقيّم!</div>
+              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {/* متوسط التقييم */}
+                <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a",textAlign:"center",marginBottom:4}}>
+                  <div style={{fontSize:40,fontWeight:900,color:"#f0c040"}}>{avgRating}</div>
+                  <div style={{display:"flex",justifyContent:"center",gap:3,margin:"6px 0"}}>
+                    {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:20,color:n<=Math.round(avgRating)?"#f0c040":"#333"}}>★</span>)}
+                  </div>
+                  <div style={{fontSize:12,color:"#888"}}>{reviews.length} تقييم</div>
+                </div>
+                {/* قائمة التقييمات */}
+                {reviews.map((r,i)=>(
+                  <div key={i} style={{...G.bItem,borderRight:"3px solid #f0c040"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {r.name}</div>
+                      <div style={{display:"flex",gap:1}}>
+                        {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?"#f0c040":"#333"}}>★</span>)}
+                      </div>
+                    </div>
+                    {r.comment&&<div style={{fontSize:12,color:"#aaa",fontStyle:"italic"}}>"{r.comment}"</div>}
+                    {r.date&&<div style={{fontSize:10,color:"#555",marginTop:3}}>📅 {r.date}</div>}
+                  </div>
+                ))}
+              </div>
+            }
+          </div>
+        )}
         {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus}/>}
         {tab==="stats"&&canManage&&<StatsPanel salon={salon}/>}
       </div>
