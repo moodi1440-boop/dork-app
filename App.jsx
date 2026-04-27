@@ -1350,6 +1350,7 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
           {k:"pending",l:"⏳ الطلبات",n:pending.length},
           {k:"approved",l:"✅ المفعّلة",n:approved.length},
           {k:"rejected",l:"❌ المرفوضة",n:rejected.length},
+          {k:"salons",l:"✂ الصالونات",n:salons.length},
           {k:"bookings",l:"📋 الحجوزات",n:totalBk},
           {k:"customers",l:"👥 العملاء",n:customers.length},
           {k:"password",l:"🔑 كلمة المرور",n:0},
@@ -1453,6 +1454,39 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
           })}
         </div>
       )}
+
+      {/* الصالونات بالاسم */}
+      {tab==="salons"&&(()=>{
+        const allSalons=!q?salons:salons.filter(s=>[s.name,s.owner,s.phone,s.region,s.gov].join(" ").toLowerCase().includes(q));
+        const sorted=[...allSalons].sort((a,b)=>a.name.localeCompare(b.name,"ar"));
+        return sorted.length===0
+          ?<div style={G.empty}>{search?"لا نتائج":"لا توجد صالونات"}</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {sorted.map(s=>{
+              const stColor=s.status==="approved"?"#27ae60":s.status==="rejected"?"#e74c3c":"var(--p)";
+              const stLabel=s.status==="approved"?"✅":"❌";
+              return(
+                <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${stColor}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name} {stLabel}</div>
+                      <div style={{fontSize:11,color:"#888"}}>👤 {s.owner} · 📞 {s.phone}</div>
+                      <div style={{fontSize:11,color:"#888"}}>📍 {s.gov||s.region}{s.village?" · "+s.village:""}</div>
+                      <div style={{display:"flex",gap:8,marginTop:3}}>
+                        <span style={{fontSize:10,color:"#4caf50"}}>📅 {s.bookings.length} حجز</span>
+                        <span style={{fontSize:10,color:"var(--p)"}}>⭐ {s.rating||0}</span>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+                      <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋 صفحة</button>
+                      {s.status==="pending"&&<button style={{...G.accBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>approveSalon(s.id,"approved")}>✅ قبول</button>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>;
+      })()}
 
       {/* العملاء */}
       {tab==="customers"&&(filteredCustomers.length===0
@@ -1966,10 +2000,15 @@ function InlineStarRating({rated,onRate}){
 
 function AdminCustomerList({customers,salons,toast$,setCustomers}){
   const[selId,setSelId]=useState(null);
-  const[note,setNote]=useState("");
   const[notes,setNotes]=useState({});
   const[blocked,setBlocked]=useState({});
+  const[custSearch,setCustSearch]=useState("");
   const sel=selId?customers.find(c=>c.id===selId):null;
+
+  const filtered=!custSearch.trim()?customers:customers.filter(c=>
+    c.name?.toLowerCase().includes(custSearch.toLowerCase())||
+    c.phone?.includes(custSearch.trim())
+  );
 
   if(sel){
     const history=sel.history||[];
@@ -2044,27 +2083,36 @@ function AdminCustomerList({customers,salons,toast$,setCustomers}){
   }
 
   return(
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-      {customers.map(c=>{
-        const isBlocked=blocked[c.id];
-        return(
-          <div key={c.id} style={{...G.bItem,borderRight:`3px solid ${isBlocked?"#e74c3c":"#6aadff"}`,cursor:"pointer"}} onClick={()=>setSelId(c.id)}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {c.name}</div>
-                  {isBlocked&&<span style={{fontSize:10,background:"rgba(231,76,60,.2)",color:"#e74c3c",padding:"1px 6px",borderRadius:20}}>محظور</span>}
+    <div>
+      {/* بحث العملاء */}
+      <div style={{...G.searchRow,marginBottom:10}}>
+        <span style={{fontSize:14,color:"#555"}}>🔍</span>
+        <input style={G.searchInput} placeholder="ابحث بالاسم أو رقم الجوال..." value={custSearch} onChange={e=>setCustSearch(e.target.value)}/>
+        {custSearch&&<button style={G.searchClear} onClick={()=>setCustSearch("")}>✕</button>}
+      </div>
+      {filtered.length===0&&<div style={G.empty}>لا نتائج</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {filtered.map(c=>{
+          const isBlocked=blocked[c.id];
+          return(
+            <div key={c.id} style={{...G.bItem,borderRight:`3px solid ${isBlocked?"#e74c3c":"#6aadff"}`,cursor:"pointer"}} onClick={()=>setSelId(c.id)}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {c.name}</div>
+                    {isBlocked&&<span style={{fontSize:10,background:"rgba(231,76,60,.2)",color:"#e74c3c",padding:"1px 6px",borderRadius:20}}>محظور</span>}
+                  </div>
+                  <div style={{fontSize:11,color:"#888"}}>📞 {c.phone}</div>
                 </div>
-                <div style={{fontSize:11,color:"#888"}}>📞 {c.phone}</div>
-              </div>
-              <div style={{textAlign:"left",flexShrink:0}}>
-                <div style={{fontSize:11,color:"#a78bfa"}}>📋 {(c.history||[]).length} حجز</div>
-                <div style={{fontSize:11,color:"#e74c3c",marginTop:2}}>♥ {(c.favs||[]).length} مفضلة</div>
+                <div style={{textAlign:"left",flexShrink:0}}>
+                  <div style={{fontSize:11,color:"#a78bfa"}}>📋 {(c.history||[]).length} حجز</div>
+                  <div style={{fontSize:11,color:"#e74c3c",marginTop:2}}>♥ {(c.favs||[]).length} مفضلة</div>
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
