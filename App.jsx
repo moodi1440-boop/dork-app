@@ -1880,7 +1880,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     </div></div>
   );
 }
-function CustomerDash({customer,salons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers}){
+function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers}){
   const[tab,setTab]=useState("favs");
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
@@ -2049,12 +2049,20 @@ function CustomerDash({customer,salons,setView,setCustomerSession,setSelSalon,to
                     </div>
                   </div>
                   {/* التقييم فقط بعد القبول */}
-                  {status==="approved"&&<InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={(r,comment)=>{
+                  {status==="approved"&&<InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={async(r,comment)=>{
                     const rev=[...history].reverse();
                     rev[i]={...rev[i],rating:r,comment};
                     const updated=[...rev].reverse();
                     setCustomers(p=>p.map(c=>c.id===customer.id?{...c,history:updated}:c));
-                    sb("customers","PATCH",{history:updated},`?id=eq.${customer.id}`).catch(console.error);
+                    try{await sb("customers","PATCH",{history:updated},`?id=eq.${customer.id}`);}catch{}
+                    // تحديث تقييم الصالون مباشرة
+                    try{
+                      const salonId=h.salonId;
+                      const allRatings=updated.filter(x=>Number(x.salonId)===Number(salonId)&&x.rating>0).map(x=>x.rating);
+                      const newRating=allRatings.length?Math.round(allRatings.reduce((a,x)=>a+x,0)/allRatings.length*10)/10:r;
+                      await sb("salons","PATCH",{rating:newRating},`?id=eq.${salonId}`);
+                      setSalons(p=>p.map(s=>s.id===Number(salonId)||s.id===salonId?{...s,rating:newRating}:s));
+                    }catch{}
                   }}/>}
                 </div>
               );
