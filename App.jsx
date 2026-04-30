@@ -131,14 +131,22 @@ const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو
 //  TONES  – louder + barbershop themed
 // ══════════════════════════════════════════════
 const TONES = [
-  { id:"scissors",  label:"مقص ✂"       },
-  { id:"razor",     label:"ماكينة 🪒"    },
-  { id:"bell",      label:"جرس الباب 🔔" },
-  { id:"cash",      label:"صندوق النقد 💰"},
-  { id:"welcome",   label:"أهلاً وسهلاً 🎉"},
-  { id:"chime3",    label:"جرس ثلاثي 🎶" },
-  { id:"alert",     label:"تنبيه عاجل ⚡" },
-  { id:"classic",   label:"كلاسيك 🎵"    },
+  { id:"scissors",  label:"مقص ✂"          },
+  { id:"razor",     label:"ماكينة 🪒"       },
+  { id:"bell",      label:"جرس الباب 🔔"    },
+  { id:"cash",      label:"صندوق النقد 💰"  },
+  { id:"welcome",   label:"أهلاً وسهلاً 🎉" },
+  { id:"chime3",    label:"جرس ثلاثي 🎶"   },
+  { id:"alert",     label:"تنبيه عاجل ⚡"   },
+  { id:"classic",   label:"كلاسيك 🎵"       },
+  { id:"barberpole",label:"عمود الحلاق 💈"  },
+  { id:"clippers",  label:"ماكينة كهربائية ⚡"},
+  { id:"towel",     label:"منشفة ساخنة 🧖"  },
+  { id:"mirror",    label:"المرايا ✨"       },
+  { id:"spray",     label:"رشاش الماء 💦"   },
+  { id:"magazine",  label:"مجلة انتظار 📖"  },
+  { id:"fanfare",   label:"فانفاري 🎺"       },
+  { id:"vip",       label:"VIP دخول 👑"      },
 ];
 
 const THEMES = {
@@ -165,21 +173,48 @@ function playTone(id, vol=0.7){
       o.start(ctx.currentTime+start); o.stop(ctx.currentTime+start+dur);
     };
     const plays={
-      scissors: ()=>{ beep(1200,0,.05,"square",.5); beep(900,0.08,.05,"square",.5); beep(1200,0.16,.05,"square",.5); beep(900,0.24,.05,"square",.5); },
-      razor:    ()=>{ [0,.06,.12,.18,.24].forEach(t=>beep(80+Math.random()*40,t,.07,"sawtooth",.6)); },
-      bell:     ()=>{ beep(880,0,.6,"sine",.7); beep(1100,.15,.5,"sine",.5); beep(1320,.3,.8,"sine",.4); },
-      cash:     ()=>{ beep(1800,0,.04,"square",.6); beep(2400,.05,.04,"square",.5); beep(1200,.12,.3,"triangle",.4); },
-      welcome:  ()=>{ [523,659,784,1047].forEach((f,i)=>beep(f,i*.12,.25,"sine",.6)); },
-      chime3:   ()=>{ [[880,.0],[1100,.18],[1320,.36],[1100,.54],[880,.72]].forEach(([f,t])=>beep(f,t,.25,"sine",.6)); },
-      alert:    ()=>{ [0,.1,.2].forEach(t=>beep(1400,t,.08,"square",.7)); },
-      classic:  ()=>{ [[440,0],[554,.15],[659,.3],[880,.5]].forEach(([f,t])=>beep(f,t,.3,"triangle",.6)); },
+      scissors:   ()=>{ beep(1200,0,.05,"square",.6); beep(900,0.08,.05,"square",.6); beep(1200,0.16,.05,"square",.6); beep(900,0.24,.05,"square",.6); },
+      razor:      ()=>{ [0,.06,.12,.18,.24].forEach(t=>beep(80+Math.random()*40,t,.07,"sawtooth",.7)); },
+      bell:       ()=>{ beep(880,0,.6,"sine",.8); beep(1100,.15,.5,"sine",.6); beep(1320,.3,.8,"sine",.5); },
+      cash:       ()=>{ beep(1800,0,.04,"square",.7); beep(2400,.05,.04,"square",.6); beep(1200,.12,.3,"triangle",.5); },
+      welcome:    ()=>{ [523,659,784,1047].forEach((f,i)=>beep(f,i*.12,.25,"sine",.7)); },
+      chime3:     ()=>{ [[880,.0],[1100,.18],[1320,.36],[1100,.54],[880,.72]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
+      alert:      ()=>{ [0,.1,.2].forEach(t=>beep(1400,t,.08,"square",.8)); },
+      classic:    ()=>{ [[440,0],[554,.15],[659,.3],[880,.5]].forEach(([f,t])=>beep(f,t,.3,"triangle",.7)); },
+      barberpole: ()=>{ [440,550,660,770,880,770,660,550].forEach((f,i)=>beep(f,i*.1,.15,"sine",.6)); },
+      clippers:   ()=>{ [0,.04,.08,.12,.16,.20,.24,.28].forEach(t=>beep(150+Math.random()*50,t,.05,"sawtooth",.5)); },
+      towel:      ()=>{ beep(300,0,.2,"sine",.4); beep(400,.2,.3,"sine",.5); beep(500,.4,.4,"sine",.6); },
+      mirror:     ()=>{ [[1047,0],[1319,.1],[1568,.2],[2093,.35]].forEach(([f,t])=>beep(f,t,.2,"sine",.7)); },
+      spray:      ()=>{ [0,.05,.1,.15,.2,.25,.3].forEach(t=>beep(2000+Math.random()*500,t,.04,"square",.3)); },
+      magazine:   ()=>{ beep(440,0,.1,"triangle",.5); beep(330,.15,.1,"triangle",.5); beep(440,.3,.3,"triangle",.6); },
+      fanfare:    ()=>{ [[523,0],[659,.1],[784,.2],[1047,.3],[784,.5],[1047,.65]].forEach(([f,t])=>beep(f,t,.2,"square",.6)); },
+      vip:        ()=>{ [[1047,0],[880,.15],[659,.3],[784,.45],[1047,.6],[1319,.8]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
     };
     plays[id]?.();
   }catch(e){}
 }
 
 // ══════════════════════════════════════════════
-//  LOCATION DATA  (4 levels)
+//  PUSH NOTIFICATIONS
+// ══════════════════════════════════════════════
+async function requestNotifPermission(){
+  if(!("Notification" in window))return false;
+  if(Notification.permission==="granted")return true;
+  const p=await Notification.requestPermission();
+  return p==="granted";
+}
+
+function sendNotif(title,body,icon="✂"){
+  if(!("Notification" in window)||Notification.permission!=="granted")return;
+  try{
+    new Notification(`${icon} ${title}`,{body,icon:"/favicon.ico",badge:"/favicon.ico",dir:"rtl",lang:"ar"});
+  }catch(e){}
+}
+
+// طلب الإذن عند تحميل التطبيق
+if(typeof window!=="undefined"){
+  setTimeout(()=>requestNotifPermission(),3000);
+}
 //  المصدر: الخطة الموحدة للمراكز الإدارية ١٤٤٧هـ
 //  كل منطقة → محافظات → مراكز إدارية
 // ══════════════════════════════════════════════
@@ -407,10 +442,25 @@ export default function App(){
   const[selSalon,setSelSalon]=useState(null);
   const[toast,setToast]=useState(null);
 
-  // Sessions
-  const[adminSession,setAdminSession]=useState(false);
-  const[ownerSession,setOwnerSession]=useState(null);
-  const[customerSession,setCustomerSession]=useState(null);
+  // ── تسجيل الدخول المستمر ──
+  const[adminSession,setAdminSession]=useState(()=>{try{return localStorage.getItem("dork_admin")==="1";}catch{return false;}});
+  const[ownerSession,setOwnerSession]=useState(()=>{try{const v=localStorage.getItem("dork_owner");return v?+v:null;}catch{return null;}});
+  const[customerSession,setCustomerSession]=useState(()=>{try{const v=localStorage.getItem("dork_customer");return v?JSON.parse(v):null;}catch{return null;}});
+
+  useEffect(()=>{try{localStorage.setItem("dork_admin",adminSession?"1":"0");}catch{}},[adminSession]);
+  useEffect(()=>{try{if(ownerSession)localStorage.setItem("dork_owner",String(ownerSession));else localStorage.removeItem("dork_owner");}catch{}},[ownerSession]);
+  useEffect(()=>{try{if(customerSession)localStorage.setItem("dork_customer",JSON.stringify(customerSession));else localStorage.removeItem("dork_customer");}catch{}},[customerSession]);
+
+  // نقاط الولاء — إعدادات الإدارة
+  const[loyaltySettings,setLoyaltySettings]=useState(()=>{try{const v=localStorage.getItem("dork_loyalty");return v?JSON.parse(v):{enabled:false,pointsPerBooking:10,minRedeemPoints:50,redeemValue:5};}catch{return{enabled:false,pointsPerBooking:10,minRedeemPoints:50,redeemValue:5};}});
+  useEffect(()=>{try{localStorage.setItem("dork_loyalty",JSON.stringify(loyaltySettings));}catch{}},[loyaltySettings]);
+
+  // وسائل التواصل الاجتماعي
+  const[socialLinks,setSocialLinks]=useState(()=>{try{const v=localStorage.getItem("dork_social");return v?JSON.parse(v):{email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false};}catch{return{email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false};}});
+  useEffect(()=>{try{localStorage.setItem("dork_social",JSON.stringify(socialLinks));}catch{}},[socialLinks]);
+
+  // الشروط والأحكام
+  const[termsAccepted,setTermsAccepted]=useState(()=>{try{return localStorage.getItem("dork_terms")==="1";}catch{return false;}});
 
   // Filters
   const[fRegion,setFRegion]=useState("");
@@ -487,6 +537,11 @@ export default function App(){
 
   useEffect(()=>{ loadData(); }, [loadData]);
 
+  // شاشة الشروط والأحكام
+  if(!termsAccepted) return <TermsView onAccept={()=>{setTermsAccepted(true);try{localStorage.setItem("dork_terms","1");}catch{}}} />;
+
+  // العميل لما يسجل دخول يروح للصفحة الرئيسية مباشرة
+  const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");};
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
   const toggleFav=async(salonId)=>{
@@ -578,6 +633,12 @@ export default function App(){
       if(!salon)return;
       const updatedBookings=salon.bookings.map(b=>b.id===bid?{...b,status}:b);
       await sb("salons","PATCH",{bookings:updatedBookings},`?id=eq.${sid}`);
+      // إشعار للعميل
+      const bk=salon.bookings.find(b=>b.id===bid);
+      if(bk){
+        const msg=status==="approved"?`✅ تم قبول حجزك في ${salon.name}`:` تم رفض حجزك في ${salon.name}`;
+        sendNotif("دورك — تحديث الحجز",msg,"✂");
+      }
       await loadData();
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
@@ -645,6 +706,9 @@ export default function App(){
     showFavs,setShowFavs,
     displaySalons,
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
+    loyaltySettings,setLoyaltySettings,
+    socialLinks,setSocialLinks,
+    handleCustomerLogin,
   };
 
   if(loading)return(
@@ -998,7 +1062,31 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
         <F label="رقم الجوال" error={errors.phone}><input style={fi(errors.phone)} placeholder="05XXXXXXXX" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/></F>
         <F label="الخدمات" error={errors.services}><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{salon.services.map(s=><div key={s} style={{...G.chip,...(form.services.includes(s)?G.chipOn:{})}} onClick={()=>toggle(s)}>{s}{salon.prices?.[s]?` (${salon.prices[s]}ر)`:""}</div>)}</div></F>
         {form.services.length>0&&<div style={G.totalBox}>الإجمالي: <strong style={{color:"var(--p)"}}>{total} ريال</strong></div>}
-        {salon.barbers?.length>0&&<F label="اختر الحلاق" error={errors.barberId}><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{salon.barbers.map(b=><div key={b.id} style={{...G.chip,...(form.barberId===b.id?G.chipOn:{})}} onClick={()=>setForm(p=>({...p,barberId:b.id,time:""}))}>✂ {b.name}</div>)}</div></F>}
+        {salon.barbers?.length>0&&<F label="اختر الحلاق" error={errors.barberId}>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {salon.barbers.map(b=>{
+              const active=form.barberId===b.id;
+              // تحقق من وقت الدوام
+              const now=new Date();
+              const currentMins=now.getHours()*60+now.getMinutes();
+              const [sh,sm]=(b.shiftStart||"00:00").split(":").map(Number);
+              const [eh,em]=(b.shiftEnd||"23:59").split(":").map(Number);
+              const inShift=currentMins>=sh*60+sm&&currentMins<=eh*60+em;
+              return(
+                <div key={b.id}
+                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 10px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":inShift?"#2a2a3a":"#1a1a1a"}`,background:active?"var(--pa12)":inShift?"#1a1a2e":"#0d0d0d",cursor:inShift?"pointer":"not-allowed",opacity:inShift?1:.5,minWidth:60}}
+                  onClick={()=>inShift&&setForm(p=>({...p,barberId:b.id,time:""}))}>
+                  {b.photo
+                    ?<img src={b.photo} alt={b.name} style={{width:36,height:36,borderRadius:"50%",objectFit:"cover",border:`2px solid ${active?"var(--p)":"#2a2a3a"}`}}/>
+                    :<div style={{width:36,height:36,borderRadius:"50%",background:"#1a1a2e",border:`2px solid ${active?"var(--p)":"#2a2a3a"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>💈</div>
+                  }
+                  <span style={{fontSize:11,color:active?"var(--p)":"#aaa",fontWeight:active?700:400,textAlign:"center"}}>{b.name}</span>
+                  <span style={{fontSize:9,color:inShift?"#27ae60":"#e74c3c"}}>{inShift?"متاح":"غير متاح"}</span>
+                </div>
+              );
+            })}
+          </div>
+        </F>}
         <button style={G.sub} onClick={()=>{if(v1())setStep(2);}}>التالي →</button>
       </div>}
       {step===2&&<div style={G.fc}>
@@ -1024,24 +1112,112 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
 // ══════════════════════════════════════════════
 //  STATS + NOTIF
 // ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  TERMS VIEW
+// ══════════════════════════════════════════════
+function TermsView({onAccept}){
+  const[checked,setChecked]=useState(false);
+  return(
+    <div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>
+      <div style={{maxWidth:480,width:"100%"}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:50,marginBottom:8}}>✂</div>
+          <div style={{fontSize:28,fontWeight:900,color:"var(--p,#d4a017)",letterSpacing:2}}>دورك</div>
+          <div style={{fontSize:13,color:"#888",marginTop:4}}>الشروط والأحكام</div>
+        </div>
+        <div style={{background:"#13131f",borderRadius:16,padding:20,border:"1px solid #2a2a3a",marginBottom:16,maxHeight:300,overflowY:"auto"}}>
+          {[
+            {t:"١. التزام العميل",c:"يلتزم العميل بالحضور في الوقت المحدد للحجز. في حال التأخر أو الغياب بدون إشعار مسبق، يحق للصالون إلغاء الحجز."},
+            {t:"٢. التزام الصالون",c:"يلتزم الصالون بتقديم الخدمة في الوقت المحجوز، ومتابعة طلبات العملاء والرد عليها في أقرب وقت ممكن."},
+            {t:"٣. سياسة الإلغاء",c:"يمكن إلغاء الحجز قبل الموعد بساعة على الأقل. الإلغاء المتكرر قد يؤثر على أولوية الحجز."},
+            {t:"٤. خصوصية البيانات",c:"تُحفظ بيانات المستخدمين بسرية تامة ولا تُشارك مع أطراف ثالثة إلا بموافقة صريحة."},
+            {t:"٥. التزامات الإدارة",c:"تحتفظ إدارة دورك بحق تعليق أو إلغاء أي حساب يخالف شروط الاستخدام."},
+            {t:"٦. جودة الخدمة",c:"الإدارة غير مسؤولة عن جودة الخدمة المقدمة من الصالون، وأي نزاع يُحل مباشرة بين العميل والصالون."},
+            {t:"٧. التعديلات",c:"تحتفظ إدارة دورك بحق تعديل هذه الشروط في أي وقت مع إشعار المستخدمين."},
+          ].map(({t,c})=>(
+            <div key={t} style={{marginBottom:14}}>
+              <div style={{fontSize:13,fontWeight:700,color:"var(--p,#d4a017)",marginBottom:4}}>{t}</div>
+              <div style={{fontSize:12,color:"#aaa",lineHeight:1.7}}>{c}</div>
+            </div>
+          ))}
+        </div>
+        <label style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,cursor:"pointer",padding:"12px 16px",background:"#13131f",borderRadius:10,border:`1.5px solid ${checked?"var(--p,#d4a017)":"#2a2a3a"}`}}>
+          <input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)} style={{width:18,height:18,cursor:"pointer"}}/>
+          <span style={{fontSize:13,color:"#fff",fontWeight:600}}>أوافق على الشروط والأحكام</span>
+        </label>
+        <button style={{width:"100%",padding:14,borderRadius:12,border:"none",background:checked?"linear-gradient(135deg,var(--p,#d4a017),var(--pl,#f0c040))":"#2a2a3a",color:checked?"#000":"#555",fontSize:15,fontWeight:900,cursor:checked?"pointer":"not-allowed",fontFamily:"inherit"}}
+          disabled={!checked} onClick={onAccept}>
+          دخول التطبيق ✂
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function StatsPanel({salon}){
+  const[mode,setMode]=useState("month"); // month | year
   const[m,setM]=useState(new Date().getMonth());
   const[y,setY]=useState(new Date().getFullYear());
-  const bks=salon.bookings.filter(b=>{if(!b.date)return false;const d=new Date(b.date);return d.getMonth()===m&&d.getFullYear()===y;});
+
+  const bks=salon.bookings.filter(b=>{
+    if(!b.date)return false;
+    const d=new Date(b.date);
+    if(mode==="year")return d.getFullYear()===y;
+    return d.getMonth()===m&&d.getFullYear()===y;
+  });
+
+  // بيانات الرسم البياني
+  const chartData=mode==="year"
+    ?MONTHS_AR.map((mn,i)=>{
+        const cnt=salon.bookings.filter(b=>{const d=new Date(b.date);return d.getMonth()===i&&d.getFullYear()===y;}).length;
+        return{label:mn.slice(0,3),count:cnt};
+      })
+    :Array.from({length:new Date(y,m+1,0).getDate()},(_, i)=>{
+        const day=String(i+1).padStart(2,"0");
+        const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${day}`;
+        const cnt=salon.bookings.filter(b=>b.date===dateStr).length;
+        return{label:String(i+1),count:cnt};
+      }).filter((_, i)=>i%3===0); // كل 3 أيام عشان ما يزدحم
+  const maxCount=Math.max(...chartData.map(d=>d.count),1);
+
   return(
     <div style={{paddingTop:4}}>
-      <div style={{display:"flex",gap:7,marginBottom:12}}>
-        <select style={{...fi(),...{flex:1}}} value={m} onChange={e=>setM(+e.target.value)}>{MONTHS_AR.map((mn,i)=><option key={i} value={i}>{mn}</option>)}</select>
-        <select style={{...fi(),...{width:88}}} value={y} onChange={e=>setY(+e.target.value)}>{[2024,2025,2026,2027].map(yr=><option key={yr}>{yr}</option>)}</select>
+      {/* تبديل شهري/سنوي */}
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        <button style={{flex:1,padding:"8px 0",borderRadius:9,border:`1.5px solid ${mode==="month"?"var(--p)":"#2a2a3a"}`,background:mode==="month"?"var(--pa12)":"#1a1a2e",color:mode==="month"?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>setMode("month")}>📅 شهري</button>
+        <button style={{flex:1,padding:"8px 0",borderRadius:9,border:`1.5px solid ${mode==="year"?"var(--p)":"#2a2a3a"}`,background:mode==="year"?"var(--pa12)":"#1a1a2e",color:mode==="year"?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>setMode("year")}>📆 سنوي</button>
       </div>
+
+      {/* فلاتر */}
+      <div style={{display:"flex",gap:7,marginBottom:12}}>
+        {mode==="month"&&<select style={{...fi(),...{flex:1}}} value={m} onChange={e=>setM(+e.target.value)}>{MONTHS_AR.map((mn,i)=><option key={i} value={i}>{mn}</option>)}</select>}
+        <select style={{...fi(),...{width:mode==="year"?"100%":88}}} value={y} onChange={e=>setY(+e.target.value)}>{[2024,2025,2026,2027].map(yr=><option key={yr}>{yr}</option>)}</select>
+      </div>
+
+      {/* إحصائيات */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
         {[["الحجوزات",bks.length,"var(--p)"],["مقبول",bks.filter(b=>b.status==="approved").length,"#27ae60"],["انتظار",bks.filter(b=>b.status==="pending").length,"var(--pl)"],["مرفوض",bks.filter(b=>b.status==="rejected").length,"#e74c3c"]].map(([l,n,c])=>(
           <div key={l} style={{background:"#13131f",borderRadius:11,padding:"12px 8px",textAlign:"center",border:`1px solid ${c}33`}}><div style={{fontSize:22,fontWeight:900,color:c}}>{n}</div><div style={{fontSize:11,color:"#888"}}>{l}</div></div>
         ))}
       </div>
-      <div style={{background:"var(--pa08)",borderRadius:11,padding:"12px 14px",border:"1px solid var(--pa25)",textAlign:"center"}}>
-        <div style={{fontSize:11,color:"#888",marginBottom:3}}>الإيرادات — {MONTHS_AR[m]} {y}</div>
-        <div style={{fontSize:26,fontWeight:900,color:"var(--p)"}}>{bks.reduce((a,b)=>a+(b.total||0),0)} <span style={{fontSize:13}}>ريال</span></div>
+
+      {/* الإيرادات */}
+      <div style={{background:"var(--pa08)",borderRadius:11,padding:"12px 14px",border:"1px solid var(--pa25)",textAlign:"center",marginBottom:12}}>
+        <div style={{fontSize:11,color:"#888",marginBottom:3}}>الإيرادات — {mode==="year"?y:`${MONTHS_AR[m]} ${y}`}</div>
+        <div style={{fontSize:26,fontWeight:900,color:"var(--p)"}}>{bks.filter(b=>b.status==="approved").reduce((a,b)=>a+(b.total||0),0)} <span style={{fontSize:13}}>ريال</span></div>
+      </div>
+
+      {/* رسم بياني */}
+      <div style={{background:"#13131f",borderRadius:11,padding:"12px 8px",border:"1px solid #2a2a3a",marginBottom:4}}>
+        <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:10}}>📊 {mode==="year"?"الحجوزات الشهرية":"الحجوزات اليومية"}</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:mode==="year"?4:2,height:60}}>
+          {chartData.map((d,i)=>(
+            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              <div style={{width:"100%",background:`linear-gradient(180deg,var(--p),var(--pd))`,borderRadius:"3px 3px 0 0",height:`${Math.max((d.count/maxCount)*48,d.count?3:0)}px`,minHeight:d.count?3:0}}/>
+              <div style={{fontSize:8,color:"#555",textAlign:"center"}}>{d.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -1798,16 +1974,46 @@ function OwnerSettings({salon,setSalons,toast$}){
         <div style={hdr}>💈 الحلاقون</div>
         {f.barbers.length===0&&<div style={G.empty}>لا يوجد حلاقون</div>}
         {f.barbers.map((b,i)=>(
-          <div key={b.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,background:"#0d0d1a",borderRadius:9,padding:"9px 11px",border:"1px solid #2a2a3a"}}>
-            <span style={{fontSize:16}}>💈</span>
-            <input style={{...inp,flex:1,padding:"6px 10px"}} value={b.name} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,name:e.target.value}:x)}))}/>
-            <button style={G.xBtn} onClick={()=>setF(p=>({...p,barbers:p.barbers.filter((_,j)=>j!==i)}))}>✕</button>
+          <div key={b.id} style={{marginBottom:10,background:"#0d0d1a",borderRadius:10,padding:"10px 12px",border:"1px solid #2a2a3a"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+              {/* صورة الحلاق */}
+              <div style={{position:"relative",flexShrink:0}}>
+                {b.photo
+                  ?<img src={b.photo} alt={b.name} style={{width:44,height:44,borderRadius:"50%",objectFit:"cover",border:"2px solid var(--p)"}}/>
+                  :<div style={{width:44,height:44,borderRadius:"50%",background:"#1a1a2e",border:"2px dashed #2a2a3a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💈</div>
+                }
+                <label style={{position:"absolute",bottom:-2,right:-2,width:18,height:18,borderRadius:"50%",background:"var(--p)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:10}}>
+                  📷
+                  <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
+                    const file=e.target.files?.[0];
+                    if(!file)return;
+                    const reader=new FileReader();
+                    reader.onload=ev=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,photo:ev.target.result}:x)}));
+                    reader.readAsDataURL(file);
+                  }}/>
+                </label>
+              </div>
+              <input style={{...inp,flex:1,padding:"6px 10px"}} placeholder="اسم الحلاق" value={b.name} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,name:e.target.value}:x)}))}/>
+              <button style={G.xBtn} onClick={()=>setF(p=>({...p,barbers:p.barbers.filter((_,j)=>j!==i)}))}>✕</button>
+            </div>
+            {/* وقت الدوام */}
+            <div style={{fontSize:11,color:"#888",marginBottom:6}}>🕐 وقت الدوام</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
+              <div>
+                <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>من</label>
+                <input type="time" style={{...inp,fontSize:12}} value={b.shiftStart||"09:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:e.target.value}:x)}))}/>
+              </div>
+              <div>
+                <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>إلى</label>
+                <input type="time" style={{...inp,fontSize:12}} value={b.shiftEnd||"22:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftEnd:e.target.value}:x)}))}/>
+              </div>
+            </div>
           </div>
         ))}
         <div style={{display:"flex",gap:7,marginTop:8}}>
           <input style={{...inp,flex:1}} placeholder="اسم الحلاق الجديد" value={newBarber} onChange={e=>setNewBarber(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter"&&newBarber.trim()){setF(p=>({...p,barbers:[...p.barbers,{id:`b_${Date.now()}`,name:newBarber.trim()}]}));setNewBarber("");}}}/>
-          <button style={{...G.sub,width:"auto",padding:"0 14px",marginTop:0}} onClick={()=>{if(newBarber.trim()){setF(p=>({...p,barbers:[...p.barbers,{id:`b_${Date.now()}`,name:newBarber.trim()}]}));setNewBarber("");}}}>+ إضافة</button>
+            onKeyDown={e=>{if(e.key==="Enter"&&newBarber.trim()){setF(p=>({...p,barbers:[...p.barbers,{id:`b_${Date.now()}`,name:newBarber.trim(),shiftStart:"09:00",shiftEnd:"22:00"}]}));setNewBarber("");}}}/>
+          <button style={{...G.sub,width:"auto",padding:"0 14px",marginTop:0}} onClick={()=>{if(newBarber.trim()){setF(p=>({...p,barbers:[...p.barbers,{id:`b_${Date.now()}`,name:newBarber.trim(),shiftStart:"09:00",shiftEnd:"22:00"}]}));setNewBarber("");}}}>+ إضافة</button>
         </div>
       </div>}
 
@@ -1845,7 +2051,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const rows=await sb("customers","GET",null,`?phone=eq.${encodeURIComponent(phone.trim())}`);
       if(!rows.length){setErr("لا يوجد حساب بهذا الرقم");return;}
       const c=toAppCustomer(rows[0]);
-      setCustomerSession(c); setView("custDash");
+      setCustomerSession(c); setView("home");
     }catch(e){setErr("خطأ: "+e.message);}
   };
   const register=async()=>{
@@ -1855,7 +2061,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(exists.length){setErr("الرقم مسجل بالفعل");return;}
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim()},"");
       const nc=toAppCustomer(rows[0]);
-      setCustomerSession(nc); setView("custDash");
+      setCustomerSession(nc); setView("home");
     }catch(e){setErr("خطأ: "+e.message);}
   };
   return(
@@ -2348,47 +2554,62 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
 // ══════════════════════════════════════════════
 //  SETTINGS VIEW
 // ══════════════════════════════════════════════
-function SettingsView({settings,setSettings,setView,toast$}){
-  const THEME_OPTIONS=[
-    {id:"gold",    label:"ذهبي",    color:"#d4a017",emoji:"✨"},
-    {id:"emerald", label:"زمردي",   color:"#10b981",emoji:"🌿"},
-    {id:"sapphire",label:"ياقوتي",  color:"#3b82f6",emoji:"💎"},
-    {id:"rose",    label:"وردي",    color:"#ec4899",emoji:"🌸"},
-    {id:"violet",  label:"بنفسجي",  color:"#8b5cf6",emoji:"🔮"},
-    {id:"crimson", label:"قرمزي",   color:"#ef4444",emoji:"🔴"},
+function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltySettings,setLoyaltySettings,socialLinks,setSocialLinks}){
+  const[sec,setSec]=useState("theme");
+  const SECS=[
+    {id:"theme",icon:"🎨",label:"الألوان"},
+    {id:"tone",icon:"🔔",label:"النغمات"},
+    {id:"social",icon:"📱",label:"التواصل"},
+    {id:"loyalty",icon:"🎁",label:"النقاط"},
+    {id:"guide",icon:"📖",label:"الدليل"},
+    {id:"faq",icon:"❓",label:"أسئلة"},
+    {id:"danger",icon:"⚠️",label:"الخطر"},
   ];
-
+  const THEME_OPTIONS=[
+    {id:"gold",label:"ذهبي",color:"#d4a017",emoji:"✨"},
+    {id:"emerald",label:"زمردي",color:"#10b981",emoji:"🌿"},
+    {id:"sapphire",label:"ياقوتي",color:"#3b82f6",emoji:"💎"},
+    {id:"rose",label:"وردي",color:"#ec4899",emoji:"🌸"},
+    {id:"violet",label:"بنفسجي",color:"#8b5cf6",emoji:"🔮"},
+    {id:"crimson",label:"قرمزي",color:"#ef4444",emoji:"🔴"},
+  ];
   const applyTheme=(id)=>{
     const t=THEMES[id]||THEMES.gold;
     const r=document.documentElement.style;
-    r.setProperty("--p",  t.primary);
-    r.setProperty("--pl", t.light);
-    r.setProperty("--pd", t.dark);
-    r.setProperty("--pll",t.lightest);
-    r.setProperty("--pr", t.rgb);
+    r.setProperty("--p",t.primary);r.setProperty("--pl",t.light);r.setProperty("--pd",t.dark);r.setProperty("--pll",t.lightest);r.setProperty("--pr",t.rgb);
     ["5","07","08","12","15","18","2","25","3","4"].forEach(a=>{
       const pct=a==="4"?.45:a==="3"?.3:a==="25"?.25:a==="2"?.2:a==="18"?.18:a==="15"?.15:a==="12"?.12:a==="08"?.08:a==="07"?.07:.05;
       r.setProperty(`--pa${a}`,`rgba(${t.rgb},${pct})`);
     });
-    r.setProperty("--grad", `linear-gradient(135deg,${t.primary},${t.light})`);
+    r.setProperty("--grad",`linear-gradient(135deg,${t.primary},${t.light})`);
     r.setProperty("--grad2",`linear-gradient(135deg,${t.light},${t.primary})`);
     setSettings(s=>({...s,theme:id}));
   };
+  const box={background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a",marginBottom:12};
+  const hdr={fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:10,paddingBottom:6,borderBottom:"1px solid #2a2a3a"};
+  const inp2={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
+  const lbl={display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600};
 
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={G.ft}>⚙ الإعدادات</h2></div>
+      <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
+        {SECS.map(s=>(
+          <button key={s.id} onClick={()=>setSec(s.id)}
+            style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"#2a2a3a"}`,background:sec===s.id?"var(--pa12)":"#1a1a2e",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
+            {s.icon} {s.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Theme Picker */}
-      <div style={{background:"#13131f",borderRadius:16,padding:18,border:"1px solid #2a2a3a",marginBottom:12}}>
-        <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:4,paddingBottom:5,borderBottom:"1px solid #2a2a3a"}}>🎨 لون واجهة التطبيق</div>
-        <div style={{fontSize:11,color:"#666",marginBottom:12}}>اختر اللون الذي يناسبك — يُطبَّق فوراً</div>
+      {sec==="theme"&&<div style={box}>
+        <div style={hdr}>🎨 لون واجهة التطبيق</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
           {THEME_OPTIONS.map(t=>{
             const active=settings.theme===t.id;
             return(
               <button key={t.id} onClick={()=>applyTheme(t.id)}
-                style={{padding:"14px 6px",borderRadius:12,border:`2px solid ${active?t.color:"#2a2a3a"}`,background:active?t.color+"22":"#1a1a2e",color:"#fff",cursor:"pointer",fontFamily:"'Cairo',sans-serif",fontWeight:active?700:400,display:"flex",flexDirection:"column",alignItems:"center",gap:6,transition:"all .2s",transform:active?"scale(1.04)":"scale(1)"}}>
+                style={{padding:"14px 6px",borderRadius:12,border:`2px solid ${active?t.color:"#2a2a3a"}`,background:active?t.color+"22":"#1a1a2e",color:"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)"}}>
                 <span style={{fontSize:22}}>{t.emoji}</span>
                 <div style={{width:24,height:24,borderRadius:"50%",background:t.color,boxShadow:active?`0 0 0 3px ${t.color}55`:"none"}}/>
                 <span style={{fontSize:11,color:active?t.color:"#888"}}>{t.label}</span>
@@ -2396,50 +2617,121 @@ function SettingsView({settings,setSettings,setView,toast$}){
             );
           })}
         </div>
-      </div>
+      </div>}
 
-      {/* Tone Picker */}
-      <div style={{background:"#13131f",borderRadius:16,padding:18,border:"1px solid #2a2a3a",marginBottom:12}}>
-        <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:4,paddingBottom:5,borderBottom:"1px solid #2a2a3a"}}>🔔 نغمة التنبيه</div>
-        <div style={{fontSize:11,color:"#666",marginBottom:12}}>اضغط للمعاينة — تُستخدم كنغمة افتراضية للصالونات الجديدة</div>
+      {sec==="tone"&&<div style={box}>
+        <div style={hdr}>🔔 نغمة التنبيه</div>
+        <div style={{fontSize:11,color:"#666",marginBottom:12}}>اضغط للمعاينة</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
           {TONES.map(t=>{
             const active=settings.defaultTone===t.id;
             return(
               <button key={t.id} onClick={()=>{setSettings(s=>({...s,defaultTone:t.id}));playTone(t.id,0.8);}}
-                style={{padding:"10px 8px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"#2a2a3a"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#aaa",cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif",fontWeight:active?700:400,textAlign:"center"}}>
+                style={{padding:"10px 8px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"#2a2a3a"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#aaa",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:active?700:400,textAlign:"center"}}>
                 {t.label} {active&&"✓"}
               </button>
             );
           })}
         </div>
-      </div>
+      </div>}
 
-      {/* App Info */}
-      <div style={{background:"linear-gradient(135deg,var(--pa08),var(--pa05))",borderRadius:16,padding:20,border:"1px solid var(--pa25)",marginBottom:12,textAlign:"center"}}>
-        <div style={{fontSize:28,fontWeight:900,color:"var(--p)",letterSpacing:1,marginBottom:4}}>دورك</div>
-        <div style={{fontSize:12,color:"#888",marginBottom:2}}>وسيطك للحلاقة والصالونات</div>
-        <div style={{fontSize:10,color:"#555"}}>الإصدار 1.0.0 · 2025</div>
-        <div style={{display:"flex",justifyContent:"center",gap:20,marginTop:14}}>
-          {[["✂","صالونات"],["👤","عملاء"],["📅","حجوزات"]].map(([i,l])=>(
-            <div key={l} style={{textAlign:"center"}}><div style={{fontSize:20}}>{i}</div><div style={{fontSize:10,color:"#666",marginTop:2}}>{l}</div></div>
-          ))}
-        </div>
-      </div>
+      {sec==="social"&&<div style={box}>
+        <div style={hdr}>📱 وسائل التواصل</div>
+        {!adminSession&&<div style={{fontSize:12,color:"#888",marginBottom:10,background:"rgba(212,160,23,.08)",padding:"8px 12px",borderRadius:8}}>⚠️ التعديل متاح للإدارة فقط</div>}
+        {[{k:"email",l:"📧 البريد",ph:"example@email.com"},{k:"twitter",l:"🐦 تويتر",ph:"@username"},{k:"whatsapp",l:"💬 واتساب",ph:"05XXXXXXXX"},{k:"telegram",l:"✈️ تيليجرام (رقم)",ph:"05XXXXXXXX"},{k:"telegramUser",l:"✈️ تيليجرام (مستخدم)",ph:"@username"}].map(({k,l,ph})=>(
+          <div key={k} style={{marginBottom:10}}>
+            <label style={lbl}>{l}</label>
+            <input style={inp2} placeholder={ph} value={socialLinks?.[k]||""} disabled={!adminSession} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,[k]:e.target.value}))}/>
+          </div>
+        ))}
+        {adminSession&&<>
+          <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer"}}>
+            <input type="checkbox" checked={socialLinks?.enabled||false} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,enabled:e.target.checked}))}/>
+            <span style={{fontSize:12,color:"#fff"}}>إظهار للمستخدمين</span>
+          </label>
+          <button style={G.sub} onClick={()=>toast$&&toast$("✅ تم الحفظ")}>💾 حفظ</button>
+        </>}
+        {socialLinks?.enabled&&!adminSession&&(
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:8}}>
+            {socialLinks.email&&<a href={`mailto:${socialLinks.email}`} style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>📧 راسلنا</a>}
+            {socialLinks.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>💬 واتساب</a>}
+            {socialLinks.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>🐦 تويتر</a>}
+            {socialLinks.telegram&&<a href={`https://t.me/${socialLinks.telegram.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>✈️ تيليجرام</a>}
+          </div>
+        )}
+      </div>}
 
-      {/* Reset */}
-      <div style={{background:"#13131f",borderRadius:16,padding:18,border:"1px solid #c0392b33",marginBottom:12}}>
-        <div style={{fontSize:13,fontWeight:700,color:"#e74c3c",marginBottom:8,paddingBottom:5,borderBottom:"1px solid #c0392b33"}}>⚠️ منطقة الخطر</div>
-        <div style={{fontSize:11,color:"#888",marginBottom:12}}>حذف جميع البيانات وإعادة التطبيق لحالته الأولى</div>
-        <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13,fontWeight:700}} onClick={()=>{
-          if(confirm("⚠️ سيتم حذف جميع البيانات!\n\n• الصالونات\n• الحجوزات\n• حسابات العملاء\n• الإعدادات\n\nهل أنت متأكد؟")){
-            localStorage.clear(); 
-            alert("⚠️ البيانات في Supabase لن تُحذف من هنا. اذهب إلى Supabase Dashboard لحذف السجلات.");
-            window.location.reload();
-          }
-        }}>🗑 حذف جميع البيانات</button>
+      {sec==="loyalty"&&<div style={box}>
+        <div style={hdr}>🎁 نظام نقاط الولاء</div>
+        {!adminSession&&<div style={{fontSize:12,color:"#888",background:"rgba(212,160,23,.08)",padding:"8px 12px",borderRadius:8,marginBottom:10}}>⚠️ الإعدادات متاحة للإدارة فقط</div>}
+        {adminSession&&<>
+          <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}}>
+            <input type="checkbox" checked={loyaltySettings?.enabled||false} onChange={e=>setLoyaltySettings&&setLoyaltySettings(p=>({...p,enabled:e.target.checked}))}/>
+            <span style={{fontSize:13,color:"#fff",fontWeight:700}}>تفعيل النقاط للجميع</span>
+          </label>
+          {loyaltySettings?.enabled&&<>
+            {[{l:"نقاط لكل حجز",k:"pointsPerBooking"},{l:"الحد الأدنى للاستخدام",k:"minRedeemPoints"},{l:"قيمة النقطة (ريال)",k:"redeemValue"}].map(({l,k})=>(
+              <div key={k} style={{marginBottom:10}}>
+                <label style={lbl}>{l}</label>
+                <input type="number" min="1" style={inp2} value={loyaltySettings?.[k]||0} onChange={e=>setLoyaltySettings&&setLoyaltySettings(p=>({...p,[k]:+e.target.value}))}/>
+              </div>
+            ))}
+            <button style={G.sub} onClick={()=>toast$&&toast$("✅ تم حفظ إعدادات النقاط")}>💾 حفظ</button>
+          </>}
+        </>}
+        {loyaltySettings?.enabled&&!adminSession&&(
+          <div style={{background:"var(--pa08)",borderRadius:10,padding:"12px 14px",textAlign:"center",border:"1px solid var(--pa25)"}}>
+            <div style={{fontSize:20,fontWeight:900,color:"var(--p)"}}>🎁 نقاط الولاء مفعّلة</div>
+            <div style={{fontSize:12,color:"#888",marginTop:4}}>{loyaltySettings.pointsPerBooking} نقطة لكل حجز</div>
+          </div>
+        )}
+      </div>}
+
+      {sec==="guide"&&<div style={box}>
+        <div style={hdr}>📖 دليل الاستخدام</div>
+        {[{t:"👤 للعميل",steps:["ابحث عن صالون من الصفحة الرئيسية","اضغط على الصالون واختر الخدمة والحلاق","حدد الموعد وأرسل طلب الحجز","انتظر موافقة الصالون","بعد الزيارة قيّم تجربتك"]},{t:"✂ للصالون",steps:["سجّل صالونك من زر المقص","أضف خدماتك وأسعارك وأوقات العمل","انتظر موافقة الإدارة","استقبل الحجوزات من لوحتك","تابع إحصائياتك الشهرية والسنوية"]}].map(({t,steps})=>(
+          <div key={t} style={{marginBottom:14}}>
+            <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:8}}>{t}</div>
+            {steps.map((s,i)=>(
+              <div key={i} style={{display:"flex",gap:8,marginBottom:6,alignItems:"flex-start"}}>
+                <div style={{width:20,height:20,borderRadius:"50%",background:"var(--p)",color:"#000",fontSize:11,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+                <div style={{fontSize:12,color:"#ccc",lineHeight:1.6}}>{s}</div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>}
+
+      {sec==="faq"&&<div style={box}>
+        <div style={hdr}>❓ الأسئلة الشائعة</div>
+        {[{q:"كيف أحجز موعد؟",a:"ابحث عن صالون، اضغط عليه، اختر الخدمة والوقت، ثم أرسل الطلب."},{q:"هل الحجز مجاني؟",a:"نعم، الحجز عبر دورك مجاني تماماً للعملاء."},{q:"ماذا لو تأخرت؟",a:"تواصل مع الصالون فوراً. التأخر المتكرر قد يؤثر على أولويتك."},{q:"كيف ألغي حجزي؟",a:"تواصل مع الصالون مباشرة عبر رقم الجوال."},{q:"كيف أسجّل صالوني؟",a:"اضغط على أيقونة المقص في الشريط العلوي."},{q:"ما هي نقاط الولاء؟",a:"نقاط تكسبها مع كل حجز للحصول على خصومات عند تفعيلها من الإدارة."},{q:"كم يستغرق قبول تسجيل الصالون؟",a:"عادة من 24 إلى 48 ساعة."}].map(({q,a},i)=>(
+          <FAQItem key={i} q={q} a={a}/>
+        ))}
+      </div>}
+
+      {sec==="danger"&&<div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #c0392b33"}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#e74c3c",marginBottom:8,paddingBottom:6,borderBottom:"1px solid #c0392b33"}}>⚠️ منطقة الخطر</div>
+        <div style={{fontSize:11,color:"#888",marginBottom:12}}>حذف البيانات المحلية وإعادة التطبيق لحالته الأولى</div>
+        <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13,fontWeight:700}} onClick={()=>{if(confirm("حذف البيانات المحلية؟")){localStorage.clear();window.location.reload();}}}>🗑 مسح البيانات المحلية</button>
+      </div>}
+
+      <div style={{background:"linear-gradient(135deg,var(--pa08),var(--pa05))",borderRadius:13,padding:14,border:"1px solid var(--pa25)",marginTop:4,textAlign:"center"}}>
+        <div style={{fontSize:22,fontWeight:900,color:"var(--p)",letterSpacing:1}}>دورك ✂</div>
+        <div style={{fontSize:11,color:"#888",marginTop:2}}>الإصدار 1.0.0 · 2025</div>
       </div>
     </div></div>
+  );
+}
+
+function FAQItem({q,a}){
+  const[open,setOpen]=useState(false);
+  return(
+    <div style={{marginBottom:8,borderRadius:10,border:"1px solid #2a2a3a",overflow:"hidden"}}>
+      <button style={{width:"100%",padding:"11px 14px",background:"#0d0d1a",border:"none",color:"#fff",fontSize:13,fontWeight:700,textAlign:"right",cursor:"pointer",fontFamily:"inherit",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={()=>setOpen(p=>!p)}>
+        <span>{q}</span><span style={{color:"var(--p)",fontSize:14,transform:open?"rotate(180deg)":"rotate(0)",transition:"transform .2s"}}>▼</span>
+      </button>
+      {open&&<div style={{padding:"10px 14px",background:"#13131f",fontSize:12,color:"#aaa",lineHeight:1.7}}>{a}</div>}
+    </div>
   );
 }
 
