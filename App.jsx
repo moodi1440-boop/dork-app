@@ -705,6 +705,7 @@ export default function App(){
     govList,villageList,centerList2,
     showFavs,setShowFavs,
     displaySalons,
+    salons,
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
     loyaltySettings,setLoyaltySettings,
     socialLinks,setSocialLinks,
@@ -816,18 +817,17 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
 // ══════════════════════════════════════════════
 //  HOME
 // ══════════════════════════════════════════════
-function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers}){
+function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons}){
 
-  // حساب التقييم الحقيقي لكل صالون
   const getRealRating=(salonId)=>{
     const id=Number(salonId);
     const reviews=(customers||[]).flatMap(c=>
-      (c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0)
-      .map(h=>h.rating)
+      (c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0).map(h=>h.rating)
     );
     if(!reviews.length)return null;
     return Math.round(reviews.reduce((a,r)=>a+r,0)/reviews.length*10)/10;
   };
+
   const detectUserLoc=()=>{
     if(!navigator.geolocation){alert("⚠️ المتصفح لا يدعم تحديد الموقع");return;}
     navigator.geolocation.getCurrentPosition(
@@ -839,9 +839,37 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         else if(err.code===3)m="⏱ انتهت مهلة التحديد";
         alert(m);
       },
-      {enableHighAccuracy:true,timeout:15000,maximumAge:60000}
+      {enableHighAccuracy:true,timeout:15000,maximumAge:0}
     );
   };
+
+  // حجز سريع — آخر صالون زاره العميل
+  const lastSalon=customer?.history?.length
+    ?salons?.find(s=>s.id===Number(customer.history[customer.history.length-1]?.salonId))
+    :null;
+
+  // إصلاح ترتيب الأقرب — استخدام Haversine
+  const haversine=(lat1,lon1,lat2,lon2)=>{
+    const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  };
+
+  const getSalonCoords=(s)=>{
+    if(!s.locationUrl)return null;
+    const m=s.locationUrl.match(/q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    return m?{lat:+m[1],lng:+m[2]}:null;
+  };
+
+  // إعادة ترتيب حسب الأقرب بشكل صحيح
+  const sortedSalons=sortBy==="nearest"&&userLoc
+    ?[...displaySalons].sort((a,b)=>{
+        const ca=getSalonCoords(a),cb=getSalonCoords(b);
+        if(!ca&&!cb)return 0; if(!ca)return 1; if(!cb)return -1;
+        return haversine(userLoc.lat,userLoc.lng,ca.lat,ca.lng)-haversine(userLoc.lat,userLoc.lng,cb.lat,cb.lng);
+      })
+    :displaySalons;
+
   return(
     <div style={G.page}>
       <div style={{background:"linear-gradient(160deg,#12122a,#1a1a3a)",borderBottom:"1px solid #2a2a3a",padding:"14px 14px 0"}}>
@@ -849,13 +877,28 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           <h1 style={{fontSize:24,fontWeight:900,color:"#fff",lineHeight:1.3}}>احجز وقتك<br/><span style={{color:"var(--p)"}}>بضغطة واحدة</span></h1>
           <p style={{color:"#777",fontSize:12,marginTop:4}}>أفضل صالونات الحلاقة في مدينتك</p>
         </div>
+
+        {/* حجز سريع */}
+        {lastSalon&&customer&&(
+          <div style={{background:"var(--pa08)",border:"1px solid var(--pa25)",borderRadius:10,padding:"8px 12px",marginBottom:8,display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:16}}>⚡</span>
+            <div style={{flex:1,fontSize:12,color:"#ccc"}}>آخر زيارة: <strong style={{color:"var(--p)"}}>{lastSalon.name}</strong></div>
+            <button style={{...G.bookBtn,padding:"5px 12px",fontSize:11}} onClick={()=>{setSelSalon(lastSalon);setView("book");}}>احجز سريع</button>
+          </div>
+        )}
+
         <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
           <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
             <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
             <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/>
             {search&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0}} onClick={()=>setSearch("")}>✕</button>}
           </div>
-          <button style={{background:"var(--pa12)",border:"1px solid var(--pa25)",borderRadius:9,padding:"6px 10px",color:"var(--p)",fontSize:11,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",fontWeight:600}} onClick={()=>{setSearch("");setSortBy("default");}}>🏠 رئيسي</button>
+          {/* زر رئيسي — يعيد كل الفلاتر */}
+          <button style={{background:"var(--pa12)",border:"1px solid var(--pa25)",borderRadius:9,padding:"6px 10px",color:"var(--p)",fontSize:11,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",fontWeight:600}} onClick={()=>{
+            setSearch("");setSortBy("default");
+            setFRegion("");setFGov("");setFCenter("");setFVillage("");
+            setShowFavs&&setShowFavs(false);
+          }}>🏠 رئيسي</button>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:6,paddingBottom:14}}>
           <LocFilter icon="🗺" label="المنطقة"   value={fRegion}  onChange={v=>{setFRegion(v);setFGov("");setFCenter("");setFVillage("");}}  options={allLoc.map(r=>r.region)} all="كل المناطق"/>
@@ -865,15 +908,12 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         </div>
       </div>
 
-      {/* Search bar */}
-      {/* Sort row */}
       <div style={{padding:"10px 14px 0",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none"}}>
         {[
           ["default","الافتراضي","🔄"],
           ["ratingHigh","الأعلى تقييماً","⭐"],
           ["ratingLow","الأقل تقييماً","☆"],
           ["priceLow","الأرخص","💰"],
-          ["priceHigh","الأغلى","💎"],
           ["nearest","الأقرب","📍"],
         ].map(([k,l,ic])=>(
           <button key={k} style={{...G.sortChip,...(sortBy===k?G.sortChipOn:{})}} onClick={()=>{
@@ -886,14 +926,17 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       <div style={{padding:"10px 14px 80px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <span style={{fontSize:15,fontWeight:700,color:"#fff"}}>الصالونات المتاحة</span>
-          <span style={G.badge}>{displaySalons.length}</span>
+          <span style={G.badge}>{sortedSalons.length}</span>
         </div>
-        {displaySalons.length===0
+        {sortedSalons.length===0
           ?<div style={G.empty}>لا توجد صالونات في هذه المنطقة</div>
           :<div style={{display:"flex",flexDirection:"column",gap:11}}>
-            {displaySalons.map(s=>(
+            {sortedSalons.map(s=>(
               <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
                 realRating={getRealRating(s.id)}
+                userLoc={userLoc}
+                getSalonCoords={getSalonCoords}
+                haversine={haversine}
                 onBook={()=>{setSelSalon(s);setView("book");}}/>
             ))}
           </div>
@@ -914,21 +957,38 @@ function LocFilter({icon,label,value,onChange,options,all}){
     </div>
   );
 }
-function SalonCard({salon,fav,onFav,onBook,realRating}){
+function SalonCard({salon,fav,onFav,onBook,realRating,userLoc,getSalonCoords,haversine}){
   const slots=getSlotsForSalon(salon);
   const displayRating=realRating||salon.rating||"5.0";
+
+  // حساب المسافة
+  let distance=null;
+  if(userLoc&&getSalonCoords&&haversine){
+    const coords=getSalonCoords(salon);
+    if(coords)distance=haversine(userLoc.lat,userLoc.lng,coords.lat,coords.lng).toFixed(1);
+  }
+
+  if(salon.frozen)return(
+    <div style={{...G.card,opacity:.5,position:"relative"}}>
+      <div style={{position:"absolute",top:8,left:8,background:"#e74c3c",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20}}>🔒 مغلق مؤقتاً</div>
+      <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:4}}>✂ {salon.name}</div>
+      <div style={{fontSize:11,color:"#888"}}>هذا الصالون مغلق مؤقتاً</div>
+    </div>
+  );
+
   return(
     <div style={G.card} className="hcard">
+      {/* رسالة الترحيب */}
+      {salon.welcomeMsg&&<div style={{fontSize:11,color:"var(--p)",fontStyle:"italic",marginBottom:6,padding:"5px 8px",background:"var(--pa08)",borderRadius:7}}>💬 {salon.welcomeMsg}</div>}
       <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:6}}>
         <div style={G.cav}>✂</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div>
           <div style={{fontSize:11,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
+          {distance&&<div style={{fontSize:11,color:"#27ae60"}}>📡 {distance} كم</div>}
         </div>
         <div style={{...G.ratingBadge,background:realRating?"rgba(240,192,64,.2)":"rgba(100,100,100,.2)"}}>⭐ {displayRating}</div>
       </div>
-      <div style={{fontSize:11,color:"#555",marginBottom:4,fontStyle:"italic"}}>{salon.region}</div>
-      <div style={{fontSize:11,color:"#aaa",marginBottom:2}}>🏠 {salon.address}</div>
       {salon.shiftEnabled
         ?<div style={{fontSize:11,color:"#aaa",marginBottom:2}}>⏰ {salon.shift1Start}–{salon.shift1End} | {salon.shift2Start}–{salon.shift2End}</div>
         :<div style={{fontSize:11,color:"#aaa",marginBottom:2}}>⏰ {salon.workStart}–{salon.workEnd}</div>}
@@ -938,7 +998,10 @@ function SalonCard({salon,fav,onFav,onBook,realRating}){
         {salon.services.length>3&&<span style={{...G.tag,color:"#888"}}>+{salon.services.length-3}</span>}
       </div>
       <div style={{display:"flex",gap:6,alignItems:"center"}}>
-        <button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>🗺</button>
+        {/* GPS بدل الخريطة */}
+        <button style={{...G.mapsBtn,fontSize:16}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع على الخريطة">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
+        </button>
         <button style={{...G.heartCardBtn,...(fav?G.heartCardOn:{})}} onClick={onFav}>{fav?"♥":"♡"}</button>
         <button style={G.bookBtn} onClick={onBook}>احجز الآن</button>
       </div>
@@ -979,7 +1042,9 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
             <div style={{fontSize:11,color:"#888"}}>👤 {salon.owner} · 📞 {salon.phone}</div>
             {reviews.length>0&&<div style={{fontSize:12,color:"#f0c040",marginTop:2}}>⭐ {avgRating} ({reviews.length} تقييم)</div>}
           </div>
-          <button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>🗺</button>
+          <button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
+          </button>
         </div>
         <div style={G.tabRow}>
           <button style={{...G.tabBtn,...(tab==="book"?G.tabOn:{})}} onClick={()=>setTab("book")}>📅 حجز</button>
@@ -2461,28 +2526,43 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
   const[editId,setEditId]=useState(null);
   const[ef,setEf]=useState(null);
   const[pinned,setPinned]=useState(()=>{try{return JSON.parse(localStorage.getItem("pinned_salons")||"[]");}catch{return[];}});
+  const[weekSalon,setWeekSalonState]=useState(()=>{try{return localStorage.getItem("week_salon")||"";}catch{return "";}});
   const sel=editId?salons.find(s=>s.id===editId):null;
+  const DAYS=["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
 
   const togglePin=(id)=>{
     const newPinned=pinned.includes(id)?pinned.filter(x=>x!==id):[...pinned,id];
-    setPinned(newPinned);
-    localStorage.setItem("pinned_salons",JSON.stringify(newPinned));
+    setPinned(newPinned);localStorage.setItem("pinned_salons",JSON.stringify(newPinned));
     toast$&&toast$(pinned.includes(id)?"📌 تم إلغاء التثبيت":"📌 تم تثبيت الصالون");
   };
 
-  // ترتيب: المثبتة أولاً
+  const toggleFreeze=async(s)=>{
+    try{
+      await sb("salons","PATCH",{frozen:!s.frozen},`?id=eq.${s.id}`);
+      setSalons(p=>p.map(x=>x.id===s.id?{...x,frozen:!s.frozen}:x));
+      toast$&&toast$(s.frozen?"✅ تم تفعيل الصالون":"🔒 تم تجميد الصالون مؤقتاً");
+    }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
+  };
+
+  const setWeeklySalon=(id)=>{
+    const newVal=weekSalon===String(id)?"":String(id);
+    setWeekSalonState(newVal);localStorage.setItem("week_salon",newVal);
+    toast$&&toast$(newVal?"🏅 تم اختيار صالون الأسبوع":"🏅 تم إلغاء الاختيار");
+  };
+
   const sortedSalons=[...salons].sort((a,b)=>{
-    const ap=pinned.includes(a.id)?1:0;
-    const bp=pinned.includes(b.id)?1:0;
-    return bp-ap;
+    const aw=weekSalon===String(a.id)?2:0,bw=weekSalon===String(b.id)?2:0;
+    const ap=pinned.includes(a.id)?1:0,bp=pinned.includes(b.id)?1:0;
+    return(bw+bp)-(aw+ap);
   });
 
-  const startEdit=s=>{setEditId(s.id);setEf({name:s.name,owner:s.owner,phone:s.phone,ownerPhone:s.ownerPhone||s.phone,address:s.address,rating:s.rating||5});};
+  const startEdit=s=>{setEditId(s.id);setEf({name:s.name,owner:s.owner,phone:s.phone,ownerPhone:s.ownerPhone||s.phone,address:s.address,rating:s.rating||5,welcomeMsg:s.welcomeMsg||"",closedDays:s.closedDays||[],slotMin:s.slotMin||40});};
+
   const save=async()=>{
     try{
-      await sb("salons","PATCH",{name:ef.name,owner:ef.owner,phone:ef.phone,owner_phone:ef.ownerPhone,address:ef.address,rating:ef.rating},`?id=eq.${editId}`);
-      setSalons(p=>p.map(s=>s.id===editId?{...s,...ef,ownerPhone:ef.ownerPhone}:s));
-      toast$&&toast$("✅ تم حفظ التعديلات");setEditId(null);setEf(null);
+      await sb("salons","PATCH",{name:ef.name,owner:ef.owner,phone:ef.phone,owner_phone:ef.ownerPhone,address:ef.address,rating:ef.rating,welcome_msg:ef.welcomeMsg,closed_days:ef.closedDays,slot_min:ef.slotMin},`?id=eq.${editId}`);
+      setSalons(p=>p.map(s=>s.id===editId?{...s,...ef,ownerPhone:ef.ownerPhone,welcomeMsg:ef.welcomeMsg,closedDays:ef.closedDays,slotMin:ef.slotMin}:s));
+      toast$&&toast$("✅ تم الحفظ");setEditId(null);setEf(null);
     }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
   };
 
@@ -2490,26 +2570,45 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
     <div>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
         <button style={G.bb} onClick={()=>{setEditId(null);setEf(null);}}>→</button>
-        <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>✏️ تعديل بيانات: {sel.name}</span>
+        <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>✏️ تعديل: {sel.name}</span>
       </div>
       <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid var(--pa25)",marginBottom:8}}>
-        <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:12,borderBottom:"1px solid #2a2a3a",paddingBottom:6}}>معلومات الصالون</div>
-        {[["اسم الصالون","name"],["اسم المالك","owner"],["جوال الصالون","phone"],["جوال المالك (للدخول)","ownerPhone"],["العنوان","address"]].map(([l,k])=>(
+        {[["اسم الصالون","name"],["اسم المالك","owner"],["جوال الصالون","phone"],["جوال المالك","ownerPhone"],["العنوان","address"]].map(([l,k])=>(
           <div key={k} style={{marginBottom:10}}>
             <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:3,fontWeight:600}}>{l}</label>
-            <input style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}}
-              value={ef[k]||""} onChange={e=>setEf(f=>({...f,[k]:e.target.value}))}/>
+            <input style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} value={ef[k]||""} onChange={e=>setEf(f=>({...f,[k]:e.target.value}))}/>
           </div>
         ))}
+        <div style={{marginBottom:10}}>
+          <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:3,fontWeight:600}}>التقييم ⭐</label>
+          <input type="number" min="1" max="5" step="0.1" style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} value={ef.rating} onChange={e=>setEf(f=>({...f,rating:+e.target.value}))}/>
+        </div>
+        <div style={{marginBottom:10}}>
+          <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:3,fontWeight:600}}>💬 رسالة ترحيب</label>
+          <input style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} placeholder="مثال: أهلاً بك 👋" value={ef.welcomeMsg} onChange={e=>setEf(f=>({...f,welcomeMsg:e.target.value}))}/>
+        </div>
+        <div style={{marginBottom:10}}>
+          <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:6,fontWeight:600}}>📅 أيام الإغلاق</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+            {DAYS.map((d,i)=>{const closed=ef.closedDays.includes(i);return(
+              <button key={i} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${closed?"#e74c3c":"#2a2a3a"}`,background:closed?"rgba(231,76,60,.15)":"#0d0d1a",color:closed?"#e74c3c":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit"}}
+                onClick={()=>setEf(f=>({...f,closedDays:closed?f.closedDays.filter(x=>x!==i):[...f.closedDays,i]}))}>
+                {d}
+              </button>
+            );})}
+          </div>
+        </div>
         <div style={{marginBottom:12}}>
-          <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:3,fontWeight:600}}>التقييم ⭐ (1.0 – 5.0)</label>
-          <input type="number" min="1" max="5" step="0.1"
-            style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}}
-            value={ef.rating} onChange={e=>setEf(f=>({...f,rating:+e.target.value}))}/>
+          <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:6,fontWeight:600}}>⏱ مدة الموعد</label>
+          <div style={{display:"flex",gap:8}}>
+            {[20,30,40,60].map(m=>(
+              <button key={m} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1.5px solid ${ef.slotMin===m?"var(--p)":"#2a2a3a"}`,background:ef.slotMin===m?"var(--pa12)":"#0d0d1a",color:ef.slotMin===m?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:ef.slotMin===m?700:400}} onClick={()=>setEf(f=>({...f,slotMin:m}))}>{m} د</button>
+            ))}
+          </div>
         </div>
         <div style={{display:"flex",gap:8}}>
-          <button style={G.sub} onClick={save}>💾 حفظ التعديلات</button>
-          <button style={{...G.delBtn,padding:"12px 14px",flexShrink:0}} onClick={()=>{const r=prompt("سبب الحذف (اختياري):");if(confirm(`حذف هذا الصالون نهائياً؟${r?"\nالسبب: "+r:""}`)){deleteSalon(editId);setEditId(null);setEf(null);}}}>🗑</button>
+          <button style={G.sub} onClick={save}>💾 حفظ</button>
+          <button style={{...G.delBtn,padding:"12px 14px",flexShrink:0}} onClick={()=>{const r=prompt("سبب الحذف:");if(confirm(`حذف؟${r?"\n"+r:""}`)){deleteSalon(editId);setEditId(null);setEf(null);}}}>🗑</button>
         </div>
       </div>
     </div>
@@ -2519,14 +2618,18 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
       {sortedSalons.map(s=>{
         const isPinned=pinned.includes(s.id);
+        const isWeek=weekSalon===String(s.id);
+        const isFrozen=s.frozen;
         const lastBk=s.bookings.length?[...s.bookings].sort((a,b)=>b.date>a.date?1:-1)[0]:null;
         return(
-        <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${isPinned?"#f0c040":"#27ae60"}`}}>
+        <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${isWeek?"#f0c040":isPinned?"#8b5cf6":isFrozen?"#e74c3c":"#27ae60"}`,opacity:isFrozen?.7:1}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
-                {isPinned&&<span style={{fontSize:10,color:"#f0c040"}}>📌</span>}
+                {isWeek&&<span style={{fontSize:10,color:"#f0c040"}}>🏅 الأسبوع</span>}
+                {isPinned&&<span style={{fontSize:10,color:"#8b5cf6"}}>📌</span>}
+                {isFrozen&&<span style={{fontSize:10,color:"#e74c3c",background:"rgba(231,76,60,.15)",padding:"1px 6px",borderRadius:10}}>🔒 مجمّد</span>}
               </div>
               <div style={{fontSize:11,color:"#888"}}>👤 {s.owner} · 📞 {s.phone}</div>
               {s.ownerPhone&&s.ownerPhone!==s.phone&&<div style={{fontSize:11,color:"#888"}}>📱 مالك: {s.ownerPhone}</div>}
@@ -2538,10 +2641,12 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isPinned?"rgba(240,192,64,.15)":"rgba(100,60,180,.15)",border:`1px solid ${isPinned?"#f0c040":"#7c4dff"}`,color:isPinned?"#f0c040":"#b39ddb"}} onClick={()=>togglePin(s.id)}>{isPinned?"📌 مثبت":"📌 تثبيت"}</button>
-              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:"rgba(212,160,23,.12)",border:"1px solid var(--p)",color:"var(--p)"}} onClick={()=>startEdit(s)}>✏️ تعديل</button>
-              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋 صفحة</button>
-              <button style={{...G.delBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{const r=prompt("سبب الحذف (اختياري):");if(confirm(`حذف؟${r?"\nالسبب: "+r:""}`))deleteSalon(s.id);}}>🗑</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isWeek?"rgba(240,192,64,.2)":"transparent",border:`1px solid ${isWeek?"#f0c040":"#444"}`,color:isWeek?"#f0c040":"#888"}} onClick={()=>setWeeklySalon(s.id)}>🏅</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isPinned?"rgba(139,92,246,.2)":"transparent",border:`1px solid ${isPinned?"#8b5cf6":"#444"}`,color:isPinned?"#8b5cf6":"#888"}} onClick={()=>togglePin(s.id)}>📌</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isFrozen?"rgba(231,76,60,.15)":"transparent",border:`1px solid ${isFrozen?"#e74c3c":"#444"}`,color:isFrozen?"#e74c3c":"#888"}} onClick={()=>toggleFreeze(s)}>🔒</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:"rgba(212,160,23,.12)",border:"1px solid var(--p)",color:"var(--p)"}} onClick={()=>startEdit(s)}>✏️</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋</button>
+              <button style={{...G.delBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{const r=prompt("سبب الحذف:");if(confirm(`حذف؟${r?"\n"+r:""}`))deleteSalon(s.id);}}>🗑</button>
             </div>
           </div>
         </div>
