@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from “react”;
 
 // ══════════════════════════════════════════════
-//  FIREBASE — Google Auth
+//  FIREBASE — Google Auth (CDN)
 // ══════════════════════════════════════════════
 const FIREBASE_CONFIG = {
 apiKey: “AIzaSyBYCJYdJUi_oPfYlOzSukntj4”,
@@ -10,30 +10,29 @@ projectId: “dork-app”,
 storageBucket: “dork-app.firebasestorage.app”,
 messagingSenderId: “659823227621”,
 appId: “1:659823227621:web:befaaa1b5063”,
-measurementId: “G-T3541BL2R6”
 };
 
-// تهيئة Firebase بشكل lazy
-let firebaseApp=null, firebaseAuth=null, googleProvider=null;
-async function initFirebase(){
-if(firebaseAuth)return firebaseAuth;
-try{
-const {initializeApp,getApps}=await import(“https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js”);
-const {getAuth,GoogleAuthProvider,signInWithPopup}=await import(“https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js”);
-if(!getApps().length) firebaseApp=initializeApp(FIREBASE_CONFIG);
-else firebaseApp=getApps()[0];
-firebaseAuth=getAuth(firebaseApp);
-googleProvider=new GoogleAuthProvider();
-googleProvider.addScope(“email”);
-googleProvider.addScope(“profile”);
-return{auth:firebaseAuth,GoogleAuthProvider,signInWithPopup,provider:googleProvider};
-}catch(e){console.error(“Firebase init error:”,e);return null;}
+function loadFirebaseScript(src){
+return new Promise((res,rej)=>{
+if(document.querySelector(`script[src="${src}"]`)){res();return;}
+const s=document.createElement(“script”);
+s.type=“module”;s.src=src;
+s.onload=res;s.onerror=rej;
+document.head.appendChild(s);
+});
 }
 
 async function signInWithGoogle(){
-const fb=await initFirebase();
-if(!fb)throw new Error(“Firebase غير متاح”);
-const{auth,signInWithPopup,provider}=fb;
+try{
+// استخدام Firebase من CDN
+const {initializeApp,getApps,getApp}=await import(“https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js”);
+const {getAuth,GoogleAuthProvider,signInWithPopup}=await import(“https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js”);
+const app=getApps().length?getApp():initializeApp(FIREBASE_CONFIG);
+const auth=getAuth(app);
+const provider=new GoogleAuthProvider();
+provider.addScope(“email”);
+provider.addScope(“profile”);
+provider.setCustomParameters({prompt:“select_account”});
 const result=await signInWithPopup(auth,provider);
 return{
 name:result.user.displayName||“مستخدم”,
@@ -42,6 +41,10 @@ phone:””,
 googleUid:result.user.uid,
 photo:result.user.photoURL||””,
 };
+}catch(e){
+if(e.code===“auth/popup-closed-by-user”)throw new Error(“تم إغلاق نافذة Google”);
+throw new Error(e.message||“خطأ في تسجيل الدخول”);
+}
 }
 
 // ══════════════════════════════════════════════
