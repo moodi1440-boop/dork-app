@@ -626,7 +626,7 @@ if(splash) return(
 </svg>
 </div>
 <div style={{fontSize:36,fontWeight:900,color:”#d4a017”,letterSpacing:3,marginBottom:6}}>دورك</div>
-<div style={{fontSize:13,color:”#888”,letterSpacing:2}}>DORK · حلاقة وصالونات</div>
+<div style={{fontSize:13,color:”#888”,letterSpacing:2}}>DORK - حلاقة وصالونات</div>
 <style dangerouslySetInnerHTML={{__html:”@keyframes splashPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}”}} />
 </div>
 );
@@ -892,7 +892,7 @@ return(
 </svg>
 <div style={{display:“flex”,flexDirection:“column”,alignItems:“flex-start”,lineHeight:1}}>
 <span style={{fontSize:19,fontWeight:900,color:“var(–pl)”,fontFamily:”‘Cairo’,sans-serif”,letterSpacing:1}}>دورك</span>
-<span style={{fontSize:7,color:“var(–p)”,letterSpacing:1.2,marginTop:1,fontFamily:”‘Cairo’,sans-serif”,opacity:.85}}>DORK · حلاقة وصالونات</span>
+<span style={{fontSize:7,color:“var(–p)”,letterSpacing:1.2,marginTop:1,fontFamily:”‘Cairo’,sans-serif”,opacity:.85}}>DORK - حلاقة وصالونات</span>
 </div>
 </div>
 </div>
@@ -1110,7 +1110,7 @@ return(
 <div style={{fontSize:14,fontWeight:700,color:”#fff”}}>{salon.name}</div>
 {isOpenNow&&<span style={{fontSize:9,background:“rgba(39,174,96,.2)”,color:”#27ae60”,padding:“1px 6px”,borderRadius:10,fontWeight:700}}>مفتوح</span>}
 </div>
-<div style={{fontSize:11,color:”#888”}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:””}</div>
+<div style={{fontSize:11,color:”#888”}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:””}</div>
 {distance&&<div style={{fontSize:11,color:”#27ae60”}}>📡 {distance} كم</div>}
 </div>
 <div style={{…G.ratingBadge,background:realRating?“rgba(240,192,64,.2)”:“rgba(100,100,100,.2)”}}>⭐ {displayRating}</div>
@@ -1118,7 +1118,7 @@ return(
 {salon.shiftEnabled
 ?<div style={{fontSize:11,color:”#aaa”,marginBottom:2}}>⏰ {salon.shift1Start}–{salon.shift1End} | {salon.shift2Start}–{salon.shift2End}</div>
 :<div style={{fontSize:11,color:”#aaa”,marginBottom:2}}>⏰ {salon.workStart}–{salon.workEnd}</div>}
-<div style={{fontSize:11,color:”#aaa”,marginBottom:6}}>✂ {salon.barbers?.length||1} حلاق · {slots.length} وقت</div>
+<div style={{fontSize:11,color:”#aaa”,marginBottom:6}}>✂ {salon.barbers?.length||1} حلاق - {slots.length} وقت</div>
 <div style={{display:“flex”,flexWrap:“wrap”,gap:4,marginBottom:9}}>
 {salon.services.slice(0,3).map(s=><span key={s} style={G.tag}>{s}</span>)}
 {salon.services.length>3&&<span style={{…G.tag,color:”#888”}}>+{salon.services.length-3}</span>}
@@ -1166,7 +1166,7 @@ return(
 <div style={{flex:1}}>
 <div style={{fontSize:14,fontWeight:700,color:”#fff”}}>{salon.name}</div>
 <div style={{fontSize:11,color:”#888”}}>{salon.gov||salon.region}{salon.village?` › ${salon.village}`:””}</div>
-<div style={{fontSize:11,color:”#888”}}>👤 {salon.owner} · 📞 {salon.phone}</div>
+<div style={{fontSize:11,color:”#888”}}>👤 {salon.owner} - 📞 {salon.phone}</div>
 {reviews.length>0&&<div style={{fontSize:12,color:”#f0c040”,marginTop:2}}>⭐ {avgRating} ({reviews.length} تقييم)</div>}
 </div>
 <button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title=“الموقع”>
@@ -1296,12 +1296,12 @@ setForm(p=>({…p,date:e.target.value,time:””}));
 }}/>
 {salon.closedDays?.length>0&&(
 <div style={{fontSize:10,color:”#888”,marginTop:3}}>
-🚫 مغلق أيام: {[“الأحد”,“الإثنين”,“الثلاثاء”,“الأربعاء”,“الخميس”,“الجمعة”,“السبت”].filter((_,i)=>salon.closedDays.includes(i)).join(” · “)}
+🚫 مغلق أيام: {[“الأحد”,“الإثنين”,“الثلاثاء”,“الأربعاء”,“الخميس”,“الجمعة”,“السبت”].filter((_,i)=>salon.closedDays.includes(i)).join(” - “)}
 </div>
 )}
 </F>
 {salon.shiftEnabled&&<div style={{fontSize:11,color:“var(–p)”,background:“var(–pa07)”,borderRadius:8,padding:“6px 10px”,marginBottom:8}}>⏰ {salon.shift1Start}–{salon.shift1End} | {salon.shift2Start}–{salon.shift2End}</div>}
-<div style={{fontSize:12,color:”#aaa”,marginBottom:7}}>اختر الوقت{form.barberId?` · ${barber?.name||""}`:””}</div>
+<div style={{fontSize:12,color:”#aaa”,marginBottom:7}}>اختر الوقت{form.barberId?` - ${barber?.name||""}`:””}</div>
 {errors.time&&<div style={G.err}>{errors.time}</div>}
 <div style={G.timeGrid}>{slots.map(sl=>{const used=slotUsed(sl);const full=slotFull(sl);const sel=form.time===sl;return(<button key={sl} disabled={full} onClick={()=>!full&&setForm(p=>({…p,time:sl}))} style={{…G.ts,…(full?G.tsF:{}),…(sel?G.tsS:{})}}><div>{sl}</div><div style={{fontSize:9,marginTop:1,color:full?”#555”:sel?“var(–p)”:”#666”}}>{full?“محجوز”:`${bc-used} متاح`}</div></button>);})}</div>
 <button style={G.sub} onClick={()=>{if(v2())setStep(3);}}>التالي →</button>
@@ -1486,7 +1486,7 @@ return(
 <div key={w.id} style={{display:“flex”,justifyContent:“space-between”,alignItems:“center”,padding:“6px 0”,borderBottom:“1px solid #2a2a3a”}}>
 <div>
 <div style={{fontSize:12,color:”#fff”,fontWeight:600}}>{w.name}</div>
-<div style={{fontSize:11,color:”#888”}}>{w.phone} · {w.addedAt}</div>
+<div style={{fontSize:11,color:”#888”}}>{w.phone} - {w.addedAt}</div>
 </div>
 <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
 </div>
@@ -1509,7 +1509,7 @@ if(n&&p){addToWaiting(n,p);document.getElementById(“wname”).value=””;doc
   <div style={{display:"flex",flexDirection:"column",gap:8}}>{bks.map(b=>(
     <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
       <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
-        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {b.name}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` · ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} · {b.total||0} ر</div></div>
+        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {b.name}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>
         <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
       </div>
       {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
@@ -1866,7 +1866,7 @@ return(
       <span style={{fontSize:20}}>🔔</span>
       <div style={{flex:1}}>
         <div style={{fontSize:13,fontWeight:700,color:"var(--p)"}}>يوجد {pending.length} طلب {pending.length===1?"جديد":"جديدة"} بانتظار مراجعتك</div>
-        <div style={{fontSize:11,color:"#888"}}>{pending.map(s=>s.name).join(" · ")}</div>
+        <div style={{fontSize:11,color:"#888"}}>{pending.map(s=>s.name).join(" - ")}</div>
       </div>
       <button style={{...G.tabBtn,...G.tabOn,fontSize:11,padding:"5px 10px",flexShrink:0}} onClick={()=>setTab("pending")}>عرض</button>
     </div>
@@ -1947,8 +1947,8 @@ return(
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
             <div>
               <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
-              <div style={{fontSize:11,color:"#aaa"}}>👤 {s.owner} · 📞 {s.phone}</div>
-              <div style={{fontSize:11,color:"#aaa"}}>📍 {s.gov||s.region}{s.village?` · ${s.village}`:""}</div>
+              <div style={{fontSize:11,color:"#aaa"}}>👤 {s.owner} - 📞 {s.phone}</div>
+              <div style={{fontSize:11,color:"#aaa"}}>📍 {s.gov||s.region}{s.village?` - ${s.village}`:""}</div>
               <div style={{fontSize:11,color:"#aaa"}}>🕐 {s.shiftEnabled?`${s.shift1Start}-${s.shift1End} | ${s.shift2Start}-${s.shift2End}`:`${s.workStart}-${s.workEnd}`}</div>
             </div>
             <button style={G.pageBtn} onClick={()=>{setSelSalon(s);setView("salon");}}>معاينة</button>
@@ -2033,8 +2033,8 @@ return(
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                     <div>
                       <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {b.salonName}</div>
-                      <div style={{fontSize:11,color:"#aaa"}}>👤 {b.name} · 📞 {b.phone}</div>
-                      <div style={{fontSize:11,color:"#aaa"}}>📅 {b.date} · 🕐 {b.time}</div>
+                      <div style={{fontSize:11,color:"#aaa"}}>👤 {b.name} - 📞 {b.phone}</div>
+                      <div style={{fontSize:11,color:"#aaa"}}>📅 {b.date} - 🕐 {b.time}</div>
                       <div style={{fontSize:11,color:"#aaa"}}>{(b.services||[]).join(" + ")}</div>
                     </div>
                     <div style={{textAlign:"left",flexShrink:0}}>
@@ -2066,8 +2066,8 @@ return(
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div>
                   <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name} {stLabel}</div>
-                  <div style={{fontSize:11,color:"#888"}}>👤 {s.owner} · 📞 {s.phone}</div>
-                  <div style={{fontSize:11,color:"#888"}}>📍 {s.gov||s.region}{s.village?" · "+s.village:""}</div>
+                  <div style={{fontSize:11,color:"#888"}}>👤 {s.owner} - 📞 {s.phone}</div>
+                  <div style={{fontSize:11,color:"#888"}}>📍 {s.gov||s.region}{s.village?" - "+s.village:""}</div>
                   <div style={{display:"flex",gap:8,marginTop:3}}>
                     <span style={{fontSize:10,color:"#4caf50"}}>📅 {s.bookings.length} حجز</span>
                     <span style={{fontSize:10,color:"var(--p)"}}>⭐ {s.rating||0}</span>
@@ -2463,7 +2463,7 @@ onClick={()=>{setSelSalon(s);setView(“salon”);}}>
 <div style={{display:“flex”,justifyContent:“space-between”,alignItems:“center”}}>
 <div>
 <div style={{fontSize:13,fontWeight:700,color:”#fff”}}>✂ {s.name}</div>
-<div style={{fontSize:11,color:”#888”}}>📍 {s.gov||s.region}{s.village?” · “+s.village:””}</div>
+<div style={{fontSize:11,color:”#888”}}>📍 {s.gov||s.region}{s.village?” - “+s.village:””}</div>
 </div>
 <div style={{textAlign:“left”,flexShrink:0}}>
 <div style={{fontSize:14,fontWeight:900,color:s.dist<5?”#27ae60”:s.dist<20?“var(–p)”:”#888”}}>
@@ -2549,7 +2549,7 @@ return(
 <div style={G.fh}><button style={G.bb} onClick={()=>setView(“home”)}>→</button><h2 style={{...G.ft,flex:1}}>لوحة صالوني</h2><button style={{…G.delBtn,border:“1.5px solid #888”,color:”#aaa”,background:“transparent”}} onClick={()=>{setOwnerSession(null);setView(“home”);}}>خروج</button></div>
 <div style={G.salonBadge}>
 <span style={{fontSize:20,color:“var(–p)”}}>✂</span>
-<div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:”#fff”}}>{salon.name}</div><div style={{fontSize:11,color:”#888”}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:””}</div></div>
+<div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:”#fff”}}>{salon.name}</div><div style={{fontSize:11,color:”#888”}}>{salon.gov||salon.region}{salon.village?` - ${salon.village}`:””}</div></div>
 <span style={{fontSize:11,fontWeight:700,color:statusColor,background:`${statusColor}22`,padding:“3px 8px”,borderRadius:8}}>{statusLabel}</span>
 </div>
 {salon.status!==“approved”&&<div style={{background:“rgba(240,192,64,.08)”,border:“1px solid var(–pl)55”,borderRadius:10,padding:“10px 12px”,marginBottom:12,fontSize:12,color:“var(–pl)”}}>🔔 صالونك في انتظار موافقة الإدارة — سيظهر للعملاء بعد القبول</div>}
@@ -2659,7 +2659,7 @@ style={{position:“relative”,padding:“6px 0”,borderRadius:8,border:`1.5px
 <div style={{display:“flex”,justifyContent:“space-between”}}>
 <div>
 <div style={{fontSize:13,fontWeight:700,color:”#fff”}}>🕐 {b.time} — {b.name}</div>
-<div style={{fontSize:11,color:”#aaa”}}>{Array.isArray(b.services)?b.services.join(” + “):””} · {b.total||0} ر</div>
+<div style={{fontSize:11,color:”#aaa”}}>{Array.isArray(b.services)?b.services.join(” + “):””} - {b.total||0} ر</div>
 </div>
 <span style={{fontSize:10,color:b.status===“approved”?”#27ae60”:b.status===“rejected”?”#e74c3c”:“var(–p)”}}>{b.status===“approved”?“✅”:b.status===“rejected”?“❌”:“⏳”}</span>
 </div>
@@ -3214,7 +3214,7 @@ return(
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
-                <div style={{fontSize:11,color:"#888"}}>📍 {s.gov||s.region}{s.village?` · ${s.village}`:""}</div>
+                <div style={{fontSize:11,color:"#888"}}>📍 {s.gov||s.region}{s.village?` - ${s.village}`:""}</div>
                 <div style={{fontSize:11,color:"var(--p)"}}>⭐ {s.rating}</div>
               </div>
               <div style={{display:"flex",gap:6}}>
@@ -3265,7 +3265,7 @@ return(
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                 <div>
                   <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s?.name||h.salonName||"صالون"}</div>
-                  <div style={{fontSize:11,color:"#aaa"}}>📅 {h.date} · 🕐 {h.time}</div>
+                  <div style={{fontSize:11,color:"#aaa"}}>📅 {h.date} - 🕐 {h.time}</div>
                   <div style={{fontSize:11,color:"#aaa"}}>{Array.isArray(h.services)?h.services.join(" + "):h.service||""}</div>
                   <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>💰 {h.total||0} ريال</div>
                   <div style={{fontSize:11,fontWeight:700,color:stColor,marginTop:3}}>{stLabel}</div>
@@ -3514,7 +3514,7 @@ return(
         return(
           <div key={i} style={{padding:"7px 0",borderBottom:"1px solid #1e1e2e"}}>
             <div style={{fontSize:12,color:"#fff",fontWeight:600}}>✂ {s?.name||"صالون محذوف"}</div>
-            <div style={{fontSize:11,color:"#888"}}>📅 {h.date} · 💰 {h.total||0} ر</div>
+            <div style={{fontSize:11,color:"#888"}}>📅 {h.date} - 💰 {h.total||0} ر</div>
           </div>
         );
       })}
@@ -3696,9 +3696,9 @@ return(
 {isPinned&&<span style={{fontSize:10,color:”#8b5cf6”}}>📌</span>}
 {isFrozen&&<span style={{fontSize:10,color:”#e74c3c”,background:“rgba(231,76,60,.15)”,padding:“1px 6px”,borderRadius:10}}>🔒 مجمّد</span>}
 </div>
-<div style={{fontSize:11,color:”#888”}}>👤 {s.owner} · 📞 {s.phone}</div>
+<div style={{fontSize:11,color:”#888”}}>👤 {s.owner} - 📞 {s.phone}</div>
 {s.ownerPhone&&s.ownerPhone!==s.phone&&<div style={{fontSize:11,color:”#888”}}>📱 مالك: {s.ownerPhone}</div>}
-<div style={{fontSize:11,color:”#888”}}>📍 {s.gov||s.region}{s.village?” · “+s.village:””}</div>
+<div style={{fontSize:11,color:”#888”}}>📍 {s.gov||s.region}{s.village?” - “+s.village:””}</div>
 <div style={{display:“flex”,gap:8,marginTop:3,flexWrap:“wrap”}}>
 <span style={{fontSize:10,color:”#4caf50”}}>📅 {s.bookings.length} حجز</span>
 <span style={{fontSize:10,color:“var(–p)”}}>⭐ {s.rating}</span>
