@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from “react”;
 
 // ══════════════════════════════════════════════
-//  FIREBASE — Google Auth (CDN)
+//  FIREBASE CONFIG (no imports - loaded via script)
 // ══════════════════════════════════════════════
 const FIREBASE_CONFIG = {
 apiKey: “AIzaSyBYCJYdJUi_oPfYlOzSukntj4”,
@@ -12,39 +12,44 @@ messagingSenderId: “659823227621”,
 appId: “1:659823227621:web:befaaa1b5063”,
 };
 
-function loadFirebaseScript(src){
-return new Promise((res,rej)=>{
+async function signInWithGoogle(){
+return new Promise((resolve,reject)=>{
+// تحميل Firebase scripts ديناميكياً
+const loadScript=(src)=>new Promise((res,rej)=>{
 if(document.querySelector(`script[src="${src}"]`)){res();return;}
 const s=document.createElement(“script”);
-s.type=“module”;s.src=src;
-s.onload=res;s.onerror=rej;
+s.src=src;s.onload=res;s.onerror=rej;
 document.head.appendChild(s);
 });
-}
 
-async function signInWithGoogle(){
-try{
-// استخدام Firebase من CDN
-const {initializeApp,getApps,getApp}=await import(“https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js”);
-const {getAuth,GoogleAuthProvider,signInWithPopup}=await import(“https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js”);
-const app=getApps().length?getApp():initializeApp(FIREBASE_CONFIG);
-const auth=getAuth(app);
-const provider=new GoogleAuthProvider();
-provider.addScope(“email”);
-provider.addScope(“profile”);
-provider.setCustomParameters({prompt:“select_account”});
-const result=await signInWithPopup(auth,provider);
-return{
-name:result.user.displayName||“مستخدم”,
-email:result.user.email||””,
-phone:””,
-googleUid:result.user.uid,
-photo:result.user.photoURL||””,
-};
-}catch(e){
-if(e.code===“auth/popup-closed-by-user”)throw new Error(“تم إغلاق نافذة Google”);
-throw new Error(e.message||“خطأ في تسجيل الدخول”);
-}
+```
+const FB_VER="10.7.1";
+loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app-compat.js`)
+.then(()=>loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-auth-compat.js`))
+.then(()=>{
+  /* global firebase */
+  if(!window.firebase.apps.length) window.firebase.initializeApp(FIREBASE_CONFIG);
+  const provider=new window.firebase.auth.GoogleAuthProvider();
+  provider.addScope("email");
+  provider.setCustomParameters({prompt:"select_account"});
+  return window.firebase.auth().signInWithPopup(provider);
+})
+.then(result=>{
+  resolve({
+    name:result.user.displayName||"مستخدم",
+    email:result.user.email||"",
+    phone:"",
+    googleUid:result.user.uid,
+    photo:result.user.photoURL||"",
+  });
+})
+.catch(e=>{
+  if(e.code==="auth/popup-closed-by-user") reject(new Error("تم إغلاق نافذة Google"));
+  else reject(new Error(e.message||"خطأ في تسجيل الدخول"));
+});
+```
+
+});
 }
 
 // ══════════════════════════════════════════════
