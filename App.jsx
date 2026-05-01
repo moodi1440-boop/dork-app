@@ -158,6 +158,22 @@ const THEMES = {
   crimson:  {primary:"#ef4444", light:"#f87171", dark:"#991b1b", lightest:"#fca5a5", rgb:"239,68,68"},
 };
 
+const BACKGROUNDS=[
+  {id:"none",    label:"بلا خلفية",    emoji:"⬛", style:{background:"#0d0d1a"}},
+  {id:"stars",   label:"نجوم",          emoji:"✨", style:{background:"radial-gradient(ellipse at top,#1a1a3a 0%,#0d0d1a 70%)",backgroundImage:"radial-gradient(circle,rgba(255,255,255,.08) 1px,transparent 1px)",backgroundSize:"40px 40px"}},
+  {id:"grid",    label:"شبكة",          emoji:"🔲", style:{background:"#0d0d1a",backgroundImage:"linear-gradient(rgba(212,160,23,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(212,160,23,.05) 1px,transparent 1px)",backgroundSize:"30px 30px"}},
+  {id:"waves",   label:"أمواج",         emoji:"🌊", style:{background:"linear-gradient(180deg,#0d0d1a 0%,#0a1628 50%,#0d0d1a 100%)"}},
+  {id:"marble",  label:"رخام",          emoji:"🪨", style:{background:"linear-gradient(135deg,#111118 25%,#1a1a2a 25%,#1a1a2a 50%,#111118 50%,#111118 75%,#1a1a2a 75%)",backgroundSize:"20px 20px"}},
+  {id:"circuit", label:"دوائر",         emoji:"🔌", style:{background:"#0d0d1a",backgroundImage:"radial-gradient(circle at 50% 50%,rgba(212,160,23,.03) 0%,transparent 60%)"}},
+];
+
+function applyBackground(id){
+  const bg=BACKGROUNDS.find(b=>b.id===id)||BACKGROUNDS[0];
+  const el=document.getElementById("dork-bg");
+  if(el)Object.assign(el.style,{...bg.style,position:"fixed",inset:0,zIndex:-1,pointerEvents:"none"});
+  try{localStorage.setItem("dork_bg",id);}catch{}
+}
+
 function playTone(id, vol=0.7){
   try{
     const A=window.AudioContext||window.webkitAudioContext;
@@ -205,10 +221,17 @@ async function requestNotifPermission(){
 }
 
 function sendNotif(title,body,icon="✂"){
-  if(!("Notification" in window)||Notification.permission!=="granted")return;
+  // زيادة عداد الجرس
+  const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
+  localStorage.setItem("dork_notif_count",String(count+1));
+  // حفظ الإشعار
   try{
-    new Notification(`${icon} ${title}`,{body,icon:"/favicon.ico",badge:"/favicon.ico",dir:"rtl",lang:"ar"});
-  }catch(e){}
+    const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+    notifs.unshift({id:Date.now(),title,body,icon,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
+    localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
+  }catch{}
+  if(!("Notification" in window)||Notification.permission!=="granted")return;
+  try{new Notification(`${icon} ${title}`,{body,icon:"/favicon.ico",dir:"rtl",lang:"ar"});}catch{}
 }
 
 // طلب الإذن عند تحميل التطبيق
@@ -403,15 +426,16 @@ const DEFAULT_SERVICES=["قص شعر","حلاقة لحية","تسريح","حلا
 // ══════════════════════════════════════════════
 //  UTILS
 // ══════════════════════════════════════════════
-function makeSlots(s,e){
+function makeSlots(s,e,slotMin=40){
   const r=[]; let[h,m]=s.split(":").map(Number); const[eh,em]=e.split(":").map(Number);
-  while(h<eh||(h===eh&&m<em)){r.push(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);m+=SLOT_MIN;if(m>=60){h++;m-=60;}} return r;
+  while(h<eh||(h===eh&&m<em)){r.push(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);m+=slotMin;if(m>=60){h++;m-=60;}} return r;
 }
 function getSlotsForSalon(s){
+  const sm=s.slotMin||SLOT_MIN;
   if(s.shiftEnabled){
-    return[...(s.shift1Start&&s.shift1End?makeSlots(s.shift1Start,s.shift1End):[]),...(s.shift2Start&&s.shift2End?makeSlots(s.shift2Start,s.shift2End):[])];
+    return[...(s.shift1Start&&s.shift1End?makeSlots(s.shift1Start,s.shift1End,sm):[]),...(s.shift2Start&&s.shift2End?makeSlots(s.shift2Start,s.shift2End,sm):[])];
   }
-  return makeSlots(s.workStart||"09:00",s.workEnd||"22:00");
+  return makeSlots(s.workStart||"09:00",s.workEnd||"22:00",sm);
 }
 function todayStr(){return new Date().toISOString().split("T")[0];}
 function openMaps(url,name,addr){window.open(url?.trim()||`https://www.google.com/maps/search/${encodeURIComponent(name+" "+addr)}`,"_blank");}
@@ -431,7 +455,6 @@ export default function App(){
   const[customers,setCustomers]=useState([]);
   const[extraLoc,setExtraLoc]=useState(()=>{
     try{
-      // امسح أي إضافات قديمة غلط وابدأ نظيف
       localStorage.removeItem("bbv6_loc");
       return [];
     }catch{return[];}
@@ -441,6 +464,34 @@ export default function App(){
   const[view,setView]=useState("home");
   const[selSalon,setSelSalon]=useState(null);
   const[toast,setToast]=useState(null);
+  const[splash,setSplash]=useState(true); // Splash Screen
+  const[darkMode,setDarkMode]=useState(()=>{try{return localStorage.getItem("dork_dark")!=="0";}catch{return true;}});
+  const[compareSalons,setCompareSalons]=useState([]); // مقارنة صالونين
+  const[pullRefreshing,setPullRefreshing]=useState(false); // Pull to refresh
+
+  // تطبيق وضع الإضاءة
+  useEffect(()=>{
+    document.documentElement.style.setProperty("--bg-main",darkMode?"#0d0d1a":"#f0f0f8");
+    document.documentElement.style.setProperty("--bg-card",darkMode?"#13131f":"#ffffff");
+    document.documentElement.style.setProperty("--bg-input",darkMode?"#0d0d1a":"#f5f5f5");
+    document.documentElement.style.setProperty("--txt-main",darkMode?"#f0f0f0":"#1a1a2e");
+    document.documentElement.style.setProperty("--txt-sub",darkMode?"#888":"#666");
+    document.documentElement.style.setProperty("--border",darkMode?"#2a2a3a":"#e0e0e0");
+    try{localStorage.setItem("dork_dark",darkMode?"1":"0");}catch{}
+  },[darkMode]);
+
+  // Splash Screen — يختفي بعد ثانيتين
+  useEffect(()=>{
+    const t=setTimeout(()=>setSplash(false),2000);
+    return()=>clearTimeout(t);
+  },[]);
+
+  // Pull to refresh
+  const handlePullRefresh=async()=>{
+    setPullRefreshing(true);
+    await loadData();
+    setTimeout(()=>setPullRefreshing(false),800);
+  };
 
   // ── تسجيل الدخول المستمر ──
   const[adminSession,setAdminSession]=useState(()=>{try{return localStorage.getItem("dork_admin")==="1";}catch{return false;}});
@@ -471,8 +522,14 @@ export default function App(){
   const[search,setSearch]=useState("");
   const[sortBy,setSortBy]=useState("default");
   const[userLoc,setUserLoc]=useState(null);
-  const[settings,setSettings]=useState(()=>{try{const s=localStorage.getItem("bbv6_settings");return s?JSON.parse(s):{theme:"gold",defaultTone:"bell"};}catch{return{theme:"gold",defaultTone:"bell"};}});
+  const[settings,setSettings]=useState(()=>{try{const s=localStorage.getItem("bbv6_settings");return s?JSON.parse(s):{theme:"gold",defaultTone:"bell",fontSize:"md"};}catch{return{theme:"gold",defaultTone:"bell",fontSize:"md"};}});
   useEffect(()=>{localStorage.setItem("bbv6_settings",JSON.stringify(settings));},[settings]);
+
+  // حجم الخط
+  useEffect(()=>{
+    const sizes={sm:"13px",md:"15px",lg:"17px"};
+    document.documentElement.style.setProperty("--base-font",sizes[settings.fontSize||"md"]);
+  },[settings.fontSize]);
   useEffect(()=>{
     const t=THEMES[settings.theme]||THEMES.gold;
     const r=document.documentElement.style;
@@ -507,7 +564,6 @@ export default function App(){
       const salonRows = await sb("salons", "GET", null, "?order=id.desc");
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
-        // الحجوزات محفوظة داخل الصالون مباشرة
         salon.bookings = (row.bookings || []).map(b=>({
           id: b.id||Date.now(),
           salonId: b.salonId||row.id,
@@ -523,6 +579,15 @@ export default function App(){
         }));
         return salon;
       });
+      // تنبيه صوتي للإدارة عند وجود طلبات جديدة
+      if(adminSession){
+        const newPending=salonsWithBookings.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="pending").length,0);
+        const prevPending=salons.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="pending").length,0);
+        if(newPending>prevPending){
+          playTone("bell",0.6);
+          sendNotif("دورك — طلب جديد",`يوجد ${newPending} طلب بانتظار المراجعة`,"🔔");
+        }
+      }
       setSalons(salonsWithBookings);
       const custRows = await sb("customers", "GET", null, "");
       setCustomers(custRows.map(toAppCustomer));
@@ -533,12 +598,38 @@ export default function App(){
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [adminSession]);
 
   useEffect(()=>{ loadData(); }, [loadData]);
 
   // شاشة الشروط والأحكام
   if(!termsAccepted) return <TermsView onAccept={()=>{setTermsAccepted(true);try{localStorage.setItem("dork_terms","1");}catch{}}} />;
+
+  // Splash Screen
+  if(splash) return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0d0d1a,#1a1a2e)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>
+      <div style={{animation:"splashPulse 1s ease-in-out infinite",marginBottom:20}}>
+        <svg width="80" height="80" viewBox="0 0 60 60" fill="none">
+          <defs>
+            <linearGradient id="sg" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#f0c040"/><stop offset="50%" stopColor="#d4a017"/><stop offset="100%" stopColor="#b8860b"/>
+            </linearGradient>
+          </defs>
+          <circle cx="30" cy="30" r="28" fill="url(#sg)"/>
+          <circle cx="30" cy="30" r="24" fill="#0d0d1a"/>
+          <g transform="translate(30 30) rotate(-30)">
+            <circle cx="-7" cy="-3" r="3.5" fill="none" stroke="#d4a017" strokeWidth="1.6"/>
+            <circle cx="-7" cy="3" r="3.5" fill="none" stroke="#d4a017" strokeWidth="1.6"/>
+            <line x1="-4" y1="-1.5" x2="9" y2="0" stroke="#f0c040" strokeWidth="1.6" strokeLinecap="round"/>
+            <line x1="-4" y1="1.5" x2="9" y2="0" stroke="#f0c040" strokeWidth="1.6" strokeLinecap="round"/>
+          </g>
+        </svg>
+      </div>
+      <div style={{fontSize:36,fontWeight:900,color:"#d4a017",letterSpacing:3,marginBottom:6}}>دورك</div>
+      <div style={{fontSize:13,color:"#888",letterSpacing:2}}>DORK · حلاقة وصالونات</div>
+      <style>{`@keyframes splashPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}`}</style>
+    </div>
+  );
 
   // العميل لما يسجل دخول يروح للصفحة الرئيسية مباشرة
   const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");};
@@ -710,6 +801,9 @@ export default function App(){
     loyaltySettings,setLoyaltySettings,
     socialLinks,setSocialLinks,
     handleCustomerLogin,
+    darkMode,setDarkMode,
+    compareSalons,setCompareSalons,
+    handlePullRefresh,pullRefreshing,
   };
 
   if(loading)return(
@@ -725,10 +819,29 @@ export default function App(){
 
   return(
     <div style={G.app}>
+      <div id="dork-bg" style={{position:"fixed",inset:0,zIndex:-1,pointerEvents:"none",background:"#0d0d1a"}}/>
       <style>{CSS}</style>
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       <TopBar {...sharedProps}/>
-      <div style={{paddingTop:56}}>
+      {/* شريط الاختصارات السريعة */}
+      {view==="home"&&(
+        <div style={{position:"fixed",top:56,left:0,right:0,zIndex:90,background:"rgba(13,13,26,.95)",backdropFilter:"blur(8px)",borderBottom:"1px solid #2a2a3a",padding:"5px 12px",display:"flex",gap:8,overflowX:"auto",scrollbarWidth:"none"}}>
+          {[
+            {icon:"⚡",label:"حجز سريع",action:()=>{if(customer?.history?.length){const s=salons.find(x=>x.id===Number(customer.history[customer.history.length-1]?.salonId));if(s){setSelSalon(s);setView("book");}}else toast$("سجّل دخول للحجز السريع")}},
+            {icon:"📍",label:"الأقرب",action:()=>{setSortBy("nearest");}},
+            {icon:"⭐",label:"الأعلى",action:()=>setSortBy("ratingHigh")},
+            {icon:"🔥",label:"مفتوح",action:()=>setView("home")},
+            {icon:"🗺",label:"خريطة",action:()=>setView("nearMap")},
+            {icon:"⚖",label:"مقارنة",action:()=>toast$("اضغط ⚖ على صالونين للمقارنة")},
+          ].map(({icon,label,action})=>(
+            <button key={label} style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"4px 8px",borderRadius:8,border:"1px solid #2a2a3a",background:"transparent",color:"#888",cursor:"pointer",fontFamily:"inherit"}} onClick={action}>
+              <span style={{fontSize:14}}>{icon}</span>
+              <span style={{fontSize:9,color:"#666"}}>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <div style={{paddingTop:view==="home"?96:56}}>
         {view==="home"&&      <HomeView {...sharedProps}/>}
         {view==="register"&&  <RegisterView {...sharedProps}/>}
         {view==="book"&&selSalon&&<BookView salon={selSalon} {...sharedProps}/>}
@@ -739,6 +852,9 @@ export default function App(){
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash customer={customer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
+        {view==="nearMap"&&   <NearMapView salons={approvedSalons} setView={setView} setSelSalon={setSelSalon}/>}
+        {view==="compare"&&   <CompareSalonsView salons={compareSalons} setView={setView} setSelSalon={setSelSalon}/>}
+        {view==="notifs"&&    <NotifsView setView={setView}/>}
       </div>
     </div>
   );
@@ -747,34 +863,49 @@ export default function App(){
 // ══════════════════════════════════════════════
 //  TOP BAR – 3 role buttons on the LEFT
 // ══════════════════════════════════════════════
-function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSession,setOwnerSession,setCustomerSession,salons}){
+function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSession,setOwnerSession,setCustomerSession,salons,darkMode,setDarkMode}){
   const pendingCount=salons.filter(s=>s.status==="pending").length;
   const ownerSalon=ownerSession?salons.find(s=>s.id===ownerSession):null;
   const ownerPending=ownerSalon?ownerSalon.bookings.filter(b=>b.status==="pending").length:0;
   return(
     <div style={G.topBar}>
       {/* LEFT: role buttons */}
-      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+      <div style={{display:"flex",gap:5,alignItems:"center"}}>
+        {/* 🏠 زر الصفحة الرئيسية الثابت */}
+        <button style={{...G.roleBtn,background:"var(--pa12)",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>setView("home")} title="الصفحة الرئيسية">
+          🏠
+        </button>
         {/* Admin */}
         <button style={{...G.roleBtn,...(adminSession?G.roleBtnActive:{})}} onClick={()=>setView("admin")} title="الإدارة">
           🔐
           {pendingCount>0&&adminSession&&<span style={G.roleDot}>{pendingCount}</span>}
         </button>
-        {/* Owner – scissors removed, use shop icon */}
         <button style={{...G.roleBtn,...(ownerSession?G.roleBtnActive:{})}} onClick={()=>setView(ownerSession?"ownerDash":"ownerLogin")} title="صاحب الصالون">
           ✂
         </button>
-        {/* Customer */}
         <button style={{...G.roleBtn,...(customerSession?G.roleBtnActive:{})}} onClick={()=>setView(customerSession?"custDash":"custLogin")} title="حساب العميل">
           👤
         </button>
-        {/* Settings */}
+        {/* 🔔 جرس الإشعارات */}
+        {(()=>{
+          const notifCount=parseInt(localStorage.getItem("dork_notif_count")||"0");
+          return(
+            <button style={{...G.roleBtn,position:"relative"}} onClick={()=>{localStorage.setItem("dork_notif_count","0");setView("notifs");}} title="الإشعارات">
+              🔔
+              {notifCount>0&&<span style={{...G.roleDot,background:"#e74c3c"}}>{notifCount}</span>}
+            </button>
+          );
+        })()}
+        {/* 🌙 وضع الإضاءة */}
+        <button style={{...G.roleBtn,fontSize:14}} onClick={()=>setDarkMode&&setDarkMode(d=>!d)} title="وضع الإضاءة">
+          {darkMode?"☀️":"🌙"}
+        </button>
         <button style={G.roleBtn} onClick={()=>setView("settings")} title="الإعدادات">
           ⚙
         </button>
       </div>
-      {/* RIGHT: دورك Logo */}
-      <div style={{display:"flex",alignItems:"center",gap:7}}>
+      {/* RIGHT: دورك Logo — قابل للضغط للرجوع للرئيسية */}
+      <div style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer"}} onClick={()=>setView("home")}>
         <svg width="36" height="36" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="goldG" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
@@ -787,22 +918,18 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
               <stop offset="100%" stopColor="#0d0d1a"/>
             </linearGradient>
           </defs>
-          {/* Outer ring */}
           <circle cx="30" cy="30" r="28" fill="url(#goldG)"/>
           <circle cx="30" cy="30" r="24" fill="url(#darkG)"/>
-          {/* Clock dots (4 cardinal points) */}
           <circle cx="30" cy="9"  r="1.5" fill="var(--p)"/>
           <circle cx="30" cy="51" r="1.5" fill="var(--p)" opacity=".5"/>
           <circle cx="9"  cy="30" r="1.5" fill="var(--p)" opacity=".5"/>
           <circle cx="51" cy="30" r="1.5" fill="var(--p)" opacity=".5"/>
-          {/* Scissors silhouette */}
           <g transform="translate(30 30) rotate(-30)">
             <circle cx="-7" cy="-3" r="3.5" fill="none" stroke="var(--p)" strokeWidth="1.6"/>
             <circle cx="-7" cy="3"  r="3.5" fill="none" stroke="var(--p)" strokeWidth="1.6"/>
             <line x1="-4" y1="-1.5" x2="9" y2="0"  stroke="var(--pl)" strokeWidth="1.6" strokeLinecap="round"/>
             <line x1="-4" y1="1.5"  x2="9" y2="0"  stroke="var(--pl)" strokeWidth="1.6" strokeLinecap="round"/>
           </g>
-          {/* Center pivot */}
           <circle cx="30" cy="30" r="1.5" fill="var(--pll)"/>
         </svg>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",lineHeight:1}}>
@@ -817,7 +944,8 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
 // ══════════════════════════════════════════════
 //  HOME
 // ══════════════════════════════════════════════
-function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons}){
+function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing}){
+  const[urgentMode,setUrgentMode]=useState(false);
 
   const getRealRating=(salonId)=>{
     const id=Number(salonId);
@@ -832,23 +960,17 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
     if(!navigator.geolocation){alert("⚠️ المتصفح لا يدعم تحديد الموقع");return;}
     navigator.geolocation.getCurrentPosition(
       p=>{setUserLoc({lat:p.coords.latitude,lng:p.coords.longitude});setSortBy("nearest");toast$&&toast$("✅ تم تحديد موقعك");},
-      err=>{
-        let m="تعذّر تحديد موقعك";
-        if(err.code===1)m="🚫 رفضت إذن الموقع — فعّله من إعدادات المتصفح";
-        else if(err.code===2)m="📡 خدمة الموقع غير متوفرة";
-        else if(err.code===3)m="⏱ انتهت مهلة التحديد";
-        alert(m);
-      },
+      err=>{let m="تعذّر تحديد موقعك";if(err.code===1)m="🚫 رفضت إذن الموقع";alert(m);},
       {enableHighAccuracy:true,timeout:15000,maximumAge:0}
     );
   };
 
-  // حجز سريع — آخر صالون زاره العميل
+  // حجز سريع
   const lastSalon=customer?.history?.length
     ?salons?.find(s=>s.id===Number(customer.history[customer.history.length-1]?.salonId))
     :null;
 
-  // إصلاح ترتيب الأقرب — استخدام Haversine
+  // Haversine
   const haversine=(lat1,lon1,lat2,lon2)=>{
     const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
     const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
@@ -861,17 +983,47 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
     return m?{lat:+m[1],lng:+m[2]}:null;
   };
 
-  // إعادة ترتيب حسب الأقرب بشكل صحيح
-  const sortedSalons=sortBy==="nearest"&&userLoc
-    ?[...displaySalons].sort((a,b)=>{
+  // وضع الاستعجال — الصالونات المفتوحة الآن
+  const now=new Date();
+  const curMins=now.getHours()*60+now.getMinutes();
+  const isOpenNow=(s)=>{
+    const toMins=(t)=>{const[h,m]=(t||"0:0").split(":").map(Number);return h*60+m;};
+    if(s.shiftEnabled){
+      return(curMins>=toMins(s.shift1Start)&&curMins<=toMins(s.shift1End))||(curMins>=toMins(s.shift2Start)&&curMins<=toMins(s.shift2End));
+    }
+    return curMins>=toMins(s.workStart)&&curMins<=toMins(s.workEnd);
+  };
+
+  // ترتيب الأقرب
+  const sortedSalons=(()=>{
+    let list=urgentMode?displaySalons.filter(isOpenNow):displaySalons;
+    if(sortBy==="nearest"&&userLoc){
+      return[...list].sort((a,b)=>{
         const ca=getSalonCoords(a),cb=getSalonCoords(b);
-        if(!ca&&!cb)return 0; if(!ca)return 1; if(!cb)return -1;
+        if(!ca&&!cb)return 0;if(!ca)return 1;if(!cb)return -1;
         return haversine(userLoc.lat,userLoc.lng,ca.lat,ca.lng)-haversine(userLoc.lat,userLoc.lng,cb.lat,cb.lng);
-      })
-    :displaySalons;
+      });
+    }
+    return list;
+  })();
+
+  // إضافة لمقارنة
+  const toggleCompare=(s)=>{
+    if(compareSalons.find(x=>x.id===s.id)){
+      setCompareSalons(p=>p.filter(x=>x.id!==s.id));
+    }else if(compareSalons.length<2){
+      setCompareSalons(p=>[...p,s]);
+      if(compareSalons.length===1){
+        setTimeout(()=>setView("compare"),300);
+      }
+    }
+  };
 
   return(
     <div style={G.page}>
+      {/* Pull to refresh */}
+      {pullRefreshing&&<div style={{position:"fixed",top:56,left:"50%",transform:"translateX(-50%)",zIndex:100,background:"var(--p)",color:"#000",padding:"4px 16px",borderRadius:20,fontSize:12,fontWeight:700}}>⟳ جاري التحديث...</div>}
+
       <div style={{background:"linear-gradient(160deg,#12122a,#1a1a3a)",borderBottom:"1px solid #2a2a3a",padding:"14px 14px 0"}}>
         <div style={{textAlign:"center",paddingBottom:10}}>
           <h1 style={{fontSize:24,fontWeight:900,color:"#fff",lineHeight:1.3}}>احجز وقتك<br/><span style={{color:"var(--p)"}}>بضغطة واحدة</span></h1>
@@ -887,24 +1039,34 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           </div>
         )}
 
+        {/* وضع الاستعجال */}
+        <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
+          <button style={{...G.sortChip,...(urgentMode?{...G.sortChipOn,background:"rgba(231,76,60,.2)",border:"1.5px solid #e74c3c",color:"#e74c3c"}:{})}} onClick={()=>setUrgentMode(u=>!u)}>
+            ⚡ {urgentMode?"مفتوح الآن":"استعجال"}
+          </button>
+          <button style={{...G.sortChip,...(compareSalons.length>0?G.sortChipOn:{})}} onClick={()=>compareSalons.length===2?setView("compare"):toast$&&toast$("اختر صالونين للمقارنة من القائمة")}>
+            ⚖ مقارنة {compareSalons.length>0&&`(${compareSalons.length}/2)`}
+          </button>
+          {compareSalons.length>0&&<button style={{...G.sortChip,color:"#e74c3c",border:"1px solid #e74c3c"}} onClick={()=>setCompareSalons([])}>✕</button>}
+        </div>
+
         <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
           <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
             <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
             <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/>
             {search&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0}} onClick={()=>setSearch("")}>✕</button>}
           </div>
-          {/* زر رئيسي — يعيد كل الفلاتر */}
           <button style={{background:"var(--pa12)",border:"1px solid var(--pa25)",borderRadius:9,padding:"6px 10px",color:"var(--p)",fontSize:11,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",fontWeight:600}} onClick={()=>{
             setSearch("");setSortBy("default");
             setFRegion("");setFGov("");setFCenter("");setFVillage("");
-            setShowFavs&&setShowFavs(false);
+            setShowFavs&&setShowFavs(false);setUrgentMode(false);setCompareSalons([]);
           }}>🏠 رئيسي</button>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:6,paddingBottom:14}}>
-          <LocFilter icon="🗺" label="المنطقة"   value={fRegion}  onChange={v=>{setFRegion(v);setFGov("");setFCenter("");setFVillage("");}}  options={allLoc.map(r=>r.region)} all="كل المناطق"/>
-          {fRegion&&<LocFilter icon="🏛" label="المحافظة"  value={fGov} onChange={v=>{setFGov(v);setFCenter("");setFVillage("");}} options={govList.map(g=>g.name||g)} all="كل المحافظات"/>}
+          <LocFilter icon="🗺" label="المنطقة" value={fRegion} onChange={v=>{setFRegion(v);setFGov("");setFCenter("");setFVillage("");}} options={allLoc.map(r=>r.region)} all="كل المناطق"/>
+          {fRegion&&<LocFilter icon="🏛" label="المحافظة" value={fGov} onChange={v=>{setFGov(v);setFCenter("");setFVillage("");}} options={govList.map(g=>g.name||g)} all="كل المحافظات"/>}
           {fGov&&centerList2.length>0&&<LocFilter icon="🏘" label="المركز" value={fCenter} onChange={v=>{setFCenter(v);setFVillage("");}} options={centerList2} all="كل المراكز"/>}
-          {fCenter&&(()=>{const villages=[...new Set(approvedSalons.filter(s=>s.center===fCenter&&s.village).map(s=>s.village))];return villages.length>0?<LocFilter icon="📍" label="الحي / القرية" value={fVillage} onChange={setFVillage} options={villages} all="كل الأحياء"/>:null;})()}
+          {fCenter&&(()=>{const villages=[...new Set(approvedSalons.filter(s=>s.center===fCenter&&s.village).map(s=>s.village))];return villages.length>0?<LocFilter icon="📍" label="الحي/القرية" value={fVillage} onChange={setFVillage} options={villages} all="كل الأحياء"/>:null;})()}
         </div>
       </div>
 
@@ -921,15 +1083,20 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
             setSortBy(k);
           }}>{ic} {l}</button>
         ))}
+        <button style={{...G.sortChip}} onClick={()=>setView("nearMap")}>📍 خريطة</button>
+        {/* زر تحديث */}
+        <button style={G.sortChip} onClick={handlePullRefresh}>⟳ تحديث</button>
       </div>
 
       <div style={{padding:"10px 14px 80px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <span style={{fontSize:15,fontWeight:700,color:"#fff"}}>الصالونات المتاحة</span>
+          <span style={{fontSize:15,fontWeight:700,color:"#fff"}}>
+            {urgentMode?"🔥 مفتوح الآن":"الصالونات المتاحة"}
+          </span>
           <span style={G.badge}>{sortedSalons.length}</span>
         </div>
         {sortedSalons.length===0
-          ?<div style={G.empty}>لا توجد صالونات في هذه المنطقة</div>
+          ?<div style={G.empty}>{urgentMode?"لا توجد صالونات مفتوحة الآن":"لا توجد صالونات في هذه المنطقة"}</div>
           :<div style={{display:"flex",flexDirection:"column",gap:11}}>
             {sortedSalons.map(s=>(
               <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
@@ -937,6 +1104,9 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
                 userLoc={userLoc}
                 getSalonCoords={getSalonCoords}
                 haversine={haversine}
+                isOpenNow={isOpenNow(s)}
+                inCompare={compareSalons.some(x=>x.id===s.id)}
+                onCompare={()=>toggleCompare(s)}
                 onBook={()=>{setSelSalon(s);setView("book");}}/>
             ))}
           </div>
@@ -957,11 +1127,11 @@ function LocFilter({icon,label,value,onChange,options,all}){
     </div>
   );
 }
-function SalonCard({salon,fav,onFav,onBook,realRating,userLoc,getSalonCoords,haversine}){
+function SalonCard({salon,fav,onFav,onBook,realRating,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
   const slots=getSlotsForSalon(salon);
   const displayRating=realRating||salon.rating||"5.0";
 
-  // حساب المسافة
+  // مسافة
   let distance=null;
   if(userLoc&&getSalonCoords&&haversine){
     const coords=getSalonCoords(salon);
@@ -977,13 +1147,15 @@ function SalonCard({salon,fav,onFav,onBook,realRating,userLoc,getSalonCoords,hav
   );
 
   return(
-    <div style={G.card} className="hcard">
-      {/* رسالة الترحيب */}
+    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #2a2a3a"}} className="hcard">
       {salon.welcomeMsg&&<div style={{fontSize:11,color:"var(--p)",fontStyle:"italic",marginBottom:6,padding:"5px 8px",background:"var(--pa08)",borderRadius:7}}>💬 {salon.welcomeMsg}</div>}
       <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:6}}>
         <div style={G.cav}>✂</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div>
+            {isOpenNow&&<span style={{fontSize:9,background:"rgba(39,174,96,.2)",color:"#27ae60",padding:"1px 6px",borderRadius:10,fontWeight:700}}>مفتوح</span>}
+          </div>
           <div style={{fontSize:11,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
           {distance&&<div style={{fontSize:11,color:"#27ae60"}}>📡 {distance} كم</div>}
         </div>
@@ -998,11 +1170,11 @@ function SalonCard({salon,fav,onFav,onBook,realRating,userLoc,getSalonCoords,hav
         {salon.services.length>3&&<span style={{...G.tag,color:"#888"}}>+{salon.services.length-3}</span>}
       </div>
       <div style={{display:"flex",gap:6,alignItems:"center"}}>
-        {/* GPS بدل الخريطة */}
-        <button style={{...G.mapsBtn,fontSize:16}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع على الخريطة">
+        <button style={{...G.mapsBtn,fontSize:16}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
         </button>
         <button style={{...G.heartCardBtn,...(fav?G.heartCardOn:{})}} onClick={onFav}>{fav?"♥":"♡"}</button>
+        {onCompare&&<button style={{...G.mapsBtn,background:inCompare?"var(--pa25)":"transparent",border:`1px solid ${inCompare?"var(--p)":"#444"}`,color:inCompare?"var(--p)":"#888",fontSize:11}} onClick={onCompare}>⚖</button>}
         <button style={G.bookBtn} onClick={onBook}>احجز الآن</button>
       </div>
     </div>
@@ -1032,6 +1204,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
           <button style={G.bb} onClick={()=>setView("home")}>→</button>
           <h2 style={{...G.ft,flex:1}}>{salon.name}</h2>
           <button style={{...G.favBtn,...(fav?G.favOn:{}),fontSize:20}} onClick={()=>toggleFav(salon.id)}>{fav?"♥":"♡"}</button>
+          <ShareBtn salon={salon}/>
           {adminSession&&<button style={{...G.delBtn,marginRight:0}} onClick={()=>{deleteSalon(salon.id);setView("home");}}>🗑</button>}
         </div>
         <div style={G.salonBadge}>
@@ -1120,7 +1293,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
   const v2=()=>{const e={};if(!form.date)e.date="مطلوب";if(!form.time)e.time="اختر وقتاً";setErrors(e);return!Object.keys(e).length;};
   const inner=(
     <>
-      {!inline&&<div style={G.salonBadge}><span style={{fontSize:20,color:"var(--p)"}}>✂</span><div style={{flex:1}}><div style={{fontWeight:700,color:"#fff"}}>{salon.name}</div><div style={{fontSize:11,color:"#888"}}>{salon.gov||salon.region}</div></div><button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>🗺</button></div>}
+      {!inline&&<div style={G.salonBadge}><span style={{fontSize:20,color:"var(--p)"}}>✂</span><div style={{flex:1}}><div style={{fontWeight:700,color:"#fff"}}>{salon.name}</div><div style={{fontSize:11,color:"#888"}}>{salon.gov||salon.region}</div></div><button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg></button></div>}
       <div style={G.steps}>{["بياناتك","الموعد","تأكيد"].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:10,color:"var(--p)"}}>{l}</span></div>)}</div>
       {step===1&&<div style={G.fc}>
         <F label="اسمك الكريم" error={errors.name}><input style={fi(errors.name)} placeholder="الاسم الكامل" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></F>
@@ -1155,7 +1328,24 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
         <button style={G.sub} onClick={()=>{if(v1())setStep(2);}}>التالي →</button>
       </div>}
       {step===2&&<div style={G.fc}>
-        <F label="التاريخ" error={errors.date}><input type="date" style={fi(errors.date)} value={form.date} min={todayStr()} onChange={e=>setForm(p=>({...p,date:e.target.value,time:""}))}/></F>
+        <F label="التاريخ" error={errors.date}>
+          <input type="date" style={fi(errors.date)} value={form.date} min={todayStr()}
+            onChange={e=>{
+              const d=new Date(e.target.value);
+              const dayOfWeek=d.getDay();
+              if(salon.closedDays?.includes(dayOfWeek)){
+                const DAYS=["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+                alert(`⚠️ الصالون مغلق يوم ${DAYS[dayOfWeek]}`);
+                return;
+              }
+              setForm(p=>({...p,date:e.target.value,time:""}));
+            }}/>
+          {salon.closedDays?.length>0&&(
+            <div style={{fontSize:10,color:"#888",marginTop:3}}>
+              🚫 مغلق أيام: {["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"].filter((_,i)=>salon.closedDays.includes(i)).join(" · ")}
+            </div>
+          )}
+        </F>
         {salon.shiftEnabled&&<div style={{fontSize:11,color:"var(--p)",background:"var(--pa07)",borderRadius:8,padding:"6px 10px",marginBottom:8}}>⏰ {salon.shift1Start}–{salon.shift1End} | {salon.shift2Start}–{salon.shift2End}</div>}
         <div style={{fontSize:12,color:"#aaa",marginBottom:7}}>اختر الوقت{form.barberId?` · ${barber?.name||""}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
@@ -1165,13 +1355,13 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
       {step===3&&<div style={G.fc}>
         <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:36}}>✅</div><h3 style={{color:"#fff",marginTop:4,fontSize:16}}>تأكيد الحجز</h3></div>
         {[["الاسم",form.name],["الجوال",form.phone],["الخدمات",form.services.join(" + ")],["الحلاق",barber?.name||"أي حلاق"],["التاريخ",form.date],["الوقت",form.time],["الإجمالي",`${total} ريال`]].map(([l,v])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}><span style={{color:"#888",fontSize:12}}>{l}</span><span style={{color:"#f0f0f0",fontWeight:600,fontSize:12}}>{v}</span></div>)}
-        <button style={{...G.mapsBtn,width:"100%",marginTop:10,justifyContent:"center",display:"flex",padding:10}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>🗺 افتح على خريطة Google</button>
+        <button style={{...G.mapsBtn,width:"100%",marginTop:10,justifyContent:"center",display:"flex",padding:10}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>📍 افتح على الخريطة</button>
         <button style={{...G.sub,marginTop:8,background:"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff"}} onClick={()=>addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total})}>إرسال طلب الحجز 🎉</button>
       </div>}
     </>
   );
   if(inline)return <div>{inner}</div>;
-  return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={onBack}>→</button><h2 style={G.ft}>حجز موعد</h2></div>{inner}</div></div>;
+  return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>onBack?onBack():setView("home")}>→</button><h2 style={G.ft}>حجز موعد</h2></div>{inner}</div></div>;
 }
 
 // ══════════════════════════════════════════════
@@ -1272,6 +1462,24 @@ function StatsPanel({salon}){
         <div style={{fontSize:26,fontWeight:900,color:"var(--p)"}}>{bks.filter(b=>b.status==="approved").reduce((a,b)=>a+(b.total||0),0)} <span style={{fontSize:13}}>ريال</span></div>
       </div>
 
+      {/* أكثر خدمة مطلوبة */}
+      {(()=>{
+        const svcCount={};
+        bks.forEach(b=>(b.services||[]).forEach(s=>{svcCount[s]=(svcCount[s]||0)+1;}));
+        const top=Object.entries(svcCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        return top.length>0?(
+          <div style={{background:"#13131f",borderRadius:11,padding:"12px 14px",border:"1px solid #2a2a3a",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:"var(--p)",marginBottom:8}}>🏆 أكثر الخدمات طلباً</div>
+            {top.map(([svc,cnt],i)=>(
+              <div key={svc} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                <span style={{fontSize:12,color:"#fff"}}>{["🥇","🥈","🥉"][i]} {svc}</span>
+                <span style={{fontSize:12,color:"var(--p)",fontWeight:700}}>{cnt} مرة</span>
+              </div>
+            ))}
+          </div>
+        ):null;
+      })()}
+
       {/* رسم بياني */}
       <div style={{background:"#13131f",borderRadius:11,padding:"12px 8px",border:"1px solid #2a2a3a",marginBottom:4}}>
         <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:10}}>📊 {mode==="year"?"الحجوزات الشهرية":"الحجوزات اليومية"}</div>
@@ -1288,17 +1496,69 @@ function StatsPanel({salon}){
   );
 }
 function NotifPanel({salon,onUpdate}){
+  const[showWaiting,setShowWaiting]=useState(false);
+  const KEY=`dork_waiting_${salon.id}`;
+  const[waitingList,setWaitingList]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
+
+  const addToWaiting=(name,phone)=>{
+    const item={id:Date.now(),name,phone,addedAt:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
+    const newList=[...waitingList,item];
+    setWaitingList(newList);
+    try{localStorage.setItem(KEY,JSON.stringify(newList));}catch{}
+  };
+
+  const removeFromWaiting=(id)=>{
+    const newList=waitingList.filter(w=>w.id!==id);
+    setWaitingList(newList);
+    try{localStorage.setItem(KEY,JSON.stringify(newList));}catch{}
+  };
+
   const bks=[...salon.bookings].reverse();
-  if(!bks.length)return <div style={G.empty}>لا توجد حجوزات</div>;
-  return <div style={{display:"flex",flexDirection:"column",gap:8,paddingTop:4}}>{bks.map(b=>(
-    <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
-      <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
-        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {b.name}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` · ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} · {b.total||0} ر</div></div>
-        <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
-      </div>
-      {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
+
+  return(
+    <div style={{paddingTop:4}}>
+      {/* قائمة الانتظار */}
+      <button style={{...G.sub,marginBottom:10,background:showWaiting?"var(--pa25)":"transparent",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>setShowWaiting(w=>!w)}>
+        ⏳ قائمة الانتظار {waitingList.length>0&&`(${waitingList.length})`}
+      </button>
+      {showWaiting&&(
+        <div style={{background:"#13131f",borderRadius:12,padding:12,border:"1px solid var(--pa25)",marginBottom:12}}>
+          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>⏳ العملاء في قائمة الانتظار</div>
+          {waitingList.length===0&&<div style={{fontSize:12,color:"#888",marginBottom:8}}>لا يوجد أحد في قائمة الانتظار</div>}
+          {waitingList.map(w=>(
+            <div key={w.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}>
+              <div>
+                <div style={{fontSize:12,color:"#fff",fontWeight:600}}>{w.name}</div>
+                <div style={{fontSize:11,color:"#888"}}>{w.phone} · {w.addedAt}</div>
+              </div>
+              <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
+            </div>
+          ))}
+          <div style={{display:"flex",gap:6,marginTop:8}}>
+            <input id="wname" style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl"}} placeholder="الاسم"/>
+            <input id="wphone" style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"ltr"}} placeholder="الجوال"/>
+            <button style={{...G.sub,width:"auto",padding:"0 10px",marginTop:0,fontSize:12}} onClick={()=>{
+              const n=document.getElementById("wname")?.value;
+              const p=document.getElementById("wphone")?.value;
+              if(n&&p){addToWaiting(n,p);document.getElementById("wname").value="";document.getElementById("wphone").value="";}
+            }}>+</button>
+          </div>
+        </div>
+      )}
+
+      {/* الحجوزات */}
+      {!bks.length?<div style={G.empty}>لا توجد حجوزات</div>:
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>{bks.map(b=>(
+        <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
+          <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
+            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {b.name}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` · ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} · {b.total||0} ر</div></div>
+            <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
+          </div>
+          {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
+        </div>
+      ))}</div>}
     </div>
-  ))}</div>;
+  );
 }
 
 // ══════════════════════════════════════════════
@@ -1575,12 +1835,14 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 // ══════════════════════════════════════════════
 //  ADMIN VIEW
 // ══════════════════════════════════════════════
-function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,approveSalon,onEnter,adminSession,onPage,setSelSalon,toast$}){
+function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,approveSalon,onEnter,adminSession,setAdminSession,onPage,setSelSalon,toast$,loyaltySettings,setLoyaltySettings,socialLinks,setSocialLinks}){
   const[pw,setPw]=useState(""); const[err,setErr]=useState(false);
   const[tab,setTab]=useState("pending");
   const[search,setSearch]=useState("");
   const[adminPwd,setAdminPwd]=useState(ADMIN_PWD);
   const[pwForm,setPwForm]=useState({old:"",n1:"",n2:"",err:""});
+  const[bkFilter,setBkFilter]=useState("all");
+  const[bkDate,setBkDate]=useState("");
 
   if(!adminSession)return(
     <div style={G.page}><div style={G.fp}>
@@ -1629,7 +1891,7 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={G.ft}>🔐 لوحة الإدارة</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={{...G.ft,flex:1}}>🔐 لوحة الإدارة</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent",fontSize:11,padding:"5px 10px"}} onClick={()=>{if(confirm("تسجيل خروج من الإدارة؟")){setAdminSession(false);localStorage.removeItem("dork_admin");setView("home");}}}>خروج</button></div>
 
       {/* إشعار صالون جديد */}
       {pending.length>0&&(
@@ -1691,6 +1953,11 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
           {k:"salons",l:"✂ الصالونات",n:salons.length},
           {k:"bookings",l:"📋 الحجوزات",n:totalBk},
           {k:"customers",l:"👥 العملاء",n:customers.length},
+          {k:"compare",l:"📈 مقارنة",n:0},
+          {k:"messages",l:"💬 رسائل",n:0},
+          {k:"loyalty",l:"🎁 النقاط",n:0},
+          {k:"social",l:"📱 التواصل",n:0},
+          {k:"add",l:"➕ إضافة",n:0},
           {k:"password",l:"🔑 كلمة المرور",n:0},
         ].map(({k,l,n})=>(
           <button key={k} style={{...G.tabBtn,fontSize:11,...(tab===k?G.tabOn:{})}} onClick={()=>setTab(k)}>
@@ -1743,6 +2010,11 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
             const csv=rows.map(r=>r.join(",")).join("\n");
             const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download="salons.csv";a.click();
           }}>📥 تصدير CSV</button>
+          <button style={{...G.sub,marginBottom:10,background:"#1a1a3a",border:"1px solid #3b82f6",color:"#60a5fa"}} onClick={()=>{
+            const lines=filterSalons(approved).map((s,i)=>`${i+1}. ${s.name} | ${s.gov||s.region} | ${s.bookings.length} حجز | ${s.rating}⭐`).join("\n");
+            const content=`تقرير صالونات دورك\n==================\nالتاريخ: ${new Date().toLocaleDateString("ar")}\nإجمالي الصالونات: ${approved.length}\n\n${lines}\n\nإجمالي الحجوزات: ${totalBk}\nإجمالي الإيرادات: ${totalRev} ريال`;
+            const a=document.createElement("a");a.href="data:text/plain;charset=utf-8,"+encodeURIComponent(content);a.download="dork-report.txt";a.click();
+          }}>📄 تقرير نصي</button>
           <AdminApprovedList salons={filterSalons(approved)} setSalons={setSalons} deleteSalon={deleteSalon} setSelSalon={setSelSalon} setView={setView} toast$={toast$}/>
         </>
       )}
@@ -1767,31 +2039,50 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
       )}
 
       {/* الحجوزات */}
-      {tab==="bookings"&&(filteredBookings.length===0
-        ?<div style={G.empty}>{search?"لا نتائج":"لا توجد حجوزات"}</div>
-        :<div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {filteredBookings.map((b,i)=>{
-            const sc=b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)";
-            const sl=b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار";
-            return(
-              <div key={i} style={{...G.bItem,borderRight:`3px solid ${sc}`}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {b.salonName}</div>
-                    <div style={{fontSize:11,color:"#aaa"}}>👤 {b.name} · 📞 {b.phone}</div>
-                    <div style={{fontSize:11,color:"#aaa"}}>📅 {b.date} · 🕐 {b.time}</div>
-                    <div style={{fontSize:11,color:"#aaa"}}>{(b.services||[]).join(" + ")}</div>
-                  </div>
-                  <div style={{textAlign:"left",flexShrink:0}}>
-                    <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>{b.total||0} ر</div>
-                    <div style={{fontSize:10,color:sc,marginTop:3}}>{sl}</div>
-                  </div>
-                </div>
+      {tab==="bookings"&&(()=>{
+        const filtered=filteredBookings.filter(b=>{
+          if(bkFilter!=="all"&&b.status!==bkFilter)return false;
+          if(bkDate&&b.date!==bkDate)return false;
+          return true;
+        });
+        return(
+          <div>
+            {/* فلاتر الحجوزات */}
+            <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+              {[["all","الكل"],["pending","⏳"],["approved","✅"],["rejected","❌"]].map(([k,l])=>(
+                <button key={k} style={{...G.tabBtn,fontSize:11,...(bkFilter===k?G.tabOn:{})}} onClick={()=>setBkFilter(k)}>{l}</button>
+              ))}
+              <input type="date" style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:11,fontFamily:"inherit",outline:"none",direction:"ltr"}} value={bkDate} onChange={e=>setBkDate(e.target.value)}/>
+              {bkDate&&<button style={G.xBtn} onClick={()=>setBkDate("")}>✕</button>}
+            </div>
+            {filtered.length===0
+              ?<div style={G.empty}>لا نتائج</div>
+              :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {filtered.map((b,i)=>{
+                  const sc=b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)";
+                  const sl=b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار";
+                  return(
+                    <div key={i} style={{...G.bItem,borderRight:`3px solid ${sc}`}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                        <div>
+                          <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {b.salonName}</div>
+                          <div style={{fontSize:11,color:"#aaa"}}>👤 {b.name} · 📞 {b.phone}</div>
+                          <div style={{fontSize:11,color:"#aaa"}}>📅 {b.date} · 🕐 {b.time}</div>
+                          <div style={{fontSize:11,color:"#aaa"}}>{(b.services||[]).join(" + ")}</div>
+                        </div>
+                        <div style={{textAlign:"left",flexShrink:0}}>
+                          <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>{b.total||0} ر</div>
+                          <div style={{fontSize:10,color:sc,marginTop:3}}>{sl}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
-      )}
+            }
+          </div>
+        );
+      })()}
 
       {/* الصالونات بالاسم */}
       {tab==="salons"&&(()=>{
@@ -1832,9 +2123,107 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
         :<AdminCustomerList customers={filteredCustomers} salons={salons} toast$={toast$} setCustomers={setCustomers}/>
       )}
 
-      {/* كلمة المرور */}
-      {tab==="password"&&(
+      {/* مقارنة الصالونات + PDF */}
+      {tab==="compare"&&(
+        <div>
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            <button style={{flex:1,...G.sub,background:"#1a3a1a",border:"1px solid #27ae60",color:"#4caf50",marginTop:0}} onClick={()=>{
+              const rows=[["الصالون","الحجوزات","المقبولة","الإيرادات","التقييم","المنطقة"],
+                ...approved.map(s=>[s.name,s.bookings.length,s.bookings.filter(b=>b.status==="approved").length,s.bookings.filter(b=>b.status==="approved").reduce((a,b)=>a+(b.total||0),0)+" ر",s.rating,s.gov||s.region])];
+              const csv=rows.map(r=>r.join(",")).join("\n");
+              const a=document.createElement("a");
+              a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+              a.download="تقرير_دورك.csv";a.click();
+              toast$&&toast$("✅ تم تحميل التقرير CSV");
+            }}>📊 تقرير CSV</button>
+            <button style={{flex:1,...G.sub,marginTop:0}} onClick={()=>{
+              const lines=["📊 تقرير دورك — "+new Date().toLocaleDateString("ar-SA"),"═".repeat(40),"",
+                ...approved.map((s,i)=>`${i+1}. ${s.name}\n   📅 ${s.bookings.length} حجز | ✅ ${s.bookings.filter(b=>b.status==="approved").length} مقبول\n   💰 ${s.bookings.filter(b=>b.status==="approved").reduce((a,b)=>a+(b.total||0),0)} ريال | ⭐ ${s.rating}\n   📍 ${s.gov||s.region}`),
+                "","═".repeat(40),`إجمالي الصالونات: ${approved.length}`,`إجمالي الحجوزات: ${approved.reduce((a,s)=>a+s.bookings.length,0)}`,`إجمالي الإيرادات: ${approved.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="approved").reduce((x,b)=>x+(b.total||0),0),0)} ريال`];
+              const a=document.createElement("a");
+              a.href="data:text/plain;charset=utf-8,"+encodeURIComponent(lines.join("\n"));
+              a.download="تقرير_دورك.txt";a.click();
+              toast$&&toast$("✅ تم تحميل التقرير");
+            }}>📄 تقرير نصي</button>
+          </div>
+
+          {approved.length===0
+            ?<div style={G.empty}>لا توجد صالونات مفعّلة</div>
+            :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {[...approved].sort((a,b)=>b.bookings.length-a.bookings.length).map((s,i)=>{
+                const rev=s.bookings.filter(b=>b.status==="approved").reduce((a,b)=>a+(b.total||0),0);
+                const maxBk=approved[0]?.bookings.length||1;
+                const pct=Math.round(s.bookings.length/maxBk*100);
+                return(
+                  <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${i===0?"#f0c040":i===1?"#888":"#cd7f32"}`}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":"  "} {s.name}</div>
+                      <div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>{rev} ر</div>
+                    </div>
+                    <div style={{display:"flex",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                      <span style={{fontSize:11,color:"#888"}}>📅 {s.bookings.length} حجز</span>
+                      <span style={{fontSize:11,color:"#27ae60"}}>✅ {s.bookings.filter(b=>b.status==="approved").length}</span>
+                      <span style={{fontSize:11,color:"var(--p)"}}>⭐ {s.rating}</span>
+                      <span style={{fontSize:11,color:"#6aadff"}}>📍 {s.gov||s.region}</span>
+                    </div>
+                    <div style={{height:6,background:"#1a1a2e",borderRadius:10,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${pct}%`,background:"linear-gradient(90deg,var(--p),var(--pl))",borderRadius:10}}/>
+                    </div>
+                    <div style={{fontSize:10,color:"#555",marginTop:3,textAlign:"left"}}>{pct}%</div>
+                  </div>
+                );
+              })}
+            </div>
+          }
+        </div>
+      )}
+
+      {tab==="comparison"&&<SalonComparison salons={approved}/>}
+      {/* رسائل الإدارة */}
+      {tab==="messages"&&<AdminMessages salons={approved} toast$={toast$}/>}
+
+      {/* النقاط */}
+      {tab==="loyalty"&&(
+        <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #27ae6033"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#27ae60",marginBottom:12,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>🎁 إعدادات نقاط الولاء</div>
+          <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}}>
+            <input type="checkbox" checked={loyaltySettings?.enabled||false} onChange={e=>setLoyaltySettings&&setLoyaltySettings(p=>({...p,enabled:e.target.checked}))}/>
+            <span style={{fontSize:13,color:"#fff",fontWeight:700}}>تفعيل نظام النقاط للجميع</span>
+          </label>
+          {loyaltySettings?.enabled&&<>
+            {[{l:"نقاط لكل حجز",k:"pointsPerBooking"},{l:"الحد الأدنى للاستخدام",k:"minRedeemPoints"},{l:"قيمة النقطة (ريال)",k:"redeemValue"}].map(({l,k})=>(
+              <div key={k} style={{marginBottom:10}}>
+                <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600}}>{l}</label>
+                <input type="number" min="1" style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"var(--p)",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} value={loyaltySettings?.[k]||0} onChange={e=>setLoyaltySettings&&setLoyaltySettings(p=>({...p,[k]:+e.target.value}))}/>
+              </div>
+            ))}
+          </>}
+          <button style={G.sub} onClick={()=>toast$&&toast$("✅ تم حفظ إعدادات النقاط")}>💾 حفظ</button>
+        </div>
+      )}
+
+      {/* التواصل */}
+      {tab==="social"&&(
         <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>📱 وسائل التواصل الاجتماعي</div>
+          {[{k:"email",l:"📧 البريد",ph:"example@email.com"},{k:"twitter",l:"🐦 تويتر",ph:"@username"},{k:"whatsapp",l:"💬 واتساب",ph:"05XXXXXXXX"},{k:"telegram",l:"✈️ تيليجرام (رقم)",ph:"05XXXXXXXX"},{k:"telegramUser",l:"✈️ تيليجرام (مستخدم)",ph:"@username"}].map(({k,l,ph})=>(
+            <div key={k} style={{marginBottom:10}}>
+              <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600}}>{l}</label>
+              <input style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} placeholder={ph} value={socialLinks?.[k]||""} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,[k]:e.target.value}))}/>
+            </div>
+          ))}
+          <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer"}}>
+            <input type="checkbox" checked={socialLinks?.enabled||false} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,enabled:e.target.checked}))}/>
+            <span style={{fontSize:12,color:"#fff"}}>إظهار للمستخدمين في الإعدادات</span>
+          </label>
+          <button style={G.sub} onClick={()=>toast$&&toast$("✅ تم حفظ التواصل")}>💾 حفظ</button>
+        </div>
+      )}
+
+      {/* إضافة صالون أو عميل */}
+      {tab==="add"&&<AdminAddView salons={salons} setSalons={setSalons} customers={customers} setCustomers={setCustomers} toast$={toast$} approveSalon={approveSalon}/>}
+
+      {tab==="password"&&<div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
           <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>🔑 تغيير كلمة مرور الإدارة</div>
           {[{l:"كلمة المرور الحالية",k:"old"},{l:"كلمة المرور الجديدة",k:"n1"},{l:"تأكيد كلمة المرور",k:"n2"}].map(({l,k})=>(
             <div key={k} style={{marginBottom:10}}>
@@ -1852,10 +2241,288 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
             toast$&&toast$("✅ تم تغيير كلمة المرور");
           }}>💾 حفظ كلمة المرور الجديدة</button>
           <div style={{fontSize:11,color:"#555",marginTop:8}}>⚠️ تُحفظ في الجلسة الحالية فقط</div>
-        </div>
-      )}
+        </div>}
 
     </div></div>
+  );
+}
+
+// ══════════════════════════════════════════════
+//  ADMIN ADD VIEW — إضافة صالون أو عميل
+// ══════════════════════════════════════════════
+function AdminAddView({salons,setSalons,customers,setCustomers,toast$,approveSalon}){
+  const[mode,setMode]=useState("salon"); // salon | customer
+  const[f,setF]=useState({name:"",owner:"",phone:"",ownerPhone:"",region:"",gov:"",address:""});
+  const[cf,setCf]=useState({name:"",phone:"",password:""});
+
+  const addSalon=async()=>{
+    if(!f.name||!f.phone){toast$&&toast$("❌ الاسم والجوال مطلوبان","err");return;}
+    try{
+      const data={name:f.name,owner:f.owner,phone:f.phone,owner_phone:f.ownerPhone,region:f.region,gov:f.gov,address:f.address,status:"approved",bookings:[],services:[],barbers:[],prices:{},rating:5,workStart:"09:00",workEnd:"23:00"};
+      const res=await sb("salons","POST",data,"");
+      toast$&&toast$("✅ تم إضافة الصالون وتفعيله");
+      setF({name:"",owner:"",phone:"",ownerPhone:"",region:"",gov:"",address:""});
+    }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
+  };
+
+  const addCustomer=async()=>{
+    if(!cf.name||!cf.phone){toast$&&toast$("❌ الاسم والجوال مطلوبان","err");return;}
+    try{
+      await sb("customers","POST",{name:cf.name,phone:cf.phone,password:cf.password||"1234",history:[],favs:[]},"");
+      toast$&&toast$("✅ تم إضافة العميل");
+      setCf({name:"",phone:"",password:""});
+    }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
+  };
+
+  const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box",marginBottom:10};
+  const lbl={display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600};
+
+  return(
+    <div>
+      <div style={{display:"flex",gap:8,marginBottom:14}}>
+        <button style={{flex:1,padding:"10px",borderRadius:10,border:`1.5px solid ${mode==="salon"?"var(--p)":"#2a2a3a"}`,background:mode==="salon"?"var(--pa12)":"transparent",color:mode==="salon"?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontWeight:mode==="salon"?700:400}} onClick={()=>setMode("salon")}>✂ إضافة صالون</button>
+        <button style={{flex:1,padding:"10px",borderRadius:10,border:`1.5px solid ${mode==="customer"?"var(--p)":"#2a2a3a"}`,background:mode==="customer"?"var(--pa12)":"transparent",color:mode==="customer"?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontWeight:mode==="customer"?700:400}} onClick={()=>setMode("customer")}>👤 إضافة عميل</button>
+      </div>
+
+      {mode==="salon"&&<div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
+        <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12}}>✂ إضافة صالون جديد</div>
+        {[["اسم الصالون","name"],["اسم المالك","owner"],["جوال الصالون","phone"],["جوال المالك","ownerPhone"],["المنطقة","region"],["المحافظة","gov"],["العنوان","address"]].map(([l,k])=>(
+          <div key={k}><label style={lbl}>{l}</label><input style={inp} value={f[k]} onChange={e=>setF(p=>({...p,[k]:e.target.value}))}/></div>
+        ))}
+        <button style={G.sub} onClick={addSalon}>✅ إضافة وتفعيل الصالون</button>
+      </div>}
+
+      {mode==="customer"&&<div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
+        <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12}}>👤 إضافة عميل جديد</div>
+        {[["الاسم","name"],["رقم الجوال","phone"],["كلمة المرور","password"]].map(([l,k])=>(
+          <div key={k}><label style={lbl}>{l}</label><input style={inp} type={k==="password"?"password":"text"} value={cf[k]} onChange={e=>setCf(p=>({...p,[k]:e.target.value}))}/></div>
+        ))}
+        <button style={G.sub} onClick={addCustomer}>✅ إضافة العميل</button>
+      </div>}
+    </div>
+  );
+}
+// ══════════════════════════════════════════════
+//  NOTIFS VIEW — صفحة الإشعارات
+// ══════════════════════════════════════════════
+function NotifsView({setView}){
+  const[notifs,setNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
+
+  const markAll=()=>{
+    const updated=notifs.map(n=>({...n,read:true}));
+    setNotifs(updated);
+    localStorage.setItem("dork_notifs",JSON.stringify(updated));
+    localStorage.setItem("dork_notif_count","0");
+  };
+
+  const clearAll=()=>{
+    setNotifs([]);
+    localStorage.setItem("dork_notifs","[]");
+    localStorage.setItem("dork_notif_count","0");
+  };
+
+  return(
+    <div style={G.page}><div style={G.fp}>
+      <div style={G.fh}>
+        <button style={G.bb} onClick={()=>setView("home")}>→</button>
+        <h2 style={{...G.ft,flex:1}}>🔔 الإشعارات</h2>
+        {notifs.length>0&&<button style={{...G.pageBtn,fontSize:11,padding:"5px 10px"}} onClick={markAll}>قراءة الكل</button>}
+        {notifs.length>0&&<button style={{...G.delBtn,fontSize:11,padding:"5px 10px"}} onClick={clearAll}>مسح</button>}
+      </div>
+      {notifs.length===0
+        ?<div style={G.empty}>🔔 لا توجد إشعارات</div>
+        :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {notifs.map(n=>(
+            <div key={n.id} style={{...G.bItem,borderRight:`3px solid ${n.read?"#2a2a3a":"var(--p)"}`,opacity:n.read?.7:1}}>
+              <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                <span style={{fontSize:20,flexShrink:0}}>{n.icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.title}</div>
+                  <div style={{fontSize:12,color:"#aaa",marginTop:2}}>{n.body}</div>
+                  <div style={{fontSize:10,color:"#555",marginTop:4}}>{n.time}</div>
+                </div>
+                {!n.read&&<div style={{width:8,height:8,borderRadius:"50%",background:"var(--p)",flexShrink:0,marginTop:4}}/>}
+              </div>
+            </div>
+          ))}
+        </div>
+      }
+    </div></div>
+  );
+}
+
+function CompareSalonsView({salons,setView,setSelSalon}){
+  if(!salons||salons.length<2)return(
+    <div style={G.page}><div style={G.fp}>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={G.ft}>⚖ مقارنة الصالونات</h2></div>
+      <div style={G.empty}>اختر صالونين من الصفحة الرئيسية للمقارنة</div>
+    </div></div>
+  );
+
+  const [a,b]=salons;
+  const rows=[
+    {l:"التقييم",av:a.rating||"—",bv:b.rating||"—",better:(+a.rating||0)>(+b.rating||0)?"a":"b"},
+    {l:"عدد الحلاقين",av:a.barbers?.length||1,bv:b.barbers?.length||1,better:(a.barbers?.length||1)>(b.barbers?.length||1)?"a":"b"},
+    {l:"عدد الخدمات",av:a.services.length,bv:b.services.length,better:a.services.length>b.services.length?"a":"b"},
+    {l:"أقل سعر",av:Math.min(...Object.values(a.prices||{0:0}))+" ر",bv:Math.min(...Object.values(b.prices||{0:0}))+" ر",better:Math.min(...Object.values(a.prices||{999:0}))<Math.min(...Object.values(b.prices||{999:0}))?"a":"b"},
+    {l:"أعلى سعر",av:Math.max(...Object.values(a.prices||{0:0}))+" ر",bv:Math.max(...Object.values(b.prices||{0:0}))+" ر",better:Math.max(...Object.values(a.prices||{0:0}))<Math.max(...Object.values(b.prices||{0:0}))?"a":"b"},
+    {l:"الحجوزات",av:a.bookings.length,bv:b.bookings.length,better:a.bookings.length>b.bookings.length?"a":"b"},
+  ];
+
+  return(
+    <div style={G.page}><div style={G.fp}>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={G.ft}>⚖ مقارنة الصالونات</h2></div>
+
+      {/* عناوين */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
+        <div/>
+        {[a,b].map(s=>(
+          <div key={s.id} style={{background:"#13131f",borderRadius:12,padding:"12px 8px",textAlign:"center",border:"1px solid var(--pa25)",cursor:"pointer"}} onClick={()=>{setSelSalon(s);setView("salon");}}>
+            <div style={{fontSize:24,marginBottom:4}}>✂</div>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",lineHeight:1.3}}>{s.name}</div>
+            <div style={{fontSize:10,color:"#888",marginTop:3}}>📍 {s.gov||s.region}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* مقارنة */}
+      {rows.map(({l,av,bv,better})=>(
+        <div key={l} style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:6,alignItems:"center"}}>
+          <div style={{fontSize:11,color:"#888",textAlign:"center"}}>{l}</div>
+          {[{v:av,side:"a"},{v:bv,side:"b"}].map(({v,side})=>(
+            <div key={side} style={{background:better===side?"var(--pa12)":"#13131f",border:`1px solid ${better===side?"var(--p)":"#2a2a3a"}`,borderRadius:9,padding:"8px 6px",textAlign:"center"}}>
+              <div style={{fontSize:14,fontWeight:better===side?900:400,color:better===side?"var(--p)":"#aaa"}}>{v}</div>
+              {better===side&&<div style={{fontSize:9,color:"var(--p)"}}>✓ أفضل</div>}
+            </div>
+          ))}
+        </div>
+      ))}
+
+      {/* الخدمات */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:12}}>
+        {[a,b].map(s=>(
+          <div key={s.id} style={{background:"#13131f",borderRadius:12,padding:12,border:"1px solid #2a2a3a"}}>
+            <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:8}}>خدمات {s.name.split(" ")[0]}</div>
+            {s.services.map(sv=>(
+              <div key={sv} style={{display:"flex",justifyContent:"space-between",marginBottom:4,fontSize:11}}>
+                <span style={{color:"#fff"}}>{sv}</span>
+                <span style={{color:"var(--p)"}}>{s.prices?.[sv]||0} ر</span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* أزرار الحجز */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:12}}>
+        {[a,b].map(s=>(
+          <button key={s.id} style={G.sub} onClick={()=>{setSelSalon(s);setView("book");}}>
+            احجز في {s.name.split(" ")[0]}
+          </button>
+        ))}
+      </div>
+    </div></div>
+  );
+}
+
+// ══════════════════════════════════════════════
+//  NEAR MAP VIEW — خريطة الصالونات القريبة
+// ══════════════════════════════════════════════
+function NearMapView({salons,setView,setSelSalon}){
+  const[userLoc,setUserLoc]=useState(null);
+  const[loading,setLoading]=useState(false);
+  const[sorted,setSorted]=useState([]);
+
+  const haversine=(lat1,lon1,lat2,lon2)=>{
+    const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  };
+
+  const getCoords=(s)=>{
+    if(!s.locationUrl)return null;
+    const m=s.locationUrl.match(/q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    return m?{lat:+m[1],lng:+m[2]}:null;
+  };
+
+  const detect=()=>{
+    if(!navigator.geolocation){alert("⚠️ المتصفح لا يدعم تحديد الموقع");return;}
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      p=>{
+        const loc={lat:p.coords.latitude,lng:p.coords.longitude};
+        setUserLoc(loc);
+        const s=[...salons].map(s=>({...s,dist:getCoords(s)?haversine(loc.lat,loc.lng,getCoords(s).lat,getCoords(s).lng):999}))
+          .sort((a,b)=>a.dist-b.dist);
+        setSorted(s);
+        setLoading(false);
+      },
+      ()=>{setLoading(false);alert("تعذّر تحديد موقعك");},
+      {enableHighAccuracy:true,timeout:15000}
+    );
+  };
+
+  return(
+    <div style={G.page}><div style={G.fp}>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={G.ft}>📍 الصالونات القريبة</h2></div>
+      {!userLoc?(
+        <div style={{textAlign:"center",padding:"40px 20px"}}>
+          <div style={{fontSize:50,marginBottom:12}}>📍</div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700,marginBottom:8}}>اعرف أقرب صالون إليك</div>
+          <div style={{fontSize:12,color:"#888",marginBottom:20}}>سنحتاج إذن موقعك لإظهار الصالونات القريبة</div>
+          <button style={G.sub} onClick={detect} disabled={loading}>
+            {loading?"⏳ جاري التحديد...":"📍 تحديد موقعي"}
+          </button>
+        </div>
+      ):(
+        <div>
+          <div style={{background:"var(--pa08)",borderRadius:10,padding:"8px 12px",marginBottom:12,fontSize:12,color:"var(--p)"}}>
+            📍 تم تحديد موقعك — {sorted.filter(s=>s.dist<50).length} صالون في نطاق 50 كم
+          </div>
+          {sorted.length===0
+            ?<div style={G.empty}>لا توجد صالونات مع روابط خريطة</div>
+            :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {sorted.slice(0,15).map(s=>(
+                <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${s.dist<5?"#27ae60":s.dist<20?"var(--p)":"#555"}`}}
+                  onClick={()=>{setSelSalon(s);setView("salon");}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+                      <div style={{fontSize:11,color:"#888"}}>📍 {s.gov||s.region}{s.village?" · "+s.village:""}</div>
+                    </div>
+                    <div style={{textAlign:"left",flexShrink:0}}>
+                      <div style={{fontSize:14,fontWeight:900,color:s.dist<5?"#27ae60":s.dist<20?"var(--p)":"#888"}}>
+                        {s.dist<999?`${s.dist.toFixed(1)} كم`:"—"}
+                      </div>
+                      <div style={{fontSize:10,color:"#555",marginTop:2}}>⭐ {s.rating}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          }
+        </div>
+      )}
+    </div></div>
+  );
+}
+
+function ShareBtn({salon}){
+  const shareUrl=`${window.location.origin}${window.location.pathname}?salon=${salon.id}`;
+  const shareText=`✂ ${salon.name}\n📍 ${salon.gov||salon.region}\n⭐ ${salon.rating||5}\n\nاحجز الآن: ${shareUrl}`;
+
+  const share=async()=>{
+    if(navigator.share){
+      try{await navigator.share({title:salon.name,text:shareText,url:shareUrl});}catch{}
+    }else{
+      try{await navigator.clipboard.writeText(shareUrl);alert("✅ تم نسخ رابط الصالون!");}catch{alert(shareUrl);}
+    }
+  };
+
+  return(
+    <button style={{...G.pageBtn,fontSize:11,padding:"5px 10px"}} onClick={share}>
+      📤 مشاركة
+    </button>
   );
 }
 
@@ -1893,6 +2560,15 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
   const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
   const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
+
+  const togglePause=async()=>{
+    try{
+      await sb("salons","PATCH",{paused:!salon.paused},`?id=eq.${salon.id}`);
+      setSalons(p=>p.map(s=>s.id===salon.id?{...s,paused:!s.paused}:s));
+      toast$(salon.paused?"✅ تم تفعيل استقبال الحجوزات":"⏸ تم إيقاف استقبال الحجوزات مؤقتاً");
+    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
+  };
+
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={{...G.ft,flex:1}}>لوحة صالوني</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setOwnerSession(null);setView("home");}}>خروج</button></div>
@@ -1902,17 +2578,228 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <span style={{fontSize:11,fontWeight:700,color:statusColor,background:`${statusColor}22`,padding:"3px 8px",borderRadius:8}}>{statusLabel}</span>
       </div>
       {salon.status!=="approved"&&<div style={{background:"rgba(240,192,64,.08)",border:"1px solid var(--pl)55",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--pl)"}}>🔔 صالونك في انتظار موافقة الإدارة — سيظهر للعملاء بعد القبول</div>}
-      <div style={{...G.tabRow,flexWrap:"nowrap"}}>
-        <button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔 الحجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
-        <button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊 إحصائيات</button>
-        <button style={{...G.tabBtn,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙️ إعدادات</button>
+
+      {/* زر مشاركة الصالون */}
+      <div style={{display:"flex",gap:8,marginBottom:10}}>
+        <button style={{flex:1,padding:"9px 0",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#1a1a2e",color:"#aaa",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>{
+          const url=`${window.location.origin}${window.location.pathname}?salon=${salon.id}`;
+          if(navigator.share){navigator.share({title:`صالون ${salon.name}`,text:`احجز موعدك في ${salon.name} عبر دورك`,url});}
+          else{navigator.clipboard?.writeText(url);toast$&&toast$("✅ تم نسخ رابط الصالون");}
+        }}>📤 مشاركة الصالون</button>
+        <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${salon.paused?"#27ae60":"#f39c12"}`,background:salon.paused?"rgba(39,174,96,.1)":"rgba(243,156,18,.1)",color:salon.paused?"#27ae60":"#f39c12",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={togglePause}>
+          {salon.paused?"✅ تفعيل الحجوزات":"⏸ إيقاف مؤقت"}
+        </button>
+      </div>
+      {salon.paused&&<div style={{background:"rgba(231,76,60,.08)",border:"1px solid #e74c3c55",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:"#e74c3c"}}>⚠️ الحجوزات موقوفة — لن يتمكن العملاء من الحجز الآن</div>}
+
+      <div style={{...G.tabRow,flexWrap:"nowrap",overflowX:"auto"}}>
+        <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔 {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
+        <button style={{...G.tabBtn,flexShrink:0,...(tab==="calendar"?G.tabOn:{})}} onClick={()=>setTab("calendar")}>🗓 تقويم</button>
+        <button style={{...G.tabBtn,flexShrink:0,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>
+        <button style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>setTab("messages")}>💬 رسائل</button>
+        <button style={{...G.tabBtn,flexShrink:0,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙️</button>
       </div>
       {tab==="notif"&&<NotifPanel salon={salon} onUpdate={updateBookingStatus}/>}
+      {tab==="calendar"&&<BookingCalendar salon={salon} onUpdate={updateBookingStatus}/>}
       {tab==="stats"&&<StatsPanel salon={salon}/>}
+      {tab==="messages"&&<MessagesPanel salon={salon} toast$={toast$}/>}
       {tab==="settings"&&<OwnerSettings salon={salon} setSalons={setSalons} toast$={toast$}/>}
     </div></div>
   );
 }
+
+// ══════════════════════════════════════════════
+//  BOOKING CALENDAR — تقويم مرئي للحجوزات
+// ══════════════════════════════════════════════
+function BookingCalendar({salon,onUpdate}){
+  const[selDate,setSelDate]=useState(todayStr());
+  const today=new Date();
+  const[viewMonth,setViewMonth]=useState(today.getMonth());
+  const[viewYear,setViewYear]=useState(today.getFullYear());
+
+  const daysInMonth=new Date(viewYear,viewMonth+1,0).getDate();
+  const firstDay=new Date(viewYear,viewMonth,1).getDay();
+  const bookingsForDate=(d)=>{
+    const dateStr=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    return salon.bookings.filter(b=>b.date===dateStr);
+  };
+  const selBks=salon.bookings.filter(b=>b.date===selDate);
+
+  return(
+    <div style={{paddingTop:4}}>
+      {/* header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <button style={{...G.bb,width:32,height:32}} onClick={()=>{if(viewMonth===0){setViewMonth(11);setViewYear(y=>y-1);}else setViewMonth(m=>m-1);}}>‹</button>
+        <span style={{fontSize:14,fontWeight:700,color:"var(--p)"}}>{MONTHS_AR[viewMonth]} {viewYear}</span>
+        <button style={{...G.bb,width:32,height:32}} onClick={()=>{if(viewMonth===11){setViewMonth(0);setViewYear(y=>y+1);}else setViewMonth(m=>m+1);}}>›</button>
+      </div>
+      {/* days header */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
+        {["أح","إث","ثل","أر","خم","جم","سب"].map(d=><div key={d} style={{textAlign:"center",fontSize:10,color:"#555",padding:"4px 0"}}>{d}</div>)}
+      </div>
+      {/* calendar grid */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:12}}>
+        {Array(firstDay).fill(null).map((_,i)=><div key={`e${i}`}/>)}
+        {Array.from({length:daysInMonth},(_,i)=>{
+          const d=i+1;
+          const dateStr=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+          const bks=bookingsForDate(d);
+          const isToday=dateStr===todayStr();
+          const isSel=dateStr===selDate;
+          const hasBks=bks.length>0;
+          return(
+            <button key={d} onClick={()=>setSelDate(dateStr)}
+              style={{position:"relative",padding:"6px 0",borderRadius:8,border:`1.5px solid ${isSel?"var(--p)":isToday?"var(--pd)":"#2a2a3a"}`,background:isSel?"var(--pa12)":isToday?"var(--pa05)":"transparent",color:isSel?"var(--p)":isToday?"var(--pl)":"#aaa",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:isSel||isToday?700:400,textAlign:"center"}}>
+              {d}
+              {hasBks&&<div style={{position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:"var(--p)"}}/>}
+            </button>
+          );
+        })}
+      </div>
+      {/* bookings for selected date */}
+      <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>📅 {selDate} — {selBks.length} حجز</div>
+      {selBks.length===0
+        ?<div style={G.empty}>لا توجد حجوزات في هذا اليوم</div>
+        :selBks.map(b=>(
+          <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)"}`,marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between"}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>🕐 {b.time} — {b.name}</div>
+                <div style={{fontSize:11,color:"#aaa"}}>{Array.isArray(b.services)?b.services.join(" + "):""} · {b.total||0} ر</div>
+              </div>
+              <span style={{fontSize:10,color:b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)"}}>{b.status==="approved"?"✅":b.status==="rejected"?"❌":"⏳"}</span>
+            </div>
+            {b.status==="pending"&&<div style={{display:"flex",gap:6,marginTop:6}}>
+              <button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button>
+              <button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button>
+            </div>}
+          </div>
+        ))
+      }
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+//  MESSAGES PANEL — رسائل بين الإدارة والصالون
+// ══════════════════════════════════════════════
+function MessagesPanel({salon,toast$}){
+  const KEY=`dork_msgs_${salon.id}`;
+  const[msgs,setMsgs]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
+  const[txt,setTxt]=useState("");
+
+  const send=()=>{
+    if(!txt.trim())return;
+    const m={id:Date.now(),from:"owner",text:txt.trim(),time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
+    const newMsgs=[...msgs,m];
+    setMsgs(newMsgs);
+    try{localStorage.setItem(KEY,JSON.stringify(newMsgs));}catch{}
+    setTxt("");
+  };
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",height:400}}>
+      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+        {msgs.length===0&&<div style={G.empty}>لا توجد رسائل — ابدأ المحادثة مع الإدارة</div>}
+        {msgs.map(m=>(
+          <div key={m.id} style={{display:"flex",justifyContent:m.from==="owner"?"flex-end":"flex-start"}}>
+            <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="owner"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="owner"?"var(--pa25)":"#1a1a2e",border:`1px solid ${m.from==="owner"?"var(--pa4)":"#2a2a3a"}`}}>
+              <div style={{fontSize:13,color:"#fff"}}>{m.text}</div>
+              <div style={{fontSize:9,color:"#555",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <input style={{flex:1,padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
+          placeholder="اكتب رسالة للإدارة..." value={txt} onChange={e=>setTxt(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&send()}/>
+        <button style={{...G.sub,width:"auto",padding:"0 16px",marginTop:0}} onClick={send}>إرسال</button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+//  ADMIN MESSAGES — رسائل الإدارة مع الصالونات
+// ══════════════════════════════════════════════
+function AdminMessages({salons,toast$}){
+  const[selId,setSelId]=useState(null);
+  const[txt,setTxt]=useState("");
+  const sel=selId?salons.find(s=>s.id===selId):null;
+
+  const getKey=(id)=>`dork_msgs_${id}`;
+  const getMsgs=(id)=>{try{return JSON.parse(localStorage.getItem(getKey(id))||"[]");}catch{return[];}};
+  const[msgs,setMsgs]=useState([]);
+
+  const openChat=(id)=>{setSelId(id);setMsgs(getMsgs(id));};
+
+  const send=()=>{
+    if(!txt.trim()||!selId)return;
+    const m={id:Date.now(),from:"admin",text:txt.trim(),time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
+    const newMsgs=[...msgs,m];
+    setMsgs(newMsgs);
+    try{localStorage.setItem(getKey(selId),JSON.stringify(newMsgs));}catch{}
+    setTxt("");
+    sendNotif("رسالة من الإدارة",txt.trim(),"📩");
+    toast$&&toast$("✅ تم إرسال الرسالة");
+  };
+
+  if(sel) return(
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+        <button style={G.bb} onClick={()=>setSelId(null)}>→</button>
+        <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>💬 {sel.name}</span>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",height:350}}>
+        <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10,background:"#0d0d1a",borderRadius:10,padding:10,border:"1px solid #2a2a3a"}}>
+          {msgs.length===0&&<div style={G.empty}>لا توجد رسائل</div>}
+          {msgs.map(m=>(
+            <div key={m.id} style={{display:"flex",justifyContent:m.from==="admin"?"flex-end":"flex-start"}}>
+              <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="admin"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="admin"?"var(--pa25)":"#1a1a2e",border:`1px solid ${m.from==="admin"?"var(--pa4)":"#2a2a3a"}`}}>
+                <div style={{fontSize:10,color:"#888",marginBottom:3}}>{m.from==="admin"?"الإدارة":"المالك"}</div>
+                <div style={{fontSize:13,color:"#fff"}}>{m.text}</div>
+                <div style={{fontSize:9,color:"#555",marginTop:3}}>{m.time}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <input style={{flex:1,padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
+            placeholder="اكتب رسالة للصالون..." value={txt} onChange={e=>setTxt(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&send()}/>
+          <button style={{...G.sub,width:"auto",padding:"0 16px",marginTop:0}} onClick={send}>إرسال</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return(
+    <div>
+      <div style={{fontSize:12,color:"#888",marginBottom:10}}>اختر صالوناً لمراسلته:</div>
+      {salons.length===0&&<div style={G.empty}>لا توجد صالونات</div>}
+      {salons.map(s=>{
+        const msgs=getMsgs(s.id);
+        const lastMsg=msgs[msgs.length-1];
+        return(
+          <div key={s.id} style={{...G.bItem,cursor:"pointer",marginBottom:8}} onClick={()=>openChat(s.id)}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+                {lastMsg&&<div style={{fontSize:11,color:"#888",marginTop:2}}>{lastMsg.from==="admin"?"أنت: ":""}{lastMsg.text.slice(0,40)}</div>}
+              </div>
+              <div style={{flexShrink:0}}>
+                <span style={{fontSize:12,color:"var(--p)"}}>💬 {msgs.length}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
 
 function OwnerSettings({salon,setSalons,toast$}){
   const[saving,setSaving]=useState(false);
@@ -2110,28 +2997,58 @@ function OwnerSettings({salon,setSalons,toast$}){
 // ══════════════════════════════════════════════
 function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$}){
   const[tab,setTab]=useState("login");
-  const[phone,setPhone]=useState(""); const[name,setName]=useState(""); const[err,setErr]=useState("");
+  const[phone,setPhone]=useState(""); const[name,setName]=useState("");
+  const[email,setEmail]=useState(""); const[pass,setPass]=useState("");
+  const[err,setErr]=useState("");
+
+  // تسجيل دخول بالبصمة
+  const loginWithBiometric=async()=>{
+    if(!window.PublicKeyCredential){toast$&&toast$("❌ البصمة غير مدعومة","err");return;}
+    try{
+      const savedId=localStorage.getItem("dork_biometric_id");
+      if(!savedId){toast$&&toast$("❌ لم تُسجّل البصمة بعد — سجّل دخول أولاً","err");return;}
+      const c=customers.find(x=>String(x.id)===savedId);
+      if(!c){toast$&&toast$("❌ لم يُعثر على الحساب","err");return;}
+      setCustomerSession(c);setView("home");
+      toast$&&toast$("✅ تم الدخول بالبصمة");
+    }catch(e){toast$&&toast$("❌ فشل التحقق","err");}
+  };
+
   const login=async()=>{
+    if(!phone.trim()){setErr("أدخل رقم الجوال");return;}
     try{
       const rows=await sb("customers","GET",null,`?phone=eq.${encodeURIComponent(phone.trim())}`);
       if(!rows.length){setErr("لا يوجد حساب بهذا الرقم");return;}
       const c=toAppCustomer(rows[0]);
-      setCustomerSession(c); setView("home");
+      setCustomerSession(c);setView("home");
+      // حفظ للبصمة
+      localStorage.setItem("dork_biometric_id",String(c.id));
     }catch(e){setErr("خطأ: "+e.message);}
   };
+
   const register=async()=>{
     if(!name.trim()||!phone.trim()){setErr("أدخل الاسم والجوال");return;}
     try{
       const exists=await sb("customers","GET",null,`?phone=eq.${encodeURIComponent(phone.trim())}`);
       if(exists.length){setErr("الرقم مسجل بالفعل");return;}
-      const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim()},"");
+      const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim()||null,history:[],favs:[]},"");
       const nc=toAppCustomer(rows[0]);
-      setCustomerSession(nc); setView("home");
+      setCustomerSession(nc);setView("home");
+      localStorage.setItem("dork_biometric_id",String(nc.id));
     }catch(e){setErr("خطأ: "+e.message);}
   };
+
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>→</button><h2 style={G.ft}>حساب العميل 👤</h2></div>
+
+      {/* دخول بالبصمة */}
+      {localStorage.getItem("dork_biometric_id")&&(
+        <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--pa25)",background:"var(--pa08)",color:"var(--p)",cursor:"pointer",fontSize:14,fontFamily:"inherit",fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={loginWithBiometric}>
+          👆 دخول بالبصمة
+        </button>
+      )}
+
       <div style={{display:"flex",gap:7,marginBottom:14}}>
         <button style={{...G.toggleBtn,...(tab==="login"?G.toggleOn:{})}} onClick={()=>{setTab("login");setErr("");}}>دخول</button>
         <button style={{...G.toggleBtn,...(tab==="reg"?G.toggleOn:{})}} onClick={()=>{setTab("reg");setErr("");}}>حساب جديد</button>
@@ -2141,10 +3058,18 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <SL>تسجيل الدخول</SL>
           <F label="رقم الجوال" error={err}><input style={fi(err)} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <button style={G.sub} onClick={login}>دخول</button>
+          <div style={{textAlign:"center",margin:"12px 0",color:"#555",fontSize:12}}>— أو —</div>
+          <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #4285f4",background:"rgba(66,133,244,.1)",color:"#4285f4",cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:700,marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={()=>toast$&&toast$("🔜 قريباً — جوجل")}>
+            <span style={{fontWeight:900}}>G</span> الدخول عبر Google
+          </button>
+          <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #555",background:"rgba(255,255,255,.05)",color:"#fff",cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={()=>toast$&&toast$("🔜 قريباً — Apple")}>
+            🍎 الدخول عبر Apple
+          </button>
         </>:<>
           <SL>إنشاء حساب جديد</SL>
           <F label="الاسم"><input style={fi()} placeholder="اسمك الكريم" value={name} onChange={e=>setName(e.target.value)}/></F>
           <F label="رقم الجوال" error={err}><input style={fi(err)} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+          <F label="البريد الإلكتروني (اختياري)"><input style={fi()} placeholder="example@email.com" value={email} onChange={e=>setEmail(e.target.value)} type="email"/></F>
           <button style={G.sub} onClick={register}>إنشاء الحساب</button>
         </>}
       </div>
@@ -2245,6 +3170,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       <div style={{...G.tabRow,flexWrap:"nowrap"}}>
         <button style={{...G.tabBtn,...(tab==="favs"?G.tabOn:{})}} onClick={()=>setTab("favs")}>♥ المفضلة {favSalons.length>0&&<span style={G.notifDot}>{favSalons.length}</span>}</button>
         <button style={{...G.tabBtn,...(tab==="hist"?G.tabOn:{})}} onClick={()=>setTab("hist")}>📋 حجوزاتي</button>
+        <button style={{...G.tabBtn,...(tab==="invite"?G.tabOn:{})}} onClick={()=>setTab("invite")}>🎁 دعوة</button>
         <button style={{...G.tabBtn,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙️ الحساب</button>
       </div>
 
@@ -2340,6 +3266,52 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             })}
           </div>}
       </>}
+
+      {/* دعوة صديق */}
+      {tab==="invite"&&(()=>{
+        const inviteCode=`DORK-${customer.id}-${customer.name?.charCodeAt(0)||0}`;
+        const inviteLink=`${window.location.origin}${window.location.pathname}?invite=${inviteCode}`;
+        const inviteCount=parseInt(localStorage.getItem(`invite_${customer.id}`)||"0");
+        return(
+          <div>
+            <div style={{background:"linear-gradient(135deg,var(--pa12),var(--pa08))",borderRadius:16,padding:20,border:"1px solid var(--pa25)",textAlign:"center",marginBottom:12}}>
+              <div style={{fontSize:36,marginBottom:8}}>🎁</div>
+              <div style={{fontSize:16,fontWeight:900,color:"var(--p)",marginBottom:4}}>ادعُ أصدقاءك</div>
+              <div style={{fontSize:12,color:"#aaa",marginBottom:16}}>احصل على 50 نقطة لكل صديق يسجّل عبر رابطك</div>
+              <div style={{background:"#0d0d1a",borderRadius:10,padding:"10px 14px",marginBottom:12,fontFamily:"monospace",fontSize:14,color:"var(--p)",fontWeight:700,letterSpacing:2}}>
+                {inviteCode}
+              </div>
+              <button style={G.sub} onClick={async()=>{
+                if(navigator.share){
+                  try{await navigator.share({title:"دورك - دعوة",text:`انضم لتطبيق دورك للحجز في أفضل صالونات الحلاقة! استخدم كودي: ${inviteCode}`,url:inviteLink});}catch{}
+                }else{
+                  navigator.clipboard?.writeText(inviteLink).then(()=>alert("✅ تم نسخ رابط الدعوة!")).catch(()=>alert(inviteLink));
+                }
+              }}>📤 مشاركة رابط الدعوة</button>
+            </div>
+            <div style={{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #2a2a3a",marginBottom:10}}>
+              <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10}}>📊 إحصائيات دعوتي</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {[{v:inviteCount,l:"صديق سجّل",c:"#27ae60"},{v:inviteCount*50,l:"نقطة كسبتها",c:"var(--p)"}].map(({v,l,c})=>(
+                  <div key={l} style={{background:"#0d0d1a",borderRadius:10,padding:"12px 8px",textAlign:"center",border:`1px solid ${c}33`}}>
+                    <div style={{fontSize:22,fontWeight:900,color:c}}>{v}</div>
+                    <div style={{fontSize:11,color:"#888"}}>{l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #2a2a3a"}}>
+              <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8}}>🎯 كيف يعمل؟</div>
+              {["شارك رابطك مع أصدقائك","لما يسجّل صديقك عبر رابطك","تحصل على 50 نقطة تلقائياً","استخدم النقاط للحصول على خصومات"].map((s,i)=>(
+                <div key={i} style={{display:"flex",gap:8,marginBottom:6,alignItems:"flex-start"}}>
+                  <div style={{width:20,height:20,borderRadius:"50%",background:"var(--p)",color:"#000",fontSize:11,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+                  <div style={{fontSize:12,color:"#ccc",lineHeight:1.6}}>{s}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* إعدادات الحساب */}
       {tab==="settings"&&(
@@ -2440,6 +3412,39 @@ function AdminCustomerList({customers,salons,toast$,setCustomers}){
                 <div style={{fontSize:10,color:"#888"}}>{l}</div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* نقاط الولاء */}
+        <div style={{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #27ae6033",marginBottom:10}}>
+          <div style={{fontSize:12,color:"#27ae60",fontWeight:700,marginBottom:10,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>🎁 نقاط الولاء</div>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <div style={{flex:1,textAlign:"center"}}>
+              <div style={{fontSize:28,fontWeight:900,color:"#27ae60"}}>{sel.loyaltyPoints||0}</div>
+              <div style={{fontSize:11,color:"#888"}}>نقطة</div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6,flex:2}}>
+              <div style={{display:"flex",gap:6}}>
+                <button style={{flex:1,padding:"7px 0",borderRadius:8,border:"1px solid #27ae60",background:"rgba(39,174,96,.1)",color:"#27ae60",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}
+                  onClick={async()=>{
+                    const v=prompt("إضافة نقاط (أدخل رقم):");
+                    if(!v||isNaN(+v))return;
+                    const pts=(sel.loyaltyPoints||0)+(+v);
+                    try{await sb("customers","PATCH",{loyalty_points:pts},`?id=eq.${sel.id}`);setCustomers(p=>p.map(c=>c.id===sel.id?{...c,loyaltyPoints:pts}:c));toast$&&toast$("✅ تم إضافة النقاط");}catch(e){toast$&&toast$("❌ خطأ");}
+                  }}>+ إضافة</button>
+                <button style={{flex:1,padding:"7px 0",borderRadius:8,border:"1px solid #e74c3c",background:"rgba(231,76,60,.1)",color:"#e74c3c",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}
+                  onClick={async()=>{
+                    const v=prompt("خصم نقاط (أدخل رقم):");
+                    if(!v||isNaN(+v))return;
+                    const pts=Math.max(0,(sel.loyaltyPoints||0)-(+v));
+                    try{await sb("customers","PATCH",{loyalty_points:pts},`?id=eq.${sel.id}`);setCustomers(p=>p.map(c=>c.id===sel.id?{...c,loyaltyPoints:pts}:c));toast$&&toast$("✅ تم خصم النقاط");}catch(e){toast$&&toast$("❌ خطأ");}
+                  }}>- خصم</button>
+              </div>
+              <button style={{padding:"7px 0",borderRadius:8,border:`1px solid ${sel.loyaltyFrozen?"#27ae60":"#f39c12"}`,background:sel.loyaltyFrozen?"rgba(39,174,96,.1)":"rgba(243,156,18,.1)",color:sel.loyaltyFrozen?"#27ae60":"#f39c12",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}
+                onClick={async()=>{
+                  try{await sb("customers","PATCH",{loyalty_frozen:!sel.loyaltyFrozen},`?id=eq.${sel.id}`);setCustomers(p=>p.map(c=>c.id===sel.id?{...c,loyaltyFrozen:!c.loyaltyFrozen}:c));toast$&&toast$(sel.loyaltyFrozen?"✅ تم تفعيل النقاط":"🔒 تم تجميد نقاط العميل");}catch(e){toast$&&toast$("❌ خطأ");}
+                }}>{sel.loyaltyFrozen?"✅ تفعيل النقاط":"🔒 تجميد النقاط"}</button>
+            </div>
           </div>
         </div>
 
@@ -2663,11 +3668,12 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
   const[sec,setSec]=useState("theme");
   const SECS=[
     {id:"theme",icon:"🎨",label:"الألوان"},
-    {id:"tone",icon:"🔔",label:"النغمات"},
+    {id:"bg",   icon:"🖼",label:"الخلفية"},
+    {id:"font", icon:"🔤",label:"الخط"},
+    {id:"tone", icon:"🔔",label:"النغمات"},
     {id:"social",icon:"📱",label:"التواصل"},
-    {id:"loyalty",icon:"🎁",label:"النقاط"},
     {id:"guide",icon:"📖",label:"الدليل"},
-    {id:"faq",icon:"❓",label:"أسئلة"},
+    {id:"faq",  icon:"❓",label:"أسئلة"},
     {id:"danger",icon:"⚠️",label:"الخطر"},
   ];
   const THEME_OPTIONS=[
@@ -2724,6 +3730,40 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
         </div>
       </div>}
 
+      {sec==="font"&&<div style={box}>
+        <div style={hdr}>🔤 حجم الخط</div>
+        <div style={{fontSize:11,color:"#666",marginBottom:12}}>اختر حجم الخط المناسب لك</div>
+        <div style={{display:"flex",gap:8,marginBottom:16}}>
+          {[{id:"sm",label:"صغير",size:13},{id:"md",label:"متوسط",size:15},{id:"lg",label:"كبير",size:17}].map(({id,label,size})=>{
+            const active=(settings.fontSize||"md")===id;
+            return(
+              <button key={id} onClick={()=>setSettings(s=>({...s,fontSize:id}))}
+                style={{flex:1,padding:"14px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"#2a2a3a"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,fontSize:size,transform:active?"scale(1.04)":"scale(1)"}}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{background:"#0d0d1a",borderRadius:10,padding:14,border:"1px solid #2a2a3a",fontSize:settings.fontSize==="sm"?13:settings.fontSize==="lg"?17:15,color:"#aaa",lineHeight:1.7}}>
+          معاينة: هذا نص تجريبي لمعاينة حجم الخط المختار في تطبيق دورك للحلاقة والصالونات.
+        </div>
+      </div>}
+        <div style={hdr}>🖼 خلفية التطبيق</div>
+        <div style={{fontSize:11,color:"#666",marginBottom:12}}>اختر خلفية تنسجم مع اللون</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          {BACKGROUNDS.map(bg=>{
+            const active=(settings.bg||"none")===bg.id;
+            return(
+              <button key={bg.id} onClick={()=>{applyBackground(bg.id);setSettings(s=>({...s,bg:bg.id}));}}
+                style={{...bg.style,padding:"18px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"#2a2a3a"}`,cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)",minHeight:80}}>
+                <span style={{fontSize:22}}>{bg.emoji}</span>
+                <span style={{fontSize:11,color:active?"var(--p)":"#aaa",fontWeight:active?700:400}}>{bg.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>}
+
       {sec==="tone"&&<div style={box}>
         <div style={hdr}>🔔 نغمة التنبيه</div>
         <div style={{fontSize:11,color:"#666",marginBottom:12}}>اضغط للمعاينة</div>
@@ -2742,28 +3782,33 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
 
       {sec==="social"&&<div style={box}>
         <div style={hdr}>📱 وسائل التواصل</div>
-        {!adminSession&&<div style={{fontSize:12,color:"#888",marginBottom:10,background:"rgba(212,160,23,.08)",padding:"8px 12px",borderRadius:8}}>⚠️ التعديل متاح للإدارة فقط</div>}
-        {[{k:"email",l:"📧 البريد",ph:"example@email.com"},{k:"twitter",l:"🐦 تويتر",ph:"@username"},{k:"whatsapp",l:"💬 واتساب",ph:"05XXXXXXXX"},{k:"telegram",l:"✈️ تيليجرام (رقم)",ph:"05XXXXXXXX"},{k:"telegramUser",l:"✈️ تيليجرام (مستخدم)",ph:"@username"}].map(({k,l,ph})=>(
-          <div key={k} style={{marginBottom:10}}>
-            <label style={lbl}>{l}</label>
-            <input style={inp2} placeholder={ph} value={socialLinks?.[k]||""} disabled={!adminSession} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,[k]:e.target.value}))}/>
-          </div>
-        ))}
-        {adminSession&&<>
-          <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer"}}>
-            <input type="checkbox" checked={socialLinks?.enabled||false} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,enabled:e.target.checked}))}/>
-            <span style={{fontSize:12,color:"#fff"}}>إظهار للمستخدمين</span>
-          </label>
-          <button style={G.sub} onClick={()=>toast$&&toast$("✅ تم الحفظ")}>💾 حفظ</button>
-        </>}
-        {socialLinks?.enabled&&!adminSession&&(
-          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:8}}>
-            {socialLinks.email&&<a href={`mailto:${socialLinks.email}`} style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>📧 راسلنا</a>}
-            {socialLinks.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>💬 واتساب</a>}
-            {socialLinks.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>🐦 تويتر</a>}
-            {socialLinks.telegram&&<a href={`https://t.me/${socialLinks.telegram.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>✈️ تيليجرام</a>}
-          </div>
-        )}
+        {adminSession
+          ?<>
+            {[{k:"email",l:"📧 البريد",ph:"example@email.com"},{k:"twitter",l:"🐦 تويتر",ph:"@username"},{k:"whatsapp",l:"💬 واتساب",ph:"05XXXXXXXX"},{k:"telegram",l:"✈️ تيليجرام (رقم)",ph:"05XXXXXXXX"},{k:"telegramUser",l:"✈️ تيليجرام (مستخدم)",ph:"@username"}].map(({k,l,ph})=>(
+              <div key={k} style={{marginBottom:10}}>
+                <label style={lbl}>{l}</label>
+                <input style={inp2} placeholder={ph} value={socialLinks?.[k]||""} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,[k]:e.target.value}))}/>
+              </div>
+            ))}
+            <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer"}}>
+              <input type="checkbox" checked={socialLinks?.enabled||false} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,enabled:e.target.checked}))}/>
+              <span style={{fontSize:12,color:"#fff"}}>إظهار للمستخدمين</span>
+            </label>
+            <button style={G.sub} onClick={()=>toast$&&toast$("✅ تم الحفظ")}>💾 حفظ</button>
+          </>
+          :<>
+            <div style={{fontSize:12,color:"#888",marginBottom:10,background:"rgba(212,160,23,.08)",padding:"8px 12px",borderRadius:8}}>هذا القسم يُعدَّل من لوحة الإدارة فقط</div>
+            {socialLinks?.enabled&&(
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:8}}>
+                {socialLinks.email&&<a href={`mailto:${socialLinks.email}`} style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>📧 راسلنا</a>}
+                {socialLinks.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>💬 واتساب</a>}
+                {socialLinks.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>🐦 تويتر</a>}
+                {socialLinks.telegram&&<a href={`https://t.me/${socialLinks.telegram.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{...G.chip,textDecoration:"none",color:"var(--p)"}}>✈️ تيليجرام</a>}
+              </div>
+            )}
+            {!socialLinks?.enabled&&<div style={G.empty}>لا توجد وسائل تواصل مفعّلة</div>}
+          </>
+        }
       </div>}
 
       {sec==="loyalty"&&<div style={box}>
