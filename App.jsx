@@ -627,7 +627,7 @@ if(splash) return(
 </div>
 <div style={{fontSize:36,fontWeight:900,color:”#d4a017”,letterSpacing:3,marginBottom:6}}>دورك</div>
 <div style={{fontSize:13,color:”#888”,letterSpacing:2}}>DORK · حلاقة وصالونات</div>
-<style>{`@keyframes splashPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}`}</style>
+<style dangerouslySetInnerHTML={{__html:”@keyframes splashPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}”}} />
 </div>
 );
 
@@ -821,7 +821,7 @@ if(loading)return(
 <div style={{fontSize:48}}>✂</div>
 <div style={{color:“var(–p)”,fontSize:18,fontWeight:700}}>جارٍ تحميل البيانات…</div>
 <div style={{width:48,height:48,border:“4px solid #2a2a3a”,borderTop:“4px solid var(–p)”,borderRadius:“50%”,animation:“spin 0.8s linear infinite”}}/>
-<style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+<style dangerouslySetInnerHTML={{__html:”@keyframes spin{to{transform:rotate(360deg)}}”}} />
 {dbError&&<div style={{background:”#3a1a1a”,color:”#e74c3c”,padding:“12px 20px”,borderRadius:10,fontSize:12,maxWidth:320,textAlign:“center”,margin:“0 16px”}}>❌ خطأ في الاتصال بقاعدة البيانات:<br/><br/>{dbError}<br/><br/><small style={{color:”#aaa”}}>تحقق من الـ anon key في الكود</small></div>}
 </div>
 );
@@ -3957,7 +3957,7 @@ style={{flexShrink:0,padding:“6px 10px”,borderRadius:9,border:`1.5px solid $
 
   <div style={{background:"linear-gradient(135deg,var(--pa08),var(--pa05))",borderRadius:13,padding:14,border:"1px solid var(--pa25)",marginTop:4,textAlign:"center"}}>
     <div style={{fontSize:22,fontWeight:900,color:"var(--p)",letterSpacing:1}}>دورك ✂</div>
-    <div style={{fontSize:11,color:"#888",marginTop:2}}>الإصدار 1.0.0 · 2025</div>
+    <div style={{fontSize:11,color:"#888",marginTop:2}}>{"الإصدار 1.0.0 - 2025"}</div>
   </div>
 </div></div>
 ```
