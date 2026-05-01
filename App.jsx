@@ -3748,6 +3748,8 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
           معاينة: هذا نص تجريبي لمعاينة حجم الخط المختار في تطبيق دورك للحلاقة والصالونات.
         </div>
       </div>}
+
+      {sec==="bg"&&<div style={box}>
         <div style={hdr}>🖼 خلفية التطبيق</div>
         <div style={{fontSize:11,color:"#666",marginBottom:12}}>اختر خلفية تنسجم مع اللون</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
