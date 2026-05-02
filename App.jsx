@@ -2095,24 +2095,49 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
           :<div style={{display:"flex",flexDirection:"column",gap:8}}>
             {sorted.map(s=>{
               const stColor=s.status==="approved"?"#27ae60":s.status==="rejected"?"#e74c3c":"var(--p)";
-              const stLabel=s.status==="approved"?"✅":"❌";
+              const earned=s.bookings.filter(b=>b.status==="approved").length;
+              const paid=s.totalPaid||0;
+              const bal=earned-paid;
               return(
-                <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${stColor}`}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name} {stLabel}</div>
-                      <div style={{fontSize:11,color:"#888"}}>👤 {s.owner} - 📞 {s.phone}</div>
-                      <div style={{fontSize:11,color:"#888"}}>📍 {s.gov||s.region}{s.village?" - "+s.village:""}</div>
-                      <div style={{display:"flex",gap:8,marginTop:3}}>
-                        <span style={{fontSize:10,color:"#4caf50"}}>📅 {s.bookings.length} حجز</span>
-                        <span style={{fontSize:10,color:"var(--p)"}}>⭐ {s.rating||0}</span>
-                      </div>
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-                      <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋 صفحة</button>
-                      {s.status==="pending"&&<button style={{...G.accBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>approveSalon(s.id,"approved")}>✅ قبول</button>}
+                <div key={s.id} style={{background:"#13131f",borderRadius:14,border:`2px solid ${stColor}`,padding:12,marginBottom:4}}>
+                  {/* اسم وحالة */}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <span style={{fontSize:11,color:stColor,fontWeight:700}}>{s.status==="approved"?"✅ مفعّل":s.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
+                    <span style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</span>
+                  </div>
+                  {/* معلومات */}
+                  <div style={{marginBottom:10}}>
+                    <div style={{fontSize:12,color:"#aaa",marginBottom:2}}>👤 {s.owner} · 📞 {s.phone}</div>
+                    <div style={{fontSize:11,color:"#666"}}>📍 {s.gov||s.region}{s.village?" - "+s.village:""}</div>
+                    <div style={{display:"flex",gap:10,marginTop:4}}>
+                      <span style={{fontSize:11,color:"var(--p)"}}>📅 {s.bookings.length} حجز</span>
+                      <span style={{fontSize:11,color:"var(--p)"}}>⭐ {s.rating||0}</span>
                     </div>
                   </div>
+                  {/* ٣ مربعات */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:bal>0?8:0}}>
+                    <button style={{padding:"10px 0",borderRadius:10,border:`1.5px solid ${bal>0?"#e74c3c":"#27ae60"}`,background:bal>0?"rgba(231,76,60,.08)":"rgba(39,174,96,.08)",color:bal>0?"#e74c3c":"#27ae60",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700}} onClick={()=>alert(`💰 ميزان ${s.name}\nالمستحق: ${earned} ر\nالمسدد: ${paid} ر\nالمتبقي: ${bal} ر`)}>💰 ميزان</button>
+                    <button style={{padding:"10px 0",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#aaa",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋 صفحة</button>
+                    <button style={{padding:"10px 0",borderRadius:10,border:"1.5px solid var(--pa25)",background:"var(--pa08)",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700}} onClick={()=>{
+                      const msg=prompt(`رسالة للصالون "${s.name}":`);
+                      if(!msg)return;
+                      const KEY=`dork_msgs_${s.id}`;
+                      const msgs=JSON.parse(localStorage.getItem(KEY)||"[]");
+                      msgs.push({id:Date.now(),from:"admin",text:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})});
+                      localStorage.setItem(KEY,JSON.stringify(msgs));
+                      const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+                      notifs.unshift({id:Date.now(),icon:"💬",title:"رسالة من الإدارة",body:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
+                      localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
+                      localStorage.setItem("dork_notif_count",String(parseInt(localStorage.getItem("dork_notif_count")||"0")+1));
+                    }}>💬 رسايل</button>
+                  </div>
+                  {/* سداد لو في متبقي */}
+                  {bal>0&&<button style={{...G.sub,padding:"6px",fontSize:11,marginTop:0}} onClick={async()=>{
+                    if(!confirm(`تسجيل سداد ${bal} ريال من ${s.name}؟`))return;
+                    try{await sb("salons","PATCH",{total_paid:paid+bal},`?id=eq.${s.id}`);setSalons(p=>p.map(x=>x.id===s.id?{...x,totalPaid:paid+bal}:x));}catch{}
+                  }}>✅ تسجيل السداد ({bal} ريال)</button>}
+                  {/* قبول لو pending */}
+                  {s.status==="pending"&&<button style={{...G.accBtn,width:"100%",marginTop:8}} onClick={()=>approveSalon(s.id,"approved")}>✅ قبول الصالون</button>}
                 </div>
               );
             })}
