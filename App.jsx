@@ -505,13 +505,58 @@ export default function App(){
   useEffect(()=>{try{if(ownerSession)localStorage.setItem("dork_owner",String(ownerSession));else localStorage.removeItem("dork_owner");}catch{}},[ownerSession]);
   useEffect(()=>{try{if(customerSession)localStorage.setItem("dork_customer",JSON.stringify(customerSession));else localStorage.removeItem("dork_customer");}catch{}},[customerSession]);
 
-  // نقاط الولاء - إعدادات الإدارة
-  const[loyaltySettings,setLoyaltySettings]=useState(()=>{try{const v=localStorage.getItem("dork_loyalty");return v?JSON.parse(v):{enabled:false,pointsPerBooking:10,minRedeemPoints:50,redeemValue:5};}catch{return{enabled:false,pointsPerBooking:10,minRedeemPoints:50,redeemValue:5};}});
-  useEffect(()=>{try{localStorage.setItem("dork_loyalty",JSON.stringify(loyaltySettings));}catch{}},[loyaltySettings]);
+  // نقاط الولاء + وسائل التواصل — محفوظة في Supabase
+  const[loyaltySettings,setLoyaltySettings]=useState({enabled:false,hidden:false,pointsPerBooking:10,minRedeemPoints:50,redeemValue:5});
+  const[socialLinks,setSocialLinks]=useState({email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false});
+  const[appSettingsId,setAppSettingsId]=useState(null);
 
-  // وسائل التواصل الاجتماعي
-  const[socialLinks,setSocialLinks]=useState(()=>{try{const v=localStorage.getItem("dork_social");return v?JSON.parse(v):{email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false};}catch{return{email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false};}});
-  useEffect(()=>{try{localStorage.setItem("dork_social",JSON.stringify(socialLinks));}catch{}},[socialLinks]);
+  // تحميل الإعدادات من Supabase
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const rows=await sb("app_settings","GET",null,"?order=id.asc&limit=1");
+        if(rows.length){
+          const r=rows[0];
+          setAppSettingsId(r.id);
+          if(r.loyalty_settings)setLoyaltySettings(JSON.parse(r.loyalty_settings));
+          if(r.social_links)setSocialLinks(JSON.parse(r.social_links));
+        }
+      }catch{
+        // fallback to localStorage
+        try{const v=localStorage.getItem("dork_loyalty");if(v)setLoyaltySettings(JSON.parse(v));}catch{}
+        try{const v=localStorage.getItem("dork_social");if(v)setSocialLinks(JSON.parse(v));}catch{}
+      }
+    })();
+  },[]);
+
+  // حفظ الإعدادات في Supabase + localStorage
+  const saveAppSettings=async(loyalty,social)=>{
+    const data={loyalty_settings:JSON.stringify(loyalty||loyaltySettings),social_links:JSON.stringify(social||socialLinks)};
+    try{
+      if(appSettingsId){
+        await sb("app_settings","PATCH",data,`?id=eq.${appSettingsId}`);
+      }else{
+        const rows=await sb("app_settings","POST",data,"");
+        if(rows[0])setAppSettingsId(rows[0].id);
+      }
+    }catch{
+      // fallback
+      try{localStorage.setItem("dork_loyalty",JSON.stringify(loyalty||loyaltySettings));}catch{}
+      try{localStorage.setItem("dork_social",JSON.stringify(social||socialLinks));}catch{}
+    }
+  };
+
+  const updateLoyalty=(newVal)=>{
+    const merged={...loyaltySettings,...newVal};
+    setLoyaltySettings(merged);
+    saveAppSettings(merged,null);
+  };
+
+  const updateSocial=(newVal)=>{
+    const merged={...socialLinks,...newVal};
+    setSocialLinks(merged);
+    saveAppSettings(null,merged);
+  };
 
   // الشروط والأحكام
   const[termsAccepted,setTermsAccepted]=useState(()=>{try{return localStorage.getItem("dork_terms")==="1";}catch{return false;}});
@@ -809,8 +854,8 @@ export default function App(){
     displaySalons,
     salons,
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
-    loyaltySettings,setLoyaltySettings,
-    socialLinks,setSocialLinks,
+    loyaltySettings,setLoyaltySettings:updateLoyalty,
+    socialLinks,setSocialLinks:updateSocial,
     handleCustomerLogin,
     darkMode,setDarkMode,
     compareSalons,setCompareSalons,
@@ -1910,6 +1955,7 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
           {k:"bookings",l:"📋 الحجوزات",n:totalBk},
           {k:"customers",l:"👥 العملاء",n:customers.length},
           {k:"compare",l:"📈 مقارنة",n:0},
+          {k:"finance",l:"💰 الميزان",n:0},
           {k:"messages",l:"💬 رسائل",n:0},
           {k:"loyalty",l:"🎁 النقاط",n:0},
           {k:"social",l:"📱 التواصل",n:0},
@@ -2136,6 +2182,57 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
 
       {tab==="comparison"&&<SalonComparison salons={approved}/>}
       {/* رسائل الإدارة */}
+      {tab==="finance"&&(
+        <div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12}}>💰 الميزان المالي - جميع الصالونات</div>
+          {/* إجمالي */}
+          {(()=>{
+            const totalAll=approved.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="approved").length,0);
+            const paidAll=approved.reduce((a,s)=>a+(s.totalPaid||0),0);
+            const balAll=totalAll-paidAll;
+            return(
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
+                {[{l:"إجمالي المستحق",v:totalAll+" ر",c:"var(--p)"},{l:"تم تحصيله",v:paidAll+" ر",c:"#27ae60"},{l:"المتبقي",v:balAll+" ر",c:balAll>0?"#e74c3c":"#27ae60"}].map(({l,v,c})=>(
+                  <div key={l} style={{background:"#13131f",borderRadius:10,padding:"12px 8px",textAlign:"center",border:`1px solid ${c}33`}}>
+                    <div style={{fontSize:18,fontWeight:900,color:c}}>{v}</div>
+                    <div style={{fontSize:10,color:"#888",marginTop:3}}>{l}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+          {/* قائمة الصالونات */}
+          {approved.map(s=>{
+            const earned=s.bookings.filter(b=>b.status==="approved").length;
+            const paid=s.totalPaid||0;
+            const bal=earned-paid;
+            return(
+              <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${bal>0?"#e74c3c":"#27ae60"}`,marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+                  <span style={{fontSize:11,color:bal>0?"#e74c3c":"#27ae60",fontWeight:700}}>{bal>0?`متبقي ${bal} ر`:"✅ مسدد"}</span>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:bal>0?8:0}}>
+                  {[{l:"المستحق",v:earned+" ر"},{l:"المسدد",v:paid+" ر"},{l:"الرصيد",v:bal+" ر"}].map(({l,v})=>(
+                    <div key={l} style={{background:"#0d0d1a",borderRadius:7,padding:"6px 4px",textAlign:"center"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"var(--p)"}}>{v}</div>
+                      <div style={{fontSize:9,color:"#888"}}>{l}</div>
+                    </div>
+                  ))}
+                </div>
+                {bal>0&&<button style={{...G.sub,padding:"6px",fontSize:12,marginTop:0}} onClick={async()=>{
+                  const newPaid=paid+bal;
+                  try{
+                    await sb("salons","PATCH",{total_paid:newPaid},`?id=eq.${s.id}`);
+                    setSalons(p=>p.map(x=>x.id===s.id?{...x,totalPaid:newPaid}:x));
+                    toast$&&toast$(`✅ تم تسجيل سداد ${s.name}`);
+                  }catch(e){toast$&&toast$("❌ خطأ","err");}
+                }}>✅ تسجيل السداد ({bal} ريال)</button>}
+              </div>
+            );
+          })}
+        </div>
+      )}
       {tab==="messages"&&<AdminMessages salons={approved} toast$={toast$}/>}
 
       {/* النقاط */}
@@ -3961,28 +4058,15 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
 
       {sec==="loyalty"&&<div style={box}>
         <div style={hdr}>🎁 نظام نقاط الولاء</div>
-        {!adminSession&&<div style={{fontSize:12,color:"#888",background:"rgba(212,160,23,.08)",padding:"8px 12px",borderRadius:8,marginBottom:10}}>⚠ الإعدادات متاحة للإدارة فقط</div>}
-        {adminSession&&<>
-          <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}}>
-            <input type="checkbox" checked={loyaltySettings?.enabled||false} onChange={e=>setLoyaltySettings&&setLoyaltySettings(p=>({...p,enabled:e.target.checked}))}/>
-            <span style={{fontSize:13,color:"#fff",fontWeight:700}}>تفعيل النقاط للجميع</span>
-          </label>
-          {loyaltySettings?.enabled&&<>
-            {[{l:"نقاط لكل حجز",k:"pointsPerBooking"},{l:"الحد الأدنى للاستخدام",k:"minRedeemPoints"},{l:"قيمة النقطة (ريال)",k:"redeemValue"}].map(({l,k})=>(
-              <div key={k} style={{marginBottom:10}}>
-                <label style={lbl}>{l}</label>
-                <input type="number" min="1" style={inp2} value={loyaltySettings?.[k]||0} onChange={e=>setLoyaltySettings&&setLoyaltySettings(p=>({...p,[k]:+e.target.value}))}/>
-              </div>
-            ))}
-            <button style={G.sub} onClick={()=>toast$&&toast$("✅ تم حفظ إعدادات النقاط")}>💾 حفظ</button>
-          </>}
-        </>}
-        {loyaltySettings?.enabled&&!adminSession&&(
-          <div style={{background:"var(--pa08)",borderRadius:10,padding:"12px 14px",textAlign:"center",border:"1px solid var(--pa25)"}}>
-            <div style={{fontSize:20,fontWeight:900,color:"var(--p)"}}>🎁 نقاط الولاء مفعّلة</div>
-            <div style={{fontSize:12,color:"#888",marginTop:4}}>{loyaltySettings.pointsPerBooking} نقطة لكل حجز</div>
-          </div>
-        )}
+        {loyaltySettings?.hidden&&!adminSession
+          ?<div style={G.empty}>🙈 نقاط الولاء مخفية حالياً</div>
+          :loyaltySettings?.enabled&&!adminSession&&(
+            <div style={{background:"var(--pa08)",borderRadius:10,padding:"12px 14px",textAlign:"center",border:"1px solid var(--pa25)"}}>
+              <div style={{fontSize:20,fontWeight:900,color:"var(--p)"}}>🎁 نقاط الولاء مفعّلة</div>
+              <div style={{fontSize:12,color:"#888",marginTop:4}}>{loyaltySettings.pointsPerBooking} نقطة لكل حجز</div>
+            </div>
+          )
+        }
       </div>}
 
       {sec==="guide"&&<div style={box}>
