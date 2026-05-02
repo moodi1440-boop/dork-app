@@ -2182,57 +2182,73 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
 
       {tab==="comparison"&&<SalonComparison salons={approved}/>}
       {/* رسائل الإدارة */}
-      {tab==="finance"&&(
-        <div>
-          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12}}>💰 الميزان المالي - جميع الصالونات</div>
-          {/* إجمالي */}
-          {(()=>{
-            const totalAll=approved.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="approved").length,0);
-            const paidAll=approved.reduce((a,s)=>a+(s.totalPaid||0),0);
-            const balAll=totalAll-paidAll;
-            return(
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
-                {[{l:"إجمالي المستحق",v:totalAll+" ر",c:"var(--p)"},{l:"تم تحصيله",v:paidAll+" ر",c:"#27ae60"},{l:"المتبقي",v:balAll+" ر",c:balAll>0?"#e74c3c":"#27ae60"}].map(({l,v,c})=>(
-                  <div key={l} style={{background:"#13131f",borderRadius:10,padding:"12px 8px",textAlign:"center",border:`1px solid ${c}33`}}>
-                    <div style={{fontSize:18,fontWeight:900,color:c}}>{v}</div>
-                    <div style={{fontSize:10,color:"#888",marginTop:3}}>{l}</div>
+      {tab==="finance"&&(()=>{
+        const[finFilter,setFinFilter]=useState("all");
+        const[finSearch,setFinSearch]=useState("");
+        const filtered=approved.filter(s=>{
+          const earned=s.bookings.filter(b=>b.status==="approved").length;
+          const paid=s.totalPaid||0;
+          const bal=earned-paid;
+          if(finFilter==="paid"&&bal!==0)return false;
+          if(finFilter==="unpaid"&&bal===0)return false;
+          if(finSearch&&!s.name.includes(finSearch))return false;
+          return true;
+        });
+        const totalAll=approved.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="approved").length,0);
+        const paidAll=approved.reduce((a,s)=>a+(s.totalPaid||0),0);
+        const balAll=totalAll-paidAll;
+        return(
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:10}}>💰 الميزان المالي</div>
+            {/* إجمالي */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
+              {[{l:"إجمالي المستحق",v:totalAll+" ر",c:"var(--p)"},{l:"تم تحصيله",v:paidAll+" ر",c:"#27ae60"},{l:"المتبقي",v:balAll+" ر",c:balAll>0?"#e74c3c":"#27ae60"}].map(({l,v,c})=>(
+                <div key={l} style={{background:"#13131f",borderRadius:10,padding:"12px 8px",textAlign:"center",border:`1px solid ${c}33`}}>
+                  <div style={{fontSize:18,fontWeight:900,color:c}}>{v}</div>
+                  <div style={{fontSize:10,color:"#888",marginTop:3}}>{l}</div>
+                </div>
+              ))}
+            </div>
+            {/* بحث وفلتر */}
+            <input style={{width:"100%",padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box",marginBottom:8}} placeholder="🔍 ابحث عن صالون..." value={finSearch} onChange={e=>setFinSearch(e.target.value)}/>
+            <div style={{display:"flex",gap:6,marginBottom:10}}>
+              {[["all","الكل","#888"],["unpaid","غير مسددة","#e74c3c"],["paid","مسددة","#27ae60"]].map(([k,l,c])=>(
+                <button key={k} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${finFilter===k?c:"#2a2a3a"}`,background:finFilter===k?`${c}22`:"transparent",color:finFilter===k?c:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:finFilter===k?700:400}} onClick={()=>setFinFilter(k)}>{l}</button>
+              ))}
+            </div>
+            {/* قائمة الصالونات */}
+            {filtered.map(s=>{
+              const earned=s.bookings.filter(b=>b.status==="approved").length;
+              const paid=s.totalPaid||0;
+              const bal=earned-paid;
+              return(
+                <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${bal>0?"#e74c3c":"#27ae60"}`,marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+                    <span style={{fontSize:11,color:bal>0?"#e74c3c":"#27ae60",fontWeight:700}}>{bal>0?`متبقي ${bal} ر`:"✅ مسدد"}</span>
                   </div>
-                ))}
-              </div>
-            );
-          })()}
-          {/* قائمة الصالونات */}
-          {approved.map(s=>{
-            const earned=s.bookings.filter(b=>b.status==="approved").length;
-            const paid=s.totalPaid||0;
-            const bal=earned-paid;
-            return(
-              <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${bal>0?"#e74c3c":"#27ae60"}`,marginBottom:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
-                  <span style={{fontSize:11,color:bal>0?"#e74c3c":"#27ae60",fontWeight:700}}>{bal>0?`متبقي ${bal} ر`:"✅ مسدد"}</span>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:bal>0?8:0}}>
+                    {[{l:"المستحق",v:earned+" ر"},{l:"المسدد",v:paid+" ر"},{l:"الرصيد",v:bal+" ر"}].map(({l,v})=>(
+                      <div key={l} style={{background:"#0d0d1a",borderRadius:7,padding:"6px 4px",textAlign:"center"}}>
+                        <div style={{fontSize:13,fontWeight:700,color:"var(--p)"}}>{v}</div>
+                        <div style={{fontSize:9,color:"#888"}}>{l}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {bal>0&&<button style={{...G.sub,padding:"6px",fontSize:12,marginTop:0}} onClick={async()=>{
+                    const newPaid=paid+bal;
+                    try{
+                      await sb("salons","PATCH",{total_paid:newPaid},`?id=eq.${s.id}`);
+                      setSalons(p=>p.map(x=>x.id===s.id?{...x,totalPaid:newPaid}:x));
+                      toast$&&toast$(`✅ تم تسجيل سداد ${s.name}`);
+                    }catch(e){toast$&&toast$("❌ خطأ","err");}
+                  }}>✅ تسجيل السداد ({bal} ريال)</button>}
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:bal>0?8:0}}>
-                  {[{l:"المستحق",v:earned+" ر"},{l:"المسدد",v:paid+" ر"},{l:"الرصيد",v:bal+" ر"}].map(({l,v})=>(
-                    <div key={l} style={{background:"#0d0d1a",borderRadius:7,padding:"6px 4px",textAlign:"center"}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"var(--p)"}}>{v}</div>
-                      <div style={{fontSize:9,color:"#888"}}>{l}</div>
-                    </div>
-                  ))}
-                </div>
-                {bal>0&&<button style={{...G.sub,padding:"6px",fontSize:12,marginTop:0}} onClick={async()=>{
-                  const newPaid=paid+bal;
-                  try{
-                    await sb("salons","PATCH",{total_paid:newPaid},`?id=eq.${s.id}`);
-                    setSalons(p=>p.map(x=>x.id===s.id?{...x,totalPaid:newPaid}:x));
-                    toast$&&toast$(`✅ تم تسجيل سداد ${s.name}`);
-                  }catch(e){toast$&&toast$("❌ خطأ","err");}
-                }}>✅ تسجيل السداد ({bal} ريال)</button>}
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        );
+      })()}
       {tab==="messages"&&<AdminMessages salons={approved} toast$={toast$}/>}
 
       {/* النقاط */}
@@ -2728,32 +2744,39 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {salon.paused&&<div style={{background:"rgba(231,76,60,.08)",border:"1px solid #e74c3c55",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:"#e74c3c"}}>⚠ الحجوزات موقوفة - لن يتمكن العملاء من الحجز الآن</div>}
 
       <div style={{...G.tabRow,flexWrap:"nowrap",overflowX:"auto"}}>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔 {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="alerts"?G.tabOn:{})}} onClick={()=>{localStorage.setItem("dork_notif_count","0");setTab("alerts");}}>
-          🔕 {(()=>{const n=parseInt(localStorage.getItem("dork_notif_count")||"0");return n>0?<span style={{...G.notifDot,background:"#e74c3c"}}>{n}</span>:null;})()}
+        <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
+        <button style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>{
+          localStorage.setItem("dork_notif_count","0");
+          setTab("messages");
+        }}>
+          💬 رسائل {(()=>{const n=parseInt(localStorage.getItem("dork_notif_count")||"0");return n>0?<span style={{...G.notifDot,background:"#e74c3c"}}>{n}</span>:null;})()}
         </button>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="calendar"?G.tabOn:{})}} onClick={()=>setTab("calendar")}>🗓 تقويم</button>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>setTab("messages")}>💬 رسائل</button>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙</button>
       </div>
       {tab==="notif"&&<NotifPanel salon={salon} onUpdate={updateBookingStatus}/>}
-      {tab==="alerts"&&(()=>{
-        const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-        return notifs.length===0?<div style={G.empty}>لا توجد إشعارات</div>
-          :<div style={{display:"flex",flexDirection:"column",gap:8,paddingTop:4}}>
-            {notifs.map(n=>(
-              <div key={n.id} style={{...G.bItem,borderRight:"3px solid var(--p)"}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.icon} {n.title}</div>
-                <div style={{fontSize:12,color:"#aaa"}}>{n.body}</div>
-                <div style={{fontSize:10,color:"#555",marginTop:2}}>{n.time}</div>
+      {tab==="messages"&&(
+        <div>
+          {/* إشعارات الإدارة */}
+          {(()=>{
+            const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+            return notifs.length>0?(
+              <div style={{marginBottom:12}}>
+                <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>🔔 إشعارات الإدارة</div>
+                {notifs.slice(0,5).map(n=>(
+                  <div key={n.id} style={{...G.bItem,borderRight:"3px solid var(--p)",marginBottom:6}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.icon} {n.title}</div>
+                    <div style={{fontSize:12,color:"#aaa"}}>{n.body}</div>
+                    <div style={{fontSize:10,color:"#555",marginTop:2}}>{n.time}</div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>;
-      })()}
-      {tab==="calendar"&&<BookingCalendar salon={salon} onUpdate={updateBookingStatus}/>}
-      {tab==="stats"&&<StatsPanel salon={salon}/>}
-      {tab==="messages"&&<MessagesPanel salon={salon} toast$={toast$}/>}
+            ):null;
+          })()}
+          <MessagesPanel salon={salon} toast$={toast$}/>
+        </div>
+      )}
       {tab==="settings"&&<OwnerSettings salon={salon} setSalons={setSalons} toast$={toast$}/>}
     </div></div>
   );
@@ -3834,7 +3857,24 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
         const isFrozen=s.frozen;
         const lastBk=s.bookings.length?[...s.bookings].sort((a,b)=>b.date>a.date?1:-1)[0]:null;
         return(
-        <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${isWeek?"#f0c040":isPinned?"#8b5cf6":isFrozen?"#e74c3c":"#27ae60"}`,opacity:isFrozen?.7:1}}>
+        <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${s.banned?"#8b0000":isWeek?"#f0c040":isPinned?"#8b5cf6":isFrozen?"#e74c3c":"#27ae60"}`,opacity:isFrozen?.7:s.banned?.5:1}}>
+          {/* الميزان المالي المصغّر */}
+          {(()=>{
+            const earned=s.bookings.filter(b=>b.status==="approved").length;
+            const paid=s.totalPaid||0;
+            const bal=earned-paid;
+            return(
+              <div style={{display:"flex",gap:6,marginBottom:8,padding:"6px 10px",background:"#0d0d1a",borderRadius:8,border:`1px solid ${bal>0?"#e74c3c33":"#27ae6033"}`}}>
+                <span style={{fontSize:10,color:"#888"}}>💰 مستحق: <b style={{color:"var(--p)"}}>{earned}ر</b></span>
+                <span style={{fontSize:10,color:"#888"}}>مسدد: <b style={{color:"#27ae60"}}>{paid}ر</b></span>
+                <span style={{fontSize:10,color:"#888"}}>متبقي: <b style={{color:bal>0?"#e74c3c":"#27ae60"}}>{bal}ر</b></span>
+                {bal>0&&<button style={{marginRight:"auto",padding:"1px 8px",borderRadius:6,border:"1px solid #27ae60",background:"rgba(39,174,96,.1)",color:"#27ae60",cursor:"pointer",fontSize:9,fontFamily:"inherit",fontWeight:700}} onClick={async()=>{
+                  const newPaid=paid+bal;
+                  try{await sb("salons","PATCH",{total_paid:newPaid},`?id=eq.${s.id}`);setSalons(p=>p.map(x=>x.id===s.id?{...x,totalPaid:newPaid}:x));toast$&&toast$("✅ تم تسجيل السداد");}catch{toast$&&toast$("❌ خطأ","err");}
+                }}>سدّد</button>}
+              </div>
+            );
+          })()}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
@@ -3842,6 +3882,7 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
                 {isWeek&&<span style={{fontSize:10,color:"#f0c040"}}>🏅 الأسبوع</span>}
                 {isPinned&&<span style={{fontSize:10,color:"#8b5cf6"}}>📌</span>}
                 {isFrozen&&<span style={{fontSize:10,color:"#e74c3c",background:"rgba(231,76,60,.15)",padding:"1px 6px",borderRadius:10}}>🔒 مجمّد</span>}
+                {s.banned&&<span style={{fontSize:10,color:"#ff4444",background:"rgba(139,0,0,.2)",padding:"1px 6px",borderRadius:10}}>🚫 محظور</span>}
               </div>
               <div style={{fontSize:11,color:"#888"}}>👤 {s.owner} - 📞 {s.phone}</div>
               {s.ownerPhone&&s.ownerPhone!==s.phone&&<div style={{fontSize:11,color:"#888"}}>📱 مالك: {s.ownerPhone}</div>}
@@ -3853,21 +3894,43 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isWeek?"rgba(240,192,64,.2)":"transparent",border:`1px solid ${isWeek?"#f0c040":"#444"}`,color:isWeek?"#f0c040":"#888"}} onClick={()=>setWeeklySalon(s.id)}>🏅</button>
-              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isPinned?"rgba(139,92,246,.2)":"transparent",border:`1px solid ${isPinned?"#8b5cf6":"#444"}`,color:isPinned?"#8b5cf6":"#888"}} onClick={()=>togglePin(s.id)}>📌</button>
-              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isFrozen?"rgba(231,76,60,.15)":"transparent",border:`1px solid ${isFrozen?"#e74c3c":"#444"}`,color:isFrozen?"#e74c3c":"#888"}} onClick={()=>toggleFreeze(s)} title={isFrozen?"تفعيل":"تجميد مؤقت"}>🔒</button>
-              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:s.banned?"rgba(139,0,0,.3)":"transparent",border:`1px solid ${s.banned?"#8b0000":"#444"}`,color:s.banned?"#ff4444":"#888"}} onClick={async()=>{
-                if(s.banned){if(!confirm("رفع الحظر عن هذا الصالون؟"))return;}
-                else{if(!confirm("حظر هذا الصالون نهائياً؟ لن يتمكن من الدخول."))return;}
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isWeek?"rgba(240,192,64,.2)":"transparent",border:`1px solid ${isWeek?"#f0c040":"#444"}`,color:isWeek?"#f0c040":"#888"}} onClick={()=>setWeeklySalon(s.id)} title="صالون الأسبوع">🏅</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isPinned?"rgba(139,92,246,.2)":"transparent",border:`1px solid ${isPinned?"#8b5cf6":"#444"}`,color:isPinned?"#8b5cf6":"#888"}} onClick={()=>togglePin(s.id)} title="تثبيت">📌</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isFrozen?"rgba(39,174,96,.15)":"rgba(231,76,60,.1)",border:`1px solid ${isFrozen?"#27ae60":"#e74c3c"}`,color:isFrozen?"#27ae60":"#e74c3c"}} onClick={()=>toggleFreeze(s)} title={isFrozen?"رفع التجميد":"تجميد مؤقت"}>{isFrozen?"🔓":"🔒"}</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:s.banned?"rgba(39,174,96,.15)":"rgba(139,0,0,.2)",border:`1px solid ${s.banned?"#27ae60":"#8b0000"}`,color:s.banned?"#27ae60":"#ff4444"}} onClick={async()=>{
+                const msg=s.banned?"رفع الحظر عن هذا الصالون؟":"حظر هذا الصالون نهائياً؟";
+                if(!confirm(msg))return;
                 try{
                   await sb("salons","PATCH",{banned:!s.banned},`?id=eq.${s.id}`);
                   setSalons(p=>p.map(x=>x.id===s.id?{...x,banned:!x.banned}:x));
-                  toast$&&toast$(s.banned?"✅ تم رفع الحظر":"🚫 تم حظر الصالون نهائياً");
+                  // إشعار للصالون
+                  const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+                  notifs.unshift({id:Date.now(),icon:s.banned?"✅":"🚫",title:s.banned?"تم رفع الحظر":"تم حظر الصالون",body:`صالون ${s.name} ${s.banned?"مفعّل الآن":"محظور من قبل الإدارة"}`,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
+                  localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
+                  const cnt=parseInt(localStorage.getItem("dork_notif_count")||"0");
+                  localStorage.setItem("dork_notif_count",String(cnt+1));
+                  toast$&&toast$(s.banned?"✅ تم رفع الحظر":"🚫 تم حظر الصالون");
                 }catch(e){toast$&&toast$("❌ خطأ","err");}
-              }} title={s.banned?"رفع الحظر":"حظر نهائي"}>🚫</button>
-              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:"rgba(212,160,23,.12)",border:"1px solid var(--p)",color:"var(--p)"}} onClick={()=>startEdit(s)}>✏</button>
-              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋</button>
-              <button style={{...G.delBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{const r=prompt("سبب الحذف:");if(confirm(`حذف؟${r?"\n"+r:""}`))deleteSalon(s.id);}}>🗑</button>
+              }} title={s.banned?"رفع الحظر":"حظر نهائي"}>{s.banned?"✅":"🚫"}</button>
+              {/* رسالة للصالون */}
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:"rgba(212,160,23,.1)",border:"1px solid var(--pa25)",color:"var(--p)"}} onClick={()=>{
+                const msg=prompt(`رسالة للصالون "${s.name}":`);
+                if(!msg)return;
+                const KEY=`dork_msgs_${s.id}`;
+                const msgs=JSON.parse(localStorage.getItem(KEY)||"[]");
+                msgs.push({id:Date.now(),from:"admin",text:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})});
+                localStorage.setItem(KEY,JSON.stringify(msgs));
+                // إشعار
+                const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+                notifs.unshift({id:Date.now(),icon:"💬",title:"رسالة من الإدارة",body:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
+                localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
+                const cnt=parseInt(localStorage.getItem("dork_notif_count")||"0");
+                localStorage.setItem("dork_notif_count",String(cnt+1));
+                toast$&&toast$("✅ تم إرسال الرسالة");
+              }} title="رسالة">💬</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:"rgba(212,160,23,.12)",border:"1px solid var(--p)",color:"var(--p)"}} onClick={()=>startEdit(s)} title="تعديل">✏</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{setSelSalon(s);setView("salon");}} title="الصفحة">📋</button>
+              <button style={{...G.delBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{if(confirm(`حذف صالون ${s.name}؟`))deleteSalon(s.id);}} title="حذف">🗑</button>
             </div>
           </div>
         </div>
