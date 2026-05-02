@@ -3873,19 +3873,28 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
             </div>
           </div>
 
-          {/* زرا صفحة وميزان */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-            <button style={{padding:"10px 0",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#aaa",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={()=>{setSelSalon(s);setView("salon");}}>
-              📋 صفحة
-            </button>
-            <button style={{padding:"10px 0",borderRadius:10,border:`1.5px solid ${(s.bookings.filter(b=>b.status==="approved").length-(s.totalPaid||0))>0?"#e74c3c33":"#27ae6033"}`,background:(s.bookings.filter(b=>b.status==="approved").length-(s.totalPaid||0))>0?"rgba(231,76,60,.08)":"rgba(39,174,96,.08)",color:(s.bookings.filter(b=>b.status==="approved").length-(s.totalPaid||0))>0?"#e74c3c":"#27ae60",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={()=>{
+          {/* زرا صفحة وميزان ورسايل */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
+            <button style={{padding:"10px 0",borderRadius:10,border:`1.5px solid ${(s.bookings.filter(b=>b.status==="approved").length-(s.totalPaid||0))>0?"#e74c3c":"#27ae60"}`,background:(s.bookings.filter(b=>b.status==="approved").length-(s.totalPaid||0))>0?"rgba(231,76,60,.08)":"rgba(39,174,96,.08)",color:(s.bookings.filter(b=>b.status==="approved").length-(s.totalPaid||0))>0?"#e74c3c":"#27ae60",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:4}} onClick={()=>{
               const earned=s.bookings.filter(b=>b.status==="approved").length;
               const paid=s.totalPaid||0;
               const bal=earned-paid;
-              alert(`💰 ميزان ${s.name}\n\nالمستحق: ${earned} ر\nالمسدد: ${paid} ر\nالمتبقي: ${bal} ر`);
-            }}>
-              💰 ميزان
-            </button>
+              alert(`💰 ميزان ${s.name}\nالمستحق: ${earned} ر\nالمسدد: ${paid} ر\nالمتبقي: ${bal} ر`);
+            }}>💰 ميزان</button>
+            <button style={{padding:"10px 0",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#aaa",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:4}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋 صفحة</button>
+            <button style={{padding:"10px 0",borderRadius:10,border:"1.5px solid var(--pa25)",background:"var(--pa08)",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:4}} onClick={()=>{
+              const msg=prompt(`رسالة للصالون "${s.name}":`);
+              if(!msg)return;
+              const KEY=`dork_msgs_${s.id}`;
+              const msgs=JSON.parse(localStorage.getItem(KEY)||"[]");
+              msgs.push({id:Date.now(),from:"admin",text:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})});
+              localStorage.setItem(KEY,JSON.stringify(msgs));
+              const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+              notifs.unshift({id:Date.now(),icon:"💬",title:"رسالة من الإدارة",body:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
+              localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
+              localStorage.setItem("dork_notif_count",String(parseInt(localStorage.getItem("dork_notif_count")||"0")+1));
+              toast$&&toast$("✅ تم إرسال الرسالة");
+            }}>💬 رسايل</button>
           </div>
 
           {/* الميزان التفصيلي */}
