@@ -103,7 +103,6 @@ function toAppBooking(row) {
 function toAppCustomer(row) {
   let history=row.history||[];
   let favs=row.favs||[];
-  // لو ما في history في Supabase نجيبها من localStorage
   if(!history.length){
     try{const h=localStorage.getItem(`hist_${row.id}`);if(h)history=JSON.parse(h);}catch{}
   }
@@ -114,9 +113,13 @@ function toAppCustomer(row) {
     id: row.id,
     name: row.name,
     phone: row.phone,
+    email: row.email||"",
     password: row.password,
+    googleUid: row.google_uid||"",
     favs,
     history,
+    loyaltyPoints: row.loyalty_points||0,
+    loyaltyFrozen: row.loyalty_frozen||false,
   };
 }
 
@@ -1794,6 +1797,8 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
   const[pwForm,setPwForm]=useState({old:"",n1:"",n2:"",err:""});
   const[bkFilter,setBkFilter]=useState("all");
   const[bkDate,setBkDate]=useState("");
+  const[customFields,setCustomFields]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_social_custom")||"[]");}catch{return[];}});
+  const saveCustom=(f)=>{setCustomFields(f);localStorage.setItem("dork_social_custom",JSON.stringify(f));};
 
   if(!adminSession)return(
     <div style={G.page}><div style={G.fp}>
@@ -2137,11 +2142,15 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
       {tab==="loyalty"&&(
         <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #27ae6033"}}>
           <div style={{fontSize:13,fontWeight:700,color:"#27ae60",marginBottom:12,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>🎁 إعدادات نقاط الولاء</div>
-          <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}}>
+          <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer"}}>
             <input type="checkbox" checked={loyaltySettings?.enabled||false} onChange={e=>setLoyaltySettings&&setLoyaltySettings(p=>({...p,enabled:e.target.checked}))}/>
             <span style={{fontSize:13,color:"#fff",fontWeight:700}}>تفعيل نظام النقاط للجميع</span>
           </label>
-          {loyaltySettings?.enabled&&<>
+          <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer",padding:"8px 10px",background:"rgba(231,76,60,.08)",borderRadius:8,border:"1px solid rgba(231,76,60,.2)"}}>
+            <input type="checkbox" checked={loyaltySettings?.hidden||false} onChange={e=>setLoyaltySettings&&setLoyaltySettings(p=>({...p,hidden:e.target.checked}))}/>
+            <span style={{fontSize:12,color:"#e74c3c",fontWeight:600}}>🙈 إخفاء النقاط عن الجميع</span>
+          </label>
+          {loyaltySettings?.enabled&&!loyaltySettings?.hidden&&<>
             {[{l:"نقاط لكل حجز",k:"pointsPerBooking"},{l:"الحد الأدنى للاستخدام",k:"minRedeemPoints"},{l:"قيمة النقطة (ريال)",k:"redeemValue"}].map(({l,k})=>(
               <div key={k} style={{marginBottom:10}}>
                 <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600}}>{l}</label>
@@ -2156,13 +2165,29 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
       {/* التواصل */}
       {tab==="social"&&(
         <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>📱 وسائل التواصل الاجتماعي</div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>📱 وسائل التواصل</div>
           {[{k:"email",l:"📧 البريد",ph:"example@email.com"},{k:"twitter",l:"🐦 تويتر",ph:"@username"},{k:"whatsapp",l:"💬 واتساب",ph:"05XXXXXXXX"},{k:"telegram",l:"✈ تيليجرام (رقم)",ph:"05XXXXXXXX"},{k:"telegramUser",l:"✈ تيليجرام (مستخدم)",ph:"@username"}].map(({k,l,ph})=>(
-            <div key={k} style={{marginBottom:10}}>
-              <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600}}>{l}</label>
-              <input style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} placeholder={ph} value={socialLinks?.[k]||""} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,[k]:e.target.value}))}/>
+            <div key={k} style={{display:"flex",gap:8,marginBottom:10,alignItems:"flex-end"}}>
+              <div style={{flex:1}}>
+                <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600}}>{l}</label>
+                <input style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} placeholder={ph} value={socialLinks?.[k]||""} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,[k]:e.target.value}))}/>
+              </div>
+              <button style={{...G.xBtn,flexShrink:0,marginBottom:0}} onClick={()=>setSocialLinks&&setSocialLinks(p=>({...p,[k]:""}))} title="حذف">✕</button>
             </div>
           ))}
+          {customFields.map((f,i)=>(
+            <div key={i} style={{display:"flex",gap:8,marginBottom:10,alignItems:"flex-end"}}>
+              <div style={{flex:1}}>
+                <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600}}>{f.label}</label>
+                <input style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} value={f.value} onChange={e=>saveCustom(customFields.map((x,j)=>j===i?{...x,value:e.target.value}:x))}/>
+              </div>
+              <button style={{...G.xBtn,flexShrink:0}} onClick={()=>saveCustom(customFields.filter((_,j)=>j!==i))}>✕</button>
+            </div>
+          ))}
+          <button style={{...G.pageBtn,width:"100%",marginBottom:12,border:"1.5px dashed var(--p)",color:"var(--p)",background:"transparent"}} onClick={()=>{
+            const label=prompt("اسم الحقل الجديد (مثال: IBAN، رقم البنك):");
+            if(label)saveCustom([...customFields,{label,value:""}]);
+          }}>+ إضافة حقل جديد</button>
           <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer"}}>
             <input type="checkbox" checked={socialLinks?.enabled||false} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,enabled:e.target.checked}))}/>
             <span style={{fontSize:12,color:"#fff"}}>إظهار للمستخدمين في الإعدادات</span>
@@ -2485,6 +2510,8 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
   const login=()=>{
     const s=salons.find(x=>x.ownerPhone===phone.trim()||x.phone===phone.trim());
     if(!s){setErr("لا يوجد صالون بهذا الرقم");return;}
+    if(s.banned){setErr("🚫 تم حظر هذا الصالون من قبل الإدارة — تواصل مع الدعم");return;}
+    if(s.frozen){setErr("🔒 الصالون مجمّد مؤقتاً — تواصل مع الإدارة");return;}
     setOwnerSession(s.id); setView("ownerDash");
   };
   return(
@@ -2507,10 +2534,54 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
 }
 function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$}){
   const[tab,setTab]=useState("notif");
+  const[oathDone,setOathDone]=useState(()=>{
+    try{return localStorage.getItem(`dork_oath_${salon?.id}`)==="1";}catch{return false;}
+  });
+  const[oathChecked,setOathChecked]=useState(false);
+
   if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>لوحة الصالون</h2></div><div style={G.empty}>الصالون غير موجود</div></div></div>;
+
+  // شاشة القسم — تظهر لمرة واحدة فقط
+  if(!oathDone) return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0d0d1a,#1a1228)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>
+      <div style={{maxWidth:460,width:"100%"}}>
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <div style={{fontSize:40,marginBottom:8}}>📜</div>
+          <div style={{fontSize:20,fontWeight:900,color:"var(--p,#d4a017)",marginBottom:4}}>القسم الشرعي</div>
+          <div style={{fontSize:12,color:"#888"}}>يُعرض لمرة واحدة فقط عند أول دخول</div>
+        </div>
+        <div style={{background:"rgba(212,160,23,.06)",border:"1.5px solid rgba(212,160,23,.3)",borderRadius:14,padding:"20px 18px",marginBottom:18}}>
+          <div style={{fontSize:14,color:"#f0c040",lineHeight:2.1,textAlign:"center",fontWeight:600}}>
+            «أقسم بالله العظيم، أن ألتزم بالأمانة والصدق في دفع عمولة الوساطة المستحقة لتطبيق (دورك) بواقع (1 ريال) عن كل حجز مكتمل يتم عبر المنصة، وألا أتحايل على النظام بأي وسيلة كانت، وأن أراقب الله في ذلك.. والله على ما أقول شهيد»
+          </div>
+        </div>
+        <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:16,cursor:"pointer",padding:"12px 14px",background:"rgba(212,160,23,.05)",borderRadius:10,border:`1.5px solid ${oathChecked?"var(--p,#d4a017)":"#2a2a3a"}`}}>
+          <input type="checkbox" checked={oathChecked} onChange={e=>setOathChecked(e.target.checked)} style={{width:18,height:18,marginTop:2,flexShrink:0,cursor:"pointer"}}/>
+          <span style={{fontSize:13,color:"#fff",lineHeight:1.7}}>أقر بأنني قرأت القسم كاملاً وأقسمت بالله العظيم على الالتزام به</span>
+        </label>
+        <button
+          disabled={!oathChecked}
+          onClick={async()=>{
+            try{await sb("salons","PATCH",{oath_done:true},`?id=eq.${salon.id}`);}catch{}
+            localStorage.setItem(`dork_oath_${salon.id}`,"1");
+            setOathDone(true);
+          }}
+          style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:oathChecked?"linear-gradient(135deg,var(--p,#d4a017),#f0c040)":"#2a2a3a",color:oathChecked?"#000":"#555",fontSize:15,fontWeight:900,cursor:oathChecked?"pointer":"not-allowed",fontFamily:"inherit",transition:"all .3s"}}>
+          قبول ودخول لوحة التحكم
+        </button>
+      </div>
+    </div>
+  );
+
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
   const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
   const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
+
+  // الميزان المالي
+  const approvedBookings=salon.bookings.filter(b=>b.status==="approved");
+  const totalEarned=approvedBookings.length; // 1 ريال لكل حجز
+  const totalPaid=salon.totalPaid||0;
+  const balance=totalEarned-totalPaid;
 
   const togglePause=async()=>{
     try{
@@ -2529,6 +2600,22 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <span style={{fontSize:11,fontWeight:700,color:statusColor,background:`${statusColor}22`,padding:"3px 8px",borderRadius:8}}>{statusLabel}</span>
       </div>
       {salon.status!=="approved"&&<div style={{background:"rgba(240,192,64,.08)",border:"1px solid var(--pl)55",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--pl)"}}>🔔 صالونك في انتظار موافقة الإدارة - سيظهر للعملاء بعد القبول</div>}
+
+      {/* الميزان المالي */}
+      <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:14,padding:16,border:"1.5px solid var(--pa25)",marginBottom:12}}>
+        <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:10}}>💰 الميزان المالي</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:balance>0?10:0}}>
+          {[{l:"إجمالي المستحق",v:totalEarned+" ر",c:"var(--p)"},{l:"تم سداده",v:totalPaid+" ر",c:"#27ae60"},{l:"المتبقي",v:balance+" ر",c:balance>0?"#e74c3c":"#27ae60"}].map(({l,v,c})=>(
+            <div key={l} style={{background:"#0d0d1a",borderRadius:10,padding:"10px 8px",textAlign:"center",border:`1px solid ${c}33`}}>
+              <div style={{fontSize:16,fontWeight:900,color:c}}>{v}</div>
+              <div style={{fontSize:9,color:"#888",marginTop:2}}>{l}</div>
+            </div>
+          ))}
+        </div>
+        {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#e74c3c",textAlign:"center"}}>
+          ⚠ يوجد مبلغ مستحق ({balance} ريال) لتطبيق دورك — يُرجى السداد
+        </div>}
+      </div>
 
       {/* زر مشاركة الصالون */}
       <div style={{display:"flex",gap:8,marginBottom:10}}>
@@ -3037,7 +3124,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               });
               await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
               await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js");
-              const fb=window["firebase"];
+              const fb=window.firebase;
               if(!fb.apps.length) fb.initializeApp({apiKey:"AIzaSyBYCJYdJUi_oPfYlOzSukntj4",authDomain:"dork-app.firebaseapp.com",projectId:"dork-app",appId:"1:659823227621:web:befaaa1b5063"});
               const provider=new fb.auth.GoogleAuthProvider();
               provider.setCustomParameters({prompt:"select_account"});
@@ -3671,7 +3758,16 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
             <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
               <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isWeek?"rgba(240,192,64,.2)":"transparent",border:`1px solid ${isWeek?"#f0c040":"#444"}`,color:isWeek?"#f0c040":"#888"}} onClick={()=>setWeeklySalon(s.id)}>🏅</button>
               <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isPinned?"rgba(139,92,246,.2)":"transparent",border:`1px solid ${isPinned?"#8b5cf6":"#444"}`,color:isPinned?"#8b5cf6":"#888"}} onClick={()=>togglePin(s.id)}>📌</button>
-              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isFrozen?"rgba(231,76,60,.15)":"transparent",border:`1px solid ${isFrozen?"#e74c3c":"#444"}`,color:isFrozen?"#e74c3c":"#888"}} onClick={()=>toggleFreeze(s)}>🔒</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:isFrozen?"rgba(231,76,60,.15)":"transparent",border:`1px solid ${isFrozen?"#e74c3c":"#444"}`,color:isFrozen?"#e74c3c":"#888"}} onClick={()=>toggleFreeze(s)} title={isFrozen?"تفعيل":"تجميد مؤقت"}>🔒</button>
+              <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:s.banned?"rgba(139,0,0,.3)":"transparent",border:`1px solid ${s.banned?"#8b0000":"#444"}`,color:s.banned?"#ff4444":"#888"}} onClick={async()=>{
+                if(s.banned){if(!confirm("رفع الحظر عن هذا الصالون؟"))return;}
+                else{if(!confirm("حظر هذا الصالون نهائياً؟ لن يتمكن من الدخول."))return;}
+                try{
+                  await sb("salons","PATCH",{banned:!s.banned},`?id=eq.${s.id}`);
+                  setSalons(p=>p.map(x=>x.id===s.id?{...x,banned:!x.banned}:x));
+                  toast$&&toast$(s.banned?"✅ تم رفع الحظر":"🚫 تم حظر الصالون نهائياً");
+                }catch(e){toast$&&toast$("❌ خطأ","err");}
+              }} title={s.banned?"رفع الحظر":"حظر نهائي"}>🚫</button>
               <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px",background:"rgba(212,160,23,.12)",border:"1px solid var(--p)",color:"var(--p)"}} onClick={()=>startEdit(s)}>✏</button>
               <button style={{...G.pageBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋</button>
               <button style={{...G.delBtn,fontSize:10,padding:"5px 9px"}} onClick={()=>{const r=prompt("سبب الحذف:");if(confirm(`حذف؟${r?"\n"+r:""}`))deleteSalon(s.id);}}>🗑</button>
