@@ -510,7 +510,26 @@ export default function App(){
   const[socialLinks,setSocialLinks]=useState({email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false});
   const[appSettingsId,setAppSettingsId]=useState(null);
 
-  // تحميل الإعدادات من Supabase
+  // تحميل الإعدادات من Supabase — يُشغَّل دائماً
+  const loadAppSettings=useCallback(async()=>{
+    try{
+      const rows=await sb("app_settings","GET",null,"?order=id.asc&limit=1");
+      if(rows.length){
+        const r=rows[0];
+        setAppSettingsId(r.id);
+        if(r.loyalty_settings){
+          try{setLoyaltySettings(JSON.parse(r.loyalty_settings));}catch{}
+        }
+        if(r.social_links){
+          try{setSocialLinks(JSON.parse(r.social_links));}catch{}
+        }
+      }
+    }catch{
+      try{const v=localStorage.getItem("dork_loyalty");if(v)setLoyaltySettings(JSON.parse(v));}catch{}
+      try{const v=localStorage.getItem("dork_social");if(v)setSocialLinks(JSON.parse(v));}catch{}
+    }
+  },[]);
+
   useEffect(()=>{
     (async()=>{
       try{
@@ -522,7 +541,6 @@ export default function App(){
           if(r.social_links)setSocialLinks(JSON.parse(r.social_links));
         }
       }catch{
-        // fallback to localStorage
         try{const v=localStorage.getItem("dork_loyalty");if(v)setLoyaltySettings(JSON.parse(v));}catch{}
         try{const v=localStorage.getItem("dork_social");if(v)setSocialLinks(JSON.parse(v));}catch{}
       }
@@ -650,7 +668,7 @@ export default function App(){
     }
   }, [adminSession]);
 
-  useEffect(()=>{ loadData(); }, [loadData]);
+  useEffect(()=>{ loadData(); loadAppSettings(); }, [loadData,loadAppSettings]);
 
   // شاشة الشروط والأحكام
   if(!termsAccepted) return <TermsView onAccept={()=>{setTermsAccepted(true);try{localStorage.setItem("dork_terms","1");}catch{}}} />;
@@ -3238,7 +3256,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     </div></div>
   );
 }
-function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers}){
+function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,loyaltySettings}){
   const[tab,setTab]=useState("favs");
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
@@ -3511,7 +3529,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <div style={{fontSize:12,color:"#888",marginBottom:16,lineHeight:1.8}}>
             <div>👤 الاسم: <span style={{color:"#fff",fontWeight:700}}>{customer.name}</span></div>
             <div>📞 الجوال: <span style={{color:"#fff",fontWeight:700}}>{customer.phone}</span></div>
-            <div>🎁 النقاط: <span style={{color:"#27ae60",fontWeight:700}}>{points} نقطة</span></div>
+            {!loyaltySettings?.hidden&&<div>🎁 النقاط: <span style={{color:"#27ae60",fontWeight:700}}>{points} نقطة</span></div>}
             <div>📋 الحجوزات: <span style={{color:"var(--p)",fontWeight:700}}>{history.length} حجز</span></div>
           </div>
           <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>{setTab("favs");setEditMode(true);}}>✏ تعديل البيانات</button>
