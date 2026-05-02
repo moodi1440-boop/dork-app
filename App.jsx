@@ -547,14 +547,16 @@ export default function App(){
   };
 
   const updateLoyalty=(newVal)=>{
-    const merged={...loyaltySettings,...newVal};
+    const merged=typeof newVal==="function"?newVal(loyaltySettings):{...loyaltySettings,...newVal};
     setLoyaltySettings(merged);
+    try{localStorage.setItem("dork_loyalty",JSON.stringify(merged));}catch{}
     saveAppSettings(merged,null);
   };
 
   const updateSocial=(newVal)=>{
-    const merged={...socialLinks,...newVal};
+    const merged=typeof newVal==="function"?newVal(socialLinks):{...socialLinks,...newVal};
     setSocialLinks(merged);
+    try{localStorage.setItem("dork_social",JSON.stringify(merged));}catch{}
     saveAppSettings(null,merged);
   };
 
@@ -2230,7 +2232,7 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
               </div>
             ))}
           </>}
-          <button style={G.sub} onClick={()=>toast$&&toast$("✅ تم حفظ إعدادات النقاط")}>💾 حفظ</button>
+          <button style={G.sub} onClick={()=>{setLoyaltySettings&&setLoyaltySettings({...loyaltySettings});toast$&&toast$("✅ تم حفظ إعدادات النقاط");}}>💾 حفظ</button>
         </div>
       )}
 
@@ -2264,7 +2266,7 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
             <input type="checkbox" checked={socialLinks?.enabled||false} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,enabled:e.target.checked}))}/>
             <span style={{fontSize:12,color:"#fff"}}>إظهار للمستخدمين في الإعدادات</span>
           </label>
-          <button style={G.sub} onClick={()=>toast$&&toast$("✅ تم حفظ التواصل")}>💾 حفظ</button>
+          <button style={G.sub} onClick={()=>{setSocialLinks&&setSocialLinks({...socialLinks});toast$&&toast$("✅ تم حفظ التواصل");}}>💾 حفظ</button>
         </div>
       )}
 
