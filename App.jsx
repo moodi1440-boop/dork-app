@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 // ==============================================
 //  SUPABASE CLIENT
@@ -130,6 +130,10 @@ const ADMIN_PWD = "admin123";
 const SLOT_MIN  = 40;
 const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 
+/** مصدر الحقيقة لإعدادات المنصة في جدول app_settings (Supabase) */
+const DEFAULT_LOYALTY_SETTINGS={enabled:false,hidden:false,pointsPerBooking:10,minRedeemPoints:50,redeemValue:5};
+const DEFAULT_SOCIAL_LINKS={email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false,customFields:[]};
+
 // ==============================================
 //  TONES  - louder + barbershop themed
 // ==============================================
@@ -153,28 +157,65 @@ const TONES = [
 ];
 
 const THEMES = {
-  gold:     {primary:"#d4a017", light:"#f0c040", dark:"#a07810", lightest:"#f5d76e", rgb:"212,160,23"},
-  emerald:  {primary:"#10b981", light:"#34d399", dark:"#047857", lightest:"#6ee7b7", rgb:"16,185,129"},
-  sapphire: {primary:"#3b82f6", light:"#60a5fa", dark:"#1e40af", lightest:"#93c5fd", rgb:"59,130,246"},
-  rose:     {primary:"#ec4899", light:"#f472b6", dark:"#9d174d", lightest:"#f9a8d4", rgb:"236,72,153"},
-  violet:   {primary:"#8b5cf6", light:"#a78bfa", dark:"#5b21b6", lightest:"#c4b5fd", rgb:"139,92,246"},
-  crimson:  {primary:"#ef4444", light:"#f87171", dark:"#991b1b", lightest:"#fca5a5", rgb:"239,68,68"},
+  gold:      {primary:"#d4a017", light:"#f0c040", dark:"#a07810", lightest:"#f5d76e", rgb:"212,160,23"},
+  emerald:   {primary:"#10b981", light:"#34d399", dark:"#047857", lightest:"#6ee7b7", rgb:"16,185,129"},
+  sapphire:  {primary:"#3b82f6", light:"#60a5fa", dark:"#1e40af", lightest:"#93c5fd", rgb:"59,130,246"},
+  royalBlue: {primary:"#1e3a8a", light:"#3b82f6", dark:"#172554", lightest:"#93c5fd", rgb:"30,58,138"},
+  bronze:    {primary:"#8b5a2b", light:"#c9a227", dark:"#5c3d1a", lightest:"#e8c97a", rgb:"139,90,43"},
+  rose:      {primary:"#ec4899", light:"#f472b6", dark:"#9d174d", lightest:"#f9a8d4", rgb:"236,72,153"},
+  violet:    {primary:"#8b5cf6", light:"#a78bfa", dark:"#5b21b6", lightest:"#c4b5fd", rgb:"139,92,246"},
+  crimson:   {primary:"#ef4444", light:"#f87171", dark:"#991b1b", lightest:"#fca5a5", rgb:"239,68,68"},
 };
 
 const BACKGROUNDS=[
-  {id:"none",    label:"بلا خلفية",    emoji:"", style:{background:"#0d0d1a"}},
+  {id:"none",    label:"بلا خلفية",    emoji:"⬛", style:{background:"#0d0d1a",backgroundImage:"none"}},
   {id:"stars",   label:"نجوم",          emoji:"✨", style:{background:"radial-gradient(ellipse at top,#1a1a3a 0%,#0d0d1a 70%)",backgroundImage:"radial-gradient(circle,rgba(255,255,255,.08) 1px,transparent 1px)",backgroundSize:"40px 40px"}},
   {id:"grid",    label:"شبكة",          emoji:"🔲", style:{background:"#0d0d1a",backgroundImage:"linear-gradient(rgba(212,160,23,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(212,160,23,.05) 1px,transparent 1px)",backgroundSize:"30px 30px"}},
-  {id:"waves",   label:"أمواج",         emoji:"🌊", style:{background:"linear-gradient(180deg,#0d0d1a 0%,#0a1628 50%,#0d0d1a 100%)"}},
-  {id:"marble",  label:"رخام",          emoji:"🪨", style:{background:"linear-gradient(135deg,#111118 25%,#1a1a2a 25%,#1a1a2a 50%,#111118 50%,#111118 75%,#1a1a2a 75%)",backgroundSize:"20px 20px"}},
+  {id:"waves",   label:"أمواج",         emoji:"🌊", style:{background:"linear-gradient(180deg,#0d0d1a 0%,#0a1628 50%,#0d0d1a 100%)",backgroundImage:"none"}},
+  {id:"marble",  label:"رخام",          emoji:"🪨", style:{background:"linear-gradient(135deg,#111118 25%,#1a1a2a 25%,#1a1a2a 50%,#111118 50%,#111118 75%,#1a1a2a 75%)",backgroundSize:"20px 20px",backgroundImage:"none"}},
   {id:"circuit", label:"دوائر",         emoji:"🔌", style:{background:"#0d0d1a",backgroundImage:"radial-gradient(circle at 50% 50%,rgba(212,160,23,.03) 0%,transparent 60%)"}},
+  {id:"royal",   label:"ملكي",          emoji:"👑", style:{
+    background:"linear-gradient(160deg,#12081f 0%,#1a0a28 45%,#0f0818 100%)",
+    backgroundImage:"radial-gradient(ellipse 90% 45% at 50% -15%, rgba(212,160,23,.18), transparent), radial-gradient(circle at 100% 100%, rgba(91,33,182,.14), transparent 55%)",
+  }},
+  {id:"tech",    label:"تقني",          emoji:"⚡", style:{
+    background:"#050a12",
+    backgroundImage:"linear-gradient(rgba(56,189,248,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.07) 1px,transparent 1px), radial-gradient(ellipse 100% 40% at 50% 0%, rgba(34,211,238,.09), transparent 60%)",
+    backgroundSize:"22px 22px,22px 22px,100% 100%",
+  }},
+  {id:"goldMarble",label:"رخام ذهبي",   emoji:"✦", style:{
+    background:"linear-gradient(118deg,#141210 0%,#1c1812 30%,#12100c 60%,#1a1612 100%)",
+    backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(212,160,23,.05) 3px,rgba(212,160,23,.05) 6px), radial-gradient(ellipse 70% 50% at 25% 15%, rgba(240,192,64,.14), transparent 55%)",
+  }},
 ];
 
-function applyBackground(id){
+/** أوضاع فاتحة لطبقة الخلفية خلف المحتوى */
+const BG_LIGHT_STYLES={
+  none:{background:"#eef0f6",backgroundImage:"none",backgroundSize:"auto"},
+  stars:{background:"linear-gradient(180deg,#e4e8f4 0%,#f4f5fb 100%)",backgroundImage:"radial-gradient(circle,rgba(30,58,138,.07) 1px,transparent 1px)",backgroundSize:"40px 40px"},
+  grid:{background:"#eef0f6",backgroundImage:"linear-gradient(rgba(30,58,138,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(30,58,138,.06) 1px,transparent 1px)",backgroundSize:"30px 30px"},
+  waves:{background:"linear-gradient(180deg,#f0f2f8 0%,#e2e8f4 50%,#f0f2f8 100%)",backgroundImage:"none"},
+  marble:{background:"linear-gradient(135deg,#f8f7f5 25%,#ece8e4 25%,#ece8e4 50%,#f8f7f5 50%,#f8f7f5 75%,#ece8e4 75%)",backgroundSize:"20px 20px",backgroundImage:"none"},
+  circuit:{background:"#eef1f8",backgroundImage:"radial-gradient(circle at 50% 40%,rgba(59,130,246,.06) 0%,transparent 65%)"},
+  royal:{background:"linear-gradient(165deg,#ede8f5 0%,#e8e4f2 50%,#f2f0fa 100%)",backgroundImage:"radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,.12), transparent), radial-gradient(circle at 100% 100%, rgba(212,160,23,.08), transparent 50%)"},
+  tech:{background:"#f0f4fa",backgroundImage:"linear-gradient(rgba(14,116,144,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(14,116,144,.05) 1px,transparent 1px), radial-gradient(ellipse 100% 35% at 50% 0%, rgba(56,189,248,.1), transparent 55%)",backgroundSize:"22px 22px,22px 22px,100% 100%"},
+  goldMarble:{background:"linear-gradient(120deg,#faf8f5 0%,#f3efe8 45%,#faf7f2 100%)",backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(166,124,41,.06) 3px,rgba(166,124,41,.06) 6px), radial-gradient(ellipse 65% 45% at 30% 10%, rgba(201,162,39,.12), transparent 50%)"},
+};
+
+function normalizeBgId(id){
+  if(BACKGROUNDS.some(b=>b.id===id))return id;
+  return"none";
+}
+
+function buildDorkBgStyle(bgId,darkMode){
+  const id=normalizeBgId(bgId);
+  const base={position:"fixed",inset:0,zIndex:-1,pointerEvents:"none"};
+  if(!darkMode){
+    const L=BG_LIGHT_STYLES[id]||BG_LIGHT_STYLES.none;
+    return{...base,...L};
+  }
   const bg=BACKGROUNDS.find(b=>b.id===id)||BACKGROUNDS[0];
-  const el=document.getElementById("dork-bg");
-  if(el)Object.assign(el.style,{...bg.style,position:"fixed",inset:0,zIndex:-1,pointerEvents:"none"});
-  try{localStorage.setItem("dork_bg",id);}catch{}
+  return{...base,...bg.style};
 }
 
 function playTone(id, vol=0.7){
@@ -443,6 +484,39 @@ function getSlotsForSalon(s){
 function todayStr(){return new Date().toISOString().split("T")[0];}
 function openMaps(url,name,addr){window.open(url?.trim()||`https://www.google.com/maps/search/${encodeURIComponent(name+" "+addr)}`,"_blank");}
 function calcTotal(svcs,prices){return(svcs||[]).reduce((a,s)=>a+(prices?.[s]||0),0);}
+function normPhone(p){return String(p||"").replace(/\D/g,"");}
+
+/** تقييمات معتمدة من عملاء لصالونات مفعّلة — للصفحة الرئيسية */
+function buildHomeReviewsFeed(customers, approvedSalons){
+  const byId=new Map(approvedSalons.map(s=>[Number(s.id),s]));
+  const approvedSet=new Set(approvedSalons.map(s=>Number(s.id)));
+  const rows=[];
+  let k=0;
+  for(const c of customers||[]){
+    for(const h of c.history||[]){
+      if(!h||!h.rating||h.rating<=0)continue;
+      const sid=Number(h.salonId);
+      if(!approvedSet.has(sid))continue;
+      const salon=byId.get(sid);
+      rows.push({
+        key:`hr-${k++}`,
+        salonId:sid,
+        salonName:(h.salonName||salon?.name||"صالون").trim(),
+        customerName:(c.name||"عميل").trim(),
+        rating:h.rating,
+        comment:(h.comment||"").trim(),
+        date:h.date||"",
+        time:h.time||"",
+      });
+    }
+  }
+  rows.sort((a,b)=>{
+    const d=(b.date||"").localeCompare(a.date||"");
+    if(d!==0)return d;
+    return (b.time||"").localeCompare(a.time||"");
+  });
+  return rows;
+}
 
 const DEMO_SALONS=[
   {id:1,name:"صالون الأناقة",owner:"أحمد محمد",ownerPhone:"0501234567",region:"منطقة مكة المكرمة",gov:"محافظة جدة",center:"مركز جدة",village:"الروضة",phone:"0501234567",address:"شارع الملك عبدالعزيز",locationUrl:"https://maps.google.com/?q=21.5433,39.1728",services:["قص شعر","حلاقة لحية","تسريح"],prices:{"قص شعر":50,"حلاقة لحية":30,"تسريح":40},shiftEnabled:true,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"08:00",workEnd:"23:00",barbers:[{id:"b1",name:"أبو خالد"},{id:"b2",name:"محمد"}],tone:"bell",bookings:[],rating:4.8,status:"approved"},
@@ -474,12 +548,24 @@ export default function App(){
 
   // تطبيق وضع الإضاءة
   useEffect(()=>{
+    const shell=darkMode?"#0d0d1a":"#e8eaf0";
+    const s1=darkMode?"#13131f":"#ffffff";
+    const s2=darkMode?"#1a1a2e":"#f1f3f9";
+    const bor=darkMode?"#2a2a3a":"#c8cdd8";
     document.documentElement.style.setProperty("--bg-main",darkMode?"#0d0d1a":"#f0f0f8");
-    document.documentElement.style.setProperty("--bg-card",darkMode?"#13131f":"#ffffff");
+    document.documentElement.style.setProperty("--bg-card",s1);
     document.documentElement.style.setProperty("--bg-input",darkMode?"#0d0d1a":"#f5f5f5");
     document.documentElement.style.setProperty("--txt-main",darkMode?"#f0f0f0":"#1a1a2e");
-    document.documentElement.style.setProperty("--txt-sub",darkMode?"#888":"#666");
-    document.documentElement.style.setProperty("--border",darkMode?"#2a2a3a":"#e0e0e0");
+    document.documentElement.style.setProperty("--txt-sub",darkMode?"#888":"#5c6470");
+    document.documentElement.style.setProperty("--border",bor);
+    document.documentElement.style.setProperty("--shell-bg",shell);
+    document.documentElement.style.setProperty("--surface-1",s1);
+    document.documentElement.style.setProperty("--surface-2",s2);
+    document.documentElement.style.setProperty("--border-ui",bor);
+    document.documentElement.style.setProperty("--text-primary",darkMode?"#f0f0f0":"#141420");
+    document.documentElement.style.setProperty("--text-muted",darkMode?"#888":"#5c6470");
+    document.body.style.background=shell;
+    document.documentElement.classList.toggle("dork-light",!darkMode);
     try{localStorage.setItem("dork_dark",darkMode?"1":"0");}catch{}
   },[darkMode]);
 
@@ -489,94 +575,71 @@ export default function App(){
     return()=>clearTimeout(t);
   },[]);
 
-  // Pull to refresh
-  const handlePullRefresh=async()=>{
-    setPullRefreshing(true);
-    await loadData();
-    setTimeout(()=>setPullRefreshing(false),800);
-  };
-
   // -- تسجيل الدخول المستمر --
   const[adminSession,setAdminSession]=useState(()=>{try{return localStorage.getItem("dork_admin")==="1";}catch{return false;}});
   const[ownerSession,setOwnerSession]=useState(()=>{try{const v=localStorage.getItem("dork_owner");return v?+v:null;}catch{return null;}});
   const[customerSession,setCustomerSession]=useState(()=>{try{const v=localStorage.getItem("dork_customer");return v?JSON.parse(v):null;}catch{return null;}});
 
+  const bookingStatusSnapRef=useRef(null);
+  const customerNotifyPrimedRef=useRef(false);
+
   useEffect(()=>{try{localStorage.setItem("dork_admin",adminSession?"1":"0");}catch{}},[adminSession]);
   useEffect(()=>{try{if(ownerSession)localStorage.setItem("dork_owner",String(ownerSession));else localStorage.removeItem("dork_owner");}catch{}},[ownerSession]);
   useEffect(()=>{try{if(customerSession)localStorage.setItem("dork_customer",JSON.stringify(customerSession));else localStorage.removeItem("dork_customer");}catch{}},[customerSession]);
 
-  // نقاط الولاء + وسائل التواصل — محفوظة في Supabase
-  const[loyaltySettings,setLoyaltySettings]=useState({enabled:false,hidden:false,pointsPerBooking:10,minRedeemPoints:50,redeemValue:5});
-  const[socialLinks,setSocialLinks]=useState({email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false});
+  // نقاط الولاء + وسائل التواصل — صف واحد في app_settings (Supabase) = مصدر الحقيقة
+  const[loyaltySettings,setLoyaltySettings]=useState({...DEFAULT_LOYALTY_SETTINGS});
+  const[socialLinks,setSocialLinks]=useState({...DEFAULT_SOCIAL_LINKS});
   const[appSettingsId,setAppSettingsId]=useState(null);
+  const appSettingsIdRef=useRef(null);
+  useEffect(()=>{appSettingsIdRef.current=appSettingsId;},[appSettingsId]);
 
-  // تحميل الإعدادات من Supabase — يُشغَّل دائماً
-  const loadAppSettings=useCallback(async()=>{
+  const loadAppSettings=useCallback(async(opts)=>{
+    const silent=opts&&opts.silent;
     try{
       const rows=await sb("app_settings","GET",null,"?order=id.asc&limit=1");
       if(rows.length){
         const r=rows[0];
         setAppSettingsId(r.id);
+        appSettingsIdRef.current=r.id;
         if(r.loyalty_settings){
-          try{setLoyaltySettings(JSON.parse(r.loyalty_settings));}catch{}
+          try{setLoyaltySettings({...DEFAULT_LOYALTY_SETTINGS,...JSON.parse(r.loyalty_settings)});}catch{}
         }
         if(r.social_links){
-          try{setSocialLinks(JSON.parse(r.social_links));}catch{}
+          try{
+            let parsed={...DEFAULT_SOCIAL_LINKS,...JSON.parse(r.social_links)};
+            if(!parsed.customFields||!parsed.customFields.length){
+              try{
+                const old=JSON.parse(localStorage.getItem("dork_social_custom")||"[]");
+                if(Array.isArray(old)&&old.length)parsed={...parsed,customFields:old};
+              }catch{}
+            }
+            if(!Array.isArray(parsed.customFields))parsed.customFields=[];
+            setSocialLinks(parsed);
+          }catch{}
+        }
+        if(r.ui_settings){
+          try{
+            const u=JSON.parse(r.ui_settings);
+            setSettings(s=>({
+              ...s,
+              theme:u.theme??s.theme,
+              fontSize:u.fontSize??s.fontSize,
+              defaultTone:u.defaultTone??s.defaultTone,
+              bg:normalizeBgId(u.bg??s.bg??"none"),
+            }));
+            if(typeof u.darkMode==="boolean")setDarkMode(u.darkMode);
+          }catch{}
         }
       }
     }catch{
-      try{const v=localStorage.getItem("dork_loyalty");if(v)setLoyaltySettings(JSON.parse(v));}catch{}
-      try{const v=localStorage.getItem("dork_social");if(v)setSocialLinks(JSON.parse(v));}catch{}
+      if(!silent){
+        try{const v=localStorage.getItem("dork_loyalty");if(v)setLoyaltySettings({...DEFAULT_LOYALTY_SETTINGS,...JSON.parse(v)});}catch{}
+        try{const v=localStorage.getItem("dork_social");if(v)setSocialLinks({...DEFAULT_SOCIAL_LINKS,...JSON.parse(v)});}catch{}
+        try{const v=localStorage.getItem("dork_ui");if(v){const u=JSON.parse(v);setSettings(s=>({...s,...u,bg:normalizeBgId(u.bg||s.bg)}));if(typeof u.darkMode==="boolean")setDarkMode(u.darkMode);}}catch{}
+      }
     }
   },[]);
-
-  useEffect(()=>{
-    (async()=>{
-      try{
-        const rows=await sb("app_settings","GET",null,"?order=id.asc&limit=1");
-        if(rows.length){
-          const r=rows[0];
-          setAppSettingsId(r.id);
-          if(r.loyalty_settings)setLoyaltySettings(JSON.parse(r.loyalty_settings));
-          if(r.social_links)setSocialLinks(JSON.parse(r.social_links));
-        }
-      }catch{
-        try{const v=localStorage.getItem("dork_loyalty");if(v)setLoyaltySettings(JSON.parse(v));}catch{}
-        try{const v=localStorage.getItem("dork_social");if(v)setSocialLinks(JSON.parse(v));}catch{}
-      }
-    })();
-  },[]);
-
-  // حفظ الإعدادات في Supabase + localStorage
-  const saveAppSettings=async(loyalty,social)=>{
-    const data={loyalty_settings:JSON.stringify(loyalty||loyaltySettings),social_links:JSON.stringify(social||socialLinks)};
-    try{
-      if(appSettingsId){
-        await sb("app_settings","PATCH",data,`?id=eq.${appSettingsId}`);
-      }else{
-        const rows=await sb("app_settings","POST",data,"");
-        if(rows[0])setAppSettingsId(rows[0].id);
-      }
-    }catch{
-      // fallback
-      try{localStorage.setItem("dork_loyalty",JSON.stringify(loyalty||loyaltySettings));}catch{}
-      try{localStorage.setItem("dork_social",JSON.stringify(social||socialLinks));}catch{}
-    }
-  };
-
-  const updateLoyalty=(newVal)=>{
-    const merged=typeof newVal==="function"?newVal(loyaltySettings):{...loyaltySettings,...newVal};
-    setLoyaltySettings(merged);
-    try{localStorage.setItem("dork_loyalty",JSON.stringify(merged));}catch{}
-    saveAppSettings(merged,null);
-  };
-
-  const updateSocial=(newVal)=>{
-    const merged=typeof newVal==="function"?newVal(socialLinks):{...socialLinks,...newVal};
-    setSocialLinks(merged);
-    try{localStorage.setItem("dork_social",JSON.stringify(merged));}catch{}
-    saveAppSettings(null,merged);
-  };
 
   // الشروط والأحكام
   const[termsAccepted,setTermsAccepted]=useState(()=>{try{return localStorage.getItem("dork_terms")==="1";}catch{return false;}});
@@ -590,7 +653,7 @@ export default function App(){
   const[search,setSearch]=useState("");
   const[sortBy,setSortBy]=useState("default");
   const[userLoc,setUserLoc]=useState(null);
-  const[settings,setSettings]=useState(()=>{try{const s=localStorage.getItem("bbv6_settings");return s?JSON.parse(s):{theme:"gold",defaultTone:"bell",fontSize:"md"};}catch{return{theme:"gold",defaultTone:"bell",fontSize:"md"};}});
+  const[settings,setSettings]=useState(()=>{try{const s=localStorage.getItem("bbv6_settings");if(!s)return{theme:"gold",defaultTone:"bell",fontSize:"md",bg:"none"};const p=JSON.parse(s);return{...p,bg:normalizeBgId(p.bg||"none")};}catch{return{theme:"gold",defaultTone:"bell",fontSize:"md",bg:"none"};}});
   useEffect(()=>{localStorage.setItem("bbv6_settings",JSON.stringify(settings));},[settings]);
 
   // حجم الخط
@@ -620,15 +683,80 @@ export default function App(){
     r.setProperty("--grad2",`linear-gradient(135deg,${t.light},${t.primary})`);
   },[settings.theme]);
 
+  const saveAppSettings=useCallback(async(loyalty,social,uiPatch)=>{
+    const L={...DEFAULT_LOYALTY_SETTINGS,...(loyalty??loyaltySettings)};
+    const S={...DEFAULT_SOCIAL_LINKS,...(social??socialLinks)};
+    if(!Array.isArray(S.customFields))S.customFields=[];
+    const p=uiPatch||{};
+    const U={
+      theme:p.theme??settings.theme??"gold",
+      fontSize:p.fontSize??settings.fontSize??"md",
+      defaultTone:p.defaultTone??settings.defaultTone??"bell",
+      bg:normalizeBgId(p.bg??settings.bg??"none"),
+      darkMode:typeof p.darkMode==="boolean"?p.darkMode:darkMode,
+    };
+    const base={loyalty_settings:JSON.stringify(L),social_links:JSON.stringify(S)};
+    const full={...base,ui_settings:JSON.stringify(U)};
+    const push=async(data)=>{
+      const id=appSettingsIdRef.current;
+      if(id){
+        await sb("app_settings","PATCH",data,`?id=eq.${id}`);
+      }else{
+        const rows=await sb("app_settings","POST",data,"");
+        const newId=rows[0]?.id;
+        if(newId){setAppSettingsId(newId);appSettingsIdRef.current=newId;}
+      }
+    };
+    try{
+      try{
+        await push(full);
+      }catch{
+        await push(base);
+      }
+      try{
+        localStorage.setItem("dork_loyalty",JSON.stringify(L));
+        localStorage.setItem("dork_social",JSON.stringify(S));
+        localStorage.removeItem("dork_social_custom");
+        localStorage.setItem("dork_ui",JSON.stringify(U));
+      }catch{}
+    }catch{
+      try{
+        localStorage.setItem("dork_loyalty",JSON.stringify(L));
+        localStorage.setItem("dork_social",JSON.stringify(S));
+        localStorage.setItem("dork_ui",JSON.stringify(U));
+      }catch{}
+    }
+  },[loyaltySettings,socialLinks,settings.theme,settings.fontSize,settings.defaultTone,settings.bg,darkMode]);
+
+  const updateLoyalty=useCallback((newVal)=>{
+    const merged={...DEFAULT_LOYALTY_SETTINGS,...(typeof newVal==="function"?newVal(loyaltySettings):{...loyaltySettings,...newVal})};
+    setLoyaltySettings(merged);
+    try{localStorage.setItem("dork_loyalty",JSON.stringify(merged));}catch{}
+    void saveAppSettings(merged,null);
+  },[loyaltySettings,saveAppSettings]);
+
+  const updateSocial=useCallback((newVal)=>{
+    const merged={...DEFAULT_SOCIAL_LINKS,...(typeof newVal==="function"?newVal(socialLinks):{...socialLinks,...newVal})};
+    if(!Array.isArray(merged.customFields))merged.customFields=[];
+    setSocialLinks(merged);
+    try{localStorage.setItem("dork_social",JSON.stringify(merged));}catch{}
+    void saveAppSettings(null,merged);
+  },[socialLinks,saveAppSettings]);
+
+  const persistUiToSupabase=useCallback((patch)=>{void saveAppSettings(loyaltySettings,socialLinks,patch);},[saveAppSettings,loyaltySettings,socialLinks]);
+
+  const dorkBgStyle=useMemo(()=>buildDorkBgStyle(settings.bg||"none",darkMode),[settings.bg,darkMode]);
+
   const allLoc=[...BASE_LOC,...extraLoc];
   useEffect(()=>{localStorage.setItem("bbv6_loc",JSON.stringify(extraLoc));},[extraLoc]);
 
   const toast$=(msg,type="ok")=>{setToast({msg,type});setTimeout(()=>setToast(null),3200);};
 
   // -- تحميل البيانات من Supabase --
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (opts) => {
+    const silent=opts&&opts.silent;
     try {
-      setLoading(true);
+      if(!silent)setLoading(true);
       const salonRows = await sb("salons", "GET", null, "?order=id.desc");
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
@@ -647,8 +775,8 @@ export default function App(){
         }));
         return salon;
       });
-      // تنبيه صوتي للإدارة عند وجود طلبات جديدة
-      if(adminSession){
+      // تنبيه صوتي للإدارة عند وجود طلبات جديدة (لا يُفعّل أثناء التحديث الصامت لجلسة العميل)
+      if(adminSession&&!silent){
         const newPending=salonsWithBookings.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="pending").length,0);
         const prevPending=salons.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="pending").length,0);
         if(newPending>prevPending){
@@ -664,11 +792,75 @@ export default function App(){
       console.error(e);
       setDbError(e.message);
     } finally {
-      setLoading(false);
+      if(!silent)setLoading(false);
     }
   }, [adminSession]);
 
+  const handlePullRefresh=useCallback(async()=>{
+    setPullRefreshing(true);
+    try{
+      await loadData();
+      await loadAppSettings();
+    }finally{
+      setTimeout(()=>setPullRefreshing(false),800);
+    }
+  },[loadData,loadAppSettings]);
+
   useEffect(()=>{ loadData(); loadAppSettings(); }, [loadData,loadAppSettings]);
+
+  useEffect(()=>{
+    customerNotifyPrimedRef.current=false;
+    bookingStatusSnapRef.current=null;
+  },[customerSession?.id]);
+
+  /* إعادة تحقق عالمية: الصالونات (حالة التفعيل/الحجوزات) + إعدادات الإدارة من Supabase لجميع الجلسات */
+  useEffect(()=>{
+    const t=setInterval(()=>{
+      loadData({silent:true});
+      loadAppSettings({silent:true});
+    },16000);
+    return()=>clearInterval(t);
+  },[loadData,loadAppSettings]);
+
+  useEffect(()=>{
+    if(!customerSession?.id)return;
+    const cust=customers.find(c=>c.id===customerSession.id);
+    if(!cust)return;
+    const phoneN=normPhone(cust.phone);
+    const name=(cust.name||"").trim();
+    const snap={};
+    for(const s of salons){
+      for(const b of s.bookings||[]){
+        const bphone=normPhone(b.phone);
+        const phoneMatch=phoneN.length>=9&&bphone.length>=9&&bphone===phoneN;
+        const nameMatch=name&&((b.name||"").trim()===name);
+        if(phoneMatch||(nameMatch&&!bphone)){
+          snap[`${s.id}-${b.id}`]=b.status||"pending";
+        }
+      }
+    }
+    if(!customerNotifyPrimedRef.current){
+      bookingStatusSnapRef.current=snap;
+      customerNotifyPrimedRef.current=true;
+      return;
+    }
+    const prev=bookingStatusSnapRef.current||{};
+    for(const key of Object.keys(snap)){
+      const was=prev[key];
+      const now=snap[key];
+      const sidStr=key.split("-")[0];
+      const salon=salons.find(x=>String(x.id)===sidStr);
+      if(was==="pending"&&now==="approved"){
+        sendNotif("دورك - تأكيد الحجز",`✅ تم قبول حجزك في ${salon?.name||"الصالون"} — يُرجى الحضور في الموعد`,"✅");
+        toast$(`✅ تم قبول حجزك في ${salon?.name||""}`);
+        try{playTone("bell",0.55);}catch{}
+      }else if(was==="pending"&&now==="rejected"){
+        sendNotif("دورك - تحديث الحجز",`تم رفض حجزك في ${salon?.name||"الصالون"}`,"❌");
+        toast$(`تم رفض حجزك في ${salon?.name||""}`,"warn");
+      }
+    }
+    bookingStatusSnapRef.current=snap;
+  },[salons,customers,customerSession]);
 
   // شاشة الشروط والأحكام
   if(!termsAccepted) return <TermsView onAccept={()=>{setTermsAccepted(true);try{localStorage.setItem("dork_terms","1");}catch{}}} />;
@@ -772,6 +964,9 @@ export default function App(){
             total:bk.total,
             rating:0,
             comment:"",
+            bookingId:newBooking.id,
+            status:"pending",
+            phone:bk.phone||"",
           };
           const hist=[...(c.history||[]),histItem];
           // نحفظ في localStorage كحل احتياطي
@@ -790,14 +985,33 @@ export default function App(){
     try{
       const salon=salons.find(s=>s.id===sid);
       if(!salon)return;
+      const bk=salon.bookings.find(b=>b.id===bid);
+      if(!bk)return;
       const updatedBookings=salon.bookings.map(b=>b.id===bid?{...b,status}:b);
       await sb("salons","PATCH",{bookings:updatedBookings},`?id=eq.${sid}`);
-      // إشعار للعميل
-      const bk=salon.bookings.find(b=>b.id===bid);
-      if(bk){
-        const msg=status==="approved"?`✅ تم قبول حجزك في ${salon.name}`:` تم رفض حجزك في ${salon.name}`;
-        sendNotif("دورك - تحديث الحجز",msg,"✂");
+      const bkn=normPhone(bk.phone);
+      const targets=bkn.length>=9?customers.filter(c=>normPhone(c.phone)===bkn):[];
+      for(const c of targets){
+        let changed=false;
+        const hist=(c.history||[]).map(h=>{
+          const byId=h.bookingId!=null&&(Number(h.bookingId)===Number(bid)||String(h.bookingId)===String(bid));
+          const legacy=Number(h.salonId)===Number(sid)&&h.date===bk.date&&h.time===bk.time&&(!normPhone(h.phone)||normPhone(h.phone)===bkn);
+          if(byId||legacy){
+            const next={...h,status,bookingId:h.bookingId||bid,phone:h.phone||bk.phone||""};
+            if(h.status!==next.status||Number(h.bookingId||0)!==Number(next.bookingId))changed=true;
+            return next;
+          }
+          return h;
+        });
+        if(changed){
+          try{
+            await sb("customers","PATCH",{history:hist,favs:c.favs||[]},`?id=eq.${c.id}`);
+            try{localStorage.setItem(`hist_${c.id}`,JSON.stringify(hist));}catch{}
+          }catch{}
+          setCustomers(p=>p.map(x=>x.id===c.id?{...x,history:hist}:x));
+        }
       }
+      toast$(status==="approved"?"✅ تم قبول الحجز":"تم تحديث حالة الحجز");
       await loadData();
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
@@ -881,6 +1095,7 @@ export default function App(){
     compareSalons,setCompareSalons,
     handlePullRefresh,pullRefreshing,
     resetHome,
+    persistUiToSupabase,
   };
 
   if(loading)return(
@@ -896,7 +1111,7 @@ export default function App(){
 
   return(
     <div style={G.app}>
-      <div id="dork-bg" style={{position:"fixed",inset:0,zIndex:-1,pointerEvents:"none",background:"#0d0d1a"}}/>
+      <div id="dork-bg" style={dorkBgStyle}/>
       <style>{CSS}</style>
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       <TopBar {...sharedProps}/>
@@ -963,6 +1178,72 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
           <span style={{fontSize:7,color:"var(--p)",letterSpacing:1.2,marginTop:1,fontFamily:"'Cairo',sans-serif",opacity:.85}}>DORK - حلاقة وصالونات</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ==============================================
+//  HOME — آراء العملاء (تظهر للجميع فور فتح التطبيق)
+// ==============================================
+function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
+  const reviews=buildHomeReviewsFeed(customers,approvedSalons);
+  const dimStar="rgba(212,160,23,.22)";
+  const goldStar="#e8c04a";
+  const openSalon=sid=>{
+    const s=approvedSalons.find(x=>Number(x.id)===Number(sid));
+    if(s){setSelSalon(s);setView("salon");}
+  };
+  const globalAvg=reviews.length
+    ?Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length*10)/10
+    :0;
+  return(
+    <div style={{padding:"12px 14px 4px",background:"linear-gradient(180deg,rgba(212,160,23,.06),transparent)"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,gap:8}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:22}}>⭐</span>
+          <div>
+            <div style={{fontSize:15,fontWeight:900,color:"#fff",letterSpacing:.3}}>آراء العملاء</div>
+            <div style={{fontSize:11,color:"var(--p)",opacity:.9}}>تجارب حقيقية من زوار الصالونات</div>
+          </div>
+        </div>
+        {reviews.length>0&&(
+          <div style={{textAlign:"center",flexShrink:0,padding:"6px 12px",borderRadius:12,background:"var(--pa12)",border:"1px solid var(--pa25)"}}>
+            <div style={{fontSize:18,fontWeight:900,color:goldStar,lineHeight:1}}>{globalAvg}</div>
+            <div style={{fontSize:9,color:"#888"}}>{reviews.length} تقييم</div>
+          </div>
+        )}
+      </div>
+      {reviews.length===0?(
+        <div style={{...G.bItem,background:"#13131f",border:"1px dashed var(--pa25)",textAlign:"center",padding:"14px 12px",marginBottom:8}}>
+          <div style={{fontSize:12,color:"#777"}}>لا توجد تقييمات من العملاء بعد. بعد زيارتك يمكنك تقييم الصالون من حسابك.</div>
+        </div>
+      ):(
+        <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:12,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",scrollbarWidth:"thin"}}>
+          {reviews.slice(0,24).map(r=>(
+            <div key={r.key} onClick={()=>openSalon(r.salonId)}
+              style={{
+                scrollSnapAlign:"start",flex:"0 0 min(88vw,320px)",cursor:"pointer",
+                background:"linear-gradient(145deg,#16162a,#12121c)",
+                border:"1px solid var(--pa25)",borderRadius:14,padding:"12px 14px",
+                boxShadow:"0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,192,64,.08)",
+                borderRight:"3px solid var(--p)",
+              }}>
+              <div style={{fontSize:12,fontWeight:800,color:"var(--pl)",marginBottom:6,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>✂ {r.salonName}</div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:6,marginBottom:6}}>
+                <span style={{fontSize:12,fontWeight:700,color:"#e8e8e8"}}>👤 {r.customerName}</span>
+                <div style={{display:"flex",gap:1,flexShrink:0}}>
+                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:12,color:n<=r.rating?goldStar:dimStar}}>★</span>)}
+                </div>
+              </div>
+              {r.comment
+                ?<div style={{fontSize:11,color:"#b8b8c8",fontStyle:"italic",lineHeight:1.45,borderTop:"1px solid rgba(212,160,23,.12)",paddingTop:8}}>«{r.comment}»</div>
+                :<div style={{fontSize:10,color:"#666",borderTop:"1px solid rgba(212,160,23,.12)",paddingTop:8}}>بدون تعليق نصي</div>}
+              <div style={{fontSize:10,color:"#5c5c6a",marginTop:8}}>📅 {r.date||"—"}{r.time?` · ${r.time}`:""}</div>
+              <div style={{fontSize:9,color:"var(--p)",marginTop:6,opacity:.85}}>اضغط لفتح الصالون ←</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1090,6 +1371,8 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           {fCenter&&(()=>{const villages=[...new Set(approvedSalons.filter(s=>s.center===fCenter&&s.village).map(s=>s.village))];return villages.length>0?<LocFilter icon="📍" label="الحي/القرية" value={fVillage} onChange={setFVillage} options={villages} all="كل الأحياء"/>:null;})()}
         </div>
       </div>
+
+      <HomeReviewsSection customers={customers} approvedSalons={approvedSalons} setSelSalon={setSelSalon} setView={setView}/>
 
       <div style={{padding:"10px 14px 0",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none"}}>
         {[
@@ -1232,7 +1515,10 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
             <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div>
             <div style={{fontSize:11,color:"#888"}}>{salon.gov||salon.region}{salon.village?` > ${salon.village}`:""}</div>
             <div style={{fontSize:11,color:"#888"}}>👤 {salon.owner} - 📞 {salon.phone}</div>
-            {reviews.length>0&&<div style={{fontSize:12,color:"#f0c040",marginTop:2}}>⭐ {avgRating} ({reviews.length} تقييم)</div>}
+            {reviews.length>0&&<>
+              <div style={{fontSize:12,color:"#e8c04a",marginTop:2}}>⭐ {avgRating} ({reviews.length} تقييم)</div>
+              <div style={{fontSize:9,color:"#666",marginTop:2}}>آراء العملاء تظهر في الصفحة الرئيسية</div>
+            </>}
           </div>
           <button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
@@ -1240,41 +1526,10 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
         </div>
         <div style={G.tabRow}>
           <button style={{...G.tabBtn,...(tab==="book"?G.tabOn:{})}} onClick={()=>setTab("book")}>📅 حجز</button>
-          <button style={{...G.tabBtn,...(tab==="reviews"?G.tabOn:{})}} onClick={()=>setTab("reviews")}>⭐ تقييمات {reviews.length>0&&<span style={G.notifDot}>{reviews.length}</span>}</button>
           {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}</button>}
           {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>}
         </div>
         {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView}/>}
-        {tab==="reviews"&&(
-          <div>
-            {reviews.length===0
-              ?<div style={G.empty}>لا توجد تقييمات بعد - كن أول من يقيّم!</div>
-              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {/* متوسط التقييم */}
-                <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a",textAlign:"center",marginBottom:4}}>
-                  <div style={{fontSize:40,fontWeight:900,color:"#f0c040"}}>{avgRating}</div>
-                  <div style={{display:"flex",justifyContent:"center",gap:3,margin:"6px 0"}}>
-                    {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:20,color:n<=Math.round(avgRating)?"#f0c040":"#333"}}>★</span>)}
-                  </div>
-                  <div style={{fontSize:12,color:"#888"}}>{reviews.length} تقييم</div>
-                </div>
-                {/* قائمة التقييمات */}
-                {reviews.map((r,i)=>(
-                  <div key={i} style={{...G.bItem,borderRight:"3px solid #f0c040"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {r.name}</div>
-                      <div style={{display:"flex",gap:1}}>
-                        {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?"#f0c040":"#333"}}>★</span>)}
-                      </div>
-                    </div>
-                    {r.comment&&<div style={{fontSize:12,color:"#aaa",fontStyle:"italic"}}>"{r.comment}"</div>}
-                    {r.date&&<div style={{fontSize:10,color:"#555",marginTop:3}}>📅 {r.date}</div>}
-                  </div>
-                ))}
-              </div>
-            }
-          </div>
-        )}
         {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus}/>}
         {tab==="stats"&&canManage&&<StatsPanel salon={salon}/>}
       </div>
@@ -1862,8 +2117,8 @@ function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,
   const[pwForm,setPwForm]=useState({old:"",n1:"",n2:"",err:""});
   const[bkFilter,setBkFilter]=useState("all");
   const[bkDate,setBkDate]=useState("");
-  const[customFields,setCustomFields]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_social_custom")||"[]");}catch{return[];}});
-  const saveCustom=(f)=>{setCustomFields(f);localStorage.setItem("dork_social_custom",JSON.stringify(f));};
+  const customFields=socialLinks?.customFields||[];
+  const saveCustom=(f)=>{setSocialLinks&&setSocialLinks(p=>({...p,customFields:Array.isArray(f)?f:[]}));};
 
   if(!adminSession)return(
     <div style={G.page}><div style={G.fp}>
@@ -3267,7 +3522,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const favSalons=salons.filter(s=>favSet.has(s.id)&&s.status==="approved");
   const history=customer.history||[];
   const totalSpent=history.reduce((a,h)=>a+(h.total||0),0);
-  const points=history.length*10;
+  const ppb=loyaltySettings?.pointsPerBooking??10;
+  const points=history.length*ppb;
   const badge=history.length>=10?"🏆 عميل مميز":history.length>=5?"⭐ عميل نشط":"🆕 عميل جديد";
 
   // avatar بالحرف الأول
@@ -4002,7 +4258,7 @@ function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toa
 // ==============================================
 //  SETTINGS VIEW
 // ==============================================
-function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltySettings,setLoyaltySettings,socialLinks,setSocialLinks,darkMode,setDarkMode}){
+function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltySettings,setLoyaltySettings,socialLinks,setSocialLinks,darkMode,setDarkMode,persistUiToSupabase}){
   const[sec,setSec]=useState("theme");
   const SECS=[
     {id:"theme",icon:"🎨",label:"الألوان"},
@@ -4019,6 +4275,8 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
     {id:"gold",label:"ذهبي",color:"#d4a017",emoji:"✨"},
     {id:"emerald",label:"زمردي",color:"#10b981",emoji:"🌿"},
     {id:"sapphire",label:"ياقوتي",color:"#3b82f6",emoji:"💎"},
+    {id:"royalBlue",label:"أزرق ملكي",color:"#1e3a8a",emoji:"👑"},
+    {id:"bronze",label:"برونزي",color:"#8b5a2b",emoji:"🏺"},
     {id:"rose",label:"وردي",color:"#ec4899",emoji:"🌸"},
     {id:"violet",label:"بنفسجي",color:"#8b5cf6",emoji:"🔮"},
     {id:"crimson",label:"قرمزي",color:"#ef4444",emoji:"🔴"},
@@ -4034,6 +4292,7 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
     r.setProperty("--grad",`linear-gradient(135deg,${t.primary},${t.light})`);
     r.setProperty("--grad2",`linear-gradient(135deg,${t.light},${t.primary})`);
     setSettings(s=>({...s,theme:id}));
+    persistUiToSupabase&&persistUiToSupabase({theme:id});
   };
   const box={background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a",marginBottom:12};
   const hdr={fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:10,paddingBottom:6,borderBottom:"1px solid #2a2a3a"};
@@ -4076,7 +4335,7 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
           {[{id:"sm",label:"صغير",size:13},{id:"md",label:"متوسط",size:15},{id:"lg",label:"كبير",size:17}].map(({id,label,size})=>{
             const active=(settings.fontSize||"md")===id;
             return(
-              <button key={id} onClick={()=>setSettings(s=>({...s,fontSize:id}))}
+              <button key={id} onClick={()=>{setSettings(s=>({...s,fontSize:id}));persistUiToSupabase&&persistUiToSupabase({fontSize:id});}}
                 style={{flex:1,padding:"14px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"#2a2a3a"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,fontSize:size,transform:active?"scale(1.04)":"scale(1)"}}>
                 {label}
               </button>
@@ -4096,18 +4355,8 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
             const active=(settings.bg||"none")===bg.id;
             return(
               <button key={bg.id} onClick={()=>{
-                applyBackground(bg.id);
                 setSettings(s=>({...s,bg:bg.id}));
-                // تطبيق فوري
-                const el=document.getElementById("dork-bg");
-                if(el){
-                  if(bg.id==="none"){el.style.background="#0d0d1a";el.style.backgroundImage="none";}
-                  else if(bg.id==="stars"){el.style.background="radial-gradient(ellipse at top,#1a1a3a,#0d0d1a)";el.style.backgroundImage="radial-gradient(circle,rgba(255,255,255,.08) 1px,transparent 1px)";el.style.backgroundSize="40px 40px";}
-                  else if(bg.id==="grid"){el.style.background="#0d0d1a";el.style.backgroundImage="linear-gradient(rgba(212,160,23,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(212,160,23,.05) 1px,transparent 1px)";el.style.backgroundSize="30px 30px";}
-                  else if(bg.id==="waves"){el.style.background="linear-gradient(180deg,#0d0d1a 0%,#0a1628 50%,#0d0d1a 100%)";el.style.backgroundImage="none";}
-                  else if(bg.id==="marble"){el.style.background="linear-gradient(135deg,#111118 25%,#1a1a2a 25%,#1a1a2a 50%,#111118 50%,#111118 75%,#1a1a2a 75%)";el.style.backgroundSize="20px 20px";el.style.backgroundImage="none";}
-                  else if(bg.id==="circuit"){el.style.background="#0d0d1a";el.style.backgroundImage="radial-gradient(circle at 50%,rgba(212,160,23,.03) 0%,transparent 60%)";}
-                }
+                persistUiToSupabase&&persistUiToSupabase({bg:bg.id});
               }}
                 style={{padding:"18px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"#2a2a3a"}`,cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)",minHeight:80,background:active?"var(--pa12)":"#1a1a2e"}}>
                 <span style={{fontSize:26}}>{bg.emoji}</span>
@@ -4126,7 +4375,7 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
           {[{id:true,label:"🌙 داكن",desc:"خلفية سوداء"},{id:false,label:"☀ فاتح",desc:"خلفية بيضاء"}].map(({id,label,desc})=>{
             const active=darkMode===id;
             return(
-              <button key={String(id)} onClick={()=>setDarkMode&&setDarkMode(id)}
+              <button key={String(id)} onClick={()=>{setDarkMode&&setDarkMode(id);persistUiToSupabase&&persistUiToSupabase({darkMode:id});}}
                 style={{padding:"18px 10px",borderRadius:12,border:`2px solid ${active?"var(--p)":"#2a2a3a"}`,background:active?"var(--pa12)":id?"#0d0d1a":"#f0f0f0",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)"}}>
                 <span style={{fontSize:28}}>{label.split(" ")[0]}</span>
                 <span style={{fontSize:13,color:active?"var(--p)":id?"#aaa":"#555",fontWeight:active?700:400}}>{label.split(" ")[1]}</span>
@@ -4145,7 +4394,7 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
           {TONES.map(t=>{
             const active=settings.defaultTone===t.id;
             return(
-              <button key={t.id} onClick={()=>{setSettings(s=>({...s,defaultTone:t.id}));playTone(t.id,0.8);}}
+              <button key={t.id} onClick={()=>{setSettings(s=>({...s,defaultTone:t.id}));playTone(t.id,0.8);persistUiToSupabase&&persistUiToSupabase({defaultTone:t.id});}}
                 style={{padding:"10px 8px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"#2a2a3a"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#aaa",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:active?700:400,textAlign:"center"}}>
                 {t.label} {active&&"✓"}
               </button>
@@ -4173,6 +4422,15 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,loyaltyS
             {(socialLinks.telegram||socialLinks.telegramUser)&&<a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"#13131f",border:"1px solid #2a2a3a",textDecoration:"none",color:"#fff"}}>
               <span style={{fontSize:18}}>✈</span><span style={{fontSize:13}}>{socialLinks.telegramUser||socialLinks.telegram}</span>
             </a>}
+            {(socialLinks.customFields||[]).filter(f=>f&&f.label&&(f.value||"").trim()).map((f,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"#13131f",border:"1px solid #2a2a3a",color:"#fff"}}>
+                <span style={{fontSize:18}}>📌</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,color:"#888"}}>{f.label}</div>
+                  <div style={{fontSize:13}}>{f.value}</div>
+                </div>
+              </div>
+            ))}
           </div>
           :<div style={G.empty}>لا توجد وسائل تواصل مضافة بعد</div>
         }
@@ -4258,44 +4516,49 @@ const CSS=`
     --pa4: rgba(212,160,23,.45);
     --grad: linear-gradient(135deg,#d4a017,#f0c040);
     --grad2: linear-gradient(135deg,#f0c040,#d4a017);
+    --shell-bg: #0d0d1a; --surface-1: #13131f; --surface-2: #1a1a2e; --border-ui: #2a2a3a;
+    --text-primary: #f0f0f0; --text-muted: #888;
   }
   @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{direction:rtl;font-family:'Cairo',sans-serif;background:#0d0d1a;}
+  body{direction:rtl;font-family:'Cairo',sans-serif;background:var(--shell-bg);}
   ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:var(--p);border-radius:4px;}
   .hcard{transition:transform .18s,box-shadow .18s;} .hcard:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(var(--pr),.18)!important;}
-  input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);}
-  select option{background:#1a1a2e;color:#f0f0f0;} button:active{opacity:.82;}
+  html:not(.dork-light) input[type=date]::-webkit-calendar-picker-indicator,
+  html:not(.dork-light) input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);}
+  select option{background:#1a1a2e;color:#f0f0f0;}
+  html.dork-light select option{background:#f3f4f6;color:#1a1a2e;}
+  button:active{opacity:.82;}
 `;
 
 const G={
-  searchRow:{display:"flex",alignItems:"center",gap:8,background:"#13131f",borderRadius:10,border:"1.5px solid #2a2a3a",padding:"9px 12px"},
-  searchInput:{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:14,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
+  searchRow:{display:"flex",alignItems:"center",gap:8,background:"var(--surface-1)",borderRadius:10,border:"1.5px solid var(--border-ui)",padding:"9px 12px"},
+  searchInput:{flex:1,background:"transparent",border:"none",color:"var(--text-primary)",fontSize:14,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
   searchClear:{background:"#2a2a3a",border:"none",color:"#aaa",cursor:"pointer",borderRadius:"50%",width:22,height:22,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",flexShrink:0},
-  sortChip:{padding:"6px 12px",borderRadius:20,border:"1.5px solid #2a2a3a",background:"#1a1a2e",color:"#aaa",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600,whiteSpace:"nowrap",flexShrink:0},
+  sortChip:{padding:"6px 12px",borderRadius:20,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600,whiteSpace:"nowrap",flexShrink:0},
   sortChipOn:{background:"var(--pa15)",border:"1.5px solid var(--p)",color:"var(--p)"},
-  app:{minHeight:"100vh",background:"#0d0d1a",color:"#f0f0f0",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
+  app:{minHeight:"100vh",background:"var(--shell-bg)",color:"var(--text-primary)",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
   page:{maxWidth:480,margin:"0 auto",minHeight:"100vh",paddingBottom:30},
   toast:{position:"fixed",top:64,left:"50%",transform:"translateX(-50%)",padding:"10px 22px",borderRadius:11,color:"#fff",fontWeight:700,zIndex:9999,fontSize:13,boxShadow:"0 4px 20px rgba(0,0,0,.5)",whiteSpace:"nowrap"},
 
   // TOP BAR
-  topBar:{position:"fixed",top:0,left:0,right:0,zIndex:100,background:"#0d0d1a",borderBottom:"1px solid #2a2a3a",height:56,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",maxWidth:480,margin:"0 auto"},
-  roleBtn:{width:36,height:36,borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#aaa",cursor:"pointer",fontSize:16,position:"relative",display:"flex",alignItems:"center",justifyContent:"center"},
+  topBar:{position:"fixed",top:0,left:0,right:0,zIndex:100,background:"var(--shell-bg)",borderBottom:"1px solid var(--border-ui)",height:56,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",maxWidth:480,margin:"0 auto"},
+  roleBtn:{width:36,height:36,borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--text-muted)",cursor:"pointer",fontSize:16,position:"relative",display:"flex",alignItems:"center",justifyContent:"center"},
   roleBtnActive:{border:"1.5px solid var(--p)",color:"var(--p)",background:"rgba(var(--pr),.1)"},
   roleDot:{position:"absolute",top:-4,right:-4,background:"#e74c3c",color:"#fff",borderRadius:"50%",width:16,height:16,fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"},
   registerTopBtn:{background:"var(--grad)",color:"#000",border:"none",padding:"7px 13px",borderRadius:9,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"'Cairo',sans-serif"},
 
-  fRow:{display:"flex",alignItems:"center",background:"#13131f",borderRadius:9,border:"1.5px solid #2a2a3a",padding:"7px 11px",gap:7},
-  fSel:{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
+  fRow:{display:"flex",alignItems:"center",background:"var(--surface-1)",borderRadius:9,border:"1.5px solid var(--border-ui)",padding:"7px 11px",gap:7},
+  fSel:{flex:1,background:"transparent",border:"none",color:"var(--text-primary)",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
 
-  toggleBtn:{flex:1,padding:"8px 0",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#1a1a2e",color:"#aaa",cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:4},
+  toggleBtn:{flex:1,padding:"8px 0",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:4},
   toggleOn:{background:"var(--pa12)",border:"1.5px solid var(--p)",color:"var(--p)"},
 
   section:{padding:"10px 14px 0"},
   badge:{background:"var(--p)",color:"#000",padding:"2px 9px",borderRadius:20,fontSize:11,fontWeight:700},
   empty:{textAlign:"center",color:"#555",padding:"36px 0",fontSize:13},
 
-  card:{background:"#13131f",borderRadius:14,padding:13,border:"1px solid #2a2a3a",boxShadow:"0 4px 16px rgba(0,0,0,.3)"},
+  card:{background:"var(--surface-1)",borderRadius:14,padding:13,border:"1px solid var(--border-ui)",boxShadow:"0 4px 16px rgba(0,0,0,.3)"},
   cav:{width:38,height:38,borderRadius:10,background:"var(--grad)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0},
   tag:{background:"#1e1e30",color:"var(--p)",padding:"2px 8px",borderRadius:20,fontSize:10,border:"1px solid #2a2a3a"},
   favBtn:{background:"transparent",border:"none",cursor:"pointer",fontSize:20,color:"#555",padding:0,lineHeight:1},
@@ -4309,17 +4572,17 @@ const G={
   rejBtn:{flex:1,background:"rgba(192,57,43,.15)",border:"1.5px solid #c0392b",color:"#e74c3c",padding:"8px 0",borderRadius:9,cursor:"pointer",fontSize:13,fontFamily:"'Cairo',sans-serif",fontWeight:700},
 
   fp:{padding:"0 13px 24px"},
-  fh:{display:"flex",alignItems:"center",gap:8,padding:"12px 0 13px",position:"sticky",top:56,background:"#0d0d1a",zIndex:10},
-  bb:{background:"#1a1a2e",border:"none",color:"var(--p)",fontSize:16,cursor:"pointer",width:32,height:32,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",flexShrink:0},
-  ft:{fontSize:17,fontWeight:700,color:"#fff"},
-  fc:{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #2a2a3a",marginBottom:10},
+  fh:{display:"flex",alignItems:"center",gap:8,padding:"12px 0 13px",position:"sticky",top:56,background:"var(--shell-bg)",zIndex:10},
+  bb:{background:"var(--surface-2)",border:"none",color:"var(--p)",fontSize:16,cursor:"pointer",width:32,height:32,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",flexShrink:0},
+  ft:{fontSize:17,fontWeight:700,color:"var(--text-primary)"},
+  fc:{background:"var(--surface-1)",borderRadius:13,padding:14,border:"1px solid var(--border-ui)",marginBottom:10},
   sl2:{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:9,paddingBottom:5,borderBottom:"1px solid #2a2a3a"},
   err:{color:"#e74c3c",fontSize:11,marginTop:2},
   sub:{width:"100%",background:"var(--grad)",color:"#000",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",marginTop:4,fontFamily:"'Cairo',sans-serif"},
 
   salonBadge:{display:"flex",alignItems:"center",gap:8,background:"rgba(var(--pr),.06)",border:"1px solid var(--pa2)",borderRadius:10,padding:"10px 12px",marginBottom:11},
   tabRow:{display:"flex",gap:6,marginBottom:11},
-  tabBtn:{flex:1,padding:"8px 0",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#1a1a2e",color:"#aaa",cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:3},
+  tabBtn:{flex:1,padding:"8px 0",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:3},
   tabOn:{background:"var(--pa12)",border:"1.5px solid var(--p)",color:"var(--p)"},
   notifDot:{background:"#e74c3c",color:"#fff",borderRadius:20,fontSize:9,padding:"1px 5px",fontWeight:700},
 
@@ -4327,26 +4590,26 @@ const G={
   si:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,opacity:.3,transition:"opacity .2s"},
   sd:{width:24,height:24,borderRadius:"50%",background:"var(--p)",color:"#000",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"},
 
-  chip:{padding:"5px 11px",borderRadius:20,border:"1.5px solid #2a2a3a",background:"#1a1a2e",color:"#aaa",cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif"},
+  chip:{padding:"5px 11px",borderRadius:20,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif"},
   chipOn:{background:"var(--pa12)",border:"1.5px solid var(--p)",color:"var(--p)"},
-  totalBox:{background:"var(--pa07)",border:"1px solid var(--pa2)",borderRadius:8,padding:"7px 11px",fontSize:12,color:"#f0f0f0",marginBottom:10},
+  totalBox:{background:"var(--pa07)",border:"1px solid var(--pa2)",borderRadius:8,padding:"7px 11px",fontSize:12,color:"var(--text-primary)",marginBottom:10},
 
   timeGrid:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:7,marginBottom:10},
-  ts:{padding:"8px 3px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#1a1a2e",color:"#f0f0f0",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",textAlign:"center"},
+  ts:{padding:"8px 3px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",textAlign:"center"},
   tsF:{background:"#160a0a",color:"#444",borderColor:"#2a1414",cursor:"not-allowed"},
   tsS:{background:"var(--pa15)",borderColor:"var(--p)",color:"var(--p)",fontWeight:700},
 
-  bItem:{background:"#13131f",borderRadius:10,padding:"10px 12px",border:"1px solid #2a2a3a"},
+  bItem:{background:"var(--surface-1)",borderRadius:10,padding:"10px 12px",border:"1px solid var(--border-ui)"},
   pmBtn:{width:26,height:26,borderRadius:7,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"var(--p)",fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",fontWeight:700,padding:0},
 
-  locTab:{flex:1,padding:"7px 0",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#1a1a2e",color:"#aaa",cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif",fontWeight:600},
+  locTab:{flex:1,padding:"7px 0",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif",fontWeight:600},
   locTabOn:{background:"rgba(42,109,217,.1)",border:"1.5px solid #2a6dd9",color:"#6aadff"},
   detectBtn:{width:"100%",background:"rgba(42,109,217,.1)",border:"1.5px solid #2a6dd9",color:"#6aadff",padding:"10px 0",borderRadius:9,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"'Cairo',sans-serif"},
 
   otherBtn:{marginTop:6,width:"100%",background:"transparent",border:"1.5px dashed #2a6dd9",color:"#6aadff",padding:"6px 0",borderRadius:8,cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif"},
   addBarberBtn:{width:"100%",background:"transparent",border:"1.5px dashed var(--p)",color:"var(--p)",padding:"7px 0",borderRadius:8,cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif",marginBottom:3},
   ratingBadge:{background:"var(--pa15)",border:"1px solid rgba(var(--pr),.4)",borderRadius:8,padding:"3px 8px",fontSize:12,fontWeight:700,color:"var(--p)",flexShrink:0,display:"flex",alignItems:"center",gap:3},
-  heartCardBtn:{width:36,height:36,borderRadius:9,border:"1.5px solid #2a2a3a",background:"#1a1a2e",color:"#888",cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'Cairo',sans-serif"},
+  heartCardBtn:{width:36,height:36,borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"#888",cursor:"pointer",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'Cairo',sans-serif"},
   heartCardOn:{border:"1.5px solid #e74c3c",background:"rgba(231,76,60,.1)",color:"#e74c3c"},
   xBtn:{width:26,height:26,borderRadius:7,border:"1.5px solid #c0392b",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",flexShrink:0},
 };
