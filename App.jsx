@@ -1113,7 +1113,7 @@ export default function App(){
       <style>{CSS}</style>
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       <TopBar {...sharedProps}/>
-      <div style={{paddingTop:56}}>
+      <div style={{paddingTop:64}}>
         {view==="home"&&      <HomeView {...sharedProps}/>}
         {view==="register"&&  <RegisterView {...sharedProps}/>}
         {view==="book"&&selSalon&&<BookView salon={selSalon} {...sharedProps}/>}
@@ -1215,12 +1215,10 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
         <button style={G.roleBtn} onClick={()=>setView("settings")}>⚙</button>
         <button style={{...G.roleBtn,background:"var(--pa12)",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>🏠</button>
       </div>
-      {/* RIGHT: شعار دورك */}
-      <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}} onClick={()=>resetHome&&resetHome()}>
-        <DorkLogoSvg size={38}/>
-        <div style={{lineHeight:1}}>
-          <div style={{fontSize:15,fontWeight:900,color:"#d4a017",letterSpacing:2.5,fontFamily:"'Georgia',serif"}}>DORK</div>
-        </div>
+      {/* RIGHT: شعار دورك — أيقونة فوق + DORK تحت */}
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
+        <DorkLogoSvg size={36}/>
+        <div style={{fontSize:10,fontWeight:900,color:"#d4a017",letterSpacing:2.5,fontFamily:"'Georgia',serif",marginTop:-1}}>DORK</div>
       </div>
     </div>
   );
@@ -1453,7 +1451,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   return(
     <div style={G.page}>
       {/* Pull to refresh */}
-      {pullRefreshing&&<div style={{position:"fixed",top:56,left:"50%",transform:"translateX(-50%)",zIndex:100,background:"var(--p)",color:"#000",padding:"4px 16px",borderRadius:20,fontSize:12,fontWeight:700}}>⟳ جاري التحديث...</div>}
+      {pullRefreshing&&<div style={{position:"fixed",top:64,left:"50%",transform:"translateX(-50%)",zIndex:100,background:"var(--p)",color:"#000",padding:"4px 16px",borderRadius:20,fontSize:12,fontWeight:700}}>⟳ جاري التحديث...</div>}
 
       <div style={{background:"linear-gradient(160deg,#12122a,#1a1a3a)",borderBottom:"1px solid #2a2a3a",padding:"14px 14px 0"}}>
         <div style={{textAlign:"center",paddingBottom:10}}>
@@ -2845,7 +2843,7 @@ function AllReviewsView({customers,approvedSalons,setSelSalon,setView}){
   return(
     <div style={{minHeight:"100vh",fontFamily:"'Cairo',sans-serif",direction:"rtl",paddingBottom:40}}>
       {/* ── Sticky Header ── */}
-      <div style={{position:"sticky",top:56,zIndex:50,background:"#0d0d1a",borderBottom:"1px solid rgba(212,160,23,.15)",padding:"12px 16px 10px"}}>
+      <div style={{position:"sticky",top:64,zIndex:50,background:"#0d0d1a",borderBottom:"1px solid rgba(212,160,23,.15)",padding:"12px 16px 10px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
           <button onClick={()=>setView("home")} style={{background:"transparent",border:"none",color:gold,fontSize:20,cursor:"pointer",padding:"0 4px",lineHeight:1}}>←</button>
           <DorkLogoSvg size={26}/>
@@ -4829,7 +4827,7 @@ const G={
   toast:{position:"fixed",top:64,left:"50%",transform:"translateX(-50%)",padding:"10px 22px",borderRadius:11,color:"#fff",fontWeight:700,zIndex:9999,fontSize:13,boxShadow:"0 4px 20px rgba(0,0,0,.5)",whiteSpace:"nowrap"},
 
   // TOP BAR
-  topBar:{position:"fixed",top:0,left:0,right:0,zIndex:100,background:"var(--shell-bg)",borderBottom:"1px solid var(--border-ui)",height:56,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",maxWidth:480,margin:"0 auto"},
+  topBar:{position:"fixed",top:0,left:0,right:0,zIndex:100,background:"var(--shell-bg)",borderBottom:"1px solid var(--border-ui)",height:64,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",maxWidth:480,margin:"0 auto"},
   roleBtn:{width:36,height:36,borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--text-muted)",cursor:"pointer",fontSize:16,position:"relative",display:"flex",alignItems:"center",justifyContent:"center"},
   roleBtnActive:{border:"1.5px solid var(--p)",color:"var(--p)",background:"rgba(var(--pr),.1)"},
   roleDot:{position:"absolute",top:-4,right:-4,background:"#e74c3c",color:"#fff",borderRadius:"50%",width:16,height:16,fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"},
@@ -4859,7 +4857,7 @@ const G={
   rejBtn:{flex:1,background:"rgba(192,57,43,.15)",border:"1.5px solid #c0392b",color:"#e74c3c",padding:"8px 0",borderRadius:9,cursor:"pointer",fontSize:13,fontFamily:"'Cairo',sans-serif",fontWeight:700},
 
   fp:{padding:"0 13px 24px"},
-  fh:{display:"flex",alignItems:"center",gap:8,padding:"12px 0 13px",position:"sticky",top:56,background:"var(--shell-bg)",zIndex:10},
+  fh:{display:"flex",alignItems:"center",gap:8,padding:"12px 0 13px",position:"sticky",top:64,background:"var(--shell-bg)",zIndex:10},
   bb:{background:"var(--surface-2)",border:"none",color:"var(--p)",fontSize:16,cursor:"pointer",width:32,height:32,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",flexShrink:0},
   ft:{fontSize:17,fontWeight:700,color:"var(--text-primary)"},
   fc:{background:"var(--surface-1)",borderRadius:13,padding:14,border:"1px solid var(--border-ui)",marginBottom:10},
