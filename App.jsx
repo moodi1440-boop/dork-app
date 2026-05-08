@@ -1130,6 +1130,7 @@ export default function App(){
         {view==="compare"&&   <CompareSalonsView salons={compareSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="notifs"&&    <NotifsView setView={setView}/>}
         {view==="allReviews"&&<AllReviewsView customers={customers} approvedSalons={approvedSalons} setSelSalon={setSelSalon} setView={setView}/>}
+        {view==="salonReviews"&&selSalon&&<SalonReviewsView salon={salons.find(s=>s.id===selSalon.id)||selSalon} customers={customers} setView={setView}/>}
       </div>
     </div>
   );
@@ -1498,14 +1499,13 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
               <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
                 realRating={getRealRating(s.id)}
                 reviewCount={getReviewCount(s.id)}
-                customers={customers}
                 userLoc={userLoc}
                 getSalonCoords={getSalonCoords}
                 haversine={haversine}
                 isOpenNow={isOpenNow(s)}
                 inCompare={compareSalons.some(x=>x.id===s.id)}
                 onCompare={()=>toggleCompare(s)}
-                onViewSalon={()=>{setSelSalon(s);setView("salon");}}
+                onViewReviews={()=>{setSelSalon(s);setView("salonReviews");}}
                 onBook={()=>{setSelSalon(s);setView("book");}}/>
             ))}
           </div>
@@ -1526,19 +1526,69 @@ function LocFilter({icon,label,value,onChange,options,all}){
     </div>
   );
 }
-function SalonCard({salon,fav,onFav,onBook,onViewSalon,realRating,reviewCount,customers,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
+// ==============================================
+//  SALON REVIEWS PAGE
+// ==============================================
+function SalonReviewsView({salon,customers,setView}){
+  const gold="#d4a017";
+  const goldStar="#e8c04a";
+  const reviews=useMemo(()=>{
+    if(!customers||!salon)return[];
+    const id=Number(salon.id);
+    return customers
+      .flatMap(c=>(c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0)
+        .map(h=>({name:c.name,rating:h.rating,comment:h.comment||"",date:h.date||""})))
+      .sort((a,b)=>b.date.localeCompare(a.date));
+  },[customers,salon]);
+  const avg=reviews.length?Math.round(reviews.reduce((s,r)=>s+r.rating,0)/reviews.length*10)/10:0;
+  return(
+    <div style={G.page}>
+      <div style={G.fp}>
+        <div style={G.fh}>
+          <button style={G.bb} onClick={()=>setView("home")}>{">"}</button>
+          <h2 style={{...G.ft,flex:1}}>آراء العملاء</h2>
+        </div>
+        {/* ملخص الصالون */}
+        <div style={{background:"rgba(212,160,23,.07)",border:"1px solid rgba(212,160,23,.18)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:6}}>✂ {salon?.name}</div>
+          {reviews.length>0?(
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <span style={{fontSize:28,fontWeight:900,color:goldStar,lineHeight:1}}>{avg}</span>
+              <div>
+                <div style={{display:"flex",gap:2,marginBottom:2}}>
+                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:16,color:n<=Math.round(avg)?goldStar:"rgba(212,160,23,.2)"}}>★</span>)}
+                </div>
+                <div style={{fontSize:10,color:"#888"}}>{reviews.length} تقييم</div>
+              </div>
+            </div>
+          ):(
+            <div style={{fontSize:12,color:"#555"}}>لا توجد تقييمات بعد</div>
+          )}
+        </div>
+        {/* قائمة التقييمات */}
+        <div style={{display:"flex",flexDirection:"column",gap:9}}>
+          {reviews.map((r,i)=>(
+            <div key={i} style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 13px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.comment?6:0}}>
+                <span style={{fontSize:12,color:"#c0c0d0",fontWeight:700}}>👤 {r.name}</span>
+                <div style={{display:"flex",gap:1}}>
+                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(212,160,23,.18)"}}>★</span>)}
+                </div>
+              </div>
+              {r.comment&&<div style={{fontSize:12,color:"#a8a8bc",fontStyle:"italic",lineHeight:1.5,marginBottom:5}}>«{r.comment}»</div>}
+              {r.date&&<div style={{fontSize:9,color:"#444"}}>📅 {r.date}</div>}
+            </div>
+          ))}
+        </div>
+        {reviews.length===0&&<div style={G.empty}>لا توجد تقييمات لهذا الصالون بعد</div>}
+      </div>
+    </div>
+  );
+}
+
+function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
   const slots=getSlotsForSalon(salon);
   const displayRating=realRating||salon.rating||"5.0";
-  const [showReviews,setShowReviews]=useState(false);
-
-  const reviewsList=useMemo(()=>{
-    if(!customers||!showReviews)return[];
-    const id=Number(salon.id);
-    return customers.flatMap(c=>
-      (c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0)
-        .map(h=>({name:c.name,rating:h.rating,comment:h.comment||"",date:h.date}))
-    );
-  },[customers,showReviews,salon.id]);
 
   // مسافة
   let distance=null;
@@ -1568,40 +1618,14 @@ function SalonCard({salon,fav,onFav,onBook,onViewSalon,realRating,reviewCount,cu
           <div style={{fontSize:11,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
           {distance&&<div style={{fontSize:11,color:"#27ae60"}}>📡 {distance} كم</div>}
         </div>
-        {/* Rating badge — clickable when reviews exist */}
+        {/* Rating badge — tapping opens dedicated reviews page */}
         <div
-          onClick={()=>reviewCount>0&&setShowReviews(p=>!p)}
-          style={{...G.ratingBadge,background:realRating?"rgba(240,192,64,.2)":"rgba(100,100,100,.2)",flexDirection:"column",alignItems:"center",gap:0,cursor:reviewCount>0?"pointer":"default",minWidth:44,padding:"4px 8px"}}>
+          onClick={()=>onViewReviews&&onViewReviews()}
+          style={{...G.ratingBadge,background:realRating?"rgba(240,192,64,.2)":"rgba(100,100,100,.2)",flexDirection:"column",alignItems:"center",gap:0,cursor:"pointer",minWidth:44,padding:"4px 8px"}}>
           <span>⭐ {displayRating}</span>
           {reviewCount>0&&<span style={{fontSize:8,color:"#999",marginTop:1,fontWeight:600}}>({reviewCount})</span>}
         </div>
       </div>
-
-      {/* Reviews panel — expands under the rating badge */}
-      {showReviews&&(
-        <div style={{marginBottom:10,borderRadius:10,background:"rgba(212,160,23,.04)",border:"1px solid rgba(212,160,23,.13)",overflow:"hidden"}}>
-          {reviewsList.length===0?(
-            <div style={{padding:"10px 12px",fontSize:11,color:"#555",textAlign:"center"}}>لا توجد تقييمات بعد</div>
-          ):(
-            reviewsList.slice(0,3).map((r,i)=>(
-              <div key={i} style={{padding:"9px 12px",borderBottom:i<Math.min(reviewsList.length,3)-1?"1px solid rgba(212,160,23,.08)":"none"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                  <span style={{fontSize:11,color:"#c0c0d0",fontWeight:600}}>👤 {r.name}</span>
-                  <div style={{display:"flex",gap:1}}>
-                    {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:10,color:n<=r.rating?"#e8c04a":"rgba(212,160,23,.18)"}}>★</span>)}
-                  </div>
-                </div>
-                {r.comment&&<div style={{fontSize:10,color:"#9090a8",fontStyle:"italic",lineHeight:1.45}}>«{r.comment}»</div>}
-              </div>
-            ))
-          )}
-          {reviewsList.length>3&&(
-            <div style={{padding:"6px 12px",fontSize:10,color:"#666",textAlign:"center",borderTop:"1px solid rgba(212,160,23,.08)"}}>
-              و {reviewsList.length-3} تقييمات أخرى…
-            </div>
-          )}
-        </div>
-      )}
 
       {salon.shiftEnabled
         ?<div style={{fontSize:11,color:"#aaa",marginBottom:2}}>⏰ {salon.shift1Start}-{salon.shift1End} | {salon.shift2Start}-{salon.shift2End}</div>
