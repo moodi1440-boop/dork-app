@@ -868,22 +868,14 @@ export default function App(){
   // Splash Screen
   if(splash) return(
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#09112e 0%,#0d1535 45%,#111d42 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",gap:0}}>
-      {/* Logo icon */}
-      <div style={{animation:"splashPulse 1.4s ease-in-out infinite",marginBottom:18}}>
-        <DorkLogoSvg size={108}/>
-      </div>
-      {/* DORK text */}
-      <div style={{fontSize:44,fontWeight:900,color:"#d4a017",letterSpacing:6,marginBottom:5,fontFamily:"'Georgia',serif",textShadow:"0 2px 18px rgba(212,160,23,.35)"}}>DORK</div>
-      {/* SALON BOOKING subtitle */}
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:32}}>
-        <div style={{width:28,height:1.5,background:"rgba(212,160,23,.45)",borderRadius:2}}/>
-        <div style={{fontSize:11,color:"rgba(212,160,23,.7)",letterSpacing:3.5,fontWeight:600}}>SALON BOOKING</div>
-        <div style={{width:28,height:1.5,background:"rgba(212,160,23,.45)",borderRadius:2}}/>
+      {/* Full brand logo as image */}
+      <div style={{animation:"splashPulse 1.4s ease-in-out infinite",marginBottom:28}}>
+        <img src="/logo.svg" alt="DORK" style={{width:220,height:"auto",display:"block",filter:"drop-shadow(0 4px 24px rgba(212,160,23,.35))"}}/>
       </div>
       {/* Loading spinner */}
       <div style={{width:36,height:36,border:"3px solid rgba(212,160,23,.15)",borderTop:"3px solid #d4a017",borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
       <style dangerouslySetInnerHTML={{__html:`
-        @keyframes splashPulse{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.05) translateY(-3px)}}
+        @keyframes splashPulse{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.04) translateY(-4px)}}
         @keyframes spin{to{transform:rotate(360deg)}}
       `}}/>
     </div>
