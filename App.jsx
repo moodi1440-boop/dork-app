@@ -1129,8 +1129,64 @@ export default function App(){
         {view==="nearMap"&&   <NearMapView salons={approvedSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="compare"&&   <CompareSalonsView salons={compareSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="notifs"&&    <NotifsView setView={setView}/>}
+        {view==="allReviews"&&<AllReviewsView customers={customers} approvedSalons={approvedSalons} setSelSalon={setSelSalon} setView={setView}/>}
       </div>
     </div>
+  );
+}
+
+// ==============================================
+//  DORK LOGO SVG — transparent background, gold scissors+clock
+// ==============================================
+function DorkLogoSvg({size=40}){
+  return(
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="dg1" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#f5d76e"/>
+          <stop offset="40%" stopColor="#d4a017"/>
+          <stop offset="100%" stopColor="#8b6914"/>
+        </linearGradient>
+        <linearGradient id="dg2" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#ffe066"/>
+          <stop offset="60%" stopColor="#d4a017"/>
+          <stop offset="100%" stopColor="#b8860b"/>
+        </linearGradient>
+        <linearGradient id="dg3" x1="60" y1="0" x2="60" y2="120" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#f5d76e"/>
+          <stop offset="100%" stopColor="#a07010"/>
+        </linearGradient>
+      </defs>
+      {/* Clock arch at top */}
+      <path d="M 28 62 A 34 34 0 0 1 92 62" stroke="url(#dg1)" strokeWidth="4.5" fill="none" strokeLinecap="round"/>
+      {/* Clock tick top */}
+      <line x1="60" y1="28" x2="60" y2="35" stroke="url(#dg1)" strokeWidth="3" strokeLinecap="round"/>
+      {/* Clock ticks sides */}
+      <line x1="27" y1="55" x2="33" y2="57" stroke="url(#dg1)" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="93" y1="55" x2="87" y2="57" stroke="url(#dg1)" strokeWidth="2.5" strokeLinecap="round"/>
+      {/* Clock hands */}
+      <line x1="60" y1="60" x2="60" y2="42" stroke="url(#dg2)" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="60" y1="60" x2="72" y2="67" stroke="url(#dg2)" strokeWidth="2" strokeLinecap="round"/>
+      {/* Clock center dot */}
+      <circle cx="60" cy="60" r="3" fill="url(#dg2)"/>
+      {/* Scissors blade left (going from bottom-left to top-right) */}
+      <path d="M 36 88 Q 45 72 60 60 Q 72 50 82 36" stroke="url(#dg1)" strokeWidth="5" fill="none" strokeLinecap="round"/>
+      {/* Scissors blade right (going from bottom-right to top-left) */}
+      <path d="M 84 88 Q 75 72 60 60 Q 48 50 38 36" stroke="url(#dg1)" strokeWidth="5" fill="none" strokeLinecap="round"/>
+      {/* Scissors pivot screw */}
+      <circle cx="60" cy="60" r="4.5" fill="url(#dg2)"/>
+      <circle cx="60" cy="60" r="2" fill="#0d0d1a"/>
+      {/* Left handle ring outer */}
+      <circle cx="36" cy="91" r="8.5" stroke="url(#dg1)" strokeWidth="3.5" fill="none"/>
+      {/* Right handle ring outer */}
+      <circle cx="84" cy="91" r="8.5" stroke="url(#dg1)" strokeWidth="3.5" fill="none"/>
+      {/* Center location pin (between rings) */}
+      <path d="M 60 87 C 57 84 54 81 54 78.5 A 6 6 0 0 1 66 78.5 C 66 81 63 84 60 87 Z" fill="url(#dg3)"/>
+      <circle cx="60" cy="78.5" r="2.5" fill="#0d0d1a"/>
+      {/* Handle ring inner fill hints */}
+      <circle cx="36" cy="91" r="4.5" fill="none" stroke="url(#dg2)" strokeWidth="1.5" opacity="0.5"/>
+      <circle cx="84" cy="91" r="4.5" fill="none" stroke="url(#dg2)" strokeWidth="1.5" opacity="0.5"/>
+    </svg>
   );
 }
 
@@ -1153,28 +1209,9 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
       </div>
       {/* RIGHT: شعار دورك */}
       <div style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer"}} onClick={()=>resetHome&&resetHome()}>
-        <svg width="30" height="30" viewBox="0 0 60 60" fill="none">
-          <defs>
-            <linearGradient id="goldG" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="var(--pll)"/><stop offset="50%" stopColor="var(--p)"/><stop offset="100%" stopColor="var(--pd)"/>
-            </linearGradient>
-            <linearGradient id="darkG" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#1a1a2e"/><stop offset="100%" stopColor="#0d0d1a"/>
-            </linearGradient>
-          </defs>
-          <circle cx="30" cy="30" r="28" fill="url(#goldG)"/>
-          <circle cx="30" cy="30" r="24" fill="url(#darkG)"/>
-          <circle cx="30" cy="9" r="1.5" fill="var(--p)"/>
-          <g transform="translate(30 30) rotate(-30)">
-            <circle cx="-7" cy="-3" r="3.5" fill="none" stroke="var(--p)" strokeWidth="1.6"/>
-            <circle cx="-7" cy="3" r="3.5" fill="none" stroke="var(--p)" strokeWidth="1.6"/>
-            <line x1="-4" y1="-1.5" x2="9" y2="0" stroke="var(--pl)" strokeWidth="1.6" strokeLinecap="round"/>
-            <line x1="-4" y1="1.5" x2="9" y2="0" stroke="var(--pl)" strokeWidth="1.6" strokeLinecap="round"/>
-          </g>
-          <circle cx="30" cy="30" r="1.5" fill="var(--pll)"/>
-        </svg>
+        <DorkLogoSvg size={36}/>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",lineHeight:1}}>
-          <span style={{fontSize:19,fontWeight:900,color:"var(--pl)",fontFamily:"'Cairo',sans-serif",letterSpacing:1}}>دورك</span>
+          <span style={{fontSize:19,fontWeight:900,background:"linear-gradient(135deg,#f5d76e 0%,#d4a017 50%,#b8860b 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",fontFamily:"'Cairo',sans-serif",letterSpacing:1}}>دورك</span>
           <span style={{fontSize:7,color:"var(--p)",letterSpacing:1.2,marginTop:1,fontFamily:"'Cairo',sans-serif",opacity:.85}}>DORK - حلاقة وصالونات</span>
         </div>
       </div>
@@ -1183,66 +1220,148 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
 }
 
 // ==============================================
-//  HOME — آراء العملاء (تظهر للجميع فور فتح التطبيق)
+//  HOME — آراء العملاء — Horizontal Minimalist Carousel
 // ==============================================
 function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
   const reviews=buildHomeReviewsFeed(customers,approvedSalons);
-  const dimStar="rgba(212,160,23,.22)";
+  const [activeIdx,setActiveIdx]=useState(0);
+  const scrollRef=useRef(null);
+  const timerRef=useRef(null);
+  const gold="#d4a017";
   const goldStar="#e8c04a";
+  const dimStar="rgba(212,160,23,.18)";
+  const shown=reviews.slice(0,16);
+
+  const scrollTo=idx=>{
+    if(!scrollRef.current)return;
+    const el=scrollRef.current.children[idx];
+    if(el)el.scrollIntoView({behavior:"smooth",block:"nearest",inline:"start"});
+    setActiveIdx(idx);
+  };
+
+  // auto-scroll every 4 s, pause on user hover
+  const startTimer=()=>{
+    clearInterval(timerRef.current);
+    if(shown.length<2)return;
+    timerRef.current=setInterval(()=>{
+      setActiveIdx(prev=>{
+        const next=(prev+1)%shown.length;
+        if(scrollRef.current&&scrollRef.current.children[next])
+          scrollRef.current.children[next].scrollIntoView({behavior:"smooth",block:"nearest",inline:"start"});
+        return next;
+      });
+    },4000);
+  };
+  useEffect(()=>{startTimer();return()=>clearInterval(timerRef.current);},[shown.length]);
+
   const openSalon=sid=>{
     const s=approvedSalons.find(x=>Number(x.id)===Number(sid));
     if(s){setSelSalon(s);setView("salon");}
   };
+
   const globalAvg=reviews.length
     ?Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length*10)/10
     :0;
+
   return(
-    <div style={{padding:"12px 14px 4px",background:"linear-gradient(180deg,rgba(212,160,23,.06),transparent)"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,gap:8}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:22}}>⭐</span>
+    <div style={{padding:"16px 0 8px",borderTop:"1px solid rgba(212,160,23,.1)"}}>
+      {/* ── Header row ── */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <DorkLogoSvg size={28}/>
           <div>
-            <div style={{fontSize:15,fontWeight:900,color:"#fff",letterSpacing:.3}}>آراء العملاء</div>
-            <div style={{fontSize:11,color:"var(--p)",opacity:.9}}>تجارب حقيقية من زوار الصالونات</div>
+            <div style={{fontSize:14,fontWeight:800,color:"#f0f0f0",letterSpacing:.4}}>آراء العملاء</div>
+            <div style={{fontSize:10,color:gold,opacity:.85}}>تجارب حقيقية من زوار الصالونات</div>
           </div>
         </div>
-        {reviews.length>0&&(
-          <div style={{textAlign:"center",flexShrink:0,padding:"6px 12px",borderRadius:12,background:"var(--pa12)",border:"1px solid var(--pa25)"}}>
-            <div style={{fontSize:18,fontWeight:900,color:goldStar,lineHeight:1}}>{globalAvg}</div>
-            <div style={{fontSize:9,color:"#888"}}>{reviews.length} تقييم</div>
-          </div>
-        )}
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          {reviews.length>0&&(
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 10px",borderRadius:10,background:"rgba(212,160,23,.08)",border:"1px solid rgba(212,160,23,.22)"}}>
+              <span style={{fontSize:15,fontWeight:900,color:goldStar,lineHeight:1}}>{globalAvg}</span>
+              <span style={{fontSize:8,color:"#777",marginTop:1}}>{reviews.length} تقييم</span>
+            </div>
+          )}
+          <button
+            onClick={()=>setView("allReviews")}
+            style={{padding:"6px 12px",borderRadius:20,background:"transparent",border:`1px solid ${gold}`,color:gold,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",letterSpacing:.3}}>
+            عرض الكل
+          </button>
+        </div>
       </div>
+
+      {/* ── Carousel track ── */}
       {reviews.length===0?(
-        <div style={{...G.bItem,background:"#13131f",border:"1px dashed var(--pa25)",textAlign:"center",padding:"14px 12px",marginBottom:8}}>
-          <div style={{fontSize:12,color:"#777"}}>لا توجد تقييمات من العملاء بعد. بعد زيارتك يمكنك تقييم الصالون من حسابك.</div>
+        <div style={{margin:"0 16px",padding:"18px 14px",borderRadius:14,background:"#0b0f1c",border:"1px dashed rgba(212,160,23,.2)",textAlign:"center"}}>
+          <div style={{fontSize:12,color:"#555"}}>لا توجد تقييمات بعد. قيّم زيارتك من حسابك.</div>
         </div>
       ):(
-        <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:12,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",scrollbarWidth:"thin"}}>
-          {reviews.slice(0,24).map(r=>(
-            <div key={r.key} onClick={()=>openSalon(r.salonId)}
-              style={{
-                scrollSnapAlign:"start",flex:"0 0 min(88vw,320px)",cursor:"pointer",
-                background:"linear-gradient(145deg,#16162a,#12121c)",
-                border:"1px solid var(--pa25)",borderRadius:14,padding:"12px 14px",
-                boxShadow:"0 4px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(240,192,64,.08)",
-                borderRight:"3px solid var(--p)",
-              }}>
-              <div style={{fontSize:12,fontWeight:800,color:"var(--pl)",marginBottom:6,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>✂ {r.salonName}</div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:6,marginBottom:6}}>
-                <span style={{fontSize:12,fontWeight:700,color:"#e8e8e8"}}>👤 {r.customerName}</span>
-                <div style={{display:"flex",gap:1,flexShrink:0}}>
-                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:12,color:n<=r.rating?goldStar:dimStar}}>★</span>)}
+        <>
+          <div
+            ref={scrollRef}
+            onMouseEnter={()=>clearInterval(timerRef.current)}
+            onMouseLeave={startTimer}
+            onTouchStart={()=>clearInterval(timerRef.current)}
+            onTouchEnd={startTimer}
+            onScroll={e=>{
+              const c=e.currentTarget;
+              const cardW=c.children[0]?.offsetWidth||260;
+              setActiveIdx(Math.round(c.scrollLeft/cardW));
+            }}
+            style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4,paddingLeft:16,paddingRight:16,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none"}}>
+            {shown.map((r,i)=>(
+              <div
+                key={r.key}
+                onClick={()=>openSalon(r.salonId)}
+                style={{
+                  scrollSnapAlign:"start",
+                  flex:"0 0 min(80vw,280px)",
+                  cursor:"pointer",
+                  background:"#0b1220",
+                  border:`1px solid rgba(212,160,23,${i===activeIdx?.45:.22})`,
+                  borderRadius:14,
+                  padding:"14px 14px 12px",
+                  transition:"border-color .3s,box-shadow .3s",
+                  boxShadow:i===activeIdx?"0 0 18px rgba(212,160,23,.15), 0 4px 24px rgba(0,0,0,.4)":"0 2px 12px rgba(0,0,0,.3)",
+                  display:"flex",flexDirection:"column",gap:0,
+                }}>
+                {/* Salon name */}
+                <div style={{fontSize:12,fontWeight:800,color:"#d4a017",marginBottom:8,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:.2}}>
+                  ✂ {r.salonName}
+                </div>
+                {/* Customer + stars */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                  <span style={{fontSize:11,color:"#c8c8d8",fontWeight:600}}>
+                    {r.customerName.charAt(0)==="ع"||r.customerName.charAt(0)==="أ"||r.customerName.length>0?"👤 ":""}{r.customerName}
+                  </span>
+                  <div style={{display:"flex",gap:1}}>
+                    {[1,2,3,4,5].map(n=>(
+                      <span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:dimStar,lineHeight:1}}>★</span>
+                    ))}
+                  </div>
+                </div>
+                {/* Divider */}
+                <div style={{height:1,background:"rgba(212,160,23,.1)",marginBottom:10}}/>
+                {/* Comment */}
+                <div style={{fontSize:11,color:r.comment?"#a8a8bc":"#444",fontStyle:r.comment?"italic":"normal",lineHeight:1.5,flex:1,minHeight:32}}>
+                  {r.comment?`«${r.comment}»`:"بدون تعليق نصي"}
+                </div>
+                {/* Date */}
+                <div style={{fontSize:9,color:"#3d3d52",marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,.04)"}}>
+                  📅 {r.date||"—"}{r.time?` · ${r.time}`:""}
                 </div>
               </div>
-              {r.comment
-                ?<div style={{fontSize:11,color:"#b8b8c8",fontStyle:"italic",lineHeight:1.45,borderTop:"1px solid rgba(212,160,23,.12)",paddingTop:8}}>«{r.comment}»</div>
-                :<div style={{fontSize:10,color:"#666",borderTop:"1px solid rgba(212,160,23,.12)",paddingTop:8}}>بدون تعليق نصي</div>}
-              <div style={{fontSize:10,color:"#5c5c6a",marginTop:8}}>📅 {r.date||"—"}{r.time?` · ${r.time}`:""}</div>
-              <div style={{fontSize:9,color:"var(--p)",marginTop:6,opacity:.85}}>اضغط لفتح الصالون ←</div>
+            ))}
+          </div>
+
+          {/* ── Scroll dots ── */}
+          {shown.length>1&&(
+            <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:10,padding:"0 16px"}}>
+              {shown.map((_,i)=>(
+                <button key={i} onClick={()=>scrollTo(i)} style={{width:i===activeIdx?18:6,height:6,borderRadius:3,background:i===activeIdx?gold:"rgba(212,160,23,.25)",border:"none",cursor:"pointer",padding:0,transition:"width .3s,background .3s"}}/>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -2625,6 +2744,100 @@ function AdminAddView({salons,setSalons,customers,setCustomers,toast$,approveSal
     </div>
   );
 }
+// ==============================================
+//  ALL REVIEWS VIEW — صفحة جميع التعليقات
+// ==============================================
+function AllReviewsView({customers,approvedSalons,setSelSalon,setView}){
+  const reviews=buildHomeReviewsFeed(customers,approvedSalons);
+  const[filter,setFilter]=useState(0); // 0=all, 1-5=star filter
+  const[search,setSearch]=useState("");
+  const gold="#d4a017";
+  const goldStar="#e8c04a";
+  const dimStar="rgba(212,160,23,.18)";
+
+  const filtered=reviews.filter(r=>{
+    if(filter>0&&r.rating!==filter)return false;
+    if(search&&!r.salonName.includes(search)&&!r.customerName.includes(search)&&!r.comment.includes(search))return false;
+    return true;
+  });
+
+  const globalAvg=reviews.length
+    ?Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length*10)/10:0;
+  const dist=[5,4,3,2,1].map(s=>({star:s,count:reviews.filter(r=>r.rating===s).length}));
+
+  const openSalon=sid=>{
+    const s=approvedSalons.find(x=>Number(x.id)===Number(sid));
+    if(s){setSelSalon(s);setView("salon");}
+  };
+
+  return(
+    <div style={{minHeight:"100vh",fontFamily:"'Cairo',sans-serif",direction:"rtl",paddingBottom:40}}>
+      {/* ── Sticky Header ── */}
+      <div style={{position:"sticky",top:56,zIndex:50,background:"#0d0d1a",borderBottom:"1px solid rgba(212,160,23,.15)",padding:"12px 16px 10px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+          <button onClick={()=>setView("home")} style={{background:"transparent",border:"none",color:gold,fontSize:20,cursor:"pointer",padding:"0 4px",lineHeight:1}}>←</button>
+          <DorkLogoSvg size={26}/>
+          <div>
+            <div style={{fontSize:15,fontWeight:900,color:"#f0f0f0"}}>جميع التقييمات</div>
+            <div style={{fontSize:10,color:gold,opacity:.8}}>{reviews.length} تقييم — متوسط {globalAvg} ★</div>
+          </div>
+        </div>
+        {/* Search */}
+        <input
+          value={search}
+          onChange={e=>setSearch(e.target.value)}
+          placeholder="🔍 ابحث باسم الصالون أو العميل..."
+          style={{width:"100%",boxSizing:"border-box",padding:"8px 12px",borderRadius:10,background:"#111825",border:"1px solid rgba(212,160,23,.25)",color:"#e0e0e0",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none"}}
+        />
+      </div>
+
+      {/* ── Summary bar ── */}
+      <div style={{padding:"12px 16px",background:"linear-gradient(180deg,rgba(212,160,23,.06),transparent)"}}>
+        <div style={{display:"flex",gap:10,overflowX:"auto",scrollbarWidth:"none",paddingBottom:4}}>
+          {/* All */}
+          <button onClick={()=>setFilter(0)} style={{flex:"0 0 auto",padding:"6px 14px",borderRadius:20,border:`1px solid ${filter===0?gold:"rgba(212,160,23,.2)"}`,background:filter===0?"rgba(212,160,23,.12)":"transparent",color:filter===0?gold:"#888",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
+            الكل ({reviews.length})
+          </button>
+          {dist.map(({star,count})=>(
+            <button key={star} onClick={()=>setFilter(star===filter?0:star)}
+              style={{flex:"0 0 auto",display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:20,border:`1px solid ${filter===star?gold:"rgba(212,160,23,.2)"}`,background:filter===star?"rgba(212,160,23,.12)":"transparent",color:filter===star?goldStar:"#888",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
+              {"★".repeat(star)} ({count})
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Cards grid ── */}
+      <div style={{padding:"0 14px",display:"flex",flexDirection:"column",gap:10}}>
+        {filtered.length===0&&(
+          <div style={{textAlign:"center",padding:"32px 0",color:"#555",fontSize:13}}>لا توجد نتائج مطابقة للبحث</div>
+        )}
+        {filtered.map((r,i)=>(
+          <div key={r.key} onClick={()=>openSalon(r.salonId)}
+            style={{cursor:"pointer",background:"#0b1220",border:`1px solid rgba(212,160,23,.28)`,borderRadius:14,padding:"14px 14px 12px",boxShadow:"0 2px 16px rgba(0,0,0,.35)",transition:"box-shadow .2s"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <div style={{fontSize:12,fontWeight:800,color:gold,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                ✂ {r.salonName}
+              </div>
+              <div style={{display:"flex",gap:1,flexShrink:0,marginRight:8}}>
+                {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:dimStar}}>★</span>)}
+              </div>
+            </div>
+            <div style={{fontSize:11,color:"#9898a8",marginBottom:r.comment?8:0}}>👤 {r.customerName}</div>
+            {r.comment&&(
+              <>
+                <div style={{height:1,background:"rgba(212,160,23,.1)",margin:"8px 0"}}/>
+                <div style={{fontSize:11,color:"#a0a0bc",fontStyle:"italic",lineHeight:1.55}}>«{r.comment}»</div>
+              </>
+            )}
+            <div style={{fontSize:9,color:"#363650",marginTop:10}}>📅 {r.date||"—"}{r.time?` · ${r.time}`:""}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ==============================================
 //  NOTIFS VIEW - صفحة الإشعارات
 // ==============================================
