@@ -1140,52 +1140,35 @@ export default function App(){
 // ==============================================
 function DorkLogoSvg({size=40}){
   return(
-    <svg width={size} height={size} viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="dg1" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#f5d76e"/>
-          <stop offset="40%" stopColor="#d4a017"/>
-          <stop offset="100%" stopColor="#8b6914"/>
+        <linearGradient id="dlg1" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#fff5be"/>
+          <stop offset="28%" stopColor="#f5d060"/>
+          <stop offset="62%" stopColor="#d4a017"/>
+          <stop offset="100%" stopColor="#8b6000"/>
         </linearGradient>
-        <linearGradient id="dg2" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#ffe066"/>
-          <stop offset="60%" stopColor="#d4a017"/>
-          <stop offset="100%" stopColor="#b8860b"/>
-        </linearGradient>
-        <linearGradient id="dg3" x1="60" y1="0" x2="60" y2="120" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#f5d76e"/>
-          <stop offset="100%" stopColor="#a07010"/>
+        <linearGradient id="dlg2" x1="20" y1="0" x2="80" y2="100" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#ffe566"/>
+          <stop offset="100%" stopColor="#c8900a"/>
         </linearGradient>
       </defs>
-      {/* Clock arch at top */}
-      <path d="M 28 62 A 34 34 0 0 1 92 62" stroke="url(#dg1)" strokeWidth="4.5" fill="none" strokeLinecap="round"/>
-      {/* Clock tick top */}
-      <line x1="60" y1="28" x2="60" y2="35" stroke="url(#dg1)" strokeWidth="3" strokeLinecap="round"/>
-      {/* Clock ticks sides */}
-      <line x1="27" y1="55" x2="33" y2="57" stroke="url(#dg1)" strokeWidth="2.5" strokeLinecap="round"/>
-      <line x1="93" y1="55" x2="87" y2="57" stroke="url(#dg1)" strokeWidth="2.5" strokeLinecap="round"/>
-      {/* Clock hands */}
-      <line x1="60" y1="60" x2="60" y2="42" stroke="url(#dg2)" strokeWidth="2.5" strokeLinecap="round"/>
-      <line x1="60" y1="60" x2="72" y2="67" stroke="url(#dg2)" strokeWidth="2" strokeLinecap="round"/>
-      {/* Clock center dot */}
-      <circle cx="60" cy="60" r="3" fill="url(#dg2)"/>
-      {/* Scissors blade left (going from bottom-left to top-right) */}
-      <path d="M 36 88 Q 45 72 60 60 Q 72 50 82 36" stroke="url(#dg1)" strokeWidth="5" fill="none" strokeLinecap="round"/>
-      {/* Scissors blade right (going from bottom-right to top-left) */}
-      <path d="M 84 88 Q 75 72 60 60 Q 48 50 38 36" stroke="url(#dg1)" strokeWidth="5" fill="none" strokeLinecap="round"/>
-      {/* Scissors pivot screw */}
-      <circle cx="60" cy="60" r="4.5" fill="url(#dg2)"/>
-      <circle cx="60" cy="60" r="2" fill="#0d0d1a"/>
-      {/* Left handle ring outer */}
-      <circle cx="36" cy="91" r="8.5" stroke="url(#dg1)" strokeWidth="3.5" fill="none"/>
-      {/* Right handle ring outer */}
-      <circle cx="84" cy="91" r="8.5" stroke="url(#dg1)" strokeWidth="3.5" fill="none"/>
-      {/* Center location pin (between rings) */}
-      <path d="M 60 87 C 57 84 54 81 54 78.5 A 6 6 0 0 1 66 78.5 C 66 81 63 84 60 87 Z" fill="url(#dg3)"/>
-      <circle cx="60" cy="78.5" r="2.5" fill="#0d0d1a"/>
-      {/* Handle ring inner fill hints */}
-      <circle cx="36" cy="91" r="4.5" fill="none" stroke="url(#dg2)" strokeWidth="1.5" opacity="0.5"/>
-      <circle cx="84" cy="91" r="4.5" fill="none" stroke="url(#dg2)" strokeWidth="1.5" opacity="0.5"/>
+      {/* D — vertical bar */}
+      <rect x="11" y="13" width="13" height="74" rx="6.5" fill="url(#dlg1)"/>
+      {/* D — curved stroke (right bow) */}
+      <path d="M 24 19 C 84 19 84 81 24 81" stroke="url(#dlg1)" strokeWidth="10" fill="none" strokeLinecap="round"/>
+      {/* Clock face — subtle inner ring */}
+      <circle cx="51" cy="50" r="17" stroke="url(#dlg2)" strokeWidth="1.5" fill="rgba(212,160,23,0.05)" opacity="0.6"/>
+      {/* Clock ticks — 12, 3, 6 */}
+      <line x1="51" y1="34" x2="51" y2="38.5" stroke="url(#dlg1)" strokeWidth="2.5" strokeLinecap="round"/>
+      <line x1="67" y1="50" x2="62.5" y2="50" stroke="url(#dlg1)" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="51" y1="66" x2="51" y2="61.5" stroke="url(#dlg1)" strokeWidth="2" strokeLinecap="round"/>
+      {/* Minute hand — pointing to 12 */}
+      <line x1="51" y1="50" x2="51" y2="37.5" stroke="url(#dlg1)" strokeWidth="3" strokeLinecap="round"/>
+      {/* Hour hand — pointing to ~4 */}
+      <line x1="51" y1="50" x2="60" y2="57" stroke="url(#dlg2)" strokeWidth="2.5" strokeLinecap="round"/>
+      {/* Center dot */}
+      <circle cx="51" cy="50" r="3.5" fill="url(#dlg2)"/>
     </svg>
   );
 }
@@ -1208,12 +1191,8 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
         <button style={{...G.roleBtn,background:"var(--pa12)",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>🏠</button>
       </div>
       {/* RIGHT: شعار دورك */}
-      <div style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer"}} onClick={()=>resetHome&&resetHome()}>
-        <DorkLogoSvg size={36}/>
-        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",lineHeight:1}}>
-          <span style={{fontSize:19,fontWeight:900,background:"linear-gradient(135deg,#f5d76e 0%,#d4a017 50%,#b8860b 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",fontFamily:"'Cairo',sans-serif",letterSpacing:1}}>دورك</span>
-          <span style={{fontSize:7,color:"var(--p)",letterSpacing:1.2,marginTop:1,fontFamily:"'Cairo',sans-serif",opacity:.85}}>DORK - حلاقة وصالونات</span>
-        </div>
+      <div style={{display:"flex",alignItems:"center",cursor:"pointer"}} onClick={()=>resetHome&&resetHome()}>
+        <DorkLogoSvg size={30}/>
       </div>
     </div>
   );
@@ -1267,26 +1246,16 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
     <div style={{padding:"16px 0 8px",borderTop:"1px solid rgba(212,160,23,.1)"}}>
       {/* ── Header row ── */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",marginBottom:12}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <DorkLogoSvg size={28}/>
-          <div>
-            <div style={{fontSize:14,fontWeight:800,color:"#f0f0f0",letterSpacing:.4}}>آراء العملاء</div>
-            <div style={{fontSize:10,color:gold,opacity:.85}}>تجارب حقيقية من زوار الصالونات</div>
+        <div>
+          <div style={{fontSize:14,fontWeight:800,color:"#f0f0f0",letterSpacing:.4}}>آراء العملاء</div>
+          <div style={{fontSize:10,color:gold,opacity:.85}}>تجارب حقيقية من زوار الصالونات</div>
+        </div>
+        {reviews.length>0&&(
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 10px",borderRadius:10,background:"rgba(212,160,23,.07)",border:"1px solid rgba(212,160,23,.18)"}}>
+            <span style={{fontSize:14,fontWeight:900,color:goldStar,lineHeight:1}}>{globalAvg}</span>
+            <span style={{fontSize:8,color:"#666",marginTop:1}}>{reviews.length} تقييم</span>
           </div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          {reviews.length>0&&(
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 10px",borderRadius:10,background:"rgba(212,160,23,.08)",border:"1px solid rgba(212,160,23,.22)"}}>
-              <span style={{fontSize:15,fontWeight:900,color:goldStar,lineHeight:1}}>{globalAvg}</span>
-              <span style={{fontSize:8,color:"#777",marginTop:1}}>{reviews.length} تقييم</span>
-            </div>
-          )}
-          <button
-            onClick={()=>setView("allReviews")}
-            style={{padding:"6px 12px",borderRadius:20,background:"transparent",border:`1px solid ${gold}`,color:gold,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",letterSpacing:.3}}>
-            عرض الكل
-          </button>
-        </div>
+        )}
       </div>
 
       {/* ── Carousel track ── */}
@@ -1304,24 +1273,22 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
             onTouchEnd={startTimer}
             onScroll={e=>{
               const c=e.currentTarget;
-              const cardW=c.children[0]?.offsetWidth||260;
+              const cardW=(c.children[0]?.offsetWidth||260)+10;
               setActiveIdx(Math.round(c.scrollLeft/cardW));
             }}
-            style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:4,paddingLeft:16,paddingRight:16,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none"}}>
+            style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,paddingLeft:16,paddingRight:8,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none"}}>
             {shown.map((r,i)=>(
               <div
                 key={r.key}
-                onClick={()=>openSalon(r.salonId)}
                 style={{
                   scrollSnapAlign:"start",
-                  flex:"0 0 min(80vw,280px)",
-                  cursor:"pointer",
+                  flex:"0 0 calc(88% - 24px)",
+                  maxWidth:310,
                   background:"#0b1220",
-                  border:`1px solid rgba(212,160,23,${i===activeIdx?.45:.22})`,
-                  borderRadius:14,
+                  border:`1px solid rgba(212,160,23,${i===activeIdx?.42:.18})`,
+                  borderRadius:16,
                   padding:"14px 14px 12px",
-                  transition:"border-color .3s,box-shadow .3s",
-                  boxShadow:i===activeIdx?"0 0 18px rgba(212,160,23,.15), 0 4px 24px rgba(0,0,0,.4)":"0 2px 12px rgba(0,0,0,.3)",
+                  transition:"border-color .3s",
                   display:"flex",flexDirection:"column",gap:0,
                 }}>
                 {/* Salon name */}
@@ -1331,7 +1298,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
                 {/* Customer + stars */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <span style={{fontSize:11,color:"#c8c8d8",fontWeight:600}}>
-                    {r.customerName.charAt(0)==="ع"||r.customerName.charAt(0)==="أ"||r.customerName.length>0?"👤 ":""}{r.customerName}
+                    👤 {r.customerName}
                   </span>
                   <div style={{display:"flex",gap:1}}>
                     {[1,2,3,4,5].map(n=>(
@@ -1340,15 +1307,21 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
                   </div>
                 </div>
                 {/* Divider */}
-                <div style={{height:1,background:"rgba(212,160,23,.1)",marginBottom:10}}/>
+                <div style={{height:1,background:"rgba(212,160,23,.08)",marginBottom:10}}/>
                 {/* Comment */}
-                <div style={{fontSize:11,color:r.comment?"#a8a8bc":"#444",fontStyle:r.comment?"italic":"normal",lineHeight:1.5,flex:1,minHeight:32}}>
+                <div style={{fontSize:11,color:r.comment?"#a8a8bc":"#3a3a50",fontStyle:r.comment?"italic":"normal",lineHeight:1.55,flex:1,minHeight:32}}>
                   {r.comment?`«${r.comment}»`:"بدون تعليق نصي"}
                 </div>
                 {/* Date */}
-                <div style={{fontSize:9,color:"#3d3d52",marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,.04)"}}>
+                <div style={{fontSize:9,color:"#3a3a52",marginTop:8,paddingTop:6,borderTop:"1px solid rgba(212,160,23,.06)"}}>
                   📅 {r.date||"—"}{r.time?` · ${r.time}`:""}
                 </div>
+                {/* عرض الكل — minimalist gold-border button */}
+                <button
+                  onClick={e=>{e.stopPropagation();openSalon(r.salonId);}}
+                  style={{marginTop:12,width:"100%",background:"transparent",border:"1px solid rgba(212,160,23,.45)",color:gold,borderRadius:8,padding:"7px 0",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:700,letterSpacing:.4}}>
+                  عرض الكل
+                </button>
               </div>
             ))}
           </div>
@@ -1357,7 +1330,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
           {shown.length>1&&(
             <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:10,padding:"0 16px"}}>
               {shown.map((_,i)=>(
-                <button key={i} onClick={()=>scrollTo(i)} style={{width:i===activeIdx?18:6,height:6,borderRadius:3,background:i===activeIdx?gold:"rgba(212,160,23,.25)",border:"none",cursor:"pointer",padding:0,transition:"width .3s,background .3s"}}/>
+                <button key={i} onClick={()=>scrollTo(i)} style={{width:i===activeIdx?18:6,height:6,borderRadius:3,background:i===activeIdx?gold:"rgba(212,160,23,.2)",border:"none",cursor:"pointer",padding:0,transition:"width .3s,background .3s"}}/>
               ))}
             </div>
           )}
