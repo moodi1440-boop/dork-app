@@ -1498,6 +1498,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
               <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
                 realRating={getRealRating(s.id)}
                 reviewCount={getReviewCount(s.id)}
+                customers={customers}
                 userLoc={userLoc}
                 getSalonCoords={getSalonCoords}
                 haversine={haversine}
@@ -1525,9 +1526,19 @@ function LocFilter({icon,label,value,onChange,options,all}){
     </div>
   );
 }
-function SalonCard({salon,fav,onFav,onBook,onViewSalon,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
+function SalonCard({salon,fav,onFav,onBook,onViewSalon,realRating,reviewCount,customers,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
   const slots=getSlotsForSalon(salon);
   const displayRating=realRating||salon.rating||"5.0";
+  const [showReviews,setShowReviews]=useState(false);
+
+  const reviewsList=useMemo(()=>{
+    if(!customers||!showReviews)return[];
+    const id=Number(salon.id);
+    return customers.flatMap(c=>
+      (c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0)
+        .map(h=>({name:c.name,rating:h.rating,comment:h.comment||"",date:h.date}))
+    );
+  },[customers,showReviews,salon.id]);
 
   // مسافة
   let distance=null;
@@ -1557,8 +1568,41 @@ function SalonCard({salon,fav,onFav,onBook,onViewSalon,realRating,reviewCount,us
           <div style={{fontSize:11,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
           {distance&&<div style={{fontSize:11,color:"#27ae60"}}>📡 {distance} كم</div>}
         </div>
-        <div style={{...G.ratingBadge,background:realRating?"rgba(240,192,64,.2)":"rgba(100,100,100,.2)"}}>⭐ {displayRating}</div>
+        {/* Rating badge — clickable when reviews exist */}
+        <div
+          onClick={()=>reviewCount>0&&setShowReviews(p=>!p)}
+          style={{...G.ratingBadge,background:realRating?"rgba(240,192,64,.2)":"rgba(100,100,100,.2)",flexDirection:"column",alignItems:"center",gap:0,cursor:reviewCount>0?"pointer":"default",minWidth:44,padding:"4px 8px"}}>
+          <span>⭐ {displayRating}</span>
+          {reviewCount>0&&<span style={{fontSize:8,color:"#999",marginTop:1,fontWeight:600}}>({reviewCount})</span>}
+        </div>
       </div>
+
+      {/* Reviews panel — expands under the rating badge */}
+      {showReviews&&(
+        <div style={{marginBottom:10,borderRadius:10,background:"rgba(212,160,23,.04)",border:"1px solid rgba(212,160,23,.13)",overflow:"hidden"}}>
+          {reviewsList.length===0?(
+            <div style={{padding:"10px 12px",fontSize:11,color:"#555",textAlign:"center"}}>لا توجد تقييمات بعد</div>
+          ):(
+            reviewsList.slice(0,3).map((r,i)=>(
+              <div key={i} style={{padding:"9px 12px",borderBottom:i<Math.min(reviewsList.length,3)-1?"1px solid rgba(212,160,23,.08)":"none"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                  <span style={{fontSize:11,color:"#c0c0d0",fontWeight:600}}>👤 {r.name}</span>
+                  <div style={{display:"flex",gap:1}}>
+                    {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:10,color:n<=r.rating?"#e8c04a":"rgba(212,160,23,.18)"}}>★</span>)}
+                  </div>
+                </div>
+                {r.comment&&<div style={{fontSize:10,color:"#9090a8",fontStyle:"italic",lineHeight:1.45}}>«{r.comment}»</div>}
+              </div>
+            ))
+          )}
+          {reviewsList.length>3&&(
+            <div style={{padding:"6px 12px",fontSize:10,color:"#666",textAlign:"center",borderTop:"1px solid rgba(212,160,23,.08)"}}>
+              و {reviewsList.length-3} تقييمات أخرى…
+            </div>
+          )}
+        </div>
+      )}
+
       {salon.shiftEnabled
         ?<div style={{fontSize:11,color:"#aaa",marginBottom:2}}>⏰ {salon.shift1Start}-{salon.shift1End} | {salon.shift2Start}-{salon.shift2End}</div>
         :<div style={{fontSize:11,color:"#aaa",marginBottom:2}}>⏰ {salon.workStart}-{salon.workEnd}</div>}
@@ -1567,17 +1611,6 @@ function SalonCard({salon,fav,onFav,onBook,onViewSalon,realRating,reviewCount,us
         {salon.services.slice(0,3).map(s=><span key={s} style={G.tag}>{s}</span>)}
         {salon.services.length>3&&<span style={{...G.tag,color:"#888"}}>+{salon.services.length-3}</span>}
       </div>
-      {reviewCount>0&&(
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9,padding:"7px 10px",borderRadius:9,background:"rgba(212,160,23,.06)",border:"1px solid rgba(212,160,23,.16)"}}>
-          <div style={{display:"flex",alignItems:"center",gap:5}}>
-            <span style={{fontSize:12,color:"#e8c04a",fontWeight:800,letterSpacing:.2}}>⭐ {realRating}</span>
-            <span style={{fontSize:10,color:"#666"}}>({reviewCount} تقييم)</span>
-          </div>
-          <button onClick={e=>{e.stopPropagation();onViewSalon&&onViewSalon();}} style={{background:"transparent",border:"1px solid rgba(212,160,23,.38)",color:"#d4a017",borderRadius:7,padding:"4px 11px",fontSize:10,fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer",letterSpacing:.3}}>
-            آراء العملاء
-          </button>
-        </div>
-      )}
       <div style={{display:"flex",gap:6,alignItems:"center"}}>
         <button style={{...G.mapsBtn,fontSize:16}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
