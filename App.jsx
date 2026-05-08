@@ -870,7 +870,7 @@ export default function App(){
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#09112e 0%,#0d1535 45%,#111d42 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",gap:0}}>
       {/* Full brand logo as image */}
       <div style={{animation:"splashPulse 1.4s ease-in-out infinite",marginBottom:28}}>
-        <img src="/logo.svg" alt="DORK" style={{width:220,height:"auto",display:"block",filter:"drop-shadow(0 4px 24px rgba(212,160,23,.35))"}}/>
+        <img src="/logo.png" alt="DORK" style={{width:260,height:"auto",display:"block",filter:"drop-shadow(0 4px 32px rgba(212,160,23,.5))",borderRadius:16}}/>
       </div>
       {/* Loading spinner */}
       <div style={{width:36,height:36,border:"3px solid rgba(212,160,23,.15)",borderTop:"3px solid #d4a017",borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
@@ -1209,7 +1209,7 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
       </div>
       {/* RIGHT: شعار دورك — أيقونة فوق + DORK تحت */}
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-        <DorkLogoSvg size={36}/>
+        <img src="/Logo-clean.svg" alt="DORK" style={{width:44,height:"auto",display:"block"}}/>
         <div style={{fontSize:10,fontWeight:900,color:"#d4a017",letterSpacing:2.5,fontFamily:"'Georgia',serif",marginTop:-1}}>DORK</div>
       </div>
     </div>
