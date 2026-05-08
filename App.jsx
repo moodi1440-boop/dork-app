@@ -1354,6 +1354,10 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
     if(!reviews.length)return null;
     return Math.round(reviews.reduce((a,r)=>a+r,0)/reviews.length*10)/10;
   };
+  const getReviewCount=(salonId)=>{
+    const id=Number(salonId);
+    return (customers||[]).reduce((n,c)=>n+(c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0).length,0);
+  };
 
   const detectUserLoc=()=>{
     if(!navigator.geolocation){alert("⚠ المتصفح لا يدعم تحديد الموقع");return;}
@@ -1464,8 +1468,6 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         </div>
       </div>
 
-      <HomeReviewsSection customers={customers} approvedSalons={approvedSalons} setSelSalon={setSelSalon} setView={setView}/>
-
       <div style={{padding:"10px 14px 0",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none"}}>
         {[
           ["default","الافتراضي","🔄"],
@@ -1495,12 +1497,14 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
             {sortedSalons.map(s=>(
               <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
                 realRating={getRealRating(s.id)}
+                reviewCount={getReviewCount(s.id)}
                 userLoc={userLoc}
                 getSalonCoords={getSalonCoords}
                 haversine={haversine}
                 isOpenNow={isOpenNow(s)}
                 inCompare={compareSalons.some(x=>x.id===s.id)}
                 onCompare={()=>toggleCompare(s)}
+                onViewSalon={()=>{setSelSalon(s);setView("salon");}}
                 onBook={()=>{setSelSalon(s);setView("book");}}/>
             ))}
           </div>
@@ -1521,7 +1525,7 @@ function LocFilter({icon,label,value,onChange,options,all}){
     </div>
   );
 }
-function SalonCard({salon,fav,onFav,onBook,realRating,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
+function SalonCard({salon,fav,onFav,onBook,onViewSalon,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
   const slots=getSlotsForSalon(salon);
   const displayRating=realRating||salon.rating||"5.0";
 
@@ -1563,6 +1567,17 @@ function SalonCard({salon,fav,onFav,onBook,realRating,userLoc,getSalonCoords,hav
         {salon.services.slice(0,3).map(s=><span key={s} style={G.tag}>{s}</span>)}
         {salon.services.length>3&&<span style={{...G.tag,color:"#888"}}>+{salon.services.length-3}</span>}
       </div>
+      {reviewCount>0&&(
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9,padding:"7px 10px",borderRadius:9,background:"rgba(212,160,23,.06)",border:"1px solid rgba(212,160,23,.16)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:5}}>
+            <span style={{fontSize:12,color:"#e8c04a",fontWeight:800,letterSpacing:.2}}>⭐ {realRating}</span>
+            <span style={{fontSize:10,color:"#666"}}>({reviewCount} تقييم)</span>
+          </div>
+          <button onClick={e=>{e.stopPropagation();onViewSalon&&onViewSalon();}} style={{background:"transparent",border:"1px solid rgba(212,160,23,.38)",color:"#d4a017",borderRadius:7,padding:"4px 11px",fontSize:10,fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer",letterSpacing:.3}}>
+            آراء العملاء
+          </button>
+        </div>
+      )}
       <div style={{display:"flex",gap:6,alignItems:"center"}}>
         <button style={{...G.mapsBtn,fontSize:16}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
