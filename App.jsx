@@ -3011,6 +3011,8 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           <MessagesPanel salon={salon} toast$={toast$}/>
         </div>
       )}
+      {tab==="calendar"&&<BookingCalendar salon={salon} onUpdate={updateBookingStatus}/>}
+      {tab==="stats"&&<StatsPanel salon={salon}/>}
       {tab==="settings"&&<OwnerSettings salon={salon} setSalons={setSalons} toast$={toast$}/>}
     </div></div>
   );
