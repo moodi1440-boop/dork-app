@@ -1209,7 +1209,7 @@ function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSessi
       </div>
       {/* RIGHT: شعار دورك — أيقونة فوق + DORK تحت */}
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-        <img src="/new-logo.svg" alt="DORK" style={{height:40,width:"auto",display:"block"}}/>
+        <img src="/Logo-clean.svg" alt="DORK" style={{height:52,width:"auto",display:"block"}}/>
       </div>
     </div>
   );
