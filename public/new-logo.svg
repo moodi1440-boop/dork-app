@@ -1,0 +1,45 @@
+<svg width="200" height="60" viewBox="0 0 1000 300" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- GOLD GRADIENT -->
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f7e7b7"/>
+      <stop offset="25%" stop-color="#e6c980"/>
+      <stop offset="50%" stop-color="#d4b15f"/>
+      <stop offset="75%" stop-color="#f1d99c"/>
+      <stop offset="100%" stop-color="#c9a24a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- SCISSORS + CLOCK ICON -->
+  <g transform="translate(450,20) scale(0.55)">
+    <!-- Clock Arc -->
+    <path d="M0 0 A180 180 0 1 1 360 0" fill="none" stroke="url(#gold)" stroke-width="25"/>
+
+    <!-- Clock Hands -->
+    <line x1="180" y1="180" x2="180" y2="70" stroke="url(#gold)" stroke-width="20" stroke-linecap="round"/>
+    <line x1="180" y1="180" x2="260" y2="220" stroke="url(#gold)" stroke-width="20" stroke-linecap="round"/>
+
+    <!-- Scissors -->
+    <path d="M140 200 L40 300" stroke="url(#gold)" stroke-width="28" stroke-linecap="round"/>
+    <circle cx="40" cy="300" r="35" fill="none" stroke="url(#gold)" stroke-width="18"/>
+
+    <path d="M220 200 L320 300" stroke="url(#gold)" stroke-width="28" stroke-linecap="round"/>
+    <circle cx="320" cy="300" r="35" fill="none" stroke="url(#gold)" stroke-width="18"/>
+  </g>
+
+  <!-- DORK TEXT -->
+  <text x="500" y="220" text-anchor="middle"
+        font-family="serif" font-size="140"
+        fill="url(#gold)" font-weight="700">
+    DORK
+  </text>
+
+  <!-- SALON BOOKING -->
+  <text x="500" y="275" text-anchor="middle"
+        font-family="sans-serif" font-size="55"
+        fill="url(#gold)" letter-spacing="4">
+    SALON BOOKING
+  </text>
+
+</svg>
