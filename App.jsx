@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 // ==============================================
 //  SUPABASE CLIENT
 // ==============================================
 const SUPABASE_URL    = "https://ywrlhvzfefvyogfxfdhl.supabase.co";
 const SUPABASE_ANON   = "sb_publishable_3tbZHK51ohv9AITf-Mt5Ww_MGZ1DMQs";
+
+// Supabase JS client for Realtime subscriptions
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 async function sb(table, method, body, query = "") {
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
@@ -264,16 +268,18 @@ async function requestNotifPermission(){
   return p==="granted";
 }
 
-function sendNotif(title,body,icon="✂"){
+function sendNotif(title,body,icon="✂",targetType="all",targetId=null){
   // زيادة عداد الجرس
   const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
   localStorage.setItem("dork_notif_count",String(count+1));
-  // حفظ الإشعار
+  // حفظ الإشعار محلياً
   try{
     const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
     notifs.unshift({id:Date.now(),title,body,icon,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
     localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
   }catch{}
+  // حفظ الإشعار في Supabase لمزامنة الويب
+  sb("notifications","POST",{target_type:targetType,target_id:targetId,title,body,icon}).catch(()=>{});
   if(!("Notification" in window)||Notification.permission!=="granted")return;
   try{new Notification(`${icon} ${title}`,{body,icon:"/favicon.ico",dir:"rtl",lang:"ar"});}catch{}
 }
@@ -821,6 +827,40 @@ export default function App(){
     },16000);
     return()=>clearInterval(t);
   },[loadData,loadAppSettings]);
+
+  /* Supabase Realtime - إشعارات لحظية */
+  useEffect(()=>{
+    // الاستماع لتغييرات الحجوزات
+    const bookingChannel=supabase.channel('realtime-bookings')
+      .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
+        loadData({silent:true});
+      })
+      .subscribe();
+
+    // الاستماع للإشعارات الجديدة من الإدارة
+    const notifChannel=supabase.channel('realtime-notifications')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},(payload)=>{
+        const n=payload.new;
+        if(!n)return;
+        // تشغيل إشعار محلي
+        const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
+        localStorage.setItem("dork_notif_count",String(count+1));
+        try{
+          const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+          notifs.unshift({id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔔",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
+          localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
+        }catch{}
+        if("Notification" in window&&Notification.permission==="granted"){
+          try{new Notification(`${n.icon||"🔔"} ${n.title}`,{body:n.body||"",dir:"rtl",lang:"ar"});}catch{}
+        }
+      })
+      .subscribe();
+
+    return()=>{
+      supabase.removeChannel(bookingChannel);
+      supabase.removeChannel(notifChannel);
+    };
+  },[loadData]);
 
   useEffect(()=>{
     if(!customerSession?.id)return;
@@ -1954,17 +1994,48 @@ function NotifPanel({salon,onUpdate}){
   const KEY=`dork_waiting_${salon.id}`;
   const[waitingList,setWaitingList]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
 
-  const addToWaiting=(name,phone)=>{
-    const item={id:Date.now(),name,phone,addedAt:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
-    const newList=[...waitingList,item];
-    setWaitingList(newList);
-    try{localStorage.setItem(KEY,JSON.stringify(newList));}catch{}
+  const loadWaiting=useCallback(async()=>{
+    try{
+      const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&order=created_at.asc`);
+      if(Array.isArray(data)){
+        const converted=data.map(w=>({id:w.id,name:w.name,phone:w.phone||"",addedAt:new Date(w.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})}));
+        setWaitingList(converted);
+        try{localStorage.setItem(KEY,JSON.stringify(converted));}catch{}
+      }
+    }catch{}
+  },[salon.id,KEY]);
+
+  useEffect(()=>{loadWaiting();},[loadWaiting]);
+
+  // Realtime لقائمة الانتظار
+  useEffect(()=>{
+    const channel=supabase.channel(`waiting-${salon.id}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'waiting_list',filter:`salon_id=eq.${salon.id}`},()=>{loadWaiting();})
+      .subscribe();
+    return()=>{supabase.removeChannel(channel);};
+  },[salon.id,loadWaiting]);
+
+  const addToWaiting=async(name,phone)=>{
+    try{
+      await sb("waiting_list","POST",{salon_id:salon.id,name,phone});
+      await loadWaiting();
+    }catch{
+      const item={id:Date.now(),name,phone,addedAt:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
+      const newList=[...waitingList,item];
+      setWaitingList(newList);
+      try{localStorage.setItem(KEY,JSON.stringify(newList));}catch{}
+    }
   };
 
-  const removeFromWaiting=(id)=>{
-    const newList=waitingList.filter(w=>w.id!==id);
-    setWaitingList(newList);
-    try{localStorage.setItem(KEY,JSON.stringify(newList));}catch{}
+  const removeFromWaiting=async(id)=>{
+    try{
+      await sb("waiting_list","DELETE",null,`?id=eq.${id}&salon_id=eq.${salon.id}`);
+      await loadWaiting();
+    }catch{
+      const newList=waitingList.filter(w=>w.id!==id);
+      setWaitingList(newList);
+      try{localStorage.setItem(KEY,JSON.stringify(newList));}catch{}
+    }
   };
 
   const bks=[...salon.bookings].reverse();
@@ -2905,17 +2976,38 @@ function AllReviewsView({customers,approvedSalons,setSelSalon,setView}){
 function NotifsView({setView}){
   const[notifs,setNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
 
+  // تحميل الإشعارات من Supabase عند فتح الصفحة
+  useEffect(()=>{
+    sb("notifications","GET",null,"?order=created_at.desc&limit=50").then(data=>{
+      if(!Array.isArray(data)||!data.length)return;
+      const converted=data.map(n=>({
+        id:n.id||Date.now(),
+        icon:n.icon||"🔔",
+        title:n.title||"",
+        body:n.body||"",
+        time:new Date(n.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),
+        read:n.read||false,
+      }));
+      setNotifs(converted);
+      try{localStorage.setItem("dork_notifs",JSON.stringify(converted.slice(0,50)));}catch{}
+    }).catch(()=>{});
+  },[]);
+
   const markAll=()=>{
     const updated=notifs.map(n=>({...n,read:true}));
     setNotifs(updated);
     localStorage.setItem("dork_notifs",JSON.stringify(updated));
     localStorage.setItem("dork_notif_count","0");
+    // وضع علامة مقروء في Supabase
+    sb("notifications","PATCH",{read:true},"?read=eq.false").catch(()=>{});
   };
 
   const clearAll=()=>{
     setNotifs([]);
     localStorage.setItem("dork_notifs","[]");
     localStorage.setItem("dork_notif_count","0");
+    // حذف من Supabase
+    sb("notifications","DELETE",null,"?id=gt.0").catch(()=>{});
   };
 
   return(
@@ -3371,14 +3463,51 @@ function MessagesPanel({salon,toast$}){
   const KEY=`dork_msgs_${salon.id}`;
   const[msgs,setMsgs]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
   const[txt,setTxt]=useState("");
+  const[sending,setSending]=useState(false);
+  const bottomRef=useRef(null);
 
-  const send=()=>{
-    if(!txt.trim())return;
-    const m={id:Date.now(),from:"owner",text:txt.trim(),time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
-    const newMsgs=[...msgs,m];
-    setMsgs(newMsgs);
-    try{localStorage.setItem(KEY,JSON.stringify(newMsgs));}catch{}
+  // تحميل الرسائل من Supabase
+  const loadMsgs=useCallback(async()=>{
+    try{
+      const data=await sb("messages","GET",null,`?salon_id=eq.${salon.id}&order=created_at.asc&limit=200`);
+      if(Array.isArray(data)&&data.length>0){
+        const converted=data.map(m=>({id:m.id,from:m.from_admin?"admin":"owner",text:m.text,time:new Date(m.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})}));
+        setMsgs(converted);
+        try{localStorage.setItem(KEY,JSON.stringify(converted));}catch{}
+      }
+    }catch{
+      // الرجوع للرسائل المحلية إذا فشل Supabase
+    }
+  },[salon.id,KEY]);
+
+  useEffect(()=>{loadMsgs();},[loadMsgs]);
+
+  // Realtime subscription للرسائل الجديدة
+  useEffect(()=>{
+    const channel=supabase.channel(`msgs-${salon.id}`)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`salon_id=eq.${salon.id}`},()=>{loadMsgs();})
+      .subscribe();
+    return()=>{supabase.removeChannel(channel);};
+  },[salon.id,loadMsgs]);
+
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+
+  const send=async()=>{
+    if(!txt.trim()||sending)return;
+    setSending(true);
+    const msgText=txt.trim();
     setTxt("");
+    try{
+      await sb("messages","POST",{salon_id:salon.id,from_admin:false,text:msgText});
+      await loadMsgs();
+    }catch{
+      // fallback localStorage
+      const m={id:Date.now(),from:"owner",text:msgText,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
+      const newMsgs=[...msgs,m];
+      setMsgs(newMsgs);
+      try{localStorage.setItem(KEY,JSON.stringify(newMsgs));}catch{}
+    }
+    setSending(false);
   };
 
   return(
@@ -3388,17 +3517,19 @@ function MessagesPanel({salon,toast$}){
         {msgs.map(m=>(
           <div key={m.id} style={{display:"flex",justifyContent:m.from==="owner"?"flex-end":"flex-start"}}>
             <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="owner"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="owner"?"var(--pa25)":"#1a1a2e",border:`1px solid ${m.from==="owner"?"var(--pa4)":"#2a2a3a"}`}}>
+              <div style={{fontSize:10,color:"#888",marginBottom:3}}>{m.from==="owner"?"أنت":"الإدارة"}</div>
               <div style={{fontSize:13,color:"#fff"}}>{m.text}</div>
               <div style={{fontSize:9,color:"#555",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}</div>
             </div>
           </div>
         ))}
+        <div ref={bottomRef}/>
       </div>
       <div style={{display:"flex",gap:8}}>
         <input style={{flex:1,padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
           placeholder="اكتب رسالة للإدارة..." value={txt} onChange={e=>setTxt(e.target.value)}
           onKeyDown={e=>e.key==="Enter"&&send()}/>
-        <button style={{...G.sub,width:"auto",padding:"0 16px",marginTop:0}} onClick={send}>إرسال</button>
+        <button style={{...G.sub,width:"auto",padding:"0 16px",marginTop:0,opacity:sending?.5:1}} onClick={send} disabled={sending}>{sending?"...":"إرسال"}</button>
       </div>
     </div>
   );
@@ -3410,23 +3541,48 @@ function MessagesPanel({salon,toast$}){
 function AdminMessages({salons,toast$}){
   const[selId,setSelId]=useState(null);
   const[txt,setTxt]=useState("");
+  const[sending,setSending]=useState(false);
   const sel=selId?salons.find(s=>s.id===selId):null;
 
   const getKey=(id)=>`dork_msgs_${id}`;
   const getMsgs=(id)=>{try{return JSON.parse(localStorage.getItem(getKey(id))||"[]");}catch{return[];}};
   const[msgs,setMsgs]=useState([]);
+  const bottomRef=useRef(null);
 
-  const openChat=(id)=>{setSelId(id);setMsgs(getMsgs(id));};
+  const loadMsgs=useCallback(async(id)=>{
+    try{
+      const data=await sb("messages","GET",null,`?salon_id=eq.${id}&order=created_at.asc&limit=200`);
+      if(Array.isArray(data)&&data.length>0){
+        const converted=data.map(m=>({id:m.id,from:m.from_admin?"admin":"owner",text:m.text,time:new Date(m.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})}));
+        setMsgs(converted);
+        return;
+      }
+    }catch{}
+    setMsgs(getMsgs(id));
+  },[]);
 
-  const send=()=>{
-    if(!txt.trim()||!selId)return;
-    const m={id:Date.now(),from:"admin",text:txt.trim(),time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
-    const newMsgs=[...msgs,m];
-    setMsgs(newMsgs);
-    try{localStorage.setItem(getKey(selId),JSON.stringify(newMsgs));}catch{}
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+
+  const openChat=async(id)=>{setSelId(id);await loadMsgs(id);};
+
+  const send=async()=>{
+    if(!txt.trim()||!selId||sending)return;
+    setSending(true);
+    const msgText=txt.trim();
     setTxt("");
-    sendNotif("رسالة من الإدارة",txt.trim(),"📩");
-    toast$&&toast$("✅ تم إرسال الرسالة");
+    try{
+      await sb("messages","POST",{salon_id:selId,from_admin:true,text:msgText});
+      await loadMsgs(selId);
+      toast$&&toast$("✅ تم إرسال الرسالة");
+    }catch{
+      const m={id:Date.now(),from:"admin",text:msgText,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
+      const newMsgs=[...msgs,m];
+      setMsgs(newMsgs);
+      try{localStorage.setItem(getKey(selId),JSON.stringify(newMsgs));}catch{}
+      sendNotif("رسالة من الإدارة",msgText,"📩","salon",selId);
+      toast$&&toast$("✅ تم إرسال الرسالة");
+    }
+    setSending(false);
   };
 
   if(sel) return(
@@ -3452,7 +3608,7 @@ function AdminMessages({salons,toast$}){
           <input style={{flex:1,padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
             placeholder="اكتب رسالة للصالون..." value={txt} onChange={e=>setTxt(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&send()}/>
-          <button style={{...G.sub,width:"auto",padding:"0 16px",marginTop:0}} onClick={send}>إرسال</button>
+          <button style={{...G.sub,width:"auto",padding:"0 16px",marginTop:0,opacity:sending?.5:1}} onClick={send} disabled={sending}>{sending?"...":"إرسال"}</button>
         </div>
       </div>
     </div>
