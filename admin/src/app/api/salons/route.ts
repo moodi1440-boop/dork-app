@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
+export async function POST(req: NextRequest) {
+  const sb   = createAdminClient();
+  const body = await req.json() as Record<string, unknown>;
+  const data = {
+    bookings: [], services: [], barbers: [], prices: {}, rating: 5,
+    workStart: "09:00", workEnd: "23:00", status: "approved",
+    ...body,
+  };
+  const { data: row, error } = await sb.from("salons").insert(data).select().single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(row);
+}
+
 export async function GET(req: NextRequest) {
   const sb     = createAdminClient();
   const status = req.nextUrl.searchParams.get("status");

@@ -11,6 +11,8 @@ const NAV = [
   { href: "/finance",        label: "الميزان المالي",       icon: "💰" },
   { href: "/messages",       label: "الرسائل",              icon: "💬" },
   { href: "/notifications",  label: "الإشعارات",            icon: "🔔" },
+  { href: "/compare",        label: "مقارنة الصالونات",    icon: "📈" },
+  { href: "/add",            label: "إضافة",                icon: "➕" },
   { href: "/settings",       label: "الإعدادات",            icon: "⚙"  },
 ];
 

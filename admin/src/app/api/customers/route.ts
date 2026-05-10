@@ -13,6 +13,14 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data ?? []);
 }
 
+export async function POST(req: NextRequest) {
+  const sb   = createAdminClient();
+  const body = await req.json();
+  const { data, error } = await sb.from("customers").insert({ history: [], favs: [], ...body }).select().single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
+}
+
 export async function PATCH(req: NextRequest) {
   const sb   = createAdminClient();
   const { id, ...body } = await req.json();
