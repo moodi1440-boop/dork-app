@@ -5,7 +5,7 @@ export async function GET(req: NextRequest) {
   const sb     = createAdminClient();
   const search = req.nextUrl.searchParams.get("search");
 
-  let query = sb.from("customers").select("id,name,phone,email,loyalty_points,loyalty_frozen").order("id", { ascending: false });
+  let query = sb.from("customers").select("*").order("id", { ascending: false });
   if (search) query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
 
   const { data, error } = await query.limit(200);
