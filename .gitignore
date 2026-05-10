@@ -1,2 +1,5 @@
 node_modules/
 dist/
+admin/.env.local
+admin/.next/
+admin/node_modules/
