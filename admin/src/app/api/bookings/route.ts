@@ -1,21 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
+type BookingEntry = Record<string, unknown>;
+
 export async function GET(req: NextRequest) {
   const sb     = createAdminClient();
   const status = req.nextUrl.searchParams.get("status");
-  const search = req.nextUrl.searchParams.get("search");
+  const search = req.nextUrl.searchParams.get("search")?.toLowerCase() ?? "";
 
-  let query = sb.from("bookings").select("*").order("date", { ascending: false });
-  if (status && status !== "all") query = query.eq("status", status);
-  if (search) query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
+  const { data, error } = await sb
+    .from("salons")
+    .select("id,name,bookings")
+    .order("id", { ascending: false });
 
-  const { data, error } = await query.limit(200);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const salons = await sb.from("salons").select("id,name");
-  const salonMap = Object.fromEntries((salons.data ?? []).map((s) => [s.id, s.name]));
-  const enriched = (data ?? []).map((b) => ({ ...b, salonName: salonMap[b.salon_id] ?? "—" }));
+  const allBookings: BookingEntry[] = (data ?? []).flatMap((salon: Record<string, unknown>) => {
+    const salonBookings = (salon.bookings as BookingEntry[]) ?? [];
+    return salonBookings.map((b) => ({
+      ...b,
+      salon_id: salon.id,
+      salonName: salon.name,
+    }));
+  });
 
-  return NextResponse.json(enriched);
+  const filtered = allBookings.filter((b) => {
+    if (status && status !== "all" && b.status !== status) return false;
+    if (search) {
+      const name  = ((b.name  as string) ?? "").toLowerCase();
+      const phone = ((b.phone as string) ?? "").toLowerCase();
+      if (!name.includes(search) && !phone.includes(search)) return false;
+    }
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    const da = String(a.date ?? "");
+    const db = String(b.date ?? "");
+    return db.localeCompare(da);
+  });
+
+  return NextResponse.json(filtered.slice(0, 200));
 }
