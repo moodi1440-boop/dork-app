@@ -4,28 +4,32 @@ import { createAdminClient } from "@/lib/supabase";
 export async function GET() {
   const sb = createAdminClient();
 
-  const [bookings, customers, salons] = await Promise.all([
-    sb.from("bookings").select("id,status,total"),
+  const [salonsRes, customersRes] = await Promise.all([
+    sb.from("salons").select("id,status,bookings"),
     sb.from("customers").select("id", { count: "exact", head: true }),
-    sb.from("salons").select("id,status"),
   ]);
 
-  const allBookings  = bookings.data ?? [];
-  const pending      = allBookings.filter((b) => b.status === "pending").length;
-  const confirmed    = allBookings.filter((b) => b.status === "confirmed").length;
-  const completed    = allBookings.filter((b) => b.status === "completed").length;
-  const revenue      = allBookings.reduce((s, b) => s + (Number(b.total) || 0), 0);
-  const allSalons    = salons.data ?? [];
-  const approvedSalons = allSalons.filter((s) => s.status === "approved").length;
-  const pendingSalons  = allSalons.filter((s) => s.status === "pending").length;
+  const allSalons      = salonsRes.data ?? [];
+  const approvedSalons = allSalons.filter((s: Record<string, unknown>) => s.status === "approved").length;
+  const pendingSalons  = allSalons.filter((s: Record<string, unknown>) => s.status === "pending").length;
+
+  type Booking = { status: string; total?: number };
+  const allBookings = allSalons.flatMap(
+    (s: Record<string, unknown>) => (s.bookings as Booking[]) ?? []
+  );
+
+  const pending   = allBookings.filter((b) => b.status === "pending").length;
+  const confirmed = allBookings.filter((b) => b.status === "confirmed").length;
+  const completed = allBookings.filter((b) => b.status === "completed" || b.status === "approved").length;
+  const revenue   = allBookings.reduce((s, b) => s + (Number(b.total) || 0), 0);
 
   return NextResponse.json({
-    totalBookings:   allBookings.length,
-    pendingBookings: pending,
+    totalBookings:    allBookings.length,
+    pendingBookings:  pending,
     confirmedBookings: confirmed,
     completedBookings: completed,
-    totalCustomers:  customers.count ?? 0,
-    totalSalons:     allSalons.length,
+    totalCustomers:   customersRes.count ?? 0,
+    totalSalons:      allSalons.length,
     approvedSalons,
     pendingSalons,
     revenue,
