@@ -4,21 +4,26 @@ import { createAdminClient } from "@/lib/supabase";
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const sb = createAdminClient();
 
-  const [custRes, bookRes] = await Promise.all([
+  const [custRes, salonsRes] = await Promise.all([
     sb.from("customers").select("*").eq("id", params.id).single(),
-    sb.from("bookings")
-      .select("id,salon_id,date,time,services,total,status,created_at")
-      .eq("customer_id", params.id)
-      .order("created_at", { ascending: false })
-      .limit(20),
+    sb.from("salons").select("id,name,bookings"),
   ]);
 
   if (custRes.error) return NextResponse.json({ error: custRes.error.message }, { status: 500 });
 
-  return NextResponse.json({
-    customer: custRes.data,
-    bookings: bookRes.data ?? [],
-  });
+  const customer = custRes.data as Record<string, unknown>;
+  const phone    = (customer?.phone as string) ?? "";
+
+  type Booking = Record<string, unknown>;
+  const bookings: Booking[] = (salonsRes.data ?? []).flatMap((salon: Record<string, unknown>) =>
+    ((salon.bookings as Booking[]) ?? [])
+      .filter((b) => b.phone === phone || String(b.customer_id) === params.id)
+      .map((b) => ({ ...b, salon_id: salon.id, salonName: salon.name }))
+  );
+
+  bookings.sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
+
+  return NextResponse.json({ customer, bookings: bookings.slice(0, 20) });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
