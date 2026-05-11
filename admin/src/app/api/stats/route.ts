@@ -21,7 +21,7 @@ export async function GET() {
   const pending   = allBookings.filter((b) => b.status === "pending").length;
   const confirmed = allBookings.filter((b) => b.status === "confirmed").length;
   const completed = allBookings.filter((b) => b.status === "completed" || b.status === "approved").length;
-  const revenue   = allBookings.reduce((s, b) => s + (Number(b.total) || 0), 0);
+  const revenue   = allBookings.filter((b) => b.status === "approved" || b.status === "completed").reduce((s, b) => s + (Number(b.total) || 0), 0);
 
   return NextResponse.json({
     totalBookings:    allBookings.length,

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { sb } from "@/lib/supabase-browser";
 
 const NAV = [
   { href: "/",               label: "لوحة التحكم",        icon: "📊" },
@@ -23,7 +24,8 @@ export default function Sidebar() {
   const [unreadNotifs, setUnreadNotifs] = useState(0);
 
   useEffect(() => {
-    const load = async () => {
+    // تحميل أولي للأعداد
+    const loadCounts = async () => {
       try {
         const [msgs, notifs] = await Promise.all([
           fetch("/api/messages").then((r) => r.json()),
@@ -34,9 +36,36 @@ export default function Sidebar() {
         setUnreadNotifs(Array.isArray(notifs) ? notifs.length : 0);
       } catch {}
     };
-    load();
-    const interval = setInterval(load, 30000);
-    return () => clearInterval(interval);
+    loadCounts();
+
+    // polling للرسائل كل 30 ثانية
+    const msgInterval = setInterval(async () => {
+      try {
+        const msgs = await fetch("/api/messages").then((r) => r.json());
+        const totalUnread = (Array.isArray(msgs) ? msgs : []).reduce((a: number, s: { unread: number }) => a + (s.unread ?? 0), 0);
+        setUnreadMsgs(totalUnread);
+      } catch {}
+    }, 30000);
+
+    // realtime للإشعارات — يرفع العداد فوراً عند وصول إشعار جديد
+    const notifChannel = sb
+      .channel("sidebar-realtime-notifications")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
+        setUnreadNotifs((prev) => prev + 1);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications" }, () => {
+        // إعادة حساب الغير مقروءة عند تحديث
+        fetch("/api/notifications?unread=1")
+          .then((r) => r.json())
+          .then((notifs) => setUnreadNotifs(Array.isArray(notifs) ? notifs.length : 0))
+          .catch(() => {});
+      })
+      .subscribe();
+
+    return () => {
+      clearInterval(msgInterval);
+      sb.removeChannel(notifChannel);
+    };
   }, []);
 
   async function logout() {
