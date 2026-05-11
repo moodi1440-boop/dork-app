@@ -23,7 +23,7 @@ export default function OwnerLoginPage() {
       setLoading(false);
       return;
     }
-    router.push("/owner");
+    router.push("/owner/dashboard");
     router.refresh();
   };
 

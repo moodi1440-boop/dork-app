@@ -16,7 +16,7 @@ export function middleware(req: NextRequest) {
     const ownerCookie = req.cookies.get("dork_owner_session")?.value;
     const isOwnerLogin = path === "/owner-login" || path === "/owner/login";
     if (!ownerCookie && !isOwnerLogin) return NextResponse.redirect(new URL("/owner-login", req.url));
-    if (ownerCookie && isOwnerLogin)   return NextResponse.redirect(new URL("/owner", req.url));
+    if (ownerCookie && isOwnerLogin)   return NextResponse.redirect(new URL("/owner/dashboard", req.url));
     return NextResponse.next();
   }
 
