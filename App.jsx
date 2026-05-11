@@ -856,11 +856,19 @@ export default function App(){
       })
       .subscribe();
 
+    // الاستماع لتغييرات إعدادات التطبيق من الإدارة (مزامنة فورية)
+    const settingsChannel=supabase.channel('realtime-app-settings')
+      .on('postgres_changes',{event:'*',schema:'public',table:'app_settings'},()=>{
+        loadAppSettings({silent:true});
+      })
+      .subscribe();
+
     return()=>{
       supabase.removeChannel(bookingChannel);
       supabase.removeChannel(notifChannel);
+      supabase.removeChannel(settingsChannel);
     };
-  },[loadData]);
+  },[loadData,loadAppSettings]);
 
   useEffect(()=>{
     if(!customerSession?.id)return;

@@ -49,7 +49,7 @@ export default function DashboardPage() {
         totalSalons:      allSalons.length,
         approvedSalons:   allSalons.filter((s: Record<string, unknown>) => s.status === "approved").length,
         pendingSalons:    allSalons.filter((s: Record<string, unknown>) => s.status === "pending").length,
-        revenue:          allBookings.reduce((a, b) => a + (Number(b.total) || 0), 0),
+        revenue:          allBookings.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (Number(b.total) || 0), 0),
       });
       setLoading(false);
     })();

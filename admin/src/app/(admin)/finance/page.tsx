@@ -21,7 +21,7 @@ export default function FinancePage() {
     type B = { status: string; total?: number };
     const list: SalonStat[] = (data ?? []).map((s: Record<string, unknown>) => {
       const bks    = (s.bookings as B[]) ?? [];
-      const earned = bks.filter((b) => b.status === "approved").reduce((a, b) => a + (b.total ?? 0), 0);
+      const earned = bks.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (b.total ?? 0), 0);
       const paid   = Number(s.total_paid) || 0;
       return { id: Number(s.id), name: String(s.name), owner: String(s.owner ?? ""), phone: String(s.phone ?? ""), earned, paid, balance: earned - paid, bookingCount: bks.length };
     });

@@ -4,19 +4,18 @@ import { useRouter } from "next/navigation";
 
 export default function OwnerLoginPage() {
   const router = useRouter();
-  const [phone,    setPhone]    = useState("");
-  const [password, setPassword] = useState("");
-  const [error,    setError]    = useState("");
-  const [loading,  setLoading]  = useState(false);
+  const [phone,   setPhone]   = useState("");
+  const [error,   setError]   = useState("");
+  const [loading, setLoading] = useState(false);
 
   const login = async () => {
-    if (!phone || !password) return;
+    if (!phone) return;
     setLoading(true);
     setError("");
     const res = await fetch("/api/owner/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, password }),
+      body: JSON.stringify({ phone }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -43,16 +42,11 @@ export default function OwnerLoginPage() {
           <div>
             <label className="block text-xs text-gray-400 mb-1.5 font-semibold">رقم جوال الصالون</label>
             <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx"
-              className="w-full bg-[#0d0d1a] border border-[#2a2a3a] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1.5 font-semibold">كلمة المرور</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
               onKeyDown={(e) => e.key === "Enter" && login()}
               className="w-full bg-[#0d0d1a] border border-[#2a2a3a] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
           </div>
           {error && <div className="text-red-400 text-xs text-center">{error}</div>}
-          <button onClick={login} disabled={loading || !phone || !password}
+          <button onClick={login} disabled={loading || !phone}
             className="w-full py-3 bg-gold/10 border border-gold/30 text-gold rounded-xl font-bold text-sm hover:bg-gold/20 transition-colors disabled:opacity-50">
             {loading ? "جاري الدخول..." : "دخول"}
           </button>
