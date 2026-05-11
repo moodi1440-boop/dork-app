@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
-import { cookies } from "next/headers";
 
-async function getSalonId(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return cookieStore.get("dork_owner_session")?.value ?? null;
-}
-
-export async function GET() {
-  const salonId = await getSalonId();
-  if (!salonId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
+export async function GET(req: NextRequest) {
   try {
+    const salonId = req.nextUrl.searchParams.get("salon_id");
+    if (!salonId) {
+      return NextResponse.json({ error: "salon_id required" }, { status: 400 });
+    }
+
     const sb = createAdminClient();
     const { data, error } = await sb
       .from("messages")
@@ -28,20 +24,18 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const salonId = await getSalonId();
-  if (!salonId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
   try {
-    const { text } = await req.json();
-    if (!text) {
-      return NextResponse.json({ error: "text required" }, { status: 400 });
+    const { salon_id, text, from_admin } = await req.json();
+
+    if (!salon_id || !text) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     const sb = createAdminClient();
     const { data, error } = await sb.from("messages").insert({
-      salon_id: salonId,
+      salon_id,
       text,
-      from_admin: false,
+      from_admin: from_admin ?? true,
     });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

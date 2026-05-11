@@ -1,138 +1,224 @@
 "use client";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
-interface SalonList { id: string; name: string; unread: number; totalMsgs: number; lastMsg: { text: string; from_admin: boolean; created_at: string } | null; }
-interface Message { id: number; salon_id: number; from_admin: boolean; text: string; created_at: string; read_at: string | null; }
+interface Message {
+  id: number;
+  salon_id: number;
+  salon_name?: string;
+  from_admin: boolean;
+  text: string;
+  created_at: string;
+  read_at?: string;
+}
+
+interface Salon {
+  id: number;
+  name: string;
+}
 
 export default function MessagesPage() {
-  const [salons,    setSalons]    = useState<SalonList[]>([]);
-  const [selId,     setSelId]     = useState<string | null>(null);
-  const [messages,  setMessages]  = useState<Message[]>([]);
-  const [text,      setText]      = useState("");
-  const [loading,   setLoading]   = useState(true);
-  const [sending,   setSending]   = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [salons, setSalons] = useState<Salon[]>([]);
+  const [selectedSalonId, setSelectedSalonId] = useState<number | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [msgText, setMsgText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [search, setSearch] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const loadSalons = useCallback(async () => {
-    const data = await fetch("/api/messages").then((r) => r.json());
-    setSalons(Array.isArray(data) ? data : []);
-    setLoading(false);
+  // Load salons
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/salons?status=approved");
+        if (res.ok) {
+          const data = await res.json();
+          setSalons(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error("Error loading salons:", error);
+      }
+      setLoading(false);
+    })();
   }, []);
 
-  const loadChat = useCallback(async (id: string) => {
-    const data = await fetch(`/api/messages?salon_id=${id}`).then((r) => r.json());
-    setMessages(Array.isArray(data) ? data : []);
-    // وضع علامة مقروء على رسائل المالك
-    await fetch("/api/messages", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ salon_id: id }),
-    });
-    loadSalons();
-  }, [loadSalons]);
+  // Load messages for selected salon
+  const loadMessages = useCallback(async () => {
+    if (!selectedSalonId) return;
 
-  useEffect(() => { loadSalons(); }, [loadSalons]);
-  useEffect(() => { if (selId) loadChat(selId); }, [selId, loadChat]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+    try {
+      const res = await fetch(\`/api/admin/messages?salon_id=\${selectedSalonId}\`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error("Error loading messages:", error);
+    }
+  }, [selectedSalonId]);
 
-  const send = async () => {
-    if (!text.trim() || !selId || sending) return;
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = async () => {
+    if (!msgText.trim() || !selectedSalonId || sending) return;
+
     setSending(true);
-    await fetch("/api/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ salon_id: selId, text: text.trim(), from_admin: true }),
-    });
-    setText("");
-    await loadChat(selId);
-    setSending(false);
+    try {
+      const res = await fetch("/api/admin/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          salon_id: selectedSalonId,
+          text: msgText,
+          from_admin: true,
+        }),
+      });
+
+      if (res.ok) {
+        setMsgText("");
+        await loadMessages();
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setSending(false);
+    }
   };
 
-  const selSalon = salons.find((s) => s.id === selId);
+  const filteredSalons = salons.filter((s) =>
+    s.name.toLowerCase().includes(search.toLowerCase())
+  );
 
-  if (selId) {
+  const currentSalon = salons.find((s) => s.id === selectedSalonId);
+
+  if (loading) {
     return (
-      <div className="p-6 lg:p-8 max-w-4xl mx-auto h-full flex flex-col">
-        <div className="flex items-center gap-3 mb-5">
-          <button onClick={() => setSelId(null)} className="w-8 h-8 rounded-lg bg-card border border-border text-gray-400 hover:text-white flex items-center justify-center text-lg transition-colors">‹</button>
-          <h2 className="text-white font-bold">💬 {selSalon?.name}</h2>
-          <button onClick={() => loadChat(selId)} className="mr-auto text-xs text-gray-500 hover:text-gray-300 transition-colors">تحديث ↺</button>
-        </div>
-
-        <div className="flex-1 bg-card border border-border rounded-2xl overflow-hidden flex flex-col" style={{ minHeight: 400 }}>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {messages.length === 0 ? (
-              <div className="text-center text-gray-600 py-16 text-sm">لا توجد رسائل بعد</div>
-            ) : (
-              messages.map((m) => (
-                <div key={m.id} className={`flex ${m.from_admin ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${m.from_admin ? "bg-gold/10 border border-gold/20 rounded-tr-sm" : "bg-[#1a1a2e] border border-border rounded-tl-sm"}`}>
-                    <div className="text-xs text-gray-500 mb-1">{m.from_admin ? "الإدارة" : "المالك"}</div>
-                    <div className="text-sm text-white">{m.text}</div>
-                    <div className="text-xs text-gray-600 mt-1 text-left">
-                      {new Date(m.created_at).toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" })}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          <div className="border-t border-border p-4 flex gap-3">
-            <input value={text} onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-              placeholder="اكتب رسالة للصالون..."
-              className="flex-1 bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
-            <button onClick={send} disabled={sending || !text.trim()}
-              className="px-5 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors disabled:opacity-40">
-              {sending ? "..." : "إرسال"}
-            </button>
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-gold animate-pulse">جاري التحميل...</div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-white">الرسائل</h1>
-        <p className="text-gray-400 text-sm mt-1">التواصل مع أصحاب الصالونات</p>
+    <div className="p-6 h-screen flex flex-col gap-4" dir="rtl">
+      <div>
+        <h1 className="text-3xl font-black text-white">الرسائل</h1>
+        <p className="text-gray-400 text-sm mt-1">تواصل مع الصالونات</p>
       </div>
 
-      {loading ? (
-        <div className="text-center py-16 text-gold animate-pulse">جاري التحميل...</div>
-      ) : (
-        <div className="bg-card border border-border rounded-2xl overflow-hidden">
-          {salons.length === 0 ? (
-            <div className="text-center py-16 text-gray-500">لا توجد صالونات</div>
-          ) : (
-            salons.map((s) => (
-              <button key={s.id} onClick={() => setSelId(s.id)}
-                className="w-full flex items-center gap-4 px-5 py-4 border-b border-border/50 hover:bg-white/[0.02] transition-colors text-right">
-                <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center text-lg flex-shrink-0">✂</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-white text-sm">{s.name}</span>
-                    {s.unread > 0 && (
-                      <span className="text-xs bg-gold text-black font-black px-1.5 py-0.5 rounded-full">{s.unread}</span>
-                    )}
-                  </div>
-                  {s.lastMsg && (
-                    <div className="text-xs text-gray-500 mt-0.5 truncate">
-                      {s.lastMsg.from_admin ? "أنت: " : ""}{s.lastMsg.text}
-                    </div>
-                  )}
-                </div>
-                <div className="text-xs text-gray-600 flex-shrink-0">
-                  {s.totalMsgs} رسالة
-                </div>
-              </button>
-            ))
-          )}
+      <div className="flex gap-4 flex-1 min-h-0">
+        <div className="w-64 bg-[#13131f] border border-[#2a2a3a] rounded-xl flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-[#2a2a3a]">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="🔍 بحث..."
+              className="w-full bg-[#0d0d1a] border border-[#2a2a3a] rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-gold"
+            />
+          </div>
+          <div className="overflow-y-auto flex-1">
+            {filteredSalons.length === 0 ? (
+              <div className="text-center py-8 text-gray-400 text-xs">لا توجد صالونات</div>
+            ) : (
+              <div className="divide-y divide-[#2a2a3a]">
+                {filteredSalons.map((salon) => (
+                  <button
+                    key={salon.id}
+                    onClick={() => setSelectedSalonId(salon.id)}
+                    className={\`w-full text-right px-4 py-3 text-sm font-semibold transition-colors \${
+                      selectedSalonId === salon.id
+                        ? "bg-gold/10 border-l-2 border-gold text-gold"
+                        : "text-gray-300 hover:bg-[#1a1a2e]"
+                    }\`}
+                  >
+                    {salon.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+
+        {selectedSalonId ? (
+          <div className="flex-1 bg-[#13131f] border border-[#2a2a3a] rounded-xl flex flex-col overflow-hidden">
+            <div className="border-b border-[#2a2a3a] p-4">
+              <h2 className="font-bold text-white text-lg">{currentSalon?.name}</h2>
+              <p className="text-gray-400 text-xs mt-1">{messages.length} رسالة</p>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-4 space-y-4">
+              {messages.length === 0 ? (
+                <div className="text-center py-16 text-gray-400">
+                  <div className="text-3xl mb-2">💬</div>
+                  لا توجد رسائل
+                </div>
+              ) : (
+                messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={\`flex \${msg.from_admin ? "justify-end" : "justify-start"}\`}
+                  >
+                    <div
+                      className={\`max-w-xs px-4 py-2 rounded-xl \${
+                        msg.from_admin
+                          ? "bg-gold/10 border border-gold/30 text-white"
+                          : "bg-[#0d0d1a] border border-[#2a2a3a] text-gray-300"
+                      }\`}
+                    >
+                      <p className="text-sm">{msg.text}</p>
+                      <p className="text-xs mt-1 opacity-50">
+                        {new Date(msg.created_at).toLocaleTimeString("ar-SA", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="border-t border-[#2a2a3a] p-4 flex gap-2">
+              <input
+                type="text"
+                value={msgText}
+                onChange={(e) => setMsgText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                placeholder="اكتب الرسالة..."
+                className="flex-1 bg-[#0d0d1a] border border-[#2a2a3a] rounded-lg px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold"
+              />
+              <button
+                onClick={sendMessage}
+                disabled={!msgText.trim() || sending}
+                className="px-4 py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg font-bold hover:bg-gold/20 transition-colors disabled:opacity-50"
+              >
+                {sending ? "جاري..." : "إرسال"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 bg-[#13131f] border border-dashed border-gold/30 rounded-xl flex items-center justify-center">
+            <div className="text-center text-gray-400">
+              <div className="text-4xl mb-2">💬</div>
+              اختر صالوناً لبدء محادثة
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
