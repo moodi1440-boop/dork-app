@@ -205,26 +205,32 @@ export default function OwnerDashboardPage() {
         )}
 
         {activeTab === "bookings" && (
-          <div className="text-center py-12">
-            <div className="text-gray-400">جاري العمل على إدارة الحجوزات...</div>
-          </div>
+          <button
+            onClick={() => router.push("/owner/bookings")}
+            className="w-full py-12 bg-[#13131f] border border-dashed border-gold/30 rounded-xl hover:border-gold/50 transition-colors text-gold font-bold"
+          >
+            اذهب إلى إدارة الحجوزات →
+          </button>
         )}
 
         {activeTab === "waiting" && (
-          <div className="text-center py-12">
-            <div className="text-gray-400">جاري العمل على قائمة الانتظار...</div>
-          </div>
+          <button
+            onClick={() => router.push("/owner/waiting-list")}
+            className="w-full py-12 bg-[#13131f] border border-dashed border-gold/30 rounded-xl hover:border-gold/50 transition-colors text-gold font-bold"
+          >
+            اذهب إلى قائمة الانتظار →
+          </button>
         )}
 
         {activeTab === "messages" && (
-          <div className="text-center py-12">
-            <div className="text-gray-400">جاري العمل على الرسائل...</div>
+          <div className="text-center py-12 text-gray-400">
+            جاري العمل على نظام الرسائل...
           </div>
         )}
 
         {activeTab === "settings" && (
-          <div className="text-center py-12">
-            <div className="text-gray-400">جاري العمل على الإعدادات...</div>
+          <div className="text-center py-12 text-gray-400">
+            جاري العمل على إعدادات الصالون...
           </div>
         )}
       </div>
