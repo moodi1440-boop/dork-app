@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { sb } from "@/lib/supabase-browser";
 
 interface Salon {
   id: string; name: string; owner: string; owner_phone: string;
@@ -256,10 +257,16 @@ export default function SalonsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ status, search });
-      const res = await fetch(`/api/salons?${params}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      let query = sb
+        .from("salons")
+        .select("id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,bookings")
+        .order("id", { ascending: false });
+
+      if (status && status !== "all") query = query.eq("status", status);
+      if (search) query = query.or(`name.ilike.%${search}%,owner.ilike.%${search}%`);
+
+      const { data, error } = await query.limit(200);
+      if (error) throw new Error(error.message);
       setSalons(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Error loading salons:", e);
