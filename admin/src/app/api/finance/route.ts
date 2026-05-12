@@ -19,12 +19,14 @@ export async function GET(req: NextRequest) {
     if (error) throw new Error(error.message);
     if (!data) throw new Error("No data returned");
 
+    const RATE_PER_BOOKING = 1; // 1 ريال لكل حجز مكتمل
     const salons = (data ?? []).map((s: Record<string, unknown>) => {
       const bookings = (s.bookings as Array<{ status: string; total?: number }>) ?? [];
-      const earned   = bookings.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (b.total ?? 0), 0);
+      const completedCount = bookings.filter((b) => b.status === "approved" || b.status === "completed").length;
+      const earned   = completedCount * RATE_PER_BOOKING;
       const paid     = Number(s.total_paid) || 0;
       const balance  = earned - paid;
-      return { id: s.id, name: s.name, owner: s.owner, phone: s.phone, earned, paid, balance, bookingCount: bookings.length };
+      return { id: s.id, name: s.name, owner: s.owner, phone: s.phone, earned, paid, balance, bookingCount: completedCount };
     });
 
     const filtered = salons.filter((s) => {
