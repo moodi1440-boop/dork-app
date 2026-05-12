@@ -225,15 +225,16 @@ export default function FinancePage() {
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                             placeholder="المبلغ"
-                            className="w-24 bg-[#0d0d1a] border border-[#2a2a3a] rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-gold"
+                            className="w-24 bg-[#0d0d1a] border border-gold/30 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-gold"
+                            autoFocus
                           />
                           <button
                             onClick={() => recordPayment(salon.salonId)}
-                            className="px-2 py-1 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20"
+                            className="px-2 py-1 rounded-lg text-xs bg-green-500/20 text-green-300 border border-green-500/40 hover:bg-green-500/30 font-bold"
                           >
                             ✓
                           </button>
-                          <button onClick={() => setPaying(null)} className="px-2 py-1 rounded-lg text-xs text-gray-400 hover:text-white">
+                          <button onClick={() => setPaying(null)} className="px-2 py-1 rounded-lg text-xs bg-gray-500/10 text-gray-400 border border-gray-500/30 hover:text-white hover:bg-gray-500/20">
                             ✕
                           </button>
                         </div>
@@ -243,9 +244,9 @@ export default function FinancePage() {
                             setPaying(salon.salonId);
                             setAmount("");
                           }}
-                          className="px-2.5 py-1 rounded-lg text-xs bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20"
+                          className="px-3 py-1.5 rounded-lg text-xs bg-gold/20 text-gold border border-gold/40 hover:bg-gold/30 font-bold transition-colors"
                         >
-                          تسجيل دفعة
+                          💳 تسجيل دفعة
                         </button>
                       )}
                     </td>

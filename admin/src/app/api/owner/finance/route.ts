@@ -45,18 +45,21 @@ export async function GET(req: NextRequest) {
     const bookings: Booking[] = (salon.bookings as Booking[]) || [];
     const totalPaid = Number(salon.total_paid) || 0;
 
-    // حساب الإحصائيات
-    const completedBookings = bookings.filter((b) => b.status === "approved" || b.status === "completed").length;
+    // حساب الإحصائيات - أي حجز ليس "pending" و ليس "cancelled" يُعتبر مكتمل (1 ريال)
+    // تشمل: completed, approved, confirmed, وأي status آخر ليس معلقة أو ملغاة
+    const completedBookings = bookings.filter(
+      (b) => b.status && !["pending", "cancelled"].includes(b.status.toLowerCase())
+    ).length;
     const totalEarned = completedBookings; // 1 ريال لكل حجز مكتمل
     const balance = totalEarned - totalPaid;
 
-    // الحجوزات المعلقة الشهر الجاري
+    // الحجوزات المعلقة/المؤكدة الشهر الجاري
     const now = new Date();
     const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const pendingThisMonth = bookings.filter(
-      (b) => b.status === "confirmed" && (b.date || "").startsWith(thisMonth)
+      (b) => ["confirmed", "pending"].includes(b.status?.toLowerCase() || "") && (b.date || "").startsWith(thisMonth)
     ).length;
-    const estimatedThisMonth = pendingThisMonth; // التقدير بناءً على الحجوزات المؤكدة
+    const estimatedThisMonth = pendingThisMonth; // التقدير بناءً على الحجوزات المؤكدة/المعلقة
 
     // سجل شهري (آخر 6 أشهر)
     const monthlyHistory: Array<{ month: string; earned: number; paid: number }> = [];

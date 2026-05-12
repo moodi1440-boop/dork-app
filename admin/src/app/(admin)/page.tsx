@@ -16,13 +16,13 @@ function StatCard({ icon, label, value, sub, color = "gold" }: {
   const iconBg      = color === "gold" ? "bg-gold/10" : color === "green" ? "bg-green-500/10" : color === "blue" ? "bg-blue-500/10" : "bg-purple-500/10";
   const valColor    = color === "gold" ? "text-gold" : color === "green" ? "text-green-400" : color === "blue" ? "text-blue-400" : "text-purple-400";
   return (
-    <div className={`bg-card border ${borderColor} rounded-2xl p-5 hover:bg-card-hover transition-colors`}>
+    <div className={`bg-card border ${borderColor} rounded-2xl p-6 hover:bg-card-hover transition-colors h-full flex flex-col`}>
       <div className="flex items-start justify-between mb-4">
-        <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center text-xl`}>{icon}</div>
+        <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center text-xl flex-shrink-0`}>{icon}</div>
       </div>
-      <div className={`text-3xl font-black ${valColor} mb-1`}>{value}</div>
-      <div className="text-white font-semibold text-sm">{label}</div>
-      {sub && <div className="text-gray-500 text-xs mt-0.5">{sub}</div>}
+      <div className={`text-2xl md:text-3xl font-black ${valColor} mb-2 leading-tight`}>{value}</div>
+      <div className="text-gray-300 font-semibold text-xs md:text-sm line-clamp-2">{label}</div>
+      {sub && <div className="text-gray-500 text-xs mt-2 line-clamp-1">{sub}</div>}
     </div>
   );
 }

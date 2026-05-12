@@ -19,11 +19,13 @@ export async function GET(req: NextRequest) {
   const status = req.nextUrl.searchParams.get("status");
   const search = req.nextUrl.searchParams.get("search");
 
-  let query = sb.from("salons").select("id,name,owner,owner_phone,region,gov,phone,rating,status").order("id", { ascending: false });
+  let query = sb.from("salons").select("*").order("id", { ascending: false });
   if (status && status !== "all") query = query.eq("status", status);
-  if (search) query = query.or(`name.ilike.%${search}%,owner.ilike.%${search}%`);
+  if (search) query = query.or(`name.ilike.%${search}%,owner.ilike.%${search}%,phone.ilike.%${search}%,owner_phone.ilike.%${search}%`);
 
   const { data, error } = await query.limit(200);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? []);
+
+  // تأكد من أن البيانات array
+  return NextResponse.json(Array.isArray(data) ? data : []);
 }
