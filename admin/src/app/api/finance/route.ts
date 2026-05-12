@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     let query = sb
       .from("salons")
-      .select("id,name,owner,phone,total_paid,status,bookings(id,status,total)")
+      .select("id,name,owner,phone,total_paid,status,bookings")
       .eq("status", "approved")
       .order("id", { ascending: false });
 

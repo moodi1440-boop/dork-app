@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     let query = sb
       .from("salons")
-      .select("id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,bookings(id,status,total)")
+      .select("id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,bookings")
       .order("id", { ascending: false });
 
     if (status && status !== "all") query = query.eq("status", status);

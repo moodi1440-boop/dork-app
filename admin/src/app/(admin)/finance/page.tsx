@@ -16,7 +16,7 @@ export default function FinancePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      let q = sb.from("salons").select("id,name,owner,phone,total_paid,status,bookings(id,status,total)").eq("status", "approved");
+      let q = sb.from("salons").select("id,name,owner,phone,total_paid,status,bookings").eq("status", "approved");
       if (search) q = q.ilike("name", `%${search}%`);
       const { data, error } = await q.limit(200);
       if (error) throw new Error(error.message);
