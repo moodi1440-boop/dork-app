@@ -22,11 +22,13 @@ export default function FinancePage() {
       if (error) throw new Error(error.message);
 
       type B = { status: string; total?: number };
+      const RATE_PER_BOOKING = 1; // 1 ريال لكل حجز مكتمل
       const list: SalonStat[] = (data ?? []).map((s: Record<string, unknown>) => {
         const bks    = (s.bookings as B[]) ?? [];
-        const earned = bks.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (b.total ?? 0), 0);
+        const completedCount = bks.filter((b) => b.status === "approved" || b.status === "completed").length;
+        const earned = completedCount * RATE_PER_BOOKING;
         const paid   = Number(s.total_paid) || 0;
-        return { id: Number(s.id), name: String(s.name), owner: String(s.owner ?? ""), phone: String(s.phone ?? ""), earned, paid, balance: earned - paid, bookingCount: bks.length };
+        return { id: Number(s.id), name: String(s.name), owner: String(s.owner ?? ""), phone: String(s.phone ?? ""), earned, paid, balance: earned - paid, bookingCount: completedCount };
       });
       setSalons(list.filter((s) => filter === "paid" ? s.balance <= 0 : filter === "unpaid" ? s.balance > 0 : true));
       setTotals({ totalEarned: list.reduce((a, s) => a + s.earned, 0), totalPaid: list.reduce((a, s) => a + s.paid, 0), totalBalance: list.reduce((a, s) => a + s.balance, 0) });
@@ -61,11 +63,11 @@ export default function FinancePage() {
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-6"><h1 className="text-2xl font-black text-white">الميزان المالي</h1><p className="text-gray-400 text-sm mt-1">متابعة الإيرادات والمدفوعات</p></div>
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[{ label: "إجمالي الإيرادات", value: totals.totalEarned, color: "text-gold" }, { label: "إجمالي المدفوع", value: totals.totalPaid, color: "text-green-400" }, { label: "إجمالي المستحق", value: totals.totalBalance, color: "text-red-400" }].map((t) => (
-          <div key={t.label} className="bg-card border border-border rounded-2xl p-5 text-center">
-            <div className={`text-2xl font-black ${t.color}`}>{fmt(t.value)} ر.س</div>
-            <div className="text-gray-400 text-xs mt-1">{t.label}</div>
+          <div key={t.label} className="bg-card border border-border rounded-2xl p-5 text-center flex flex-col items-center justify-center min-h-[110px]">
+            <div className="text-gray-400 text-xs mb-2 leading-tight">{t.label}</div>
+            <div className={`text-xl sm:text-2xl font-black ${t.color} leading-tight break-words`}>{fmt(t.value)} <span className="text-sm">ر.س</span></div>
           </div>
         ))}
       </div>
@@ -93,14 +95,14 @@ export default function FinancePage() {
                     <td className={`px-4 py-3 font-bold ${s.balance > 0 ? "text-red-400" : "text-green-400"}`}>{fmt(s.balance)} ر.س</td>
                     <td className="px-4 py-3">
                       {paying === s.id ? (
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-1.5 items-center">
                           <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="المبلغ"
-                            className="w-24 bg-[#0d0d1a] border border-border rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-gold" />
-                          <button onClick={() => recordPayment(s.id)} className="px-2 py-1 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20">✓</button>
-                          <button onClick={() => setPaying(null)} className="px-2 py-1 rounded-lg text-xs text-gray-400">✕</button>
+                            className="w-24 bg-[#0d0d1a] border border-border rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-gold" />
+                          <button onClick={() => recordPayment(s.id)} className="px-2.5 py-1.5 rounded-lg text-xs bg-green-500/20 text-green-300 border border-green-500/40 hover:bg-green-500/30 transition-colors font-bold">✓</button>
+                          <button onClick={() => setPaying(null)} className="px-2.5 py-1.5 rounded-lg text-xs bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-gray-700 transition-colors">✕</button>
                         </div>
                       ) : (
-                        <button onClick={() => { setPaying(s.id); setAmount(""); }} className="px-2.5 py-1 rounded-lg text-xs bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20">تسجيل دفعة</button>
+                        <button onClick={() => { setPaying(s.id); setAmount(""); }} className="px-3 py-1.5 rounded-lg text-xs bg-gold/20 text-gold border border-gold/40 hover:bg-gold/30 transition-colors font-bold whitespace-nowrap">تحصيل دفعة</button>
                       )}
                     </td>
                   </tr>
