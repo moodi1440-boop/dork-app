@@ -4,40 +4,46 @@ import { createAdminClient } from "@/lib/supabase";
 export async function GET(req: NextRequest) {
   const sb     = createAdminClient();
   const search = req.nextUrl.searchParams.get("search") ?? "";
-  const filter = req.nextUrl.searchParams.get("filter") ?? "all"; // all | paid | unpaid
+  const filter = req.nextUrl.searchParams.get("filter") ?? "all";
 
-  let query = sb
-    .from("salons")
-    .select("id,name,owner,phone,total_paid,status,bookings")
-    .eq("status", "approved")
-    .order("id", { ascending: false });
+  try {
+    let query = sb
+      .from("salons")
+      .select("id,name,owner,phone,total_paid,status,bookings(id,status,total)")
+      .eq("status", "approved")
+      .order("id", { ascending: false });
 
-  if (search) query = query.ilike("name", `%${search}%`);
+    if (search) query = query.ilike("name", `%${search}%`);
 
-  const { data, error } = await query.limit(200);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { data, error } = await query.limit(200);
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error("No data returned");
 
-  const salons = (data ?? []).map((s: Record<string, unknown>) => {
-    const bookings = (s.bookings as Array<{ status: string; total?: number }>) ?? [];
-    const earned   = bookings.filter((b) => b.status === "approved").reduce((a, b) => a + (b.total ?? 0), 0);
-    const paid     = Number(s.total_paid) || 0;
-    const balance  = earned - paid;
-    return { id: s.id, name: s.name, owner: s.owner, phone: s.phone, earned, paid, balance, bookingCount: bookings.length };
-  });
+    const salons = (data ?? []).map((s: Record<string, unknown>) => {
+      const bookings = (s.bookings as Array<{ status: string; total?: number }>) ?? [];
+      const earned   = bookings.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (b.total ?? 0), 0);
+      const paid     = Number(s.total_paid) || 0;
+      const balance  = earned - paid;
+      return { id: s.id, name: s.name, owner: s.owner, phone: s.phone, earned, paid, balance, bookingCount: bookings.length };
+    });
 
-  const filtered = salons.filter((s) => {
-    if (filter === "paid")   return s.balance <= 0;
-    if (filter === "unpaid") return s.balance > 0;
-    return true;
-  });
+    const filtered = salons.filter((s) => {
+      if (filter === "paid")   return s.balance <= 0;
+      if (filter === "unpaid") return s.balance > 0;
+      return true;
+    });
 
-  const totals = {
-    totalEarned:  salons.reduce((a, s) => a + s.earned, 0),
-    totalPaid:    salons.reduce((a, s) => a + s.paid, 0),
-    totalBalance: salons.reduce((a, s) => a + s.balance, 0),
-  };
+    const totals = {
+      totalEarned:  salons.reduce((a, s) => a + s.earned, 0),
+      totalPaid:    salons.reduce((a, s) => a + s.paid, 0),
+      totalBalance: salons.reduce((a, s) => a + s.balance, 0),
+    };
 
-  return NextResponse.json({ salons: filtered, totals });
+    return NextResponse.json({ salons: filtered, totals });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message, salons: [], totals: { totalEarned: 0, totalPaid: 0, totalBalance: 0 } }, { status: 500 });
+  }
 }
 
 export async function PATCH(req: NextRequest) {

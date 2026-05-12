@@ -15,19 +15,28 @@ export default function FinancePage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let q = sb.from("salons").select("id,name,owner,phone,total_paid,status,bookings").eq("status", "approved");
-    if (search) q = q.ilike("name", `%${search}%`);
-    const { data } = await q.limit(200);
-    type B = { status: string; total?: number };
-    const list: SalonStat[] = (data ?? []).map((s: Record<string, unknown>) => {
-      const bks    = (s.bookings as B[]) ?? [];
-      const earned = bks.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (b.total ?? 0), 0);
-      const paid   = Number(s.total_paid) || 0;
-      return { id: Number(s.id), name: String(s.name), owner: String(s.owner ?? ""), phone: String(s.phone ?? ""), earned, paid, balance: earned - paid, bookingCount: bks.length };
-    });
-    setSalons(list.filter((s) => filter === "paid" ? s.balance <= 0 : filter === "unpaid" ? s.balance > 0 : true));
-    setTotals({ totalEarned: list.reduce((a, s) => a + s.earned, 0), totalPaid: list.reduce((a, s) => a + s.paid, 0), totalBalance: list.reduce((a, s) => a + s.balance, 0) });
-    setLoading(false);
+    try {
+      let q = sb.from("salons").select("id,name,owner,phone,total_paid,status,bookings(id,status,total)").eq("status", "approved");
+      if (search) q = q.ilike("name", `%${search}%`);
+      const { data, error } = await q.limit(200);
+      if (error) throw new Error(error.message);
+
+      type B = { status: string; total?: number };
+      const list: SalonStat[] = (data ?? []).map((s: Record<string, unknown>) => {
+        const bks    = (s.bookings as B[]) ?? [];
+        const earned = bks.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (b.total ?? 0), 0);
+        const paid   = Number(s.total_paid) || 0;
+        return { id: Number(s.id), name: String(s.name), owner: String(s.owner ?? ""), phone: String(s.phone ?? ""), earned, paid, balance: earned - paid, bookingCount: bks.length };
+      });
+      setSalons(list.filter((s) => filter === "paid" ? s.balance <= 0 : filter === "unpaid" ? s.balance > 0 : true));
+      setTotals({ totalEarned: list.reduce((a, s) => a + s.earned, 0), totalPaid: list.reduce((a, s) => a + s.paid, 0), totalBalance: list.reduce((a, s) => a + s.balance, 0) });
+    } catch (e) {
+      console.error("Error loading finance data:", e);
+      setSalons([]);
+      setTotals({ totalEarned: 0, totalPaid: 0, totalBalance: 0 });
+    } finally {
+      setLoading(false);
+    }
   }, [filter, search]);
 
   useEffect(() => { load(); }, [load]);
@@ -35,10 +44,16 @@ export default function FinancePage() {
   const recordPayment = async (id: number) => {
     const n = Number(amount);
     if (!n) return;
-    const { data } = await sb.from("salons").select("total_paid").eq("id", id).single();
-    const newPaid = (Number((data as Record<string, unknown>)?.total_paid) || 0) + n;
-    await sb.from("salons").update({ total_paid: newPaid }).eq("id", id);
-    setPaying(null); setAmount(""); load();
+    try {
+      const { data, error: fetchErr } = await sb.from("salons").select("total_paid").eq("id", id).single();
+      if (fetchErr) throw new Error(fetchErr.message);
+      const newPaid = (Number((data as Record<string, unknown>)?.total_paid) || 0) + n;
+      const { error: updateErr } = await sb.from("salons").update({ total_paid: newPaid }).eq("id", id);
+      if (updateErr) throw new Error(updateErr.message);
+      setPaying(null); setAmount(""); load();
+    } catch (e) {
+      alert("خطأ: " + (e instanceof Error ? e.message : "Unknown error"));
+    }
   };
 
   const fmt = (n: number) => n.toLocaleString("ar-SA");
