@@ -14,20 +14,37 @@ export default function MessagesPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const loadSalons = useCallback(async () => {
-    const data = await fetch("/api/messages").then((r) => r.json());
-    setSalons(Array.isArray(data) ? data : []);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/messages");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setSalons(Array.isArray(data) ? data : []);
+    } catch {
+      setSalons([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const loadChat = useCallback(async (id: string) => {
-    const data = await fetch(`/api/messages?salon_id=${id}`).then((r) => r.json());
-    setMessages(Array.isArray(data) ? data : []);
+    try {
+      const res = await fetch(`/api/messages?salon_id=${id}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setMessages(Array.isArray(data) ? data : []);
+    } catch {
+      setMessages([]);
+    }
     // وضع علامة مقروء على رسائل المالك
-    await fetch("/api/messages", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ salon_id: id }),
-    });
+    try {
+      await fetch("/api/messages", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ salon_id: id }),
+      });
+    } catch {
+      // non-critical, ignore
+    }
     loadSalons();
   }, [loadSalons]);
 
@@ -38,14 +55,20 @@ export default function MessagesPage() {
   const send = async () => {
     if (!text.trim() || !selId || sending) return;
     setSending(true);
-    await fetch("/api/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ salon_id: selId, text: text.trim(), from_admin: true }),
-    });
-    setText("");
-    await loadChat(selId);
-    setSending(false);
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ salon_id: selId, text: text.trim(), from_admin: true }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setText("");
+      await loadChat(selId);
+    } catch {
+      // keep text so user can retry
+    } finally {
+      setSending(false);
+    }
   };
 
   const selSalon = salons.find((s) => s.id === selId);
