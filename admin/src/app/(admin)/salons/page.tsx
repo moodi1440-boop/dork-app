@@ -255,19 +255,33 @@ export default function SalonsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({ status, search });
-    const data = await fetch(`/api/salons?${params}`).then((r) => r.json());
-    setSalons(Array.isArray(data) ? data : []);
-    setLoading(false);
+    try {
+      const params = new URLSearchParams({ status, search });
+      const res = await fetch(`/api/salons?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setSalons(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Error loading salons:", e);
+      setSalons([]);
+    } finally {
+      setLoading(false);
+    }
   }, [status, search]);
 
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    fetch("/api/settings").then((r) => r.json()).then((s) => {
-      setPinned(Array.isArray(s.pinned) ? s.pinned : []);
-      setWeekSalon(s.week_salon ? String(s.week_salon) : "");
-    }).catch(() => {});
+    fetch("/api/settings")
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((s) => {
+        setPinned(Array.isArray(s.pinned) ? s.pinned : []);
+        setWeekSalon(s.week_salon ? String(s.week_salon) : "");
+      })
+      .catch((e) => console.error("Error loading settings:", e));
   }, []);
 
   const togglePin = async (id: string) => {
