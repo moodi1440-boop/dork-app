@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { sb } from "@/lib/supabase-browser";
 
 interface Notification {
   id: number; target_type: string; target_id: number | null;
@@ -23,7 +24,39 @@ export default function NotificationsPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+
+    const channel = sb
+      .channel("notifications-page-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, (payload) => {
+        const newNotif = payload.new as Notification;
+        setNotifs((prev) => [newNotif, ...prev]);
+        if (!newNotif.read) setUnread((prev) => prev + 1);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications" }, (payload) => {
+        const updated = payload.new as Notification;
+        setNotifs((prev) =>
+          prev.map((n) => (n.id === updated.id ? updated : n))
+        );
+        setUnread((prev) => {
+          const oldUnread = payload.old as Notification;
+          if (!oldUnread.read && updated.read) return Math.max(0, prev - 1);
+          if (oldUnread.read && !updated.read) return prev + 1;
+          return prev;
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "notifications" }, (payload) => {
+        const deleted = payload.old as Notification;
+        setNotifs((prev) => prev.filter((n) => n.id !== deleted.id));
+        if (!deleted.read) setUnread((prev) => Math.max(0, prev - 1));
+      })
+      .subscribe();
+
+    return () => {
+      sb.removeChannel(channel);
+    };
+  }, [load]);
 
   const markAllRead = async () => {
     await fetch("/api/notifications", {
@@ -31,7 +64,14 @@ export default function NotificationsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ all: true }),
     });
-    load();
+  };
+
+  const markAsRead = async (id: number) => {
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [id] }),
+    });
   };
 
   const clearAll = async () => {
@@ -41,7 +81,6 @@ export default function NotificationsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ all: true }),
     });
-    load();
   };
 
   const sendNotif = async () => {
@@ -153,7 +192,7 @@ export default function NotificationsPage() {
       ) : (
         <div className="space-y-2">
           {notifs.map((n) => (
-            <div key={n.id} className={`bg-card border rounded-xl p-4 flex gap-4 transition-all ${!n.read ? "border-gold/20 bg-gold/[0.02]" : "border-border"}`}>
+            <div key={n.id} className={`bg-card border rounded-xl p-4 flex gap-4 transition-all cursor-pointer hover:border-gold/40 ${!n.read ? "border-gold/20 bg-gold/[0.02]" : "border-border hover:bg-white/[0.02]"}`} onClick={() => !n.read && markAsRead(n.id)}>
               <div className="text-2xl flex-shrink-0 mt-0.5">{n.icon}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
@@ -169,6 +208,16 @@ export default function NotificationsPage() {
                   </span>
                 </div>
               </div>
+              <button onClick={(e) => {
+                e.stopPropagation();
+                fetch("/api/notifications", {
+                  method: "DELETE",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ id: n.id }),
+                });
+              }} className="flex-shrink-0 text-gray-500 hover:text-red-400 transition-colors" title="حذف">
+                ✕
+              </button>
             </div>
           ))}
         </div>

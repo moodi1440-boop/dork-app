@@ -1,0 +1,12 @@
+{
+  "project_id": "dork-app",
+  "db": {
+    "shadow_database_url": null
+  },
+  "functions": {
+    "send-fcm-notification": {
+      "verify_jwt": false,
+      "import_map": "./functions/_shared/import_map.json"
+    }
+  }
+}
