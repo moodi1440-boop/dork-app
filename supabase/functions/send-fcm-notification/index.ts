@@ -7,24 +7,24 @@ export const handler = async (req: Request): Promise<Response> => {
 
     if (!booking) {
       return new Response(
-        JSON.stringify({ success: false, error: "No booking" }),
+        JSON.stringify({ success: false, error: "No booking data" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const url = Deno.env.get("DB_URL") || "";
-    const key = Deno.env.get("SERVICE_ROLE_KEY") || "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!url || !key) {
+    if (!supabaseUrl || !supabaseKey) {
       return new Response(
-        JSON.stringify({ success: false, error: "Missing env" }),
+        JSON.stringify({ success: false, error: "Missing Supabase credentials" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const client = createClient(url, key);
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: salon } = await client
+    const { data: salon } = await supabase
       .from("salons")
       .select("id, name")
       .eq("id", booking.salon_id)
@@ -32,12 +32,12 @@ export const handler = async (req: Request): Promise<Response> => {
 
     if (!salon) {
       return new Response(
-        JSON.stringify({ success: false, error: "Salon not found" }),
+        JSON.stringify({ success: false, error: `Salon ${booking.salon_id} not found` }),
         { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const notifs: any[] = [
+    const notifications = [
       {
         target_type: "salon",
         target_id: booking.salon_id,
@@ -55,7 +55,7 @@ export const handler = async (req: Request): Promise<Response> => {
     ];
 
     if (booking.customer_id) {
-      notifs.push({
+      notifications.push({
         target_type: "customer",
         target_id: booking.customer_id,
         title: "تم تأكيد حجزك ✓",
@@ -64,22 +64,32 @@ export const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    await client.from("notifications").insert(notifs);
+    const { error: insertError } = await supabase
+      .from("notifications")
+      .insert(notifications);
+
+    if (insertError) {
+      return new Response(
+        JSON.stringify({ success: false, error: insertError.message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
+        message: "Notifications created",
         booking_id: booking.id,
         salon_name: salon.name,
-        count: notifs.length,
+        count: notifications.length,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  } catch (e: any) {
+  } catch (error: any) {
     return new Response(
       JSON.stringify({
         success: false,
-        error: String(e?.message || "Error"),
+        error: error?.message || "Unknown error",
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );

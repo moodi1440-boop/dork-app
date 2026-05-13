@@ -51,14 +51,16 @@ CREATE TRIGGER send_notification_on_booking_insert
 
 ### 2. إضافة متغيرات البيئة
 
-في Supabase Dashboard → Project Settings → Edge Functions:
+في Supabase Dashboard → Functions → send-fcm-notification → Configuration:
 
 ```
-FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"dork-app",...}
-FIREBASE_SERVER_API_KEY=your_server_api_key_here
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"dork-app",...}
+FIREBASE_SERVER_API_KEY=your_server_api_key_here
 ```
+
+**متطلب:** يجب إضافة على الأقل `SUPABASE_URL` و `SUPABASE_SERVICE_ROLE_KEY`
 
 ### 3. نشر الـ Function
 
