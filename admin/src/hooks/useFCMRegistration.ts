@@ -94,11 +94,14 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
 
       if (!fetchError && existingToken) {
         // تحديث آخر وقت استخدام
-        await supabase
+        const { error: updateError } = await supabase
           .from('fcm_tokens')
           .update({ last_used_at: new Date().toISOString() })
-          .eq('id', existingToken.id)
-          .catch((err) => console.error('Update token error:', err));
+          .eq('id', existingToken.id);
+
+        if (updateError) {
+          console.error('Update token error:', updateError);
+        }
       } else {
         // إضافة token جديد
         const { error: insertError } = await supabase.from('fcm_tokens').insert({
