@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
-export const handler = async (req: Request): Promise<Response> => {
+Deno.serve(async (req: Request): Promise<Response> => {
   try {
     const body = await req.json() as any;
     const booking = body?.record;
@@ -94,4 +94,4 @@ export const handler = async (req: Request): Promise<Response> => {
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
-};
+});
