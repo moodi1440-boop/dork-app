@@ -95,7 +95,7 @@ export const getAndStoreFCMToken = async (): Promise<string | null> => {
     // Register Service Worker
     if ("serviceWorker" in navigator) {
       try {
-        const registration = await navigator.serviceWorker.register("/sw.js", {
+        const registration = await navigator.serviceWorker.register("/service-worker.js", {
           scope: "/",
         });
         console.log("[FCM] Service Worker registered:", registration);
@@ -106,7 +106,7 @@ export const getAndStoreFCMToken = async (): Promise<string | null> => {
 
     // Get FCM token
     const token = await getToken(messaging, {
-      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
     });
 
     if (token) {
