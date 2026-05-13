@@ -1,66 +1,69 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
-interface BookingPayload {
-  record: {
-    id: number;
-    salon_id: number;
-    customer_id?: number;
-    date: string;
-    time: string;
-    status: string;
-    service: string;
-    customer_name: string;
-    customer_phone: string;
-  };
-}
-
 export const handler = async (req: Request) => {
+  let errorMsg = "Unknown error";
+
   try {
-    const payload: BookingPayload = await req.json();
-    const booking = payload.record;
-
-    console.log("[FCM] Starting: Processing booking ID", booking.id);
-
-    const supabaseUrl = Deno.env.get("DB_URL");
-    const supabaseKey = Deno.env.get("SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseKey) {
-      console.error("[FCM] Missing environment variables");
-      throw new Error("Missing DB_URL or SERVICE_ROLE_KEY");
+    // Parse request
+    let payload;
+    try {
+      payload = await req.json();
+    } catch (e) {
+      errorMsg = "Failed to parse JSON";
+      throw new Error(errorMsg);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const booking = payload?.record;
+    if (!booking) {
+      throw new Error("No booking data in payload");
+    }
 
-    console.log("[FCM] Fetching salon:", booking.salon_id);
-    const { data: salon, error: salonError } = await supabase
+    // Get environment variables
+    const dbUrl = Deno.env.get("DB_URL");
+    const dbKey = Deno.env.get("SERVICE_ROLE_KEY");
+
+    if (!dbUrl) throw new Error("DB_URL not set");
+    if (!dbKey) throw new Error("SERVICE_ROLE_KEY not set");
+
+    // Create Supabase client
+    const supabase = createClient(dbUrl, dbKey);
+
+    // Fetch salon
+    const salonResponse = await supabase
       .from("salons")
       .select("id, name")
       .eq("id", booking.salon_id)
       .single();
 
-    if (salonError) {
-      console.error("[FCM] Salon fetch error:", salonError.message);
-      throw new Error(`Salon error: ${salonError.message}`);
+    if (salonResponse.error) {
+      throw new Error(`Salon fetch failed: ${salonResponse.error.message}`);
     }
 
+    const salon = salonResponse.data;
     if (!salon) {
       throw new Error(`Salon ${booking.salon_id} not found`);
     }
 
-    console.log("[FCM] Found salon:", salon.name);
-
-    const notificationsToCreate = [];
-
-    notificationsToCreate.push({
-      target_type: "salon",
-      target_id: booking.salon_id,
-      title: `✂️ حجز جديد في ${salon.name}`,
-      body: `عميل: ${booking.customer_name}\nالساعة: ${booking.time}`,
-      icon: "✂️",
-    });
+    // Build notifications array
+    const notifications: any[] = [
+      {
+        target_type: "salon",
+        target_id: booking.salon_id,
+        title: `✂️ حجز جديد في ${salon.name}`,
+        body: `عميل: ${booking.customer_name}\nالساعة: ${booking.time}`,
+        icon: "✂️",
+      },
+      {
+        target_type: "admin",
+        target_id: 0,
+        title: "📊 حجز جديد",
+        body: `${booking.customer_name} → ${salon.name}`,
+        icon: "📊",
+      },
+    ];
 
     if (booking.customer_id) {
-      notificationsToCreate.push({
+      notifications.push({
         target_type: "customer",
         target_id: booking.customer_id,
         title: "تم تأكيد حجزك ✓",
@@ -69,43 +72,38 @@ export const handler = async (req: Request) => {
       });
     }
 
-    notificationsToCreate.push({
-      target_type: "admin",
-      target_id: 0,
-      title: "📊 حجز جديد",
-      body: `${booking.customer_name} → ${salon.name}`,
-      icon: "📊",
-    });
-
-    console.log("[FCM] Creating", notificationsToCreate.length, "notifications");
-
-    const { error: insertError } = await supabase
+    // Insert notifications
+    const insertResponse = await supabase
       .from("notifications")
-      .insert(notificationsToCreate);
+      .insert(notifications);
 
-    if (insertError) {
-      console.error("[FCM] Insert error:", insertError.message);
-      throw new Error(`Insert error: ${insertError.message}`);
+    if (insertResponse.error) {
+      throw new Error(`Insert failed: ${insertResponse.error.message}`);
     }
 
-    console.log("[FCM] ✅ All notifications created successfully");
-
+    // Success response
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Notifications created successfully",
+        message: "Notifications created",
         booking_id: booking.id,
         salon_name: salon.name,
-        notifications_count: notificationsToCreate.length,
+        count: notifications.length,
       }),
       {
-        headers: { "Content-Type": "application/json" },
         status: 200,
+        headers: { "Content-Type": "application/json" },
       }
     );
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error("[FCM] ❌ Handler error:", errorMsg);
+  } catch (err) {
+    // Safely extract error message
+    if (err instanceof Error) {
+      errorMsg = err.message;
+    } else if (typeof err === "string") {
+      errorMsg = err;
+    } else if (err && typeof err === "object") {
+      errorMsg = JSON.stringify(err);
+    }
 
     return new Response(
       JSON.stringify({
@@ -113,8 +111,8 @@ export const handler = async (req: Request) => {
         error: errorMsg,
       }),
       {
-        headers: { "Content-Type": "application/json" },
         status: 500,
+        headers: { "Content-Type": "application/json" },
       }
     );
   }
