@@ -34,7 +34,7 @@ export const handler = async (req: Request) => {
     // Get salon info
     const { data: salon, error: salonError } = await supabase
       .from("salons")
-      .select("id, name, logo, user_id")
+      .select("id, name, owner, phone")
       .eq("id", booking.salon_id)
       .single();
 
@@ -50,7 +50,7 @@ export const handler = async (req: Request) => {
       .from("notifications")
       .insert({
         target_type: "salon",
-        target_id: salon.user_id,
+        target_id: booking.salon_id,
         title: `✂️ حجز جديد في ${salon.name}`,
         body: `عميل: ${booking.customer_name}\nالساعة: ${booking.time}`,
         icon: "✂️",
