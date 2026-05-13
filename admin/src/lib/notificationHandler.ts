@@ -72,18 +72,30 @@ export function subscribeToNotifications(
   try {
     const supabase = createAdminClient();
 
-    const subscription = supabase
-      .from(`notifications:target_type=eq.${userType},target_id=eq.${userId}`)
-      .on('*', (payload) => {
-        console.log('New notification received:', payload);
-
-        if (payload.eventType === 'INSERT') {
-          onNewNotification(payload.new);
+    const channel = supabase
+      .channel(`notifications-${userType}-${userId}`)
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `target_type=eq.${userType}`,
+        },
+        (payload: any) => {
+          console.log('New notification received:', payload);
+          if (payload.new && payload.new.target_id === userId) {
+            onNewNotification(payload.new);
+          }
         }
-      })
+      )
       .subscribe();
 
-    return subscription;
+    return {
+      unsubscribe: () => {
+        supabase.removeChannel(channel);
+      },
+    };
   } catch (error) {
     console.error('Error subscribing to notifications:', error);
     return null;
