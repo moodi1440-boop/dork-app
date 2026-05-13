@@ -1,51 +1,43 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
-export const handler = async (req: Request) => {
-  let errorMsg = "Unknown error";
-
+export const handler = async (req: Request): Promise<Response> => {
   try {
-    // Parse request
-    let payload;
-    try {
-      payload = await req.json();
-    } catch (e) {
-      errorMsg = "Failed to parse JSON";
-      throw new Error(errorMsg);
-    }
+    const body = await req.json() as any;
+    const booking = body?.record;
 
-    const booking = payload?.record;
     if (!booking) {
-      throw new Error("No booking data in payload");
+      return new Response(
+        JSON.stringify({ success: false, error: "No booking" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    // Get environment variables
-    const dbUrl = Deno.env.get("DB_URL");
-    const dbKey = Deno.env.get("SERVICE_ROLE_KEY");
+    const url = Deno.env.get("DB_URL") || "";
+    const key = Deno.env.get("SERVICE_ROLE_KEY") || "";
 
-    if (!dbUrl) throw new Error("DB_URL not set");
-    if (!dbKey) throw new Error("SERVICE_ROLE_KEY not set");
+    if (!url || !key) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Missing env" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-    // Create Supabase client
-    const supabase = createClient(dbUrl, dbKey);
+    const client = createClient(url, key);
 
-    // Fetch salon
-    const salonResponse = await supabase
+    const { data: salon } = await client
       .from("salons")
       .select("id, name")
       .eq("id", booking.salon_id)
       .single();
 
-    if (salonResponse.error) {
-      throw new Error(`Salon fetch failed: ${salonResponse.error.message}`);
-    }
-
-    const salon = salonResponse.data;
     if (!salon) {
-      throw new Error(`Salon ${booking.salon_id} not found`);
+      return new Response(
+        JSON.stringify({ success: false, error: "Salon not found" }),
+        { status: 404, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    // Build notifications array
-    const notifications: any[] = [
+    const notifs: any[] = [
       {
         target_type: "salon",
         target_id: booking.salon_id,
@@ -63,7 +55,7 @@ export const handler = async (req: Request) => {
     ];
 
     if (booking.customer_id) {
-      notifications.push({
+      notifs.push({
         target_type: "customer",
         target_id: booking.customer_id,
         title: "تم تأكيد حجزك ✓",
@@ -72,48 +64,24 @@ export const handler = async (req: Request) => {
       });
     }
 
-    // Insert notifications
-    const insertResponse = await supabase
-      .from("notifications")
-      .insert(notifications);
+    await client.from("notifications").insert(notifs);
 
-    if (insertResponse.error) {
-      throw new Error(`Insert failed: ${insertResponse.error.message}`);
-    }
-
-    // Success response
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Notifications created",
         booking_id: booking.id,
         salon_name: salon.name,
-        count: notifications.length,
+        count: notifs.length,
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  } catch (err) {
-    // Safely extract error message
-    if (err instanceof Error) {
-      errorMsg = err.message;
-    } else if (typeof err === "string") {
-      errorMsg = err;
-    } else if (err && typeof err === "object") {
-      errorMsg = JSON.stringify(err);
-    }
-
+  } catch (e: any) {
     return new Response(
       JSON.stringify({
         success: false,
-        error: errorMsg,
+        error: String(e?.message || "Error"),
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 };
