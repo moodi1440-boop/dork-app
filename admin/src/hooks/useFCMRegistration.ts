@@ -154,11 +154,14 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
       const supabase = createAdminClient();
 
       if (token) {
-        await supabase
+        const { error: unregisterError } = await supabase
           .from('fcm_tokens')
           .update({ is_active: false })
-          .eq('device_token', token)
-          .catch((err) => console.error('Unregister error:', err));
+          .eq('device_token', token);
+
+        if (unregisterError) {
+          console.error('Unregister error:', unregisterError);
+        }
       }
 
       setToken(null);
