@@ -3860,7 +3860,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         await fetch("https://api.resend.com/emails",{
           method:"POST",
           headers:{
-            "Authorization":"Bearer re_XXXX",
+            "Authorization":"Bearer re_bpi3hbfD_24cvTQVTMuM18TgquUJNdwQk"
             "Content-Type":"application/json"
           },
           body:JSON.stringify({
