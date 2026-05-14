@@ -3864,7 +3864,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             "Content-Type":"application/json"
           },
           body:JSON.stringify({
-           from:"onboarding@resend.dev",  ✅
+from:"noreply@resend.dev",
             to:email.trim(),
             subject:"كود التحقق من تطبيق دورك",
             html:`<div style="direction:rtl;font-family:Arial,sans-serif;background:#f5f5f5;padding:20px;border-radius:10px"><h2 style="color:#d4a017">🔐 كود التحقق من البريد</h2><p>مرحباً بك في تطبيق دورك!</p><div style="background:#fff;padding:20px;border-radius:8px;text-align:center;margin:20px 0"><h1 style="color:#d4a017;font-size:32px;letter-spacing:5px;margin:0">${code}</h1></div><p style="color:#666">هذا الكود صالح لمدة 5 دقائق فقط</p><p style="color:#999;font-size:12px">لا تشارك هذا الكود مع أحد</p></div>`
