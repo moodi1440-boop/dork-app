@@ -3807,7 +3807,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[phone,setPhone]=useState(""); const[name,setName]=useState("");
   const[email,setEmail]=useState(""); const[pass,setPass]=useState("");
   const[err,setErr]=useState("");
-  const[otpSent,setOtpSent]=useState(false); const[otp,setOtp]=useState("");
+ const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
   const[otpTimer,setOtpTimer]=useState(0);
 
@@ -3843,38 +3843,21 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     }
   },[otpTimer]);
 
-  const sendOtpCode=async()=>{
-    if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
-    const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if(!emailRegex.test(email.trim())){setErr("بريد إلكتروني غير صحيح");return;}
-    if(otpTimer>0){setErr(`انتظر ${otpTimer} ثانية قبل إعادة المحاولة`);return;}
-    try{
-      setErr("");
-      const code=Math.floor(100000+Math.random()*900000).toString();
-      setOtp(code);
-      setOtpSent(true);
-     setOtpTimer(60);
-      toast$&&toast$("✅ تم إرسال الكود: "+code,"success");
-      console.log(`🔐 OTP Code: ${code} (للاختبار فقط)`);
-      try{
-        await fetch("https://api.resend.com/emails",{
-          method:"POST",
-          headers:{
-            "Authorization":"Bearer re_bpi3hbfD_24cvTQVTMuM18TgquUJNdwQk",
-            "Content-Type":"application/json"
-          },
-          body:JSON.stringify({
-from:"noreply@resend.dev",
-            to:email.trim(),
-            subject:"كود التحقق من تطبيق دورك",
-            html:`<div style="direction:rtl;font-family:Arial,sans-serif;background:#f5f5f5;padding:20px;border-radius:10px"><h2 style="color:#d4a017">🔐 كود التحقق من البريد</h2><p>مرحباً بك في تطبيق دورك!</p><div style="background:#fff;padding:20px;border-radius:8px;text-align:center;margin:20px 0"><h1 style="color:#d4a017;font-size:32px;letter-spacing:5px;margin:0">${code}</h1></div><p style="color:#666">هذا الكود صالح لمدة 5 دقائق فقط</p><p style="color:#999;font-size:12px">لا تشارك هذا الكود مع أحد</p></div>`
-          })
-        });
-      }catch(e){
-        console.log("تنبيه: لم يتم إرسال البريد الفعلي. الكود متاح في console للاختبار");
-      }
-    }catch(e){setErr("خطأ: "+e.message);}
-  };
+ const sendOtpCode=async()=>{
+  if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
+  const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if(!emailRegex.test(email.trim())){setErr("بريد إلكتروني غير صحيح");return;}
+  if(otpTimer>0){setErr(`انتظر ${otpTimer} ثانية قبل إعادة المحاولة`);return;}
+  try{
+    setErr("");
+    const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
+    if(error)throw error;
+    setOtpSent(true);
+    setOtpTimer(60);
+    toast$&&toast$("✅ تم إرسال الكود لبريدك","success");
+    console.log("✅ OTP sent via Supabase");
+  }catch(e){setErr("خطأ: "+e.message);}
+};
 
   const register=async()=>{
     if(!name.trim()||!phone.trim()){setErr("أدخل الاسم والجوال");return;}
