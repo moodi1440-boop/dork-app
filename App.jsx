@@ -3853,7 +3853,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const code=Math.floor(100000+Math.random()*900000).toString();
       setOtp(code);
       setOtpSent(true);
-      setOtpTimer(30);
+     setOtpTimer(60);
       toast$&&toast$("✅ تم إرسال الكود: "+code,"success");
       console.log(`🔐 OTP Code: ${code} (للاختبار فقط)`);
       try{
