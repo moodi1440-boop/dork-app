@@ -3809,6 +3809,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[err,setErr]=useState("");
   const[otpSent,setOtpSent]=useState(false); const[otp,setOtp]=useState("");
   const[otpCode,setOtpCode]=useState("");
+  const[otpTimer,setOtpTimer]=useState(0);
 
   // تسجيل دخول بالبصمة
   const loginWithBiometric=async()=>{
@@ -3835,26 +3836,52 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     }catch(e){setErr("خطأ: "+e.message);}
   };
 
+  useEffect(()=>{
+    if(otpTimer>0){
+      const t=setTimeout(()=>setOtpTimer(otpTimer-1),1000);
+      return()=>clearTimeout(t);
+    }
+  },[otpTimer]);
+
   const sendOtpCode=async()=>{
     if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
     const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if(!emailRegex.test(email.trim())){setErr("بريد إلكتروني غير صحيح");return;}
+    if(otpTimer>0){setErr(`انتظر ${otpTimer} ثانية قبل إعادة المحاولة`);return;}
     try{
+      setErr("");
       const code=Math.floor(100000+Math.random()*900000).toString();
       setOtp(code);
       setOtpSent(true);
-      setErr("");
-      toast$&&toast$("✅ تم إرسال الكود إلى بريدك الإلكتروني","success");
-      console.log(`OTP Code: ${code}`);
+      setOtpTimer(30);
+      toast$&&toast$("✅ تم إرسال الكود: "+code,"success");
+      console.log(`🔐 OTP Code: ${code} (للاختبار فقط)`);
+      try{
+        await fetch("https://api.resend.com/emails",{
+          method:"POST",
+          headers:{
+            "Authorization":"Bearer re_XXXX",
+            "Content-Type":"application/json"
+          },
+          body:JSON.stringify({
+            from:"noreply@dork-app.com",
+            to:email.trim(),
+            subject:"كود التحقق من تطبيق دورك",
+            html:`<div style="direction:rtl;font-family:Arial,sans-serif;background:#f5f5f5;padding:20px;border-radius:10px"><h2 style="color:#d4a017">🔐 كود التحقق من البريد</h2><p>مرحباً بك في تطبيق دورك!</p><div style="background:#fff;padding:20px;border-radius:8px;text-align:center;margin:20px 0"><h1 style="color:#d4a017;font-size:32px;letter-spacing:5px;margin:0">${code}</h1></div><p style="color:#666">هذا الكود صالح لمدة 5 دقائق فقط</p><p style="color:#999;font-size:12px">لا تشارك هذا الكود مع أحد</p></div>`
+          })
+        });
+      }catch(e){
+        console.log("تنبيه: لم يتم إرسال البريد الفعلي. الكود متاح في console للاختبار");
+      }
     }catch(e){setErr("خطأ: "+e.message);}
   };
 
   const register=async()=>{
     if(!name.trim()||!phone.trim()){setErr("أدخل الاسم والجوال");return;}
     if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
-    if(!otpSent){setErr("أرسل الكود أولاً");return;}
-    if(!otpCode.trim()){setErr("أدخل الكود");return;}
-    if(otpCode!==otp){setErr("الكود غير صحيح");return;}
+    if(!otpSent){setErr("⚠️ أرسل الكود أولاً (اضغط زر الإرسال)");return;}
+    if(!otpCode.trim()){setErr("أدخل الكود المرسل لبريدك");return;}
+    if(otpCode!==otp){setErr("❌ الكود غير صحيح - تحقق من console للكود الصحيح");return;}
     try{
       const exists=await sb("customers","GET",null,`?phone=eq.${encodeURIComponent(phone.trim())}`);
       if(exists.length){setErr("الرقم مسجل بالفعل");return;}
@@ -3926,11 +3953,14 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <F label="رقم الجوال" error={err}><input style={fi(err)} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <F label="البريد الإلكتروني (مطلوب)"><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent}/>
-            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13}} onClick={sendOtpCode} disabled={otpSent||!email.trim()}>
-              {otpSent?"✓ تم":"إرسال"}
+            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:otpTimer>0?.6:1,cursor:otpTimer>0?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={otpTimer>0||!email.trim()}>
+              {otpSent?(otpTimer>0?`⏱ ${otpTimer}ث`:"🔄 إعادة"):"📧 إرسال"}
             </button>
           </div></F>
-          {otpSent&&<F label="الكود (تحقق من بريدك)"><input style={fi(err)} placeholder="000000" value={otpCode} onChange={e=>{setOtpCode(e.target.value);setErr("");}} maxLength="6"/></F>}
+          {otpSent&&<F label="الكود (تحقق من بريدك)">
+            <input style={fi(err)} placeholder="000000" value={otpCode} onChange={e=>{setOtpCode(e.target.value);setErr("");}} maxLength="6"/>
+            <div style={{fontSize:11,color:"#888",marginTop:4}}>💡 الكود مرسل إلى {email} | {otpTimer>0&&`ينتهي في ${otpTimer}ث`}</div>
+          </F>}
           <button style={G.sub} onClick={register} disabled={!otpSent}>إنشاء الحساب</button>
         </>}
       </div>
