@@ -3919,7 +3919,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
               await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js");
               const fb=window.firebase;
-              if(!fb.apps.length) fb.initializeApp({apiKey:"AIzaSyBYCJYdJUi_oPfYlOzSukntj4",authDomain:"dork-app.firebaseapp.com",projectId:"dork-app",appId:"1:659823227621:web:befaaa1b5063"});
+              if(!fb.apps.length) fb.initializeApp({apiKey:"AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",authDomain:"dork-app.firebaseapp.com",projectId:"dork-app",appId:"1:659823227621:web:befaaa1b5063"});
               const provider=new fb.auth.GoogleAuthProvider();
               provider.setCustomParameters({prompt:"select_account"});
               const result=await fb.auth().signInWithPopup(provider);
