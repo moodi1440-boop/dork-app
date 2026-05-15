@@ -3923,9 +3923,9 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
     if(error)throw error;
     setOtpSent(true);
-    setOtpTimer(60);
-    toast$&&toast$("✅ تم إرسال الكود لبريدك","success");
-  }catch(e){setErr("خطأ: "+e.message);}
+    setOtpTimer(300);
+    toast$&&toast$("✅ تم إرسال الكود لبريدك - صلاحية 5 دقائق","success");
+  }catch(e){setErr("❌ فشل الإرسال - تحقق من البريد وحاول مجدداً");}
 };
 
   const register=async()=>{
@@ -3935,15 +3935,25 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     if(!otpCode.trim()){setErr("أدخل الكود المرسل لبريدك");return;}
     try{
       const {data,error}=await supabase.auth.verifyOtp({email:email.trim(),token:otpCode.trim(),type:"email"});
-      if(error)throw error;
+      if(error){
+        if(error.message.includes("timeout")||error.message.includes("expired")){
+          setErr("❌ انتهت صلاحية الكود - اطلب كود جديد");
+        }else if(error.message.includes("invalid")){
+          setErr("❌ الكود غير صحيح - تحقق من الكود المرسل لبريدك");
+        }else{
+          setErr("❌ خطأ في التحقق - حاول مجدداً");
+        }
+        return;
+      }
       const exists=await sb("customers","GET",null,`?phone=eq.${encodeURIComponent(phone.trim())}`);
-      if(exists.length){setErr("الرقم مسجل بالفعل");return;}
+      if(exists.length){setErr("❌ هذا الرقم مسجل بالفعل");return;}
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[]},"");
       const nc=toAppCustomer(rows[0]);
       setCustomerSession(nc);setView("custDash");
       localStorage.setItem("dork_biometric_id",String(nc.id));
       setOtpSent(false);setOtpCode("");
-    }catch(e){setErr("❌ الكود غير صحيح أو انتهت صلاحيته - تحقق من بريدك أو أعد المحاولة");}
+      toast$&&toast$("✅ تم إنشاء الحساب بنجاح!","success");
+    }catch(e){setErr("❌ خطأ في العملية - حاول مجدداً: "+e.message.substring(0,50));}
   };
 
   return(
@@ -4007,13 +4017,26 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <F label="البريد الإلكتروني (مطلوب)"><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent}/>
             <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:otpTimer>0?.6:1,cursor:otpTimer>0?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={otpTimer>0||!email.trim()}>
-              {otpSent?(otpTimer>0?`⏱ ${otpTimer}ث`:"🔄 إعادة"):"📧 إرسال"}
+              {otpSent?(otpTimer>0?`⏱ ${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"🔄 إعادة"):"📧 إرسال"}
             </button>
           </div></F>
-          {otpSent&&<F label="الكود (تحقق من بريدك)">
-            <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err} use6Boxes={true}/>
-            <div style={{fontSize:11,color:"#888",marginTop:4}}>💡 الكود مرسل إلى {email} | {otpTimer>0&&`ينتهي في ${otpTimer}ث`}</div>
-          </F>}
+          {otpSent&&<>
+            <F label="الكود (تحقق من بريدك)">
+              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err} use6Boxes={true}/>
+              <div style={{fontSize:11,color:"#888",marginTop:8}}>
+                💡 الكود مرسل إلى: <strong>{email}</strong>
+                <br/>⏱️ الصلاحية: {otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:("انتهت الصلاحية")}
+              </div>
+            </F>
+            <div style={{display:"flex",gap:8,fontSize:12,marginTop:12}}>
+              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");}}>
+                ✏️ تعديل البريد
+              </button>
+              {otpTimer<=0&&<button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #e74c3c",background:"rgba(231,76,60,.1)",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={sendOtpCode}>
+                🔄 إعادة الإرسال
+              </button>}
+            </div>
+          </>}
           <button style={G.sub} onClick={register} disabled={!otpSent}>إنشاء الحساب</button>
         </>}
       </div>
