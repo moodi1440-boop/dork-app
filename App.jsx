@@ -3930,13 +3930,26 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   try{
     setErr("");
     const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
-    if(error)throw error;
+    if(error){
+      console.error("OTP Error:",error);
+      if(error.message.includes("rate")||error.message.includes("too many")){
+        setErr("❌ حاول مجدداً لاحقاً - طلبات كثيرة");
+      }else if(error.message.includes("invalid")||error.message.includes("format")){
+        setErr("❌ البريد الإلكتروني غير صحيح");
+      }else{
+        setErr("❌ خطأ: "+error.message);
+      }
+      return;
+    }
     setOtpSent(true);
     setOtpTimer(300);
     setOtpExpired(false);
     setOtpCode("");
     toast$&&toast$("✅ تم إرسال الكود لبريدك - صلاحية 5 دقائق","success");
-  }catch(e){setErr("❌ فشل الإرسال - تحقق من البريد وحاول مجدداً");}
+  }catch(e){
+    console.error("Send OTP Exception:",e);
+    setErr("❌ خطأ في الإرسال: "+e.message);
+  }
 };
 
   const register=async()=>{
