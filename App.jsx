@@ -4021,16 +4021,20 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     if(error){
       console.error("OTP Error:",error.message);
       setOtpSent(false);
-      setOtpTimer(0);
       setOtpExpired(false);
-      if(error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit")){
+      const isRateLimit=error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit");
+      if(isRateLimit){
+        setOtpTimer(60);
         setErr("❌ طلبات كثيرة - انتظر قليلاً ثم حاول مجدداً");
-      }else if(error.message.includes("invalid")||error.message.includes("format")){
-        setErr("❌ البريد الإلكتروني غير صحيح");
-      }else if(error.message.includes("disabled")||error.message.includes("not enabled")){
-        setErr("❌ المصادقة غير مفعّلة - تواصل مع الدعم");
       }else{
-        setErr("❌ خطأ: "+error.message.substring(0,40));
+        setOtpTimer(0);
+        if(error.message.includes("invalid")||error.message.includes("format")){
+          setErr("❌ البريد الإلكتروني غير صحيح");
+        }else if(error.message.includes("disabled")||error.message.includes("not enabled")){
+          setErr("❌ المصادقة غير مفعّلة - تواصل مع الدعم");
+        }else{
+          setErr("❌ خطأ: "+error.message.substring(0,40));
+        }
       }
       return;
     }
@@ -4041,6 +4045,15 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setOtpTimer(0);
     setOtpExpired(false);
     setErr("❌ خطأ في الاتصال - تحقق من الإنترنت");
+    try{
+      const {data:{user}}=await supabase.auth.getUser();
+      if(user&&user.email===email.trim()){
+        await supabase.auth.admin.deleteUser(user.id);
+        console.log("Cleanup: Deleted pending user record");
+      }
+    }catch(cleanupErr){
+      console.error("Cleanup failed:",cleanupErr.message);
+    }
   }finally{
     setSending(false);
   }
@@ -4144,7 +4157,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <F label="رقم الجوال"><input style={fi()} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <F label="البريد الإلكتروني (مطلوب)" error={err}><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
-            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(otpTimer>0||sending)?.6:1,cursor:(otpTimer>0||sending)?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={otpTimer>0||sending||!email.trim()}>
+            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(otpTimer>0||sending)?.6:1,cursor:(otpTimer>0||sending)?"not-allowed":"pointer",pointerEvents:(otpTimer>0||sending)?"none":"auto"}} onClick={sendOtpCode} disabled={otpTimer>0||sending||!email.trim()}>
               {sending?"⏳ جاري...":otpSent?(otpTimer>0?`⏱ ${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"🔄 إعادة"):"📧 إرسال"}
             </button>
           </div></F>
