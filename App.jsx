@@ -3892,8 +3892,8 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
           maxLength="6"
           value={value}
           onChange={handleAutofill}
-          style={{position:"absolute",left:"-9999px",width:"1px",height:"1px",opacity:0,pointerEvents:"none"}}
-          aria-hidden="true"
+          id="otp-input"
+          style={{position: 'absolute', opacity: 0.01, height: "1px", width: "1px", zIndex: -1, pointerEvents: 'none', top: "50%"}}
         />
         {/* الـ 6 صناديق المرئية */}
         {[0,1,2,3,4,5].map(i=>(
