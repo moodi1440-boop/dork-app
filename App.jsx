@@ -3812,28 +3812,32 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
   };
 
   const handleBoxChange=(index,newVal)=>{
+    const singleDigit=newVal.replace(/\D/g,"").slice(-1);
     const digits=value.split("");
-    digits[index]=newVal.replace(/\D/g,"");
+    digits[index]=singleDigit;
     const newValue=digits.slice(0,6).join("");
     onChange(newValue);
-    if(newVal&&index<5)boxRefs.current[index+1]?.focus();
+    if(singleDigit&&index<5)boxRefs.current[index+1]?.focus();
   };
 
   const handleBoxKeyDown=(index,e)=>{
-    if(e.key==="Backspace"&&!value[index]&&index>0){
-      boxRefs.current[index-1]?.focus();
+    if(e.key==="Backspace"){
+      if(!value[index]&&index>0){
+        boxRefs.current[index-1]?.focus();
+      }
     }
   };
 
   if(use6Boxes){
     return(
-      <div style={{display:"flex",gap:8,justifyContent:"space-between"}}>
+      <div style={{display:"flex",gap:8,justifyContent:"space-between",direction:"ltr"}}>
         {[0,1,2,3,4,5].map(i=>(
           <input
             key={i}
             ref={el=>boxRefs.current[i]=el}
             type="text"
             inputMode="numeric"
+            name="one-time-code"
             autoComplete={i===0?"one-time-code":"off"}
             maxLength="1"
             value={value[i]||""}
@@ -3846,7 +3850,9 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
               height:"40px",
               textAlign:"center",
               fontSize:"18px",
-              fontWeight:"600"
+              fontWeight:"600",
+              direction:"ltr",
+              textAlign:"center"
             }}
           />
         ))}
@@ -3880,6 +3886,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
  const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
   const[otpTimer,setOtpTimer]=useState(0);
+  const[otpExpired,setOtpExpired]=useState(false);
 
   // تسجيل دخول بالبصمة
   const loginWithBiometric=async()=>{
@@ -3910,8 +3917,10 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     if(otpTimer>0){
       const t=setTimeout(()=>setOtpTimer(otpTimer-1),1000);
       return()=>clearTimeout(t);
+    }else if(otpTimer===0&&otpSent){
+      setOtpExpired(true);
     }
-  },[otpTimer]);
+  },[otpTimer,otpSent]);
 
  const sendOtpCode=async()=>{
   if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
@@ -3924,6 +3933,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     if(error)throw error;
     setOtpSent(true);
     setOtpTimer(300);
+    setOtpExpired(false);
+    setOtpCode("");
     toast$&&toast$("✅ تم إرسال الكود لبريدك - صلاحية 5 دقائق","success");
   }catch(e){setErr("❌ فشل الإرسال - تحقق من البريد وحاول مجدداً");}
 };
@@ -3932,12 +3943,15 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     if(!name.trim()||!phone.trim()){setErr("أدخل الاسم والجوال");return;}
     if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
     if(!otpSent){setErr("⚠️ أرسل الكود أولاً (اضغط زر الإرسال)");return;}
-    if(!otpCode.trim()){setErr("أدخل الكود المرسل لبريدك");return;}
+    if(!otpCode.trim()){setErr("أدخل جميع الأرقام الستة");return;}
+    if(otpExpired){setErr("❌ انتهت صلاحية الكود - اضغط على إعادة الإرسال");return;}
     try{
-      const {data,error}=await supabase.auth.verifyOtp({email:email.trim(),token:otpCode.trim(),type:"email"});
+      const otpToken=otpCode.trim().slice(0,6).padEnd(6,"0");
+      const {data,error}=await supabase.auth.verifyOtp({email:email.trim(),token:otpToken,type:"email"});
       if(error){
         if(error.message.includes("timeout")||error.message.includes("expired")){
-          setErr("❌ انتهت صلاحية الكود - اطلب كود جديد");
+          setOtpExpired(true);
+          setErr("❌ انتهت صلاحية الكود - اضغط على إعادة الإرسال");
         }else if(error.message.includes("invalid")){
           setErr("❌ الكود غير صحيح - تحقق من الكود المرسل لبريدك");
         }else{
@@ -4021,18 +4035,18 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             </button>
           </div></F>
           {otpSent&&<>
-            <F label="الكود (تحقق من بريدك)">
-              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err} use6Boxes={true}/>
-              <div style={{fontSize:11,color:"#888",marginTop:8}}>
+            <F label="الكود (تحقق من بريدك)" error={otpExpired?true:undefined}>
+              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err||otpExpired} use6Boxes={true} disabled={otpExpired}/>
+              <div style={{fontSize:11,color:otpExpired?"#e74c3c":"#888",marginTop:8}}>
                 💡 الكود مرسل إلى: <strong>{email}</strong>
-                <br/>⏱️ الصلاحية: {otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:("انتهت الصلاحية")}
+                <br/>⏱️ الصلاحية: {otpExpired?"❌ انتهت الصلاحية":otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"⏳ جاهز للإرسال"}
               </div>
             </F>
             <div style={{display:"flex",gap:8,fontSize:12,marginTop:12}}>
-              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");}}>
+              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);}}>
                 ✏️ تعديل البريد
               </button>
-              {otpTimer<=0&&<button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #e74c3c",background:"rgba(231,76,60,.1)",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={sendOtpCode}>
+              {otpExpired&&<button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #e74c3c",background:"rgba(231,76,60,.1)",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={sendOtpCode}>
                 🔄 إعادة الإرسال
               </button>}
             </div>
