@@ -3959,16 +3959,21 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     if(!otpCode.trim()){setErr("أدخل جميع الأرقام الستة");return;}
     if(otpExpired){setErr("❌ انتهت صلاحية الكود - اضغط على إعادة الإرسال");return;}
     try{
-      const otpToken=otpCode.trim().slice(0,6).padEnd(6,"0");
+      const otpToken=otpCode.trim().slice(0,6);
+      if(otpToken.length<6){setErr("❌ أدخل جميع الأرقام الستة");return;}
       const {data,error}=await supabase.auth.verifyOtp({email:email.trim(),token:otpToken,type:"email"});
       if(error){
-        if(error.message.includes("timeout")||error.message.includes("expired")){
+        console.error("Verify OTP Error:",error.message);
+        if(error.message.includes("timeout")||error.message.includes("expired")||error.message.includes("used")){
           setOtpExpired(true);
+          setOtpTimer(0);
           setErr("❌ انتهت صلاحية الكود - اضغط على إعادة الإرسال");
-        }else if(error.message.includes("invalid")){
+        }else if(error.message.includes("invalid")||error.message.includes("wrong")||error.message.includes("not found")){
           setErr("❌ الكود غير صحيح - تحقق من الكود المرسل لبريدك");
+        }else if(error.message.includes("blocked")||error.message.includes("denied")){
+          setErr("❌ البريد محظور - حاول بريد آخر");
         }else{
-          setErr("❌ خطأ في التحقق - حاول مجدداً");
+          setErr("❌ خطأ: "+error.message.substring(0,50));
         }
         return;
       }
