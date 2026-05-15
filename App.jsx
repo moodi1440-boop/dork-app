@@ -3804,6 +3804,7 @@ function OwnerSettings({salon,setSalons,toast$}){
 // ==============================================
 function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
   const inputRef=useRef(null);
+  const autofillRef=useRef(null);
   const boxRefs=useRef([]);
 
   // توزيع الكود على الخانات بترتيب صحيح (Index 0..5 LTR)
@@ -3864,9 +3865,37 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
     }
   };
 
+  // التعامل مع الـ autofill من iOS
+  const handleAutofill=(e)=>{
+    const val=String(e.target.value||"").replace(/\D/g,"").slice(0,6);
+    if(val.length>0){
+      onChange(val);
+      setTimeout(()=>{
+        if(boxRefs.current[0]){
+          boxRefs.current[0].focus();
+        }
+      },10);
+    }
+  };
+
   if(use6Boxes){
     return(
       <div dir="ltr" style={{display:"flex",gap:8,justifyContent:"space-between",direction:"ltr",unicodeBidi:"plaintext"}}>
+        {/* حقل مخفي للـ autofill من iOS - iOS يملأ هذا الحقل تلقائياً عند وصول الكود */}
+        <input
+          ref={autofillRef}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="one-time-code"
+          name="otp"
+          maxLength="6"
+          value={value}
+          onChange={handleAutofill}
+          style={{position:"absolute",left:"-9999px",width:"1px",height:"1px",opacity:0,pointerEvents:"none"}}
+          aria-hidden="true"
+        />
+        {/* الـ 6 صناديق المرئية */}
         {[0,1,2,3,4,5].map(i=>(
           <input
             key={i}
@@ -3874,9 +3903,8 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
-            autoComplete={i===0?"one-time-code":"off"}
-            name={i===0?"otp":undefined}
-            maxLength={i===0?undefined:1}
+            autoComplete="off"
+            maxLength={1}
             value={value[i]||""}
             onChange={e=>handleBoxChange(i,e.target.value)}
             onPaste={e=>handlePaste(i,e)}
@@ -3960,19 +3988,21 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     }catch(e){setErr("خطأ: "+e.message);}
   };
 
+  // المؤقت - يعمل بشكل صحيح عندما يتم إرسال الكود فقط
   useEffect(()=>{
-    if(otpTimer<=0)return;
-    const t=setTimeout(()=>{
+    if(!otpSent||otpTimer<=0)return;
+    const interval=setInterval(()=>{
       setOtpTimer(prev=>{
-        if(prev<=1){
+        const newTimer=prev-1;
+        if(newTimer<=0){
           setOtpExpired(true);
           return 0;
         }
-        return prev-1;
+        return newTimer;
       });
     },1000);
-    return()=>clearTimeout(t);
-  },[otpTimer]);
+    return()=>clearInterval(interval);
+  },[otpSent]);
 
  const sendOtpCode=async()=>{
   if(sending)return;
@@ -3984,13 +4014,15 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setSending(true);
     setErr("");
     setOtpExpired(false);
-    setOtpSent(true);
+    setOtpCode("");
     setOtpTimer(300);
+    setOtpSent(true);
     const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
     if(error){
       console.error("OTP Error:",error.message);
       setOtpSent(false);
       setOtpTimer(0);
+      setOtpExpired(false);
       if(error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit")){
         setErr("❌ طلبات كثيرة - انتظر قليلاً ثم حاول مجدداً");
       }else if(error.message.includes("invalid")||error.message.includes("format")){
@@ -4002,12 +4034,12 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       }
       return;
     }
-    setOtpCode("");
     toast$&&toast$("✅ تم إرسال الكود لبريدك - صلاحية 5 دقائق","success");
   }catch(e){
     console.error("Send OTP Exception:",e.message);
     setOtpSent(false);
     setOtpTimer(0);
+    setOtpExpired(false);
     setErr("❌ خطأ في الاتصال - تحقق من الإنترنت");
   }finally{
     setSending(false);
