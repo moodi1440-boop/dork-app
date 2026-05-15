@@ -4011,7 +4011,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             </button>
           </div></F>
           {otpSent&&<F label="الكود (تحقق من بريدك)">
-            <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err} use6Boxes={false}/>
+            <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err} use6Boxes={true}/>
             <div style={{fontSize:11,color:"#888",marginTop:4}}>💡 الكود مرسل إلى {email} | {otpTimer>0&&`ينتهي في ${otpTimer}ث`}</div>
           </F>}
           <button style={G.sub} onClick={register} disabled={!otpSent}>إنشاء الحساب</button>
