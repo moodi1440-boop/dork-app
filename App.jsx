@@ -3802,15 +3802,58 @@ function OwnerSettings({salon,setSalons,toast$}){
 // ==============================================
 //  OTP INPUT COMPONENT
 // ==============================================
-function OtpInput({value,onChange,error,disabled=false}){
+function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
   const inputRef=useRef(null);
+  const boxRefs=useRef([]);
+
   const handleChange=(e)=>{
     const val=e.target.value.replace(/\D/g,"").slice(0,6);
     onChange(val);
   };
-  const handleKeyDown=(e)=>{
-    if(e.key==="Backspace"&&value.length===0){return;}
+
+  const handleBoxChange=(index,newVal)=>{
+    const digits=value.split("");
+    digits[index]=newVal.replace(/\D/g,"");
+    const newValue=digits.slice(0,6).join("");
+    onChange(newValue);
+    if(newVal&&index<5)boxRefs.current[index+1]?.focus();
   };
+
+  const handleBoxKeyDown=(index,e)=>{
+    if(e.key==="Backspace"&&!value[index]&&index>0){
+      boxRefs.current[index-1]?.focus();
+    }
+  };
+
+  if(use6Boxes){
+    return(
+      <div style={{display:"flex",gap:8,justifyContent:"space-between"}}>
+        {[0,1,2,3,4,5].map(i=>(
+          <input
+            key={i}
+            ref={el=>boxRefs.current[i]=el}
+            type="text"
+            inputMode="numeric"
+            autoComplete={i===0?"one-time-code":"off"}
+            maxLength="1"
+            value={value[i]||""}
+            onChange={e=>handleBoxChange(i,e.target.value)}
+            onKeyDown={e=>handleBoxKeyDown(i,e)}
+            disabled={disabled}
+            style={{
+              ...fi(error),
+              width:"40px",
+              height:"40px",
+              textAlign:"center",
+              fontSize:"18px",
+              fontWeight:"600"
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+
   return(
     <input
       ref={inputRef}
@@ -3818,7 +3861,6 @@ function OtpInput({value,onChange,error,disabled=false}){
       placeholder="000000"
       value={value}
       onChange={handleChange}
-      onKeyDown={handleKeyDown}
       maxLength="6"
       autoComplete="one-time-code"
       inputMode="numeric"
@@ -3969,7 +4011,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             </button>
           </div></F>
           {otpSent&&<F label="الكود (تحقق من بريدك)">
-            <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err}/>
+            <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err} use6Boxes={false}/>
             <div style={{fontSize:11,color:"#888",marginTop:4}}>💡 الكود مرسل إلى {email} | {otpTimer>0&&`ينتهي في ${otpTimer}ث`}</div>
           </F>}
           <button style={G.sub} onClick={register} disabled={!otpSent}>إنشاء الحساب</button>
