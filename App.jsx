@@ -4045,8 +4045,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         </>:<>
           <SL>إنشاء حساب جديد</SL>
           <F label="الاسم"><input style={fi()} placeholder="اسمك الكريم" value={name} onChange={e=>setName(e.target.value)}/></F>
-          <F label="رقم الجوال" error={err}><input style={fi(err)} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
-          <F label="البريد الإلكتروني (مطلوب)"><div style={{display:"flex",gap:8}}>
+          <F label="رقم الجوال"><input style={fi()} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+          <F label="البريد الإلكتروني (مطلوب)" error={err}><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent}/>
             <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:otpTimer>0?.6:1,cursor:otpTimer>0?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={otpTimer>0||!email.trim()}>
               {otpSent?(otpTimer>0?`⏱ ${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"🔄 إعادة"):"📧 إرسال"}
