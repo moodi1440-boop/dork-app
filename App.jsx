@@ -3800,6 +3800,34 @@ function OwnerSettings({salon,setSalons,toast$}){
 }
 
 // ==============================================
+//  OTP INPUT COMPONENT
+// ==============================================
+function OtpInput({value,onChange,error,disabled=false}){
+  const inputRef=useRef(null);
+  const handleChange=(e)=>{
+    const val=e.target.value.replace(/\D/g,"").slice(0,6);
+    onChange(val);
+  };
+  const handleKeyDown=(e)=>{
+    if(e.key==="Backspace"&&value.length===0){return;}
+  };
+  return(
+    <input
+      ref={inputRef}
+      style={fi(error)}
+      placeholder="000000"
+      value={value}
+      onChange={handleChange}
+      onKeyDown={handleKeyDown}
+      maxLength="6"
+      autoComplete="one-time-code"
+      inputMode="numeric"
+      disabled={disabled}
+    />
+  );
+}
+
+// ==============================================
 //  CUSTOMER LOGIN + DASHBOARD
 // ==============================================
 function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$}){
@@ -3855,7 +3883,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setOtpSent(true);
     setOtpTimer(60);
     toast$&&toast$("✅ تم إرسال الكود لبريدك","success");
-    console.log("✅ OTP sent via Supabase");
   }catch(e){setErr("خطأ: "+e.message);}
 };
 
@@ -3864,16 +3891,17 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
     if(!otpSent){setErr("⚠️ أرسل الكود أولاً (اضغط زر الإرسال)");return;}
     if(!otpCode.trim()){setErr("أدخل الكود المرسل لبريدك");return;}
-    if(otpCode!==otp){setErr("❌ الكود غير صحيح - تحقق من console للكود الصحيح");return;}
     try{
+      const {data,error}=await supabase.auth.verifyOtp({email:email.trim(),token:otpCode.trim(),type:"email"});
+      if(error)throw error;
       const exists=await sb("customers","GET",null,`?phone=eq.${encodeURIComponent(phone.trim())}`);
       if(exists.length){setErr("الرقم مسجل بالفعل");return;}
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[]},"");
       const nc=toAppCustomer(rows[0]);
-      setCustomerSession(nc);setView("home");
+      setCustomerSession(nc);setView("custDash");
       localStorage.setItem("dork_biometric_id",String(nc.id));
-      setOtpSent(false);setOtpCode("");setOtp("");
-    }catch(e){setErr("خطأ: "+e.message);}
+      setOtpSent(false);setOtpCode("");
+    }catch(e){setErr("❌ الكود غير صحيح أو انتهت صلاحيته - تحقق من بريدك أو أعد المحاولة");}
   };
 
   return(
@@ -3941,7 +3969,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             </button>
           </div></F>
           {otpSent&&<F label="الكود (تحقق من بريدك)">
-            <input style={fi(err)} placeholder="000000" value={otpCode} onChange={e=>{setOtpCode(e.target.value);setErr("");}} maxLength="6"/>
+            <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err}/>
             <div style={{fontSize:11,color:"#888",marginTop:4}}>💡 الكود مرسل إلى {email} | {otpTimer>0&&`ينتهي في ${otpTimer}ث`}</div>
           </F>}
           <button style={G.sub} onClick={register} disabled={!otpSent}>إنشاء الحساب</button>
