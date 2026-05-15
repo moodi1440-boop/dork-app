@@ -3805,10 +3805,12 @@ function OwnerSettings({salon,setSalons,toast$}){
 function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
   const inputRef=useRef(null);
   const boxRefs=useRef([]);
+  const hiddenInputRef=useRef(null);
 
   const handleChange=(e)=>{
     const val=e.target.value.replace(/\D/g,"").slice(0,6);
     onChange(val);
+    if(hiddenInputRef.current)hiddenInputRef.current.value=val;
   };
 
   const handleBoxChange=(index,newVal)=>{
@@ -3817,7 +3819,13 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
     digits[index]=singleDigit;
     const newValue=digits.slice(0,6).join("");
     onChange(newValue);
+    if(hiddenInputRef.current)hiddenInputRef.current.value=newValue;
     if(singleDigit&&index<5)boxRefs.current[index+1]?.focus();
+  };
+
+  const handleHiddenChange=(e)=>{
+    const val=e.target.value.replace(/\D/g,"").slice(0,6);
+    onChange(val);
   };
 
   const handleBoxKeyDown=(index,e)=>{
@@ -3830,33 +3838,45 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
 
   if(use6Boxes){
     return(
-      <div style={{display:"flex",gap:8,justifyContent:"space-between",direction:"ltr"}}>
-        {[0,1,2,3,4,5].map(i=>(
-          <input
-            key={i}
-            ref={el=>boxRefs.current[i]=el}
-            type="text"
-            inputMode="numeric"
-            name="one-time-code"
-            autoComplete={i===0?"one-time-code":"off"}
-            maxLength="1"
-            value={value[i]||""}
-            onChange={e=>handleBoxChange(i,e.target.value)}
-            onKeyDown={e=>handleBoxKeyDown(i,e)}
-            disabled={disabled}
-            style={{
-              ...fi(error),
-              width:"40px",
-              height:"40px",
-              textAlign:"center",
-              fontSize:"18px",
-              fontWeight:"600",
-              direction:"ltr",
-              textAlign:"center"
-            }}
-          />
-        ))}
-      </div>
+      <>
+        <input
+          ref={hiddenInputRef}
+          type="text"
+          name="one-time-code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          value={value}
+          onChange={handleHiddenChange}
+          style={{position:"absolute",opacity:0,pointerEvents:"none",width:0,height:0}}
+        />
+        <div style={{display:"flex",gap:8,justifyContent:"space-between",direction:"ltr"}}>
+          {[0,1,2,3,4,5].map(i=>(
+            <input
+              key={i}
+              ref={el=>boxRefs.current[i]=el}
+              type="text"
+              inputMode="numeric"
+              name="one-time-code"
+              autoComplete={i===0?"one-time-code":"off"}
+              maxLength="1"
+              value={value[i]||""}
+              onChange={e=>handleBoxChange(i,e.target.value)}
+              onKeyDown={e=>handleBoxKeyDown(i,e)}
+              disabled={disabled}
+              style={{
+                ...fi(error),
+                width:"40px",
+                height:"40px",
+                textAlign:"center",
+                fontSize:"18px",
+                fontWeight:"600",
+                direction:"ltr",
+                textAlign:"center"
+              }}
+            />
+          ))}
+        </div>
+      </>
     );
   }
 
@@ -3926,18 +3946,21 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
   const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if(!emailRegex.test(email.trim())){setErr("بريد إلكتروني غير صحيح");return;}
-  if(otpTimer>0){setErr(`انتظر ${otpTimer} ثانية قبل إعادة المحاولة`);return;}
+  if(otpTimer>0){setErr(`⏳ انتظر ${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")} قبل إعادة المحاولة`);return;}
   try{
     setErr("");
     const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
     if(error){
-      console.error("OTP Error:",error);
-      if(error.message.includes("rate")||error.message.includes("too many")){
-        setErr("❌ حاول مجدداً لاحقاً - طلبات كثيرة");
+      console.error("OTP Error:",error.message);
+      if(error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit")){
+        setErr("❌ طلبات كثيرة - انتظر قليلاً ثم حاول مجدداً");
+        setOtpTimer(60);
       }else if(error.message.includes("invalid")||error.message.includes("format")){
         setErr("❌ البريد الإلكتروني غير صحيح");
+      }else if(error.message.includes("disabled")||error.message.includes("not enabled")){
+        setErr("❌ المصادقة غير مفعّلة - تواصل مع الدعم");
       }else{
-        setErr("❌ خطأ: "+error.message);
+        setErr("❌ خطأ: "+error.message.substring(0,40));
       }
       return;
     }
@@ -3947,8 +3970,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setOtpCode("");
     toast$&&toast$("✅ تم إرسال الكود لبريدك - صلاحية 5 دقائق","success");
   }catch(e){
-    console.error("Send OTP Exception:",e);
-    setErr("❌ خطأ في الإرسال: "+e.message);
+    console.error("Send OTP Exception:",e.message);
+    setErr("❌ خطأ في الاتصال - تحقق من الإنترنت");
   }
 };
 
