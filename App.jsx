@@ -3805,92 +3805,117 @@ function OwnerSettings({salon,setSalons,toast$}){
 function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
   const inputRef=useRef(null);
   const boxRefs=useRef([]);
-  const hiddenInputRef=useRef(null);
+
+  // توزيع الكود على الخانات بترتيب صحيح (Index 0..5 LTR)
+  const distributeDigits=(rawInput,startIndex=0)=>{
+    const digits=String(rawInput||"").replace(/\D/g,"");
+    if(!digits){
+      const arr=value.split("");
+      arr[startIndex]="";
+      onChange(arr.join("").substring(0,6));
+      return;
+    }
+    const arr=value.split("");
+    const toFill=digits.substring(0,6-startIndex);
+    for(let i=0;i<toFill.length;i++){
+      arr[startIndex+i]=toFill[i];
+    }
+    const newValue=arr.slice(0,6).join("").substring(0,6);
+    onChange(newValue);
+    const nextIndex=Math.min(startIndex+toFill.length,5);
+    setTimeout(()=>{
+      if(boxRefs.current[nextIndex]){
+        boxRefs.current[nextIndex].focus();
+        try{boxRefs.current[nextIndex].select();}catch(_){}
+      }
+    },0);
+  };
 
   const handleChange=(e)=>{
-    const val=e.target.value.replace(/\D/g,"").slice(0,6);
+    const val=String(e.target.value||"").replace(/\D/g,"").slice(0,6);
     onChange(val);
-    if(hiddenInputRef.current)hiddenInputRef.current.value=val;
   };
 
-  const handleBoxChange=(index,newVal)=>{
-    const singleDigit=newVal.replace(/\D/g,"").slice(-1);
-    const digits=value.split("");
-    digits[index]=singleDigit;
-    const newValue=digits.slice(0,6).join("");
-    onChange(newValue);
-    if(hiddenInputRef.current)hiddenInputRef.current.value=newValue;
-    if(singleDigit&&index<5)boxRefs.current[index+1]?.focus();
+  const handleBoxChange=(index,rawInput)=>{
+    distributeDigits(rawInput,index);
   };
 
-  const handleHiddenChange=(e)=>{
-    const val=e.target.value.replace(/\D/g,"").slice(0,6);
-    onChange(val);
+  const handlePaste=(index,e)=>{
+    e.preventDefault();
+    const pasted=e.clipboardData?.getData("text")||"";
+    distributeDigits(pasted,index);
   };
 
   const handleBoxKeyDown=(index,e)=>{
     if(e.key==="Backspace"){
       if(!value[index]&&index>0){
+        e.preventDefault();
+        const arr=value.split("");
+        arr[index-1]="";
+        onChange(arr.join("").substring(0,6));
         boxRefs.current[index-1]?.focus();
       }
+    }else if(e.key==="ArrowLeft"&&index>0){
+      e.preventDefault();
+      boxRefs.current[index-1]?.focus();
+    }else if(e.key==="ArrowRight"&&index<5){
+      e.preventDefault();
+      boxRefs.current[index+1]?.focus();
     }
   };
 
   if(use6Boxes){
     return(
-      <>
-        <input
-          ref={hiddenInputRef}
-          type="text"
-          name="one-time-code"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          value={value}
-          onChange={handleHiddenChange}
-          style={{position:"absolute",opacity:0,pointerEvents:"none",width:0,height:0}}
-        />
-        <div style={{display:"flex",gap:8,justifyContent:"space-between",direction:"ltr"}}>
-          {[0,1,2,3,4,5].map(i=>(
-            <input
-              key={i}
-              ref={el=>boxRefs.current[i]=el}
-              type="text"
-              inputMode="numeric"
-              name="one-time-code"
-              autoComplete={i===0?"one-time-code":"off"}
-              maxLength="1"
-              value={value[i]||""}
-              onChange={e=>handleBoxChange(i,e.target.value)}
-              onKeyDown={e=>handleBoxKeyDown(i,e)}
-              disabled={disabled}
-              style={{
-                ...fi(error),
-                width:"40px",
-                height:"40px",
-                textAlign:"center",
-                fontSize:"18px",
-                fontWeight:"600",
-                direction:"ltr",
-                textAlign:"center"
-              }}
-            />
-          ))}
-        </div>
-      </>
+      <div dir="ltr" style={{display:"flex",gap:8,justifyContent:"space-between",direction:"ltr",unicodeBidi:"plaintext"}}>
+        {[0,1,2,3,4,5].map(i=>(
+          <input
+            key={i}
+            ref={el=>boxRefs.current[i]=el}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete={i===0?"one-time-code":"off"}
+            name={i===0?"otp":undefined}
+            maxLength={i===0?undefined:1}
+            value={value[i]||""}
+            onChange={e=>handleBoxChange(i,e.target.value)}
+            onPaste={e=>handlePaste(i,e)}
+            onKeyDown={e=>handleBoxKeyDown(i,e)}
+            onFocus={e=>{try{e.target.select();}catch(_){}}}
+            disabled={disabled}
+            dir="ltr"
+            style={{
+              ...fi(error),
+              width:"40px",
+              height:"44px",
+              padding:"0",
+              fontSize:"18px",
+              fontWeight:"700",
+              direction:"ltr",
+              textAlign:"center",
+              unicodeBidi:"plaintext"
+            }}
+          />
+        ))}
+      </div>
     );
   }
 
   return(
     <input
       ref={inputRef}
-      style={fi(error)}
-      placeholder="000000"
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      name="otp"
+      autoComplete="one-time-code"
+      maxLength="6"
       value={value}
       onChange={handleChange}
-      maxLength="6"
-      autoComplete="one-time-code"
-      inputMode="numeric"
+      placeholder="000000"
       disabled={disabled}
+      dir="ltr"
+      style={{...fi(error),direction:"ltr",textAlign:"center",letterSpacing:"4px",fontWeight:"700"}}
     />
   );
 }
@@ -3907,6 +3932,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[otpCode,setOtpCode]=useState("");
   const[otpTimer,setOtpTimer]=useState(0);
   const[otpExpired,setOtpExpired]=useState(false);
+  const[sending,setSending]=useState(false);
+  const[verifying,setVerifying]=useState(false);
 
   // تسجيل دخول بالبصمة
   const loginWithBiometric=async()=>{
@@ -3934,27 +3961,38 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   };
 
   useEffect(()=>{
-    if(otpTimer>0){
-      const t=setTimeout(()=>setOtpTimer(otpTimer-1),1000);
-      return()=>clearTimeout(t);
-    }else if(otpTimer===0&&otpSent){
-      setOtpExpired(true);
-    }
-  },[otpTimer,otpSent]);
+    if(otpTimer<=0)return;
+    const t=setTimeout(()=>{
+      setOtpTimer(prev=>{
+        if(prev<=1){
+          setOtpExpired(true);
+          return 0;
+        }
+        return prev-1;
+      });
+    },1000);
+    return()=>clearTimeout(t);
+  },[otpTimer]);
 
  const sendOtpCode=async()=>{
+  if(sending)return;
   if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
   const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if(!emailRegex.test(email.trim())){setErr("بريد إلكتروني غير صحيح");return;}
   if(otpTimer>0){setErr(`⏳ انتظر ${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")} قبل إعادة المحاولة`);return;}
   try{
+    setSending(true);
     setErr("");
+    setOtpExpired(false);
+    setOtpSent(true);
+    setOtpTimer(300);
     const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
     if(error){
       console.error("OTP Error:",error.message);
+      setOtpSent(false);
+      setOtpTimer(0);
       if(error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit")){
         setErr("❌ طلبات كثيرة - انتظر قليلاً ثم حاول مجدداً");
-        setOtpTimer(60);
       }else if(error.message.includes("invalid")||error.message.includes("format")){
         setErr("❌ البريد الإلكتروني غير صحيح");
       }else if(error.message.includes("disabled")||error.message.includes("not enabled")){
@@ -3964,27 +4002,29 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       }
       return;
     }
-    setOtpSent(true);
-    setOtpTimer(300);
-    setOtpExpired(false);
     setOtpCode("");
     toast$&&toast$("✅ تم إرسال الكود لبريدك - صلاحية 5 دقائق","success");
   }catch(e){
     console.error("Send OTP Exception:",e.message);
+    setOtpSent(false);
+    setOtpTimer(0);
     setErr("❌ خطأ في الاتصال - تحقق من الإنترنت");
+  }finally{
+    setSending(false);
   }
 };
 
   const register=async()=>{
+    if(verifying)return;
     if(!name.trim()||!phone.trim()){setErr("أدخل الاسم والجوال");return;}
     if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
     if(!otpSent){setErr("⚠️ أرسل الكود أولاً (اضغط زر الإرسال)");return;}
-    if(!otpCode.trim()){setErr("أدخل جميع الأرقام الستة");return;}
+    const otpClean=String(otpCode||"").replace(/\D/g,"").slice(0,6);
+    if(otpClean.length<6){setErr("❌ أدخل جميع الأرقام الستة");return;}
     if(otpExpired){setErr("❌ انتهت صلاحية الكود - اضغط على إعادة الإرسال");return;}
     try{
-      const otpToken=otpCode.trim().slice(0,6);
-      if(otpToken.length<6){setErr("❌ أدخل جميع الأرقام الستة");return;}
-      const {data,error}=await supabase.auth.verifyOtp({email:email.trim(),token:otpToken,type:"email"});
+      setVerifying(true);
+      const {data,error}=await supabase.auth.verifyOtp({email:email.trim(),token:otpClean,type:"email"});
       if(error){
         console.error("Verify OTP Error:",error.message);
         if(error.message.includes("timeout")||error.message.includes("expired")||error.message.includes("used")){
@@ -4006,9 +4046,10 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const nc=toAppCustomer(rows[0]);
       setCustomerSession(nc);setView("custDash");
       localStorage.setItem("dork_biometric_id",String(nc.id));
-      setOtpSent(false);setOtpCode("");
+      setOtpSent(false);setOtpCode("");setOtpTimer(0);setOtpExpired(false);
       toast$&&toast$("✅ تم إنشاء الحساب بنجاح!","success");
-    }catch(e){setErr("❌ خطأ في العملية - حاول مجدداً: "+e.message.substring(0,50));}
+    }catch(e){setErr("❌ خطأ في العملية - حاول مجدداً: "+e.message.substring(0,50));
+    }finally{setVerifying(false);}
   };
 
   return(
@@ -4070,29 +4111,31 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <F label="الاسم"><input style={fi()} placeholder="اسمك الكريم" value={name} onChange={e=>setName(e.target.value)}/></F>
           <F label="رقم الجوال"><input style={fi()} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <F label="البريد الإلكتروني (مطلوب)" error={err}><div style={{display:"flex",gap:8}}>
-            <input style={{...fi(err),flex:1}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent}/>
-            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:otpTimer>0?.6:1,cursor:otpTimer>0?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={otpTimer>0||!email.trim()}>
-              {otpSent?(otpTimer>0?`⏱ ${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"🔄 إعادة"):"📧 إرسال"}
+            <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
+            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(otpTimer>0||sending)?.6:1,cursor:(otpTimer>0||sending)?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={otpTimer>0||sending||!email.trim()}>
+              {sending?"⏳ جاري...":otpSent?(otpTimer>0?`⏱ ${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"🔄 إعادة"):"📧 إرسال"}
             </button>
           </div></F>
           {otpSent&&<>
             <F label="الكود (تحقق من بريدك)" error={otpExpired?true:undefined}>
-              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err||otpExpired} use6Boxes={true} disabled={otpExpired}/>
-              <div style={{fontSize:11,color:otpExpired?"#e74c3c":"#888",marginTop:8}}>
-                💡 الكود مرسل إلى: <strong>{email}</strong>
+              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err||otpExpired} use6Boxes={true} disabled={otpExpired||verifying}/>
+              <div style={{fontSize:11,color:otpExpired?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
+                💡 الكود مرسل إلى: <span dir="ltr" style={{display:"inline-block"}}><strong>{email}</strong></span>
                 <br/>⏱️ الصلاحية: {otpExpired?"❌ انتهت الصلاحية":otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"⏳ جاهز للإرسال"}
               </div>
             </F>
             <div style={{display:"flex",gap:8,fontSize:12,marginTop:12}}>
-              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);}}>
+              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);}}>
                 ✏️ تعديل البريد
               </button>
-              {otpExpired&&<button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #e74c3c",background:"rgba(231,76,60,.1)",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={sendOtpCode}>
-                🔄 إعادة الإرسال
+              {otpExpired&&<button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #e74c3c",background:"rgba(231,76,60,.1)",color:"#e74c3c",cursor:sending?"not-allowed":"pointer",fontFamily:"inherit",opacity:sending?.5:1}} disabled={sending} onClick={sendOtpCode}>
+                {sending?"⏳ جاري...":"🔄 إعادة الإرسال"}
               </button>}
             </div>
           </>}
-          <button style={G.sub} onClick={register} disabled={!otpSent}>إنشاء الحساب</button>
+          <button style={{...G.sub,opacity:(verifying||!otpSent)?.6:1,cursor:(verifying||!otpSent)?"not-allowed":"pointer"}} onClick={register} disabled={!otpSent||verifying||otpExpired}>
+            {verifying?"⏳ جاري التحقق...":"إنشاء الحساب"}
+          </button>
         </>}
       </div>
     </div></div>
