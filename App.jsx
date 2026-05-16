@@ -4270,7 +4270,6 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <div style={{fontSize:12,color:"#888"}}>📞 {customer.phone}</div>
               <div style={{fontSize:11,color:avatarColor,marginTop:2}}>{badge}</div>
             </div>
-            <button style={{...G.pageBtn,fontSize:11}} onClick={()=>setEditMode(true)}>✏ تعديل</button>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             {[{v:history.length,l:"حجز",c:"#6aadff"},{v:totalSpent+" ر",l:"إجمالي",c:"#f0c040"}].map(({v,l,c})=>(
