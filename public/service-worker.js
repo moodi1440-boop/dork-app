@@ -2,17 +2,48 @@
 const CACHE_NAME = 'dork-app-v1';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(self.skipWaiting());
+  const timestamp = new Date().toISOString();
+  console.log(`[Main SW] Installing at ${timestamp}`);
+  event.waitUntil(
+    self.skipWaiting().then(() => {
+      console.log('[Main SW] Install completed');
+    })
+  );
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  const timestamp = new Date().toISOString();
+  console.log(`[Main SW] Activating at ${timestamp}`);
+  event.waitUntil(
+    self.clients
+      .claim()
+      .then(() => {
+        console.log('[Main SW] Activation completed');
+        return self.clients.matchAll().then((clientList) => {
+          console.log(
+            `[Main SW] Active clients count: ${clientList.length}`
+          );
+          clientList.forEach((client) => {
+            client.postMessage({
+              type: 'SW_ACTIVATED',
+              timestamp: timestamp,
+            });
+          });
+        });
+      })
+      .catch((err) => {
+        console.error('[Main SW] Error during activation:', err);
+      })
+  );
 });
 
 // معالجة الإشعارات الواردة من FCM
 self.addEventListener('push', (event) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[Main SW] Push notification at ${timestamp}:`, event.data);
+
   if (!event.data) {
-    console.log('Push notification received but no data');
+    console.warn('[Main SW] Push event with no data');
     return;
   }
 
@@ -21,7 +52,7 @@ self.addEventListener('push', (event) => {
     const { notification, data: messageData } = data;
 
     if (!notification) {
-      console.log('No notification data in push event');
+      console.log('[Main SW] No notification data in push event');
       return;
     }
 
@@ -34,19 +65,41 @@ self.addEventListener('push', (event) => {
       requireInteraction: false,
       vibrate: [200, 100, 200],
       sound: 'default',
-      data: messageData || {},
+      data: {
+        ...messageData,
+        timestamp: timestamp,
+      },
     };
 
+    console.log(`[Main SW] Displaying: "${title}"`);
     event.waitUntil(
-      self.registration.showNotification(title, options)
+      self.registration
+        .showNotification(title, options)
+        .then(() => {
+          console.log('[Main SW] Notification displayed successfully');
+        })
+        .catch((err) => {
+          console.error('[Main SW] Error displaying notification:', err);
+        })
     );
   } catch (error) {
-    console.error('Error handling push notification:', error);
+    console.error('[Main SW] Error parsing push:', error);
+    event.waitUntil(
+      self.registration
+        .showNotification('إشعار جديد', {
+          body: 'حدث خطأ في استقبال الإشعار',
+          icon: '/favicon.ico',
+        })
+        .catch((err) => {
+          console.error('[Main SW] Error showing fallback notification:', err);
+        })
+    );
   }
 });
 
 // معالجة الضغط على الإشعار
 self.addEventListener('notificationclick', (event) => {
+  console.log('[Main SW] Notification clicked:', event.notification.tag);
   event.notification.close();
 
   const data = event.notification.data;
@@ -58,22 +111,35 @@ self.addEventListener('notificationclick', (event) => {
   }
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // تحقق من وجود نافذة مفتوحة
-      for (const client of clientList) {
-        if (client.url === targetUrl && 'focus' in client) {
-          return client.focus();
+    clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url === targetUrl && 'focus' in client) {
+            console.log('[Main SW] Focusing existing window');
+            return client.focus();
+          }
         }
-      }
-      // افتح نافذة جديدة إذا لم تكن هناك نافذة
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
-    })
+        console.log('[Main SW] Opening new window:', targetUrl);
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl);
+        }
+      })
+      .catch((err) => {
+        console.error('[Main SW] Error handling click:', err);
+      })
   );
 });
 
 // معالجة إغلاق الإشعار
 self.addEventListener('notificationclose', (event) => {
-  console.log('Notification closed:', event.notification.tag);
+  console.log('[Main SW] Notification closed:', event.notification.tag);
+});
+
+// معالج الرسائل من التطبيق
+self.addEventListener('message', (event) => {
+  console.log('[Main SW] Message received:', event.data);
+  if (event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

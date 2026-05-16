@@ -1,9 +1,15 @@
 // استقبال Push Notifications في الخلفية
 self.addEventListener("push", (e) => {
-  console.log("[Service Worker] Push notification received:", e.data);
+  const timestamp = new Date().toISOString();
+  console.log(`[Service Worker] Push notification received at ${timestamp}:`, e.data);
+
+  if (!e.data) {
+    console.warn("[Service Worker] Push event received with no data");
+    return;
+  }
 
   try {
-    const payload = e.data?.json() ?? {};
+    const payload = e.data.json();
     const { notification = {}, data = {} } = payload;
 
     const options = {
@@ -19,28 +25,39 @@ self.addEventListener("push", (e) => {
       data: {
         ...data,
         click_action: notification.click_action ?? "/notifications",
+        timestamp: timestamp,
       },
     };
 
-    // إضافة الصورة إذا كانت موجودة
     if (notification.image) {
       options.image = notification.image;
     }
 
+    const title = notification.title ?? "إشعار جديد";
+
+    console.log(`[Service Worker] Displaying notification: "${title}"`);
     e.waitUntil(
-      self.registration.showNotification(
-        notification.title ?? "إشعار جديد",
-        options
-      )
+      self.registration
+        .showNotification(title, options)
+        .then(() => {
+          console.log("[Service Worker] Notification displayed successfully");
+        })
+        .catch((err) => {
+          console.error("[Service Worker] Error displaying notification:", err);
+        })
     );
   } catch (error) {
-    console.error("[Service Worker] Error handling push notification:", error);
+    console.error("[Service Worker] Error parsing push notification:", error);
     e.waitUntil(
-      self.registration.showNotification("إشعار من DORK", {
-        body: "حدث خطأ في استقبال الإشعار",
-        icon: "/Logo.svg",
-        dir: "rtl",
-      })
+      self.registration
+        .showNotification("إشعار من DORK", {
+          body: "حدث خطأ في استقبال الإشعار",
+          icon: "/Logo.svg",
+          dir: "rtl",
+        })
+        .catch((err) => {
+          console.error("[Service Worker] Error showing fallback notification:", err);
+        })
     );
   }
 });
@@ -87,16 +104,45 @@ self.addEventListener("notificationclose", (e) => {
 
 // تحديث الـ Service Worker
 self.addEventListener("install", (e) => {
-  console.log("[Service Worker] Installing...");
-  self.skipWaiting();
+  const timestamp = new Date().toISOString();
+  console.log(`[Service Worker] Installing at ${timestamp}...`);
+  e.waitUntil(
+    self.skipWaiting().then(() => {
+      console.log("[Service Worker] Install completed");
+    })
+  );
 });
 
 self.addEventListener("activate", (e) => {
-  console.log("[Service Worker] Activating...");
-  e.waitUntil(clients.claim());
+  const timestamp = new Date().toISOString();
+  console.log(`[Service Worker] Activating at ${timestamp}...`);
+  e.waitUntil(
+    clients
+      .claim()
+      .then(() => {
+        console.log("[Service Worker] Activation completed");
+        return self.clients.matchAll().then((clientList) => {
+          console.log(
+            `[Service Worker] Active clients count: ${clientList.length}`
+          );
+          clientList.forEach((client) => {
+            client.postMessage({
+              type: "SW_ACTIVATED",
+              timestamp: timestamp,
+            });
+          });
+        });
+      })
+      .catch((err) => {
+        console.error("[Service Worker] Error during activation:", err);
+      })
+  );
 });
 
-// معالج عام للأخطاء
-self.addEventListener("error", (e) => {
-  console.error("[Service Worker] Error:", e.error);
+// معالج الرسائل من التطبيق
+self.addEventListener("message", (e) => {
+  console.log("[Service Worker] Message received:", e.data);
+  if (e.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });

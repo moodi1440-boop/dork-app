@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { createAdminClient } from '@/lib/supabase';
@@ -12,6 +12,10 @@ const FIREBASE_CONFIG = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY = 2000;
+const SW_UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
+
 interface FCMRegistrationOptions {
   userType: 'salon' | 'admin' | 'customer';
   userId: number;
@@ -23,8 +27,8 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
   const [isSupported, setIsSupported] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [swReady, setSwReady] = useState(false);
 
-  // تحقق من دعم الإشعارات
   useEffect(() => {
     const checkSupport = () => {
       const supported =
@@ -40,7 +44,56 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
     checkSupport();
   }, []);
 
-  // تسجيل الجهاز وحفظ الـ Token
+  const registerServiceWorkerWithRetry = useCallback(
+    async (attempt = 1): Promise<ServiceWorkerRegistration | null> => {
+      if (!('serviceWorker' in navigator)) {
+        console.warn('Service Worker not supported');
+        return null;
+      }
+
+      try {
+        console.log(
+          `[SW] Registration attempt ${attempt}/${MAX_RETRY_ATTEMPTS}`
+        );
+        const registration = await navigator.serviceWorker.register(
+          '/public/sw.js',
+          { scope: '/' }
+        );
+        console.log('[SW] Registered successfully:', registration);
+        setSwReady(true);
+        return registration;
+      } catch (err) {
+        console.error(`[SW] Registration failed (attempt ${attempt}):`, err);
+
+        if (attempt < MAX_RETRY_ATTEMPTS) {
+          const delay = RETRY_DELAY * Math.pow(2, attempt - 1);
+          console.log(`[SW] Retrying in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return registerServiceWorkerWithRetry(attempt + 1);
+        }
+
+        return null;
+      }
+    },
+    []
+  );
+
+  const checkForServiceWorkerUpdates = useCallback(async () => {
+    if (!('serviceWorker' in navigator)) return;
+
+    try {
+      const registrations =
+        await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        console.log('[SW] Checking for updates...');
+        await registration.update();
+        console.log('[SW] Update check completed');
+      }
+    } catch (err) {
+      console.error('[SW] Error checking updates:', err);
+    }
+  }, []);
+
   const register = async () => {
     if (!isSupported) {
       setError('الإشعارات غير مدعومة على هذا الجهاز');
@@ -51,7 +104,6 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
     setError(null);
 
     try {
-      // طلب الإذن من المستخدم
       if (Notification.permission === 'default') {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
@@ -61,19 +113,15 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
         }
       }
 
-      // تسجيل Service Worker
-      if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.register('/service-worker.js', {
-          scope: '/',
-        });
-        console.log('Service Worker registered:', registration);
+      const swRegistration =
+        await registerServiceWorkerWithRetry();
+      if (!swRegistration) {
+        console.warn('[SW] Failed to register service worker');
       }
 
-      // تهيئة Firebase
       const app = initializeApp(FIREBASE_CONFIG);
       const messaging = getMessaging(app);
 
-      // الحصول على الـ Token
       const fcmToken = await getToken(messaging, {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
       });
@@ -84,7 +132,6 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
 
       setToken(fcmToken);
 
-      // حفظ الـ Token في Supabase
       const supabase = createAdminClient();
       const { data: existingToken, error: fetchError } = await supabase
         .from('fcm_tokens')
@@ -93,7 +140,6 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
         .single();
 
       if (!fetchError && existingToken) {
-        // تحديث آخر وقت استخدام
         const { error: updateError } = await supabase
           .from('fcm_tokens')
           .update({ last_used_at: new Date().toISOString() })
@@ -103,27 +149,25 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
           console.error('Update token error:', updateError);
         }
       } else {
-        // إضافة token جديد
-        const { error: insertError } = await supabase.from('fcm_tokens').insert({
-          user_type: options.userType,
-          user_id: options.userId,
-          device_token: fcmToken,
-          device_name: options.deviceName || navigator.userAgent,
-          is_active: true,
-        });
+        const { error: insertError } = await supabase
+          .from('fcm_tokens')
+          .insert({
+            user_type: options.userType,
+            user_id: options.userId,
+            device_token: fcmToken,
+            device_name: options.deviceName || navigator.userAgent,
+            is_active: true,
+          });
 
         if (insertError) {
           console.error('Error saving FCM token:', insertError);
-          // لا نرفع الخطأ هنا لأن الـ token قد حُفظ في Firebase بالفعل
         }
       }
 
-      // الاستماع للإشعارات الواردة أثناء استخدام التطبيق
       onMessage(messaging, (payload) => {
         console.log('Message received in foreground:', payload);
 
         if (payload.notification) {
-          // إنشاء إشعار يدوي في حالة استخدام التطبيق
           if ('Notification' in window) {
             new Notification(payload.notification.title || 'إشعار', {
               body: payload.notification.body,
@@ -136,7 +180,8 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
 
       return fcmToken;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'فشل تسجيل الإشعارات';
+      const errorMessage =
+        err instanceof Error ? err.message : 'فشل تسجيل الإشعارات';
       setError(errorMessage);
       console.error('FCM Registration error:', err);
       return null;
@@ -145,7 +190,15 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
     }
   };
 
-  // إلغاء التسجيل
+  useEffect(() => {
+    const updateCheckInterval = setInterval(
+      () => checkForServiceWorkerUpdates(),
+      SW_UPDATE_CHECK_INTERVAL
+    );
+
+    return () => clearInterval(updateCheckInterval);
+  }, [checkForServiceWorkerUpdates]);
+
   const unregister = async () => {
     setIsLoading(true);
     setError(null);
@@ -166,7 +219,8 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
 
       setToken(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'فشل في إلغاء التسجيل';
+      const errorMessage =
+        err instanceof Error ? err.message : 'فشل في إلغاء التسجيل';
       setError(errorMessage);
       console.error('FCM Unregister error:', err);
     } finally {
@@ -181,5 +235,7 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
     isLoading,
     isSupported,
     error,
+    swReady,
+    manualUpdateCheck: checkForServiceWorkerUpdates,
   };
 }
