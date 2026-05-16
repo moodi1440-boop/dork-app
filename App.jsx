@@ -4301,7 +4301,10 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
       {/* المفضلة */}
       {tab==="favs"&&<>
-        {favSalons.length===0?<div style={G.empty}>لم تضف صالوناً للمفضلة بعد</div>:
+        {favSalons.length===0?<div style={{...G.empty,display:"flex",flexDirection:"column",gap:16,alignItems:"center",padding:"36px 14px"}}>
+          <div>لم تضف صالوناً للمفضلة بعد</div>
+          <button style={{...G.sub,marginTop:0}} onClick={()=>setView("home")}>استعرض الصالونات الآن</button>
+        </div>:
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {favSalons.map(s=>(
               <div key={s.id} style={G.bItem}>
