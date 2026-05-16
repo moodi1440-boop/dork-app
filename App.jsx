@@ -3819,22 +3819,10 @@ function OwnerSettings({salon,setSalons,toast$}){
                 </div>
               </>:f._editPinStep==="enter"?<>
                 <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أدخل PIN الجديد ({f._editPinLength} أرقام)</div>
-                <NumericKeypad value={f._editTempPin} onChange={(val)=>setF(p=>({...p,_editTempPin:val}))} maxLength={f._editPinLength} onSubmit={()=>{if(f._editTempPin.length===f._editPinLength)setF(p=>({...p,_editPinStep:"confirm"}));}} />
+                <input type="password" inputMode="numeric" maxLength={f._editPinLength} value={f._editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editTempPin:val}));if(val.length===f._editPinLength)setTimeout(()=>setF(p=>({...p,_editPinStep:"confirm"})),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editTempPin.length===f._editPinLength)setF(p=>({...p,_editPinStep:"confirm"}));}} />
               </>:f._editPinStep==="confirm"?<>
                 <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أعد إدخال PIN للتأكيد</div>
-                <NumericKeypad value={f._editPinConfirm} onChange={(val)=>setF(p=>({...p,_editPinConfirm:val}))} maxLength={f._editPinLength} onSubmit={()=>{
-                  if(f._editPinConfirm.length===f._editPinLength){
-                    if(f._editTempPin!==f._editPinConfirm){
-                      setF(p=>({...p,_editPinErr:"الأرقام غير متطابقة"}));
-                      return;
-                    }
-                    const salonIdStr=String(salon.id);
-                    localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);
-                    localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));
-                    toast$&&toast$("✅ تم تحديث PIN بنجاح");
-                    setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));
-                  }
-                }} />
+                <input type="password" inputMode="numeric" maxLength={f._editPinLength} value={f._editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editPinConfirm:val}));if(val.length===f._editPinLength){if(f._editTempPin!==val){setF(p=>({...p,_editPinErr:"الأرقام غير متطابقة"}));return;}const salonIdStr=String(salon.id);localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));toast$&&toast$("✅ تم تحديث PIN بنجاح");setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));}}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm){const salonIdStr=String(salon.id);localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));toast$&&toast$("✅ تم تحديث PIN بنجاح");setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));}}}/>
               </>:null}
               {f._editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:12}}>{f._editPinErr}</div>}
               <button onClick={()=>setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",marginTop:16,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:12}}>
@@ -4515,25 +4503,10 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               </div>
             </>:editPinStep==="enter"?<>
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أدخل PIN الجديد ({editPinLength} أرقام)</div>
-              <NumericKeypad value={editTempPin} onChange={setEditTempPin} maxLength={editPinLength} onSubmit={()=>{if(editTempPin.length===editPinLength)setEditPinStep("confirm");}} />
+              <input type="password" inputMode="numeric" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editTempPin.length===editPinLength)setEditPinStep("confirm");}} />
             </>:editPinStep==="confirm"?<>
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أعد إدخال PIN للتأكيد</div>
-              <NumericKeypad value={editPinConfirm} onChange={setEditPinConfirm} maxLength={editPinLength} onSubmit={()=>{
-                if(editPinConfirm.length===editPinLength){
-                  if(editTempPin!==editPinConfirm){
-                    setEditPinErr("الأرقام غير متطابقة");
-                    return;
-                  }
-                  const customerIdStr=String(customer.id);
-                  localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);
-                  localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));
-                  setEditPinStep(null);
-                  setEditPinLength(4);
-                  setEditTempPin("");
-                  setEditPinConfirm("");
-                  setEditPinErr("");
-                }
-              }} />
+              <input type="password" inputMode="numeric" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength){if(editTempPin!==val){setEditPinErr("الأرقام غير متطابقة");return;}const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} />
             </>:null}
             {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:12}}>{editPinErr}</div>}
             <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{width:"100%",marginTop:16,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:12}}>
