@@ -3956,7 +3956,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[phone,setPhone]=useState(""); const[name,setName]=useState("");
   const[email,setEmail]=useState(""); const[pass,setPass]=useState("");
   const[err,setErr]=useState("");
- const[otpSent,setOtpSent]=useState(false);
+  const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
   const[otpTimer,setOtpTimer]=useState(0);
   const[otpExpired,setOtpExpired]=useState(false);
@@ -3965,7 +3965,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[attempts,setAttempts]=useState(0);
   const[resendTimer,setResendTimer]=useState(0);
 
-  // تسجيل دخول بالبصمة
   const loginWithBiometric=async()=>{
     if(!window.PublicKeyCredential){toast$&&toast$("❌ البصمة غير مدعومة","err");return;}
     try{
@@ -3985,12 +3984,10 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(!rows.length){setErr("لا يوجد حساب بهذا الرقم");return;}
       const c=toAppCustomer(rows[0]);
       setCustomerSession(c);setView("home");
-      // حفظ للبصمة
       localStorage.setItem("dork_biometric_id",String(c.id));
     }catch(e){setErr("خطأ: "+e.message);}
   };
 
-  // مؤقت صلاحية الكود (5 دقائق)
   useEffect(()=>{
     if(!otpSent||otpTimer<=0)return;
     const interval=setInterval(()=>{
@@ -4006,7 +4003,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     return()=>clearInterval(interval);
   },[otpSent]);
 
-  // مؤقت انتظار إعادة الإرسال (دقيقتين)
   useEffect(()=>{
     if(resendTimer<=0)return;
     const interval=setInterval(()=>{
@@ -4015,62 +4011,62 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     return()=>clearInterval(interval);
   },[resendTimer]);
 
- const sendOtpCode=async()=>{
-  if(sending)return;
-  if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
-  const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if(!emailRegex.test(email.trim())){setErr("بريد إلكتروني غير صحيح");return;}
-  if(resendTimer>0){setErr(`⏳ انتظر ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")} قبل إعادة المحاولة`);return;}
-  try{
-    setSending(true);
-    setErr("");
-    setOtpExpired(false);
-    setOtpCode("");
-    setOtpTimer(300);
-    setResendTimer(120);
-    setOtpSent(true);
-    setAttempts(0);
-    const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
-    if(error){
-      console.error("OTP Error:",error.message);
-      setOtpSent(false);
-      setOtpExpired(false);
-      const isRateLimit=error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit");
-      if(isRateLimit){
-        setResendTimer(120);
-        setErr("❌ يرجى الانتظار دقيقتين قبل المحاولة مجدداً");
-      }else{
-        setOtpTimer(0);
-        if(error.message.includes("invalid")||error.message.includes("format")){
-          setErr("❌ البريد الإلكتروني غير صحيح");
-        }else if(error.message.includes("disabled")||error.message.includes("not enabled")){
-          setErr("❌ المصادقة غير مفعّلة - تواصل مع الدعم");
-        }else{
-          setErr("❌ خطأ: "+error.message.substring(0,40));
-        }
-      }
-      return;
-    }
-    toast$&&toast$("✅ تم إرسال الكود لبريدك - صلاحية 5 دقائق","success");
-  }catch(e){
-    console.error("Send OTP Exception:",e.message);
-    setOtpSent(false);
-    setOtpTimer(0);
-    setOtpExpired(false);
-    setErr("❌ خطأ في الاتصال - تحقق من الإنترنت");
+  const sendOtpCode=async()=>{
+    if(sending)return;
+    if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
+    const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRegex.test(email.trim())){setErr("بريد إلكتروني غير صحيح");return;}
+    if(resendTimer>0){setErr(`⏳ انتظر ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")} قبل إعادة المحاولة`);return;}
     try{
-      const {data:{user}}=await supabase.auth.getUser();
-      if(user&&user.email===email.trim()){
-        await supabase.auth.admin.deleteUser(user.id);
-        console.log("Cleanup: Deleted pending user record");
+      setSending(true);
+      setErr("");
+      setOtpExpired(false);
+      setOtpCode("");
+      setOtpTimer(300);
+      setResendTimer(120);
+      setOtpSent(true);
+      setAttempts(0);
+      const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
+      if(error){
+        console.error("OTP Error:",error.message);
+        setOtpSent(false);
+        setOtpExpired(false);
+        const isRateLimit=error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit");
+        if(isRateLimit){
+          setResendTimer(120);
+          setErr("❌ يرجى الانتظار دقيقتين قبل المحاولة مجدداً");
+        }else{
+          setOtpTimer(0);
+          if(error.message.includes("invalid")||error.message.includes("format")){
+            setErr("❌ البريد الإلكتروني غير صحيح");
+          }else if(error.message.includes("disabled")||error.message.includes("not enabled")){
+            setErr("❌ المصادقة غير مفعّلة - تواصل مع الدعم");
+          }else{
+            setErr("❌ خطأ: "+error.message.substring(0,40));
+          }
+        }
+        return;
       }
-    }catch(cleanupErr){
-      console.error("Cleanup failed:",cleanupErr.message);
+      toast$&&toast$("✅ تم إرسال الكود لبريدك - صلاحية 5 دقائق","success");
+    }catch(e){
+      console.error("Send OTP Exception:",e.message);
+      setOtpSent(false);
+      setOtpTimer(0);
+      setOtpExpired(false);
+      setErr("❌ خطأ في الاتصال - تحقق من الإنترنت");
+      try{
+        const {data:{user}}=await supabase.auth.getUser();
+        if(user&&user.email===email.trim()){
+          await supabase.auth.admin.deleteUser(user.id);
+          console.log("Cleanup: Deleted pending user record");
+        }
+      }catch(cleanupErr){
+        console.error("Cleanup failed:",cleanupErr.message);
+      }
+    }finally{
+      setSending(false);
     }
-  }finally{
-    setSending(false);
-  }
-};
+  };
 
   const register=async()=>{
     if(verifying)return;
@@ -4117,7 +4113,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>حساب العميل 👤</h2></div>
 
-      {/* دخول بالبصمة */}
       {localStorage.getItem("dork_biometric_id")&&(
         <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--pa25)",background:"var(--pa08)",color:"var(--p)",cursor:"pointer",fontSize:14,fontFamily:"inherit",fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={loginWithBiometric}>
           👆 دخول بالبصمة
@@ -4131,13 +4126,12 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       <div style={G.fc}>
         {tab==="login"?<>
           <SL>تسجيل الدخول</SL>
-          <F label="رقم الجوال" error={err}><input style={fi(err)} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+          <F label="رقم الجوال" error={err}><input style={fi(err)} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}} /></F>
           <button style={G.sub} onClick={login}>دخول</button>
           <div style={{textAlign:"center",margin:"12px 0",color:"#555",fontSize:12}}>- أو -</div>
           <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #4285f4",background:"rgba(66,133,244,.1)",color:"#4285f4",cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={async()=>{
             try{
               setErr("");
-              // تحميل Firebase
               const loadScript=(src)=>new Promise((res,rej)=>{
                 if(document.querySelector(`script[src="${src}"]`)){res();return;}
                 const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;
@@ -4178,23 +4172,22 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             </button>
           </div></F>
           {otpSent&&<>
-            <F label="الكود (تحقق من بريدك)" error={otpExpired?true:undefined}>
-              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err||otpExpired} use6Boxes={true} disabled={otpExpired||verifying||attempts>=5}/>
-              <div style={{fontSize:11,color:otpExpired?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
+            <F label="الكود (تحقق من بريدك)" error={attempts>=5?true:undefined}>
+              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={attempts>=5} use6Boxes={true} disabled={otpExpired||verifying||attempts>=5}/>
+              <div style={{fontSize:11,color:attempts>=5?"#e74c3c":otpExpired?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
                 💡 الكود مرسل إلى: <span dir="ltr" style={{display:"inline-block"}}><strong>{email}</strong></span>
                 <br/>⏱️ الصلاحية: {otpExpired?"❌ انتهت الصلاحية":otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"⏳ جاهز للإرسال"}
+                {attempts>0&&attempts<5&&<><br/>⚠️ محاولات متبقية: {5-attempts}</>}
+                {attempts>=5&&<><br/>❌ تم تجاوز حد المحاولات - يرجى إعادة الإرسال</>}
               </div>
             </F>
             <div style={{display:"flex",gap:8,fontSize:12,marginTop:12}}>
               <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);setResendTimer(0);setAttempts(0);}}>
                 ✏️ تعديل البريد
               </button>
-              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #f1c40f",background:"rgba(241,196,15,.1)",color:"#f1c40f",cursor:(resendTimer>0||sending)?"not-allowed":"pointer",fontFamily:"inherit",opacity:(resendTimer>0||sending)?.5:1}} disabled={resendTimer>0||sending} onClick={sendOtpCode}>
-                {sending?"⏳ جاري...":resendTimer>0?`⏱ ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")}`:"🔄 إعادة"}
-              </button>
             </div>
           </>}
-          <button style={{...G.sub,opacity:(verifying||!otpSent)?.6:1,cursor:(verifying||!otpSent)?"not-allowed":"pointer"}} onClick={register} disabled={!otpSent||verifying||otpExpired}>
+          <button style={{...G.sub,opacity:(verifying||!otpSent)?.6:1,cursor:(verifying||!otpSent)?"not-allowed":"pointer"}} onClick={register} disabled={!otpSent||verifying||otpExpired||attempts>=5}>
             {verifying?"⏳ جاري التحقق...":"إنشاء الحساب"}
           </button>
         </>}
