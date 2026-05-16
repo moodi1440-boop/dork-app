@@ -1478,8 +1478,12 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
       <div style={{background:"linear-gradient(160deg,#12122a,#1a1a3a)",borderBottom:"1px solid #2a2a3a",padding:"14px 14px 0"}}>
         <div style={{textAlign:"center",paddingBottom:10}}>
-          <h1 style={{fontSize:24,fontWeight:900,color:"#fff",lineHeight:1.3}}>احجز وقتك<br/><span style={{color:"var(--p)"}}>بضغطة واحدة</span></h1>
-          <p style={{color:"#777",fontSize:12,marginTop:4}}>أفضل صالونات الحلاقة في مدينتك</p>
+          <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:6,marginBottom:8}}>
+            <span style={{fontSize:20,fontWeight:700,color:"var(--p)",letterSpacing:1}}>احجز</span>
+            <span style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:3,textShadow:"0 4px 20px rgba(212,160,23,0.4)",fontFamily:"'Playfair Display', 'Courier New', serif"}}>DORK</span>
+          </div>
+          <div style={{fontSize:11,color:"#888",letterSpacing:2,marginBottom:8,fontWeight:600}}>✂ حجوزات فاخرة ✂</div>
+          <p style={{color:"#777",fontSize:12,marginTop:2}}>أفضل صالونات الحلاقة في مدينتك</p>
         </div>
 
         {/* حجز سريع */}
