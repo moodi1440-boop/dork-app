@@ -4275,15 +4275,10 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <div style={{fontSize:13,color:"#f0c040",fontWeight:700,marginBottom:12}}>📞 {customer.phone}</div>
             </div>
           </div>
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            <div style={{background:"#0d0d1a",borderRadius:10,padding:"12px 8px",textAlign:"center",border:"1px solid #f0c04033"}}>
-              <div style={{fontSize:18,fontWeight:900,color:"#f0c040"}}>{history.length}</div>
-              <div style={{fontSize:10,color:"#888"}}>حجوزات</div>
-            </div>
-            <div style={{background:"#0d0d1a",borderRadius:10,padding:"12px 8px",textAlign:"center",border:"1px solid #f0c04033"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#f0c040"}}>{customer.created_at?new Date(customer.created_at).toLocaleDateString("ar"):""}</div>
-              <div style={{fontSize:10,color:"#888"}}>الانضمام</div>
-            </div>
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📋 الحجوزات: <span style={{color:"#f0c040"}}>{history.length} حجز</span></div>
           </div>
         </div>
       ):(
