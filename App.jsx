@@ -4209,6 +4209,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
+  const[showDeleteConfirm,setShowDeleteConfirm]=useState(false);
   const[editEmail,setEditEmail]=useState(customer?.email||"");
   const[reminderMins,setReminderMins]=useState(60);
   if(!customer)return null;
@@ -4232,14 +4233,18 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
     }catch(e){alert("خطأ: "+e.message);}
   };
 
-  const deleteAccount=async()=>{
-    if(!confirm("حذف حسابك نهائياً؟ لا يمكن التراجع!")){return;}
+  const confirmDeleteAccount=async()=>{
     try{
       await sb("customers","DELETE",null,`?id=eq.${customer.id}`);
       const {data:{user}}=await supabase.auth.getUser();
       if(user)await supabase.auth.admin.deleteUser(user.id);
       setCustomerSession(null);setView("home");
     }catch(e){alert("خطأ: "+e.message);}
+    setShowDeleteConfirm(false);
+  };
+
+  const deleteAccount=()=>{
+    setShowDeleteConfirm(true);
   };
 
   const scheduleReminder=(h)=>{
@@ -4430,6 +4435,38 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>{setTab("settings");setEditMode(true);}}>✏ تعديل البيانات</button>
           <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13}} onClick={deleteAccount}>🗑 حذف الحساب نهائياً</button>
           <div style={{fontSize:10,color:"#555",marginTop:8,textAlign:"center"}}>تحذير: حذف الحساب لا يمكن التراجع عنه</div>
+        </div>
+      )}
+
+      {/* حذف الحساب - Dialog */}
+      {showDeleteConfirm&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"20px"}}>
+          <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:24,border:"1.5px solid #d4a017",boxShadow:"0 20px 60px rgba(212,160,23,0.2)",maxWidth:"90%",animation:"slideUp 0.3s ease"}}>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
+              <div style={{fontSize:18,fontWeight:900,color:"#fff",marginBottom:8}}>حذف الحساب نهائياً</div>
+              <div style={{fontSize:12,color:"#888",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
+            </div>
+
+            <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:20,fontSize:12,color:"#ddd",lineHeight:1.8}}>
+              <div style={{marginBottom:8,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>✗ <span>حسابك بشكل نهائي</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>✗ <span>جميع معلوماتك الشخصية</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>✗ <span>سجل حجوزاتك</span></div>
+            </div>
+
+            <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:12,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700}}>
+              ⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف</div>
+
+            <div style={{display:"flex",gap:10}}>
+              <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",transition:"all 0.2s"}} onClick={()=>setShowDeleteConfirm(false)}>
+                ↩️ إلغاء
+              </button>
+              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",border:"none",transition:"all 0.2s",boxShadow:"0 4px 12px rgba(231,76,60,0.3)"}} onClick={confirmDeleteAccount}>
+                🗑️ حذف نهائياً
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
