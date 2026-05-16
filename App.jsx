@@ -4281,6 +4281,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const avatarColors=["#d4a017","#27ae60","#3b82f6","#8b5cf6","#e74c3c"];
   const avatarColor=avatarColors[customer.name?.charCodeAt(0)%avatarColors.length||0];
 
+  const lastSalon=history.length>0?salons.find(s=>s.id===history[history.length-1].salonId||s.id===Number(history[history.length-1].salonId)):null;
+
   const saveEdit=async()=>{
     if(!editName.trim()){return;}
     try{
