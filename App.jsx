@@ -4178,8 +4178,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <F label="رقم الجوال"><input style={fi()} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <F label="البريد الإلكتروني (مطلوب)" error={err}><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
-            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(resendTimer>0||sending)?.6:1,cursor:(resendTimer>0||sending)?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={resendTimer>0||sending}>
-              {sending?"⏳ جاري...":otpSent?(resendTimer>0?`⏱ ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")}`:"🔄 إعادة"):"📧 إرسال"}
+            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:sending?.6:1,cursor:sending?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending}>
+              {sending?"⏳ جاري...":otpSent?"🔄 إعادة":"📧 إرسال"}
             </button>
           </div></F>
           {otpSent&&<>
