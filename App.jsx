@@ -4187,7 +4187,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={false} use6Boxes={true} disabled={verifying||attempts>=5}/>
               <div style={{fontSize:11,color:attempts>=5?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
                 💡 الكود مرسل إلى: <span dir="ltr" style={{display:"inline-block"}}><strong>{email}</strong></span>
-                <br/>⏱️ الصلاحية: {otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:otpExpired?"❌ انتهت الصلاحية":"⏳ جاهز للإرسال"}
                 {attempts>0&&attempts<5&&<><br/>⚠️ محاولات متبقية: {5-attempts}</>}
                 {attempts>=5&&<><br/>❌ تم تجاوز حد المحاولات - يرجى إعادة الإرسال</>}
               </div>
