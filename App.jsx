@@ -4210,6 +4210,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
   const[editEmail,setEditEmail]=useState(customer?.email||"");
   const[reminderMins,setReminderMins]=useState(60);
+  const[showDeleteConfirm,setShowDeleteConfirm]=useState(false);
+  const[deleting,setDeleting]=useState(false);
   if(!customer)return null;
 
   const favSalons=salons.filter(s=>favSet.has(s.id)&&s.status==="approved");
@@ -4232,11 +4234,11 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   };
 
   const deleteAccount=async()=>{
-    if(!confirm("حذف حسابك نهائياً؟ لا يمكن التراجع!")){return;}
+    setDeleting(true);
     try{
       await sb("customers","DELETE",null,`?id=eq.${customer.id}`);
       setCustomerSession(null);setView("home");
-    }catch(e){alert("خطأ: "+e.message);}
+    }catch(e){alert("خطأ: "+e.message);}finally{setDeleting(false);setShowDeleteConfirm(false);}
   };
 
   const scheduleReminder=(h)=>{
@@ -4266,9 +4268,11 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
             <div style={{width:52,height:52,borderRadius:"50%",background:avatarColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#000",flexShrink:0}}>{initials}</div>
             <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{customer.name}</div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{customer.name}</div>
+                <div style={{background:"rgba(240,192,64,0.2)",border:"1px solid #f0c040",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#d4a017"}}>{badge}</div>
+              </div>
               <div style={{fontSize:12,color:"#888"}}>📞 {customer.phone}</div>
-              <div style={{fontSize:11,color:avatarColor,marginTop:2}}>{badge}</div>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
@@ -4305,7 +4309,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
       {/* المفضلة */}
       {tab==="favs"&&<>
-        {favSalons.length===0?<div style={G.empty}>لم تضف صالوناً للمفضلة بعد</div>:
+        {favSalons.length===0?<div style={{...G.empty,display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>لم تضف صالوناً للمفضلة بعد<button style={{...G.sub,background:"#f0c040",color:"#000",fontWeight:700,padding:"10px 20px"}} onClick={()=>{setTab("salons");setView("home")}}>استعرض الصالونات الآن</button></div>:
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {favSalons.map(s=>(
               <div key={s.id} style={G.bItem}>
@@ -4433,8 +4437,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             <div>📞 الجوال: <span style={{color:"#fff",fontWeight:700}}>{customer.phone}</span></div>
             <div>📋 الحجوزات: <span style={{color:"var(--p)",fontWeight:700}}>{history.length} حجز</span></div>
           </div>
-          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>{setTab("favs");setEditMode(true);}}>✏ تعديل البيانات</button>
-          <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13}} onClick={deleteAccount}>🗑 حذف الحساب نهائياً</button>
+          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>{setTab("settings");setEditMode(true);}}>✏ تعديل البيانات</button>
+          <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13}} onClick={()=>setShowDeleteConfirm(true)}>🗑 حذف الحساب نهائياً</button>
           <div style={{fontSize:10,color:"#555",marginTop:8,textAlign:"center"}}>تحذير: حذف الحساب لا يمكن التراجع عنه</div>
         </div>
       )}
@@ -5113,6 +5117,17 @@ function SettingsView({settings,setSettings,setView,toast$,adminSession,socialLi
         <div style={{fontSize:22,fontWeight:900,color:"var(--p)",letterSpacing:1}}>دورك ✂</div>
         <div style={{fontSize:11,color:"#888",marginTop:2}}>{"الإصدار 1.0.0 - 2025"}</div>
       </div>
+
+      {showDeleteConfirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
+        <div style={{background:"#1a1a2e",borderRadius:16,padding:24,border:"1.5px solid #e74c3c",maxWidth:320,boxShadow:"0 20px 60px rgba(0,0,0,0.8)"}}>
+          <div style={{fontSize:18,fontWeight:900,color:"#e74c3c",marginBottom:12}}>⚠ تنبيه حذف الحساب</div>
+          <div style={{fontSize:13,color:"#ccc",lineHeight:1.6,marginBottom:20}}>سيتم حذف حسابك بالكامل وستفقد جميع بياناتك وحجوزاتك نهائياً. هل أنت متأكد من قرارك؟</div>
+          <div style={{display:"flex",gap:10}}>
+            <button style={{flex:1,padding:"12px",borderRadius:9,background:"transparent",border:"1.5px solid #888",color:"#aaa",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={()=>setShowDeleteConfirm(false)}>إلغاء</button>
+            <button style={{flex:1,padding:"12px",borderRadius:9,background:"#e74c3c",border:"none",color:"#fff",fontSize:13,fontWeight:700,cursor:deleting?"not-allowed":"pointer",opacity:deleting?0.6:1}} disabled={deleting} onClick={deleteAccount}>{deleting?"جاري الحذف...":"تأكيد الحذف"}</button>
+          </div>
+        </div>
+      </div>}
     </div></div>
   );
 }
