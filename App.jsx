@@ -3660,7 +3660,7 @@ function OwnerSettings({salon,setSalons,toast$}){
   return(
     <div>
       <div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
-        {[{id:"info",icon:"📋",label:"المعلومات"},{id:"hours",icon:"🕐",label:"الأوقات"},{id:"services",icon:"✂",label:"الخدمات"},{id:"barbers",icon:"💈",label:"الحلاقون"},{id:"tone",icon:"🔔",label:"النغمة"}].map(s=>(
+        {[{id:"info",icon:"📋",label:"المعلومات"},{id:"hours",icon:"🕐",label:"الأوقات"},{id:"services",icon:"✂",label:"الخدمات"},{id:"barbers",icon:"💈",label:"الحلاقون"},{id:"tone",icon:"🔔",label:"النغمة"},{id:"pin",icon:"🔐",label:"PIN"}].map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
             style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"#2a2a3a"}`,background:sec===s.id?"var(--pa12)":"#1a1a2e",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
             {s.icon} {s.label}
@@ -3791,6 +3791,54 @@ function OwnerSettings({salon,setSalons,toast$}){
           })}
         </div>
         <div style={{fontSize:11,color:"#555",marginTop:8}}>اضغط للمعاينة</div>
+      </div>}
+
+      {sec==="pin"&&<div style={box}>
+        <div style={hdr}>🔐 الدخول السريع (PIN)</div>
+        <div style={{fontSize:13,color:"#aaa",marginBottom:14,lineHeight:1.6}}>تغيير رمز PIN سيؤثر على جميع طرق الدخول السريع</div>
+        <button onClick={()=>setF(p=>({...p,_editPinStep:"select",_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--p)",background:"rgba(212,160,23,.1)",color:"var(--p)",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
+          ✏️ تغيير رمز PIN
+        </button>
+        {f._editPinStep&&(
+          <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
+            <div style={{background:"#13131f",borderRadius:20,padding:24,maxWidth:350,width:"100%",border:"1.5px solid var(--pa25)"}}>
+              {f._editPinStep==="select"?<>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>🔐 تغيير رمز PIN</div>
+                <div style={{fontSize:12,color:"#888",textAlign:"center",marginBottom:20}}>اختر عدد الأرقام</div>
+                <div style={{display:"flex",gap:12,marginBottom:16}}>
+                  <button onClick={()=>setF(p=>({...p,_editPinLength:4,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===4?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    4 أرقام
+                  </button>
+                  <button onClick={()=>setF(p=>({...p,_editPinLength:6,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===6?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    6 أرقام
+                  </button>
+                </div>
+              </>:f._editPinStep==="enter"?<>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أدخل PIN الجديد ({f._editPinLength} أرقام)</div>
+                <NumericKeypad value={f._editTempPin} onChange={(val)=>setF(p=>({...p,_editTempPin:val}))} maxLength={f._editPinLength} onSubmit={()=>{if(f._editTempPin.length===f._editPinLength)setF(p=>({...p,_editPinStep:"confirm"}));}} />
+              </>:f._editPinStep==="confirm"?<>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أعد إدخال PIN للتأكيد</div>
+                <NumericKeypad value={f._editPinConfirm} onChange={(val)=>setF(p=>({...p,_editPinConfirm:val}))} maxLength={f._editPinLength} onSubmit={()=>{
+                  if(f._editPinConfirm.length===f._editPinLength){
+                    if(f._editTempPin!==f._editPinConfirm){
+                      setF(p=>({...p,_editPinErr:"الأرقام غير متطابقة"}));
+                      return;
+                    }
+                    const salonIdStr=String(salon.id);
+                    localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);
+                    localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));
+                    toast$&&toast$("✅ تم تحديث PIN بنجاح");
+                    setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));
+                  }
+                }} />
+              </>:null}
+              {f._editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:12}}>{f._editPinErr}</div>}
+              <button onClick={()=>setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",marginTop:16,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:12}}>
+                إلغاء
+              </button>
+            </div>
+          </div>
+        )}
       </div>}
 
       <button style={{...G.sub,marginTop:4,opacity:saving?0.7:1}} onClick={save} disabled={saving}>
@@ -4212,6 +4260,11 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[showDeleteConfirm,setShowDeleteConfirm]=useState(false);
   const[editEmail,setEditEmail]=useState(customer?.email||"");
   const[reminderMins,setReminderMins]=useState(60);
+  const[editPinStep,setEditPinStep]=useState(null);
+  const[editPinLength,setEditPinLength]=useState(4);
+  const[editTempPin,setEditTempPin]=useState("");
+  const[editPinConfirm,setEditPinConfirm]=useState("");
+  const[editPinErr,setEditPinErr]=useState("");
   if(!customer)return null;
 
   const favSalons=salons.filter(s=>favSet.has(s.id)&&s.status==="approved");
@@ -4433,8 +4486,54 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
           <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:14,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>⚙ إعدادات الحساب</div>
           <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>{setTab("settings");setEditMode(true);}}>✏ تعديل البيانات</button>
+          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>setEditPinStep("select")}>🔐 تغيير رمز PIN</button>
           <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13}} onClick={deleteAccount}>🗑 حذف الحساب نهائياً</button>
           <div style={{fontSize:10,color:"#555",marginTop:8,textAlign:"center"}}>تحذير: حذف الحساب لا يمكن التراجع عنه</div>
+        </div>
+      )}
+
+      {/* حوار تغيير PIN */}
+      {editPinStep&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
+          <div style={{background:"#13131f",borderRadius:20,padding:24,maxWidth:350,width:"100%",border:"1.5px solid var(--pa25)"}}>
+            {editPinStep==="select"?<>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>🔐 تغيير رمز PIN</div>
+              <div style={{fontSize:12,color:"#888",textAlign:"center",marginBottom:20}}>اختر عدد الأرقام</div>
+              <div style={{display:"flex",gap:12,marginBottom:16}}>
+                <button onClick={()=>{setEditPinLength(4);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===4?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                  4 أرقام
+                </button>
+                <button onClick={()=>{setEditPinLength(6);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===6?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                  6 أرقام
+                </button>
+              </div>
+            </>:editPinStep==="enter"?<>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أدخل PIN الجديد ({editPinLength} أرقام)</div>
+              <NumericKeypad value={editTempPin} onChange={setEditTempPin} maxLength={editPinLength} onSubmit={()=>{if(editTempPin.length===editPinLength)setEditPinStep("confirm");}} />
+            </>:editPinStep==="confirm"?<>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أعد إدخال PIN للتأكيد</div>
+              <NumericKeypad value={editPinConfirm} onChange={setEditPinConfirm} maxLength={editPinLength} onSubmit={()=>{
+                if(editPinConfirm.length===editPinLength){
+                  if(editTempPin!==editPinConfirm){
+                    setEditPinErr("الأرقام غير متطابقة");
+                    return;
+                  }
+                  const customerIdStr=String(customer.id);
+                  localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);
+                  localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));
+                  setEditPinStep(null);
+                  setEditPinLength(4);
+                  setEditTempPin("");
+                  setEditPinConfirm("");
+                  setEditPinErr("");
+                }
+              }} />
+            </>:null}
+            {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:12}}>{editPinErr}</div>}
+            <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{width:"100%",marginTop:16,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:12}}>
+              إلغاء
+            </button>
+          </div>
         </div>
       )}
 
