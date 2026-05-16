@@ -4205,7 +4205,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   );
 }
 function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers}){
-  const[tab,setTab]=useState("favs");
+  const[tab,setTab]=useState("settings");
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
