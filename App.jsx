@@ -4196,8 +4196,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);setResendTimer(0);setAttempts(0);}}>
                 ✏️ تعديل البريد
               </button>
-              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #f1c40f",background:"rgba(241,196,15,.1)",color:"#f1c40f",cursor:(resendTimer>0||sending)?"not-allowed":"pointer",fontFamily:"inherit",opacity:(resendTimer>0||sending)?.5:1}} disabled={resendTimer>0||sending} onClick={sendOtpCode}>
-                {sending?"⏳ جاري...":resendTimer>0?`⏱ ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")}`:"🔄 إعادة"}
+              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #f1c40f",background:"rgba(241,196,15,.1)",color:"#f1c40f",cursor:sending?"not-allowed":"pointer",fontFamily:"inherit",opacity:sending?.5:1}} disabled={sending} onClick={sendOtpCode}>
+                {sending?"⏳ جاري...":"🔄 إعادة"}
               </button>
             </div>
           </>}
