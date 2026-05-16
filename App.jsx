@@ -4269,9 +4269,6 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           {/* البادج في الزاوية اليسرى */}
           <div style={{position:"absolute",top:12,left:12,background:"rgba(240,192,64,0.2)",border:"1px solid #f0c040",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#f0c040"}}>{badge}</div>
 
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
-            <div style={{width:52,height:52,borderRadius:"50%",background:avatarColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#000",flexShrink:0}}>{initials}</div>
-          </div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
