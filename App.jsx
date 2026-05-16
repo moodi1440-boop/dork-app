@@ -4237,6 +4237,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
     setDeleting(true);
     try{
       await sb("customers","DELETE",null,`?id=eq.${customer.id}`);
+      try{await supabase.auth.signOut();}catch{}
       setCustomerSession(null);setView("home");
     }catch(e){alert("خطأ: "+e.message);}finally{setDeleting(false);setShowDeleteConfirm(false);}
   };
@@ -4262,26 +4263,20 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>حسابي</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("home");}}>خروج</button></div>
 
-      {/* بروفايل العميل */}
+      {/* بروفايل العميل - Hero Card Premium */}
       {!editMode?(
-        <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1px solid #2a2a3a",marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-            <div style={{width:52,height:52,borderRadius:"50%",background:avatarColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#000",flexShrink:0}}>{initials}</div>
+        <div style={{background:"linear-gradient(135deg,#0d0d1a 0%,#1a1a2e 100%)",borderRadius:20,padding:24,border:"2px solid #d4a017",marginBottom:12,position:"relative",overflow:"hidden",boxShadow:"0 8px 32px rgba(212,160,23,0.15)"}}>
+          {/* Premium Sticker Badge */}
+          <div style={{position:"absolute",top:12,left:12,background:"#d4a017",color:"#000",padding:"6px 12px",borderRadius:20,fontSize:11,fontWeight:900,transform:"rotate(-5deg)",boxShadow:"0 4px 12px rgba(212,160,23,0.4)"}}>{badge}</div>
+
+          <div style={{display:"flex",alignItems:"flex-start",gap:16,marginBottom:20,marginTop:8}}>
+            <div style={{width:64,height:64,borderRadius:"50%",background:avatarColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:900,color:"#000",flexShrink:0,boxShadow:"0 8px 24px rgba(212,160,23,0.3)",border:"3px solid #d4a017"}}>{initials}</div>
             <div style={{flex:1}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{customer.name}</div>
-                <div style={{background:"rgba(240,192,64,0.2)",border:"1px solid #f0c040",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#d4a017"}}>{badge}</div>
-              </div>
-              <div style={{fontSize:12,color:"#888"}}>📞 {customer.phone}</div>
+              <div style={{fontSize:18,fontWeight:900,color:"#fff",marginBottom:4}}>{customer.name}</div>
+              <div style={{fontSize:14,fontWeight:700,color:"#d4a017",marginBottom:8}}>📞 {customer.phone}</div>
+              <div style={{fontSize:12,fontWeight:600,color:"#f0c040",marginBottom:4}}>📋 {history.length} حجز</div>
+              <div style={{fontSize:11,color:"#888",display:"flex",alignItems:"center",gap:6}}>📅 {customer.created_at?new Date(customer.created_at).toLocaleDateString("ar"):""}</div>
             </div>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {[{v:history.length,l:"حجز",c:"#6aadff"},{v:totalSpent+" ر",l:"إجمالي",c:"#f0c040"}].map(({v,l,c})=>(
-              <div key={l} style={{background:"#0d0d1a",borderRadius:10,padding:"10px 6px",textAlign:"center",border:`1px solid ${c}33`}}>
-                <div style={{fontSize:18,fontWeight:900,color:c}}>{v}</div>
-                <div style={{fontSize:10,color:"#888"}}>{l}</div>
-              </div>
-            ))}
           </div>
         </div>
       ):(
