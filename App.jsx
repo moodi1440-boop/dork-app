@@ -4270,10 +4270,6 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
             <div style={{width:52,height:52,borderRadius:"50%",background:avatarColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#000",flexShrink:0}}>{initials}</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:8}}>{customer.name}</div>
-              <div style={{fontSize:13,color:"#f0c040",fontWeight:700,marginBottom:12}}>📞 {customer.phone}</div>
-            </div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
