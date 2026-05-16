@@ -4192,14 +4192,9 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
                 {attempts>=5&&<><br/>❌ تم تجاوز حد المحاولات - يرجى إعادة الإرسال</>}
               </div>
             </F>
-            <div style={{display:"flex",gap:8,fontSize:12,marginTop:12}}>
-              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);setResendTimer(0);setAttempts(0);}}>
-                ✏️ تعديل البريد
-              </button>
-              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #f1c40f",background:"rgba(241,196,15,.1)",color:"#f1c40f",cursor:sending?"not-allowed":"pointer",fontFamily:"inherit",opacity:sending?.5:1}} disabled={sending} onClick={sendOtpCode}>
-                {sending?"⏳ جاري...":"🔄 إعادة"}
-              </button>
-            </div>
+            <button style={{width:"100%",padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1,marginTop:12,fontSize:12}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);setResendTimer(0);setAttempts(0);}}>
+              ✏️ تعديل البريد
+            </button>
           </>}
           <button style={{...G.sub,opacity:(verifying||!otpSent)?.6:1,cursor:(verifying||!otpSent)?"not-allowed":"pointer"}} onClick={register} disabled={!otpSent||verifying||otpExpired}>
             {verifying?"⏳ جاري التحقق...":"إنشاء الحساب"}
