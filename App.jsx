@@ -4178,8 +4178,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <F label="رقم الجوال"><input style={fi()} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <F label="البريد الإلكتروني (مطلوب)" error={err}><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
-            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(resendTimer>0||sending)?.6:1,cursor:(resendTimer>0||sending)?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={resendTimer>0||sending}>
-              {sending?"⏳ جاري...":otpSent?(resendTimer>0?`⏱ ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")}`:"🔄 إعادة"):"📧 إرسال"}
+            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:sending?.6:1,cursor:sending?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending}>
+              {sending?"⏳ جاري...":otpSent?"🔄 إعادة":"📧 إرسال"}
             </button>
           </div></F>
           {otpSent&&<>
@@ -4187,19 +4187,13 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={false} use6Boxes={true} disabled={verifying||attempts>=5}/>
               <div style={{fontSize:11,color:attempts>=5?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
                 💡 الكود مرسل إلى: <span dir="ltr" style={{display:"inline-block"}}><strong>{email}</strong></span>
-                <br/>⏱️ الصلاحية: {otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:otpExpired?"❌ انتهت الصلاحية":"⏳ جاهز للإرسال"}
                 {attempts>0&&attempts<5&&<><br/>⚠️ محاولات متبقية: {5-attempts}</>}
                 {attempts>=5&&<><br/>❌ تم تجاوز حد المحاولات - يرجى إعادة الإرسال</>}
               </div>
             </F>
-            <div style={{display:"flex",gap:8,fontSize:12,marginTop:12}}>
-              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);setResendTimer(0);setAttempts(0);}}>
-                ✏️ تعديل البريد
-              </button>
-              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #f1c40f",background:"rgba(241,196,15,.1)",color:"#f1c40f",cursor:(resendTimer>0||sending)?"not-allowed":"pointer",fontFamily:"inherit",opacity:(resendTimer>0||sending)?.5:1}} disabled={resendTimer>0||sending} onClick={sendOtpCode}>
-                {sending?"⏳ جاري...":resendTimer>0?`⏱ ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")}`:"🔄 إعادة"}
-              </button>
-            </div>
+            <button style={{width:"100%",padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1,marginTop:12,fontSize:12}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);setResendTimer(0);setAttempts(0);}}>
+              ✏️ تعديل البريد
+            </button>
           </>}
           <button style={{...G.sub,opacity:(verifying||!otpSent)?.6:1,cursor:(verifying||!otpSent)?"not-allowed":"pointer"}} onClick={register} disabled={!otpSent||verifying||otpExpired}>
             {verifying?"⏳ جاري التحقق...":"إنشاء الحساب"}
