@@ -123,6 +123,7 @@ function toAppCustomer(row) {
     googleUid: row.google_uid||"",
     favs,
     history,
+    createdAt: row.created_at||new Date().toISOString(),
   };
 }
 
@@ -4275,6 +4276,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📋 الحجوزات: <span style={{color:"#f0c040"}}>{history.length} حجز</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
           </div>
         </div>
       ):(
