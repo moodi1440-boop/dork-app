@@ -59,7 +59,7 @@ export default function OwnerLoginPage() {
         <form onSubmit={login} className="bg-[#13131f] border border-[#2a2a3a] rounded-2xl p-6 space-y-4">
           <div>
             <label className="block text-xs text-gray-400 mb-1.5 font-semibold">رقم جوال الصالون</label>
-            <input type="tel" value={phone} onChange={handlePhoneChange} placeholder="05xxxxxxxx"
+            <input type="tel" inputMode="numeric" value={phone} onChange={handlePhoneChange} placeholder="05xxxxxxxx"
               autoComplete="tel"
               className="w-full bg-[#0d0d1a] border border-[#2a2a3a] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
           </div>

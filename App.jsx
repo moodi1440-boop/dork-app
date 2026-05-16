@@ -1784,7 +1784,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
       <div style={G.steps}>{["بياناتك","الموعد","تأكيد"].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:10,color:"var(--p)"}}>{l}</span></div>)}</div>
       {step===1&&<div style={G.fc}>
         <F label="اسمك الكريم" error={errors.name}><input style={fi(errors.name)} placeholder="الاسم الكامل" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></F>
-        <F label="رقم الجوال" error={errors.phone}><input style={fi(errors.phone)} placeholder="05XXXXXXXX" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/></F>
+        <F label="رقم الجوال" error={errors.phone}><input style={fi(errors.phone)} inputMode="numeric" type="tel" placeholder="05XXXXXXXX" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/></F>
         <F label="الخدمات" error={errors.services}><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{salon.services.map(s=><div key={s} style={{...G.chip,...(form.services.includes(s)?G.chipOn:{})}} onClick={()=>toggle(s)}>{s}{salon.prices?.[s]?` (${salon.prices[s]}ر)`:""}</div>)}</div></F>
         {form.services.length>0&&<div style={G.totalBox}>الإجمالي: <strong style={{color:"var(--p)"}}>{total} ريال</strong></div>}
         {salon.barbers?.length>0&&<F label="اختر الحلاق" error={errors.barberId}>
@@ -2205,8 +2205,8 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
         <SL>معلومات الصالون</SL>
         <F label="اسم الصالون" error={errors.name}><input style={fi(errors.name)} placeholder="صالون النخبة" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></F>
         <F label="اسم المالك" error={errors.owner}><input style={fi(errors.owner)} placeholder="الاسم الكامل" value={form.owner} onChange={e=>setForm(p=>({...p,owner:e.target.value}))}/></F>
-        <F label="جوال المالك (للدخول لاحقاً)" error={errors.ownerPhone}><input style={fi(errors.ownerPhone)} placeholder="05XXXXXXXX" value={form.ownerPhone} onChange={e=>setForm(p=>({...p,ownerPhone:e.target.value}))}/></F>
-        <F label="جوال الصالون" error={errors.phone}><input style={fi(errors.phone)} placeholder="05XXXXXXXX" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/></F>
+        <F label="جوال المالك (للدخول لاحقاً)" error={errors.ownerPhone}><input style={fi(errors.ownerPhone)} inputMode="numeric" type="tel" placeholder="05XXXXXXXX" value={form.ownerPhone} onChange={e=>setForm(p=>({...p,ownerPhone:e.target.value}))}/></F>
+        <F label="جوال الصالون" error={errors.phone}><input style={fi(errors.phone)} inputMode="numeric" type="tel" placeholder="05XXXXXXXX" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/></F>
         <F label="العنوان" error={errors.address}><input style={fi(errors.address)} placeholder="الشارع والحي" value={form.address} onChange={e=>setForm(p=>({...p,address:e.target.value}))}/></F>
       </div>
 
@@ -3200,7 +3200,7 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>دخول صاحب الصالون</h2></div>
       <div style={G.fc}>
         <SL>أدخل رقم جوالك المسجّل</SL>
-        <F label="رقم الجوال" error={err}><input style={fi(err)} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+        <F label="رقم الجوال" error={err}><input style={fi(err)} inputMode="numeric" type="tel" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
         <button style={G.sub} onClick={login}>دخول</button>
       </div>
       <div style={{margin:"0 0 16px",background:"rgba(var(--pr),.06)",border:"1.5px dashed rgba(var(--pr),.4)",borderRadius:13,padding:"18px 16px",textAlign:"center"}}>
@@ -4137,7 +4137,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       <div style={G.fc}>
         {tab==="login"?<>
           <SL>تسجيل الدخول</SL>
-          <F label="رقم الجوال" error={err}><input style={fi(err)} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+          <F label="رقم الجوال" error={err}><input style={fi(err)} inputMode="numeric" type="tel" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <button style={G.sub} onClick={login}>دخول</button>
           <div style={{textAlign:"center",margin:"12px 0",color:"#555",fontSize:12}}>- أو -</div>
           <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #4285f4",background:"rgba(66,133,244,.1)",color:"#4285f4",cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={async()=>{
@@ -4176,7 +4176,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         </>:<>
           <SL>إنشاء حساب جديد</SL>
           <F label="الاسم"><input style={fi()} placeholder="اسمك الكريم" value={name} onChange={e=>setName(e.target.value)}/></F>
-          <F label="رقم الجوال"><input style={fi()} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+          <F label="رقم الجوال"><input style={fi()} inputMode="numeric" type="tel" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <F label="البريد الإلكتروني (مطلوب)" error={err}><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
             <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:sending?.6:1,cursor:sending?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending}>
@@ -4285,7 +4285,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         <div style={{background:"#13131f",borderRadius:16,padding:16,border:"1px solid var(--pa25)",marginBottom:12}}>
           <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12}}>✏ تعديل البيانات</div>
           <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>الاسم</label><input style={inp2} value={editName} onChange={e=>setEditName(e.target.value)}/></div>
-          <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>رقم الجوال</label><input style={inp2} value={editPhone} onChange={e=>setEditPhone(e.target.value)}/></div>
+          <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>رقم الجوال</label><input style={inp2} inputMode="numeric" type="tel" value={editPhone} onChange={e=>setEditPhone(e.target.value)}/></div>
           <div style={{marginBottom:12}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>البريد الإلكتروني</label><input style={inp2} type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)}/></div>
           <div style={{display:"flex",gap:8}}>
             <button style={G.sub} onClick={saveEdit}>💾 حفظ</button>
