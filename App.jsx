@@ -4088,18 +4088,21 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const {data,error}=await supabase.auth.verifyOtp({email:email.trim(),token:otpClean,type:"email"});
       if(error){
         console.error("Verify OTP Error:",error.message);
-        if(error.message.includes("timeout")||error.message.includes("expired")||error.message.includes("used")){
-          setOtpExpired(true);
-          setOtpTimer(0);
-          setErr("❌ انتهت صلاحية الكود - اضغط على إعادة الإرسال");
-        }else if(error.message.includes("invalid")||error.message.includes("wrong")||error.message.includes("not found")){
+        const msg=error.message.toLowerCase();
+        if(msg.includes("invalid")||msg.includes("wrong")||msg.includes("incorrect")||msg.includes("not found")){
           setAttempts(prev=>prev+1);
           setOtpCode("");
           setErr("❌ الكود غير صحيح - تحقق من الكود المرسل لبريدك");
-        }else if(error.message.includes("blocked")||error.message.includes("denied")){
+        }else if((msg.includes("timeout")||msg.includes("expired")||msg.includes("used"))&&otpTimer<=0){
+          setOtpExpired(true);
+          setOtpTimer(0);
+          setErr("❌ انتهت صلاحية الكود - اضغط على إعادة الإرسال");
+        }else if(msg.includes("blocked")||msg.includes("denied")){
           setErr("❌ البريد محظور - حاول بريد آخر");
         }else{
-          setErr("❌ خطأ: "+error.message.substring(0,50));
+          setAttempts(prev=>prev+1);
+          setOtpCode("");
+          setErr("❌ الكود غير صحيح - حاول مجدداً");
         }
         return;
       }
@@ -4180,11 +4183,13 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             </button>
           </div></F>
           {otpSent&&<>
-            <F label="الكود (تحقق من بريدك)" error={otpExpired?true:undefined}>
-              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={attempts>=5} use6Boxes={true} disabled={attempts>=5}/>
-              <div style={{fontSize:11,color:otpExpired?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
+            <F label="الكود (تحقق من بريدك)">
+              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={false} use6Boxes={true} disabled={verifying||attempts>=5}/>
+              <div style={{fontSize:11,color:attempts>=5?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
                 💡 الكود مرسل إلى: <span dir="ltr" style={{display:"inline-block"}}><strong>{email}</strong></span>
-                <br/>⏱️ الصلاحية: {otpExpired?"❌ انتهت الصلاحية":otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"⏳ جاهز للإرسال"}
+                <br/>⏱️ الصلاحية: {otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:otpExpired?"❌ انتهت الصلاحية":"⏳ جاهز للإرسال"}
+                {attempts>0&&attempts<5&&<><br/>⚠️ محاولات متبقية: {5-attempts}</>}
+                {attempts>=5&&<><br/>❌ تم تجاوز حد المحاولات - يرجى إعادة الإرسال</>}
               </div>
             </F>
             <div style={{display:"flex",gap:8,fontSize:12,marginTop:12}}>
