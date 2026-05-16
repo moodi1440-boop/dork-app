@@ -4268,20 +4268,22 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           {/* البادج في الزاوية اليسرى */}
           <div style={{position:"absolute",top:12,left:12,background:"rgba(240,192,64,0.2)",border:"1px solid #f0c040",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#f0c040"}}>{badge}</div>
 
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
             <div style={{width:52,height:52,borderRadius:"50%",background:avatarColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#000",flexShrink:0}}>{initials}</div>
             <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{customer.name}</div>
-              <div style={{fontSize:13,color:"#f0c040",fontWeight:700}}>📞 {customer.phone}</div>
+              <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:8}}>{customer.name}</div>
+              <div style={{fontSize:13,color:"#f0c040",fontWeight:700,marginBottom:12}}>📞 {customer.phone}</div>
             </div>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {[{v:history.length,l:"حجز",c:"#f0c040"},{v:totalSpent+" ر",l:"إجمالي",c:"#f0c040"}].map(({v,l,c})=>(
-              <div key={l} style={{background:"#0d0d1a",borderRadius:10,padding:"10px 6px",textAlign:"center",border:`1px solid ${c}33`}}>
-                <div style={{fontSize:18,fontWeight:900,color:c}}>{v}</div>
-                <div style={{fontSize:10,color:"#888"}}>{l}</div>
-              </div>
-            ))}
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{background:"#0d0d1a",borderRadius:10,padding:"12px 8px",textAlign:"center",border:"1px solid #f0c04033"}}>
+              <div style={{fontSize:18,fontWeight:900,color:"#f0c040"}}>{history.length}</div>
+              <div style={{fontSize:10,color:"#888"}}>حجوزات</div>
+            </div>
+            <div style={{background:"#0d0d1a",borderRadius:10,padding:"12px 8px",textAlign:"center",border:"1px solid #f0c04033"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#f0c040"}}>{customer.created_at?new Date(customer.created_at).toLocaleDateString("ar"):""}</div>
+              <div style={{fontSize:10,color:"#888"}}>الانضمام</div>
+            </div>
           </div>
         </div>
       ):(
