@@ -4033,13 +4033,14 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
     if(error){
       console.error("OTP Error:",error.message);
-      setOtpSent(false);
       setOtpExpired(false);
-      const isRateLimit=error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit");
+      const isRateLimit=error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit")||error.message.includes("security");
       if(isRateLimit){
+        setOtpSent(true);
         setResendTimer(120);
         setErr("❌ يرجى الانتظار دقيقتين قبل المحاولة مجدداً");
       }else{
+        setOtpSent(false);
         setOtpTimer(0);
         if(error.message.includes("invalid")||error.message.includes("format")){
           setErr("❌ البريد الإلكتروني غير صحيح");
@@ -4057,6 +4058,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setOtpSent(false);
     setOtpTimer(0);
     setOtpExpired(false);
+    setResendTimer(60);
     setErr("❌ خطأ في الاتصال - تحقق من الإنترنت");
     try{
       const {data:{user}}=await supabase.auth.getUser();
@@ -4173,13 +4175,13 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <F label="رقم الجوال"><input style={fi()} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <F label="البريد الإلكتروني (مطلوب)" error={err}><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
-            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(resendTimer>0||sending)?.6:1,cursor:(resendTimer>0||sending)?"not-allowed":"pointer",pointerEvents:(resendTimer>0||sending)?"none":"auto"}} onClick={sendOtpCode} disabled={resendTimer>0||sending||!email.trim()}>
+            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(resendTimer>0||sending)?.6:1,cursor:(resendTimer>0||sending)?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={resendTimer>0||sending}>
               {sending?"⏳ جاري...":otpSent?(resendTimer>0?`⏱ ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")}`:"🔄 إعادة"):"📧 إرسال"}
             </button>
           </div></F>
           {otpSent&&<>
             <F label="الكود (تحقق من بريدك)" error={otpExpired?true:undefined}>
-              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err||otpExpired} use6Boxes={true} disabled={otpExpired||verifying||attempts>=5}/>
+              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={attempts>=5} use6Boxes={true} disabled={attempts>=5}/>
               <div style={{fontSize:11,color:otpExpired?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
                 💡 الكود مرسل إلى: <span dir="ltr" style={{display:"inline-block"}}><strong>{email}</strong></span>
                 <br/>⏱️ الصلاحية: {otpExpired?"❌ انتهت الصلاحية":otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"⏳ جاهز للإرسال"}
