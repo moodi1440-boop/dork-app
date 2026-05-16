@@ -4262,23 +4262,23 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>حسابي</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("home");}}>خروج</button></div>
 
-      {/* بروفايل العميل - Premium VIP */}
+      {/* بروفايل العميل - Premium */}
       {!editMode?(
-        <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
+        <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
+          {/* البادج في الزاوية اليسرى */}
+          <div style={{position:"absolute",top:12,left:12,background:"rgba(240,192,64,0.2)",border:"1px solid #f0c040",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#f0c040"}}>{badge}</div>
+
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
             <div style={{width:52,height:52,borderRadius:"50%",background:avatarColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#000",flexShrink:0}}>{initials}</div>
             <div style={{flex:1}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{customer.name}</div>
-                <div style={{background:"rgba(212,160,23,0.15)",border:"1px solid #d4a017",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#d4a017"}}>{badge}</div>
-              </div>
-              <div style={{fontSize:12,color:"#d4a017",fontWeight:600}}>📞 {customer.phone}</div>
+              <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{customer.name}</div>
+              <div style={{fontSize:13,color:"#f0c040",fontWeight:700}}>📞 {customer.phone}</div>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {[{v:history.length,l:"حجز",c:"#d4a017"},{v:customer.created_at?new Date(customer.created_at).toLocaleDateString("ar"):"",l:"الانضمام",c:"#d4a017"}].map(({v,l,c})=>(
+            {[{v:history.length,l:"حجز",c:"#f0c040"},{v:totalSpent+" ر",l:"إجمالي",c:"#f0c040"}].map(({v,l,c})=>(
               <div key={l} style={{background:"#0d0d1a",borderRadius:10,padding:"10px 6px",textAlign:"center",border:`1px solid ${c}33`}}>
-                <div style={{fontSize:16,fontWeight:900,color:c}}>{v}</div>
+                <div style={{fontSize:18,fontWeight:900,color:c}}>{v}</div>
                 <div style={{fontSize:10,color:"#888"}}>{l}</div>
               </div>
             ))}
