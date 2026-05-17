@@ -4192,16 +4192,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   };
 
   if(pinStep==="enter")return(
-    <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{setCustomer(null);setPinStep(null);setPin("");setPinErr("");setPhone("");setErr("");}}>{">"}</button><h2 style={G.ft}>إدخال رمز PIN</h2></div>
-      <div style={G.fc}>
-        <SL>أدخل رمز PIN للدخول السريع</SL>
-        <input type="password" inputMode="numeric" maxLength={localStorage.getItem(`dork_customer_pin_length_${customer.id}`)||4} value={pin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,localStorage.getItem(`dork_customer_pin_length_${customer.id}`)||4);setPin(val);setPinErr("");}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${pinErr?"#e74c3c":"var(--p)"}`,background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&pin.length>=4)verifyPin();}}/>
-        {pinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{pinErr}</div>}
-        <button style={{...G.sub,marginTop:16}} onClick={verifyPin} disabled={pin.length<4}>دخول</button>
-      </div>
-    </div></div>
-  );
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>حساب العميل 👤</h2></div>
