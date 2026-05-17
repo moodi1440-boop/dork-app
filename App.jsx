@@ -3191,21 +3191,40 @@ function ShareBtn({salon}){
 //  OWNER LOGIN + DASHBOARD
 // ==============================================
 function OwnerLogin({salons,setOwnerSession,setView,toast$}){
+  const[tab,setTab]=useState("phone");
   const[phone,setPhone]=useState(""); const[err,setErr]=useState("");
-  const login=()=>{
+  const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
+  const loginWithPhone=()=>{
     const s=salons.find(x=>x.ownerPhone===phone.trim()||x.phone===phone.trim());
     if(!s){setErr("لا يوجد صالون بهذا الرقم");return;}
     if(s.banned){setErr("🚫 تم حظر هذا الصالون من قبل الإدارة — تواصل مع الدعم");return;}
     if(s.frozen){setErr("🔒 الصالون مجمّد مؤقتاً — تواصل مع الإدارة");return;}
     setOwnerSession(s.id); setView("ownerDash");
   };
+  const loginWithPin=()=>{
+    const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
+    if(!s){setPinErr("رمز PIN غير صحيح");setPin("");return;}
+    if(s.banned){setPinErr("🚫 تم حظر هذا الصالون");return;}
+    if(s.frozen){setPinErr("🔒 الصالون مجمّد مؤقتاً");return;}
+    setOwnerSession(s.id); setView("ownerDash");
+  };
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>دخول صاحب الصالون</h2></div>
+      <div style={{...G.tabRow,marginBottom:16}}>
+        <button style={{...G.tabBtn,flex:1,...(tab==="phone"?G.tabOn:{})}} onClick={()=>{setTab("phone");setErr("");setPinErr("");}}>📱 رقم الجوال</button>
+        <button style={{...G.tabBtn,flex:1,...(tab==="pin"?G.tabOn:{})}} onClick={()=>{setTab("pin");setErr("");setPinErr("");}}>🔐 الدخول السريع</button>
+      </div>
       <div style={G.fc}>
-        <SL>أدخل رقم جوالك المسجّل</SL>
-        <F label="رقم الجوال" error={err}><input style={fi(err)} inputMode="numeric" type="tel" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
-        <button style={G.sub} onClick={login}>دخول</button>
+        {tab==="phone"?<>
+          <SL>أدخل رقم جوالك المسجّل</SL>
+          <F label="رقم الجوال" error={err}><input style={fi(err)} inputMode="numeric" type="tel" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+          <button style={G.sub} onClick={loginWithPhone}>دخول</button>
+        </>:<>
+          <SL>أدخل رمز PIN الخاص بك</SL>
+          <F label="رمز PIN" error={pinErr}><input style={fi(pinErr)} type="password" inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}}/></F>
+          <button style={G.sub} onClick={loginWithPin}>دخول</button>
+        </>}
       </div>
       <div style={{margin:"0 0 16px",background:"rgba(var(--pr),.06)",border:"1.5px dashed rgba(var(--pr),.4)",borderRadius:13,padding:"18px 16px",textAlign:"center"}}>
         <div style={{fontSize:15,color:"var(--p)",fontWeight:700,marginBottom:6}}>لا تملك صالوناً بعد؟</div>
@@ -3822,12 +3841,17 @@ function OwnerSettings({salon,setSalons,toast$}){
                 <input type="password" inputMode="numeric" maxLength={f._editPinLength} value={f._editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editTempPin:val}));if(val.length===f._editPinLength)setTimeout(()=>setF(p=>({...p,_editPinStep:"confirm"})),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editTempPin.length===f._editPinLength)setF(p=>({...p,_editPinStep:"confirm"}));}} />
               </>:f._editPinStep==="confirm"?<>
                 <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أعد إدخال PIN للتأكيد</div>
-                <input type="password" inputMode="numeric" maxLength={f._editPinLength} value={f._editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editPinConfirm:val}));if(val.length===f._editPinLength){if(f._editTempPin!==val){setF(p=>({...p,_editPinErr:"الأرقام غير متطابقة"}));return;}const salonIdStr=String(salon.id);localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));toast$&&toast$("✅ تم تحديث PIN بنجاح");setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));}}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm){const salonIdStr=String(salon.id);localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));toast$&&toast$("✅ تم تحديث PIN بنجاح");setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));}}}/>
+                <input type="password" inputMode="numeric" maxLength={f._editPinLength} value={f._editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editPinConfirm:val}));if(val.length===f._editPinLength&&f._editTempPin!==val){setF(p=>({...p,_editPinErr:"الأرقام غير متطابقة"}));}else{setF(p=>({...p,_editPinErr:""}));}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${f._editPinErr?"#e74c3c":"var(--p)"}`,background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm){const salonIdStr=String(salon.id);localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));toast$&&toast$("✅ تم تحديث PIN بنجاح");setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));}}} />
+                {f._editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{f._editPinErr}</div>}
+                <div style={{display:"flex",gap:8,marginTop:16}}>
+                  <button onClick={()=>{if(f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm){const salonIdStr=String(salon.id);localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));toast$&&toast$("✅ تم تحديث PIN بنجاح");setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));}}} disabled={f._editPinConfirm.length!==f._editPinLength||f._editTempPin!==f._editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"var(--p)":"#2a2a3a",color:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"#000":"#555",cursor:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                    حفظ
+                  </button>
+                  <button onClick={()=>setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                    إلغاء
+                  </button>
+                </div>
               </>:null}
-              {f._editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:12}}>{f._editPinErr}</div>}
-              <button onClick={()=>setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",marginTop:16,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:12}}>
-                إلغاء
-              </button>
             </div>
           </div>
         )}
@@ -3994,9 +4018,11 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
 // ==============================================
 function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$}){
   const[tab,setTab]=useState("login");
+  const[loginMethod,setLoginMethod]=useState("phone");
   const[phone,setPhone]=useState(""); const[name,setName]=useState("");
   const[email,setEmail]=useState(""); const[pass,setPass]=useState("");
   const[err,setErr]=useState("");
+  const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
  const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
   const[otpTimer,setOtpTimer]=useState(0);
@@ -4019,16 +4045,22 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     }catch(e){toast$&&toast$("❌ فشل التحقق","err");}
   };
 
-  const login=async()=>{
+  const loginWithPhone=async()=>{
     if(!phone.trim()){setErr("أدخل رقم الجوال");return;}
     try{
       const rows=await sb("customers","GET",null,`?phone=eq.${encodeURIComponent(phone.trim())}`);
       if(!rows.length){setErr("لا يوجد حساب بهذا الرقم");return;}
       const c=toAppCustomer(rows[0]);
       setCustomerSession(c);setView("home");
-      // حفظ للبصمة
       localStorage.setItem("dork_biometric_id",String(c.id));
     }catch(e){setErr("خطأ: "+e.message);}
+  };
+
+  const loginWithPin=async()=>{
+    const c=customers.find(cust=>{const savedPin=localStorage.getItem(`dork_customer_pin_${cust.id}`);return savedPin&&savedPin===pin;});
+    if(!c){setPinErr("رمز PIN غير صحيح");setPin("");return;}
+    setCustomerSession(c);setView("home");
+    localStorage.setItem("dork_biometric_id",String(c.id));
   };
 
   // مؤقت صلاحية الكود (5 دقائق)
@@ -4159,6 +4191,17 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     }finally{setVerifying(false);}
   };
 
+  if(pinStep==="enter")return(
+    <div style={G.page}><div style={G.fp}>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setCustomer(null);setPinStep(null);setPin("");setPinErr("");setPhone("");setErr("");}}>{">"}</button><h2 style={G.ft}>إدخال رمز PIN</h2></div>
+      <div style={G.fc}>
+        <SL>أدخل رمز PIN للدخول السريع</SL>
+        <input type="password" inputMode="numeric" maxLength={localStorage.getItem(`dork_customer_pin_length_${customer.id}`)||4} value={pin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,localStorage.getItem(`dork_customer_pin_length_${customer.id}`)||4);setPin(val);setPinErr("");}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${pinErr?"#e74c3c":"var(--p)"}`,background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&pin.length>=4)verifyPin();}}/>
+        {pinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{pinErr}</div>}
+        <button style={{...G.sub,marginTop:16}} onClick={verifyPin} disabled={pin.length<4}>دخول</button>
+      </div>
+    </div></div>
+  );
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>حساب العميل 👤</h2></div>
@@ -4176,9 +4219,19 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       </div>
       <div style={G.fc}>
         {tab==="login"?<>
-          <SL>تسجيل الدخول</SL>
-          <F label="رقم الجوال" error={err}><input style={fi(err)} inputMode="numeric" type="tel" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
-          <button style={G.sub} onClick={login}>دخول</button>
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            <button style={{...G.tabBtn,flex:1,...(loginMethod==="phone"?G.tabOn:{})}} onClick={()=>{setLoginMethod("phone");setErr("");setPinErr("");}}>📱 رقم الجوال</button>
+            <button style={{...G.tabBtn,flex:1,...(loginMethod==="pin"?G.tabOn:{})}} onClick={()=>{setLoginMethod("pin");setErr("");setPinErr("");}}>🔐 دخول سريع</button>
+          </div>
+          {loginMethod==="phone"?<>
+            <SL>تسجيل الدخول</SL>
+            <F label="رقم الجوال" error={err}><input style={fi(err)} inputMode="numeric" type="tel" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+            <button style={G.sub} onClick={loginWithPhone}>دخول</button>
+          </>:<>
+            <SL>أدخل رمز PIN الخاص بك</SL>
+            <F label="رمز PIN" error={pinErr}><input style={fi(pinErr)} type="password" inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}} maxLength={6}/></F>
+            <button style={G.sub} onClick={loginWithPin}>دخول</button>
+          </>}
           <div style={{textAlign:"center",margin:"12px 0",color:"#555",fontSize:12}}>- أو -</div>
           <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #4285f4",background:"rgba(66,133,244,.1)",color:"#4285f4",cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={async()=>{
             try{
@@ -4506,12 +4559,17 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <input type="password" inputMode="numeric" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editTempPin.length===editPinLength)setEditPinStep("confirm");}} />
             </>:editPinStep==="confirm"?<>
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أعد إدخال PIN للتأكيد</div>
-              <input type="password" inputMode="numeric" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength){if(editTempPin!==val){setEditPinErr("الأرقام غير متطابقة");return;}const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} />
+              <input type="password" inputMode="numeric" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr("الأرقام غير متطابقة");}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} />
+              {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
+              <div style={{display:"flex",gap:8,marginTop:16}}>
+                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$&&toast$("✅ تم تحديث PIN بنجاح");}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"#2a2a3a",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                  حفظ
+                </button>
+                <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                  إلغاء
+                </button>
+              </div>
             </>:null}
-            {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:12}}>{editPinErr}</div>}
-            <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{width:"100%",marginTop:16,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:12}}>
-              إلغاء
-            </button>
           </div>
         </div>
       )}
