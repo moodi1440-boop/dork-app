@@ -4191,7 +4191,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     }finally{setVerifying(false);}
   };
 
-  if(pinStep==="enter")return(
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>حساب العميل 👤</h2></div>
