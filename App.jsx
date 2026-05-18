@@ -753,12 +753,13 @@ export default function App(){
     const silent=opts&&opts.silent;
     try {
       if(!silent)setLoading(true);
-      const [salonRows, bookingRows, custRows, reviewRows] = await Promise.all([
+      const [salonRows, bookingRows, custRows] = await Promise.all([
         sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,oath_done&order=id.desc"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status&order=created_at.desc"),
         sb("customers","GET",null,"?select=id,name,phone,email,password,google_uid,history,favs,created_at"),
-        sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,booking_date,created_at&order=created_at.desc"),
       ]);
+      // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
+      const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,booking_date,created_at&order=created_at.desc").catch(()=>[]);
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
         salon.bookings = bookingRows
