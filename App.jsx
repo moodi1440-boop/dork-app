@@ -807,10 +807,26 @@ export default function App(){
 
   /* Supabase Realtime - إشعارات لحظية */
   useEffect(()=>{
-    // الاستماع لتغييرات الحجوزات
+    // الاستماع لتغييرات الصالونات (الحجوزات مخزنة داخل الصالون)
     const bookingChannel=supabase.channel('realtime-bookings')
-      .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
-        loadData({silent:true});
+      .on('postgres_changes',{event:'*',schema:'public',table:'salons'},(payload)=>{
+        const row=payload.new;
+        if(!row){loadData({silent:true});return;}
+        const updatedSalon=toAppSalon(row);
+        updatedSalon.bookings=(row.bookings||[]).map(b=>({
+          id:b.id||Date.now(),
+          salonId:b.salonId||row.id,
+          name:b.name||"",
+          phone:b.phone||"",
+          services:b.services||[],
+          barberId:b.barberId||"any",
+          barberName:b.barberName||"",
+          date:b.date||"",
+          time:b.time||"",
+          total:b.total||0,
+          status:b.status||"pending",
+        }));
+        setSalons(prev=>prev.map(s=>s.id===updatedSalon.id?updatedSalon:s));
       })
       .subscribe();
 
