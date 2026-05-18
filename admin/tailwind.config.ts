@@ -18,6 +18,12 @@ const config: Config = {
       fontFamily: {
         cairo: ["var(--font-cairo)", "sans-serif"],
       },
+      keyframes: {
+        "slide-in": { from: { opacity: "0", transform: "translateY(-10px)" }, to: { opacity: "1", transform: "translateY(0)" } },
+      },
+      animation: {
+        "slide-in": "slide-in 0.25s ease-out",
+      },
     },
   },
   plugins: [],
