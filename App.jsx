@@ -803,14 +803,7 @@ export default function App(){
     bookingStatusSnapRef.current=null;
   },[customerSession?.id]);
 
-  /* إعادة تحقق عالمية: الصالونات (حالة التفعيل/الحجوزات) + إعدادات الإدارة من Supabase لجميع الجلسات */
-  useEffect(()=>{
-    const t=setInterval(()=>{
-      loadData({silent:true});
-      loadAppSettings({silent:true});
-    },16000);
-    return()=>clearInterval(t);
-  },[loadData,loadAppSettings]);
+  /* تم إلغاء الـ Polling - الـ Realtime يتولى التحديثات الفورية */
 
   /* Supabase Realtime - إشعارات لحظية */
   useEffect(()=>{
