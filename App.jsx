@@ -986,6 +986,28 @@ export default function App(){
       await loadData();
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
+  const refreshSalonBookings=useCallback(async(salonId)=>{
+    try{
+      const rows=await sb("bookings","GET",null,
+        `?salon_id=eq.${salonId}&select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,created_at&order=created_at.desc`
+      );
+      const bookings=rows.map(b=>({
+        id:b.id,
+        salonId:b.salon_id,
+        name:b.customer_name||"",
+        phone:b.customer_phone||"",
+        services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
+        barberId:b.barber_id||"any",
+        barberName:b.barber_name||"",
+        date:b.date||"",
+        time:b.time||"",
+        total:b.total||0,
+        status:b.status||"pending",
+      }));
+      setSalons(prev=>prev.map(s=>String(s.id)===String(salonId)?{...s,bookings}:s));
+    }catch(e){console.error(e);}
+  },[]);
+
   const updateBookingStatus=async(sid,bid,status)=>{
     try{
       const salon=salons.find(s=>s.id===sid);
@@ -1077,7 +1099,7 @@ export default function App(){
     setView,toast$,allLoc,addExtraLoc,
     salons,setSalons,approvedSalons,
     addSalon,
-    addBooking,updateBookingStatus,
+    addBooking,updateBookingStatus,loadData,refreshSalonBookings,
     customers,setCustomers,
     reviews,setReviews,
     toggleFav,favSet,customer,
@@ -1675,7 +1697,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
 // ==============================================
 //  SALON PAGE
 // ==============================================
-function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,reviews}){
+function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,reviews,refreshSalonBookings}){
   const[tab,setTab]=useState("book");
   const fav=favSet.has(salon.id);
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
@@ -1710,7 +1732,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
         </div>
         <div style={G.tabRow}>
           <button style={{...G.tabBtn,...(tab==="book"?G.tabOn:{})}} onClick={()=>setTab("book")}>📅 حجز</button>
-          {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}</button>}
+          {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");refreshSalonBookings(salon.id);}}>🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}</button>}
           {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>}
         </div>
         {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView}/>}
@@ -2723,7 +2745,7 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
     </div></div>
   );
 }
-function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$}){
+function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings}){
   const[tab,setTab]=useState("notif");
   const[oathDone,setOathDone]=useState(()=>{
     try{return localStorage.getItem(`dork_oath_${salon?.id}`)==="1";}catch{return false;}
@@ -2822,7 +2844,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {salon.paused&&<div style={{background:"rgba(231,76,60,.08)",border:"1px solid #e74c3c55",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:"#e74c3c"}}>⚠ الحجوزات موقوفة - لن يتمكن العملاء من الحجز الآن</div>}
 
       <div style={{...G.tabRow,flexWrap:"nowrap",overflowX:"auto"}}>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
+        <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");refreshSalonBookings(salon.id);}}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>{
           localStorage.setItem("dork_notif_count","0");
           setTab("messages");
