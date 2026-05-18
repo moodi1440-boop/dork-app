@@ -417,6 +417,16 @@ export default function SalonsPage() {
         </div>
       </div>
 
+      {!loading && status === "pending" && sorted.length > 1 && (
+        <div className="mb-4">
+          <button
+            onClick={() => { if (confirm(`قبول جميع الصالونات المعلقة (${sorted.length}) دفعة واحدة؟`)) sorted.forEach((s) => updateStatus(s.id, "approved")); }}
+            className="w-full py-3 bg-green-500/10 border border-green-500/30 text-green-400 rounded-2xl font-bold text-sm hover:bg-green-500/20 transition-colors">
+            ✅ قبول الكل ({sorted.length} صالونات)
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-16 text-gold animate-pulse">جاري التحميل...</div>
       ) : sorted.length === 0 ? (
@@ -450,12 +460,23 @@ export default function SalonsPage() {
                   <div>👤 {s.owner} · 📞 {s.phone}</div>
                   {s.owner_phone && s.owner_phone !== s.phone && <div>📱 {s.owner_phone}</div>}
                   {(s.gov || s.region) && <div>📍 {[s.gov, s.region].filter(Boolean).join(" - ")}</div>}
+                  {s.status === "pending" && (
+                    <div>🕐 {s.shift_enabled ? `${s.shift1_start}-${s.shift1_end} | ${s.shift2_start}-${s.shift2_end}` : `${s.work_start || "09:00"} - ${s.work_end || "22:00"}`}</div>
+                  )}
                   {balance !== 0 && (
                     <div className={`font-semibold ${balance > 0 ? "text-red-400" : "text-green-400"}`}>
                       💰 {balance > 0 ? `متبقي ${balance.toLocaleString("ar-SA")} ر.س` : "✅ الرصيد مسدد"}
                     </div>
                   )}
                 </div>
+                {s.status === "pending" && (s.services ?? []).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {(s.services ?? []).slice(0, 6).map((svc) => (
+                      <span key={svc} className="text-[11px] px-2 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/20">{svc}</span>
+                    ))}
+                    {(s.services ?? []).length > 6 && <span className="text-[11px] text-gray-500 self-center">+{(s.services ?? []).length - 6}</span>}
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-2">
                   {s.status !== "approved" && (
@@ -465,7 +486,10 @@ export default function SalonsPage() {
                     </button>
                   )}
                   {s.status === "pending" && (
-                    <button onClick={() => updateStatus(s.id, "rejected")}
+                    <button onClick={() => {
+                      const reason = window.prompt(`سبب رفض "${s.name}" (اختياري):`);
+                      if (reason !== null) updateStatus(s.id, "rejected");
+                    }}
                       className="px-3 py-1.5 rounded-lg text-xs bg-red-600/10 text-red-500 border border-red-600/20 hover:bg-red-600/20 transition-colors font-semibold">
                       ❌ رفض
                     </button>
