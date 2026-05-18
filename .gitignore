@@ -6,4 +6,3 @@ admin/node_modules/
 supabase/.temp/
 .env
 .env.local
-CLAUDE.md
