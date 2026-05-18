@@ -1,6 +1,22 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 
+class ErrorBoundary extends React.Component {
+  constructor(props){super(props);this.state={err:null};}
+  static getDerivedStateFromError(e){return{err:e};}
+  render(){
+    if(this.state.err)return(
+      <div style={{minHeight:"100vh",background:"#09112e",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:20,gap:12}}>
+        <div style={{fontSize:32}}>⚠️</div>
+        <div style={{color:"#e74c3c",fontSize:14,fontWeight:700}}>خطأ في التطبيق</div>
+        <div style={{color:"#aaa",fontSize:11,background:"#1a1a2e",padding:"12px 16px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"right",direction:"ltr"}}>{String(this.state.err)}</div>
+        <button onClick={()=>window.location.reload()} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:8,padding:"8px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer"}}>إعادة تحميل</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
 // ==============================================
 //  SUPABASE CLIENT
 // ==============================================
@@ -539,6 +555,7 @@ const DEMO_SALONS=[
 // ==============================================
 //  ROOT
 // ==============================================
+export { ErrorBoundary };
 export default function App(){
   const[salons,setSalons]=useState([]);
   const[customers,setCustomers]=useState([]);
