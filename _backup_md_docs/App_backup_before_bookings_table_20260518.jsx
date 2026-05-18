@@ -744,31 +744,26 @@ export default function App(){
     const silent=opts&&opts.silent;
     try {
       if(!silent)setLoading(true);
-      const [salonRows, bookingRows, custRows] = await Promise.all([
-        sb("salons", "GET", null, "?order=id.desc"),
-        sb("bookings", "GET", null, "?order=created_at.desc"),
-        sb("customers", "GET", null, ""),
-      ]);
+      const salonRows = await sb("salons", "GET", null, "?order=id.desc");
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
-        salon.bookings = bookingRows
-          .filter(b => String(b.salon_id) === String(row.id))
-          .map(b => ({
-            id: b.id,
-            salonId: b.salon_id,
-            name: b.customer_name || "",
-            phone: b.customer_phone || "",
-            services: (() => { try { return JSON.parse(b.service || "[]"); } catch { return b.service ? [b.service] : []; } })(),
-            barberId: b.barber_id || "any",
-            barberName: b.barber_name || "",
-            date: b.date || "",
-            time: b.time || "",
-            total: b.total || 0,
-            status: b.status || "pending",
-          }));
+        salon.bookings = (row.bookings || []).map(b=>({
+          id: b.id||Date.now(),
+          salonId: b.salonId||row.id,
+          name: b.name||"",
+          phone: b.phone||"",
+          services: b.services||[],
+          barberId: b.barberId||"any",
+          barberName: b.barberName||"",
+          date: b.date||"",
+          time: b.time||"",
+          total: b.total||0,
+          status: b.status||"pending",
+        }));
         return salon;
       });
       setSalons(salonsWithBookings);
+      const custRows = await sb("customers", "GET", null, "");
       setCustomers(custRows.map(toAppCustomer));
       setDbError(null);
     } catch(e) {
@@ -802,8 +797,24 @@ export default function App(){
   useEffect(()=>{
     // الاستماع لتغييرات الصالونات (الحجوزات مخزنة داخل الصالون)
     const bookingChannel=supabase.channel('realtime-bookings')
-      .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
-        loadData({silent:true});
+      .on('postgres_changes',{event:'*',schema:'public',table:'salons'},(payload)=>{
+        const row=payload.new;
+        if(!row){loadData({silent:true});return;}
+        const updatedSalon=toAppSalon(row);
+        updatedSalon.bookings=(row.bookings||[]).map(b=>({
+          id:b.id||Date.now(),
+          salonId:b.salonId||row.id,
+          name:b.name||"",
+          phone:b.phone||"",
+          services:b.services||[],
+          barberId:b.barberId||"any",
+          barberName:b.barberName||"",
+          date:b.date||"",
+          time:b.time||"",
+          total:b.total||0,
+          status:b.status||"pending",
+        }));
+        setSalons(prev=>prev.map(s=>s.id===updatedSalon.id?updatedSalon:s));
       })
       .subscribe();
 
@@ -931,21 +942,22 @@ export default function App(){
     try{
       const salon=salons.find(s=>s.id===sid);
       if(salon?.tone)playTone(salon.tone,0.8);
-      const inserted=await sb("bookings","POST",{
-        salon_id:String(sid),
-        customer_id:customerSession?.id||null,
-        customer_name:bk.name,
-        customer_phone:bk.phone,
-        barber_id:bk.barberId||"any",
-        barber_name:bk.barberName||"",
-        service:JSON.stringify(bk.services||[]),
+      const newBooking={
+        id:Date.now(),
+        salonId:sid,
+        name:bk.name,
+        phone:bk.phone,
+        email:bk.email||"",
+        services:bk.services,
+        barberId:bk.barberId||"any",
+        barberName:bk.barberName||"",
         date:bk.date,
         time:bk.time,
         total:bk.total,
         status:"pending",
-        notes:bk.email||"",
-      },"");
-      const newBooking=inserted[0]||{};
+      };
+      const updatedBookings=[...(salon.bookings||[]),newBooking];
+      await sb("salons","PATCH",{bookings:updatedBookings},`?id=eq.${sid}`);
       if(customerSession){
         const c=customers.find(x=>x.id===customerSession.id);
         if(c){
@@ -981,7 +993,8 @@ export default function App(){
       if(!salon)return;
       const bk=salon.bookings.find(b=>b.id===bid);
       if(!bk)return;
-      await sb("bookings","PATCH",{status},`?id=eq.${bid}`);
+      const updatedBookings=salon.bookings.map(b=>b.id===bid?{...b,status}:b);
+      await sb("salons","PATCH",{bookings:updatedBookings},`?id=eq.${sid}`);
       const bkn=normPhone(bk.phone);
       const targets=bkn.length>=9?customers.filter(c=>normPhone(c.phone)===bkn):[];
       for(const c of targets){
