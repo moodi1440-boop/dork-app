@@ -1066,7 +1066,7 @@ export default function App(){
     setView,toast$,allLoc,addExtraLoc,
     salons,setSalons,approvedSalons,
     addSalon,
-    addBooking,updateBookingStatus,
+    addBooking,updateBookingStatus,loadData,
     customers,setCustomers,
     toggleFav,favSet,customer,
     selSalon,setSelSalon,
@@ -1666,11 +1666,15 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
 // ==============================================
 //  SALON PAGE
 // ==============================================
-function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers}){
+function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,loadData}){
   const[tab,setTab]=useState("book");
   const fav=favSet.has(salon.id);
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
   const canManage=ownerSession===salon.id;
+
+  useEffect(()=>{
+    if(tab==="notif"&&canManage) loadData({silent:true});
+  },[tab,canManage]);
 
   // جمع تقييمات هذا الصالون من كل العملاء
   const reviews=(customers||[]).flatMap(c=>
