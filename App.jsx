@@ -604,7 +604,6 @@ export default function App(){
     govList,villageList,centerList2,
     showFavs,setShowFavs,
     displaySalons,
-    salons,
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
     socialLinks,setSocialLinks:updateSocial,
     handleCustomerLogin,
@@ -1244,7 +1243,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
             })}
           </div>
         </F>}
-        <button style={G.sub} onClick={()=>{if(v1())setStep(2);}}>التالي ></button>
+        <button style={G.sub} onClick={()=>{if(v1())setStep(2);}}>التالي &gt;</button>
       </div>}
       {step===2&&<div style={G.fc}>
         <F label="التاريخ" error={errors.date}>
@@ -1269,7 +1268,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
         <div style={{fontSize:12,color:"#aaa",marginBottom:7}}>اختر الوقت{form.barberId?` - ${barber?.name||""}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
         <div style={G.timeGrid}>{slots.map(sl=>{const used=slotUsed(sl);const full=slotFull(sl);const sel=form.time===sl;return(<button key={sl} disabled={full} onClick={()=>!full&&setForm(p=>({...p,time:sl}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div><div style={{fontSize:9,marginTop:1,color:full?"#555":sel?"var(--p)":"#666"}}>{full?"محجوز":`${bc-used} متاح`}</div></button>);})}</div>
-        <button style={G.sub} onClick={()=>{if(v2())setStep(3);}}>التالي ></button>
+        <button style={G.sub} onClick={()=>{if(v2())setStep(3);}}>التالي &gt;</button>
       </div>}
       {step===3&&<div style={G.fc}>
         <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:36}}>✅</div><h3 style={{color:"#fff",marginTop:4,fontSize:16}}>تأكيد الحجز</h3></div>
@@ -1706,7 +1705,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           <button style={{...G.locTab,...(locMethod==="detect"?G.locTabOn:{})}} onClick={()=>setLocMethod("detect")}>📡 تلقائي</button>
         </div>
         {locMethod==="link"
-          ?<F error={errors.locationUrl}><input style={fi(errors.locationUrl)} placeholder="https://maps.google.com/..." value={form.locationUrl} onChange={e=>setForm(p=>({...p,locationUrl:e.target.value}))}/><div style={{fontSize:10,color:"#555",marginTop:3}}>افتح Google Maps > الموقع > شارك > انسخ</div></F>
+          ?<F error={errors.locationUrl}><input style={fi(errors.locationUrl)} placeholder="https://maps.google.com/..." value={form.locationUrl} onChange={e=>setForm(p=>({...p,locationUrl:e.target.value}))}/><div style={{fontSize:10,color:"#555",marginTop:3}}>افتح Google Maps &gt; الموقع &gt; شارك &gt; انسخ</div></F>
           :<div style={{marginBottom:11}}><button style={{...G.detectBtn,opacity:detecting?0.6:1}} disabled={detecting} onClick={detect}>{detecting?"⏳ جاري...":"📡 تحديد موقعي"}</button>{form.locationUrl&&locMethod==="detect"&&<div style={{color:"#4caf50",fontSize:11,marginTop:4,textAlign:"center"}}>✅ تم</div>}{errors.locationUrl&&<div style={G.err}>{errors.locationUrl}</div>}</div>
         }
       </div>
