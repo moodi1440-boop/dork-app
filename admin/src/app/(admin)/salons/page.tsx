@@ -4,9 +4,11 @@ import { sb } from "@/lib/supabase-browser";
 
 interface Salon {
   id: string; name: string; owner: string; owner_phone: string;
-  region: string; gov: string; phone: string; rating: number;
+  region: string; gov: string; center: string; village: string;
+  phone: string; rating: number;
   status: string; frozen: boolean; banned: boolean; total_paid: number;
-  address: string; welcome_msg: string; closed_days: number[];
+  address: string; location_url: string; welcome_msg: string;
+  tone: string; closed_days: number[];
   slot_min: number; services: string[]; prices: Record<string, number>;
   barbers: Array<{ name: string; photo?: string }>;
   shift_enabled: boolean; work_start: string; work_end: string;
@@ -15,6 +17,13 @@ interface Salon {
 }
 
 const DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const TONES = [
+  {id:"scissors",label:"مقص ✂"},{id:"razor",label:"ماكينة 🪒"},{id:"bell",label:"جرس الباب 🔔"},
+  {id:"cash",label:"صندوق النقد 💰"},{id:"welcome",label:"أهلاً وسهلاً 🎉"},{id:"chime3",label:"جرس ثلاثي 🎶"},
+  {id:"alert",label:"تنبيه عاجل ⚡"},{id:"classic",label:"كلاسيك 🎵"},{id:"barberpole",label:"عمود الحلاق 💈"},
+  {id:"clippers",label:"ماكينة كهربائية ⚡"},{id:"towel",label:"منشفة ساخنة 🧖"},{id:"mirror",label:"المرايا ✨"},
+  {id:"spray",label:"رشاش الماء 💦"},{id:"magazine",label:"مجلة انتظار 📖"},{id:"fanfare",label:"فانفاري 🎺"},{id:"vip",label:"VIP دخول 👑"},
+];
 const STATUSES = [
   { value: "all", label: "الكل" },
   { value: "pending", label: "تنتظر مراجعة" },
@@ -90,6 +99,8 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
   const [f, setF] = useState({
     name: salon.name ?? "", owner: salon.owner ?? "", phone: salon.phone ?? "",
     owner_phone: salon.owner_phone ?? "", address: salon.address ?? "",
+    location_url: salon.location_url ?? "", center: salon.center ?? "",
+    village: salon.village ?? "", tone: salon.tone ?? "bell",
     rating: salon.rating ?? 5, welcome_msg: salon.welcome_msg ?? "",
     closed_days: salon.closed_days ?? [], slot_min: salon.slot_min ?? 40,
     services: [...(salon.services ?? [])], prices: { ...(salon.prices ?? {}) },
@@ -113,8 +124,9 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: f.name, owner: f.owner, phone: f.phone, owner_phone: f.owner_phone,
-          address: f.address, rating: f.rating, welcome_msg: f.welcome_msg,
-          closed_days: f.closed_days, slot_min: f.slot_min,
+          address: f.address, location_url: f.location_url, rating: f.rating,
+          center: f.center, village: f.village, tone: f.tone,
+          welcome_msg: f.welcome_msg, closed_days: f.closed_days, slot_min: f.slot_min,
           services: f.services, prices: f.prices, barbers: f.barbers,
           shift_enabled: f.shift_enabled,
           work_start: f.work_start, work_end: f.work_end,
@@ -152,7 +164,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
 
           {sec === "info" && (
             <div className="space-y-4">
-              {[["اسم الصالون", "name"], ["اسم المالك", "owner"], ["جوال الصالون", "phone"], ["جوال المالك", "owner_phone"], ["العنوان", "address"]].map(([lbl, k]) => (
+              {[["اسم الصالون", "name"], ["اسم المالك", "owner"], ["جوال الصالون", "phone"], ["جوال المالك", "owner_phone"], ["العنوان", "address"], ["المركز", "center"], ["القرية / الحي", "village"]].map(([lbl, k]) => (
                 <div key={k}>
                   <label className="block text-xs text-gray-400 mb-1 font-semibold">{lbl}</label>
                   <input value={(f as Record<string, unknown>)[k] as string ?? ""}
@@ -160,6 +172,20 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                     className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gold" />
                 </div>
               ))}
+              <div>
+                <label className="block text-xs text-gray-400 mb-1 font-semibold">🗺 رابط الخريطة</label>
+                <input value={f.location_url} onChange={(e) => upd("location_url", e.target.value)}
+                  placeholder="https://maps.google.com/..."
+                  dir="ltr"
+                  className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-2 font-semibold">🔔 نغمة الحجز</label>
+                <select value={f.tone} onChange={(e) => upd("tone", e.target.value)}
+                  className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gold">
+                  {TONES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                </select>
+              </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1 font-semibold">التقييم ⭐</label>
                 <input type="number" min="1" max="5" step="0.1" value={f.rating}

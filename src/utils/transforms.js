@@ -87,6 +87,7 @@ export function toAppCustomer(row) {
     email: row.email || "",
     password: row.password,
     googleUid: row.google_uid || "",
+    blocked: row.blocked || false,
     favs,
     history,
     createdAt: row.created_at || new Date().toISOString(),

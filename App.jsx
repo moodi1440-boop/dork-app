@@ -2869,6 +2869,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(!savedId){toast$&&toast$("❌ لم تُسجّل البصمة بعد - سجّل دخول أولاً","err");return;}
       const c=customers.find(x=>String(x.id)===savedId);
       if(!c){toast$&&toast$("❌ لم يُعثر على الحساب","err");return;}
+      if(c.blocked){toast$&&toast$("❌ هذا الحساب محظور - تواصل مع الدعم","err");return;}
       setCustomerSession(c);setView("home");
       toast$&&toast$("✅ تم الدخول بالبصمة");
     }catch(e){toast$&&toast$("❌ فشل التحقق","err");}
@@ -2880,6 +2881,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const rows=await sb("customers","GET",null,`?phone=eq.${encodeURIComponent(phone.trim())}`);
       if(!rows.length){setErr("لا يوجد حساب بهذا الرقم");return;}
       const c=toAppCustomer(rows[0]);
+      if(c.blocked){setErr("❌ هذا الحساب محظور - تواصل مع الدعم");return;}
       setCustomerSession(c);setView("home");
       localStorage.setItem("dork_biometric_id",String(c.id));
     }catch(e){setErr("خطأ: "+e.message);}
@@ -2888,6 +2890,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const loginWithPin=async()=>{
     const c=customers.find(cust=>{const savedPin=localStorage.getItem(`dork_customer_pin_${cust.id}`);return savedPin&&savedPin===pin;});
     if(!c){setPinErr("رمز PIN غير صحيح");setPin("");return;}
+    if(c.blocked){setPinErr("❌ هذا الحساب محظور - تواصل مع الدعم");setPin("");return;}
     setCustomerSession(c);setView("home");
     localStorage.setItem("dork_biometric_id",String(c.id));
   };
@@ -3071,6 +3074,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               const rows=await sb("customers","GET",null,`?google_uid=eq.${gUser.googleUid}`);
               if(rows.length){
                 const c=toAppCustomer(rows[0]);
+                if(c.blocked){setErr("❌ هذا الحساب محظور - تواصل مع الدعم");return;}
                 setCustomerSession(c);setView("home");
                 localStorage.setItem("dork_biometric_id",String(c.id));
               }else{
