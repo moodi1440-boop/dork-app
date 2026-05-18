@@ -2366,6 +2366,12 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 //  ALL REVIEWS VIEW — صفحة جميع التعليقات
 // ==============================================
 function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
+  const[filter,setFilter]=useState(0);
+  const[search,setSearch]=useState("");
+  const gold="#d4a017";
+  const goldStar="#e8c04a";
+  const dimStar="rgba(212,160,23,.18)";
+
   const byId=new Map(approvedSalons.map(s=>[Number(s.id),s]));
   const approvedSet=new Set(approvedSalons.map(s=>Number(s.id)));
   const feed=(reviews||[])
@@ -2379,12 +2385,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
       comment:(r.comment||"").trim(),
       date:r.booking_date||r.created_at?.split("T")[0]||"",
     }))
-    .sort((a,b)=>b.date.localeCompare(a.date));
-  const[filter,setFilter]=useState(0); // 0=all, 1-5=star filter
-  const[search,setSearch]=useState("");
-  const gold="#d4a017";
-  const goldStar="#e8c04a";
-  const dimStar="rgba(212,160,23,.18)";
+    .sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 
   const filtered=feed.filter(r=>{
     if(filter>0&&r.rating!==filter)return false;
