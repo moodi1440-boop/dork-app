@@ -1709,7 +1709,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
         </div>
         <div style={G.tabRow}>
           <button style={{...G.tabBtn,...(tab==="book"?G.tabOn:{})}} onClick={()=>setTab("book")}>📅 حجز</button>
-          {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}</button>}
+          {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");loadData({silent:true});}}>🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}</button>}
           {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>}
         </div>
         {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView}/>}
@@ -2709,7 +2709,7 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
     </div></div>
   );
 }
-function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$}){
+function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,loadData}){
   const[tab,setTab]=useState("notif");
   const[oathDone,setOathDone]=useState(()=>{
     try{return localStorage.getItem(`dork_oath_${salon?.id}`)==="1";}catch{return false;}
@@ -2808,7 +2808,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {salon.paused&&<div style={{background:"rgba(231,76,60,.08)",border:"1px solid #e74c3c55",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:"#e74c3c"}}>⚠ الحجوزات موقوفة - لن يتمكن العملاء من الحجز الآن</div>}
 
       <div style={{...G.tabRow,flexWrap:"nowrap",overflowX:"auto"}}>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
+        <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");loadData({silent:true});}}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>{
           localStorage.setItem("dork_notif_count","0");
           setTab("messages");
