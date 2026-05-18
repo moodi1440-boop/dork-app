@@ -20,20 +20,28 @@ const NAV = [
 export default function Sidebar() {
   const path   = usePathname();
   const router = useRouter();
-  const [unreadMsgs,   setUnreadMsgs]   = useState(0);
-  const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [unreadMsgs,    setUnreadMsgs]    = useState(0);
+  const [unreadNotifs,  setUnreadNotifs]  = useState(0);
+  const [pendingSalons, setPendingSalons] = useState(0);
+  const [toast,         setToast]         = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 5000);
+  };
 
   useEffect(() => {
-    // تحميل أولي للأعداد
     const loadCounts = async () => {
       try {
-        const [msgs, notifs] = await Promise.all([
+        const [msgs, notifs, salonsRes] = await Promise.all([
           fetch("/api/messages").then((r) => r.json()),
           fetch("/api/notifications?unread=1").then((r) => r.json()),
+          sb.from("salons").select("id", { count: "exact", head: true }).eq("status", "pending"),
         ]);
         const totalUnread = (Array.isArray(msgs) ? msgs : []).reduce((a: number, s: { unread: number }) => a + (s.unread ?? 0), 0);
         setUnreadMsgs(totalUnread);
         setUnreadNotifs(Array.isArray(notifs) ? notifs.length : 0);
+        setPendingSalons(salonsRes.count ?? 0);
       } catch {}
     };
     loadCounts();
@@ -47,18 +55,28 @@ export default function Sidebar() {
       } catch {}
     }, 30000);
 
-    // realtime للإشعارات — يرفع العداد فوراً عند وصول إشعار جديد
+    // realtime للإشعارات والصالونات المعلقة
     const notifChannel = sb
-      .channel("sidebar-realtime-notifications")
+      .channel("sidebar-realtime-all")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
         setUnreadNotifs((prev) => prev + 1);
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications" }, () => {
-        // إعادة حساب الغير مقروءة عند تحديث
         fetch("/api/notifications?unread=1")
           .then((r) => r.json())
           .then((notifs) => setUnreadNotifs(Array.isArray(notifs) ? notifs.length : 0))
           .catch(() => {});
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "salons" }, (payload) => {
+        const s = payload.new as { status?: string; name?: string };
+        if (s?.status === "pending") {
+          setPendingSalons((prev) => prev + 1);
+          showToast(`✂ طلب تسجيل جديد: ${s.name ?? "صالون جديد"}`);
+        }
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "salons" }, () => {
+        sb.from("salons").select("id", { count: "exact", head: true }).eq("status", "pending")
+          .then((res) => setPendingSalons(res.count ?? 0));
       })
       .subscribe();
 
@@ -77,10 +95,23 @@ export default function Sidebar() {
   const badges: Record<string, number> = {
     "/messages":      unreadMsgs,
     "/notifications": unreadNotifs,
+    "/salons":        pendingSalons,
   };
 
   return (
     <aside className="w-56 flex flex-col bg-card border-l border-border min-h-screen sticky top-0">
+      {toast && (
+        <div className="fixed top-4 right-4 z-[100] max-w-xs bg-[#0f1117] border border-gold/40 rounded-2xl px-4 py-3 shadow-2xl animate-slide-in">
+          <div className="flex items-start gap-3">
+            <span className="text-gold text-lg mt-0.5">🔔</span>
+            <div>
+              <div className="text-white text-sm font-bold mb-0.5">طلب جديد</div>
+              <div className="text-gray-400 text-xs">{toast}</div>
+            </div>
+            <button onClick={() => setToast(null)} className="text-gray-500 hover:text-white text-sm ml-1">✕</button>
+          </div>
+        </div>
+      )}
       <div className="px-5 py-7 border-b border-border">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gold/10 border border-gold/30 flex items-center justify-center text-lg shadow-[0_0_12px_rgba(212,160,23,0.15)]">
