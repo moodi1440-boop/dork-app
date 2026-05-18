@@ -57,7 +57,15 @@ function toAppSalon(row) {
     tone: row.tone,
     rating: row.rating,
     status: row.status,
-    bookings: [], // تُحمَّل بشكل منفصل
+    paused: row.paused || false,
+    frozen: row.frozen || false,
+    banned: row.banned || false,
+    welcomeMsg: row.welcome_msg || "",
+    closedDays: row.closed_days || [],
+    slotMin: row.slot_min || 40,
+    password: row.password || "",
+    oathDone: row.oath_done || false,
+    bookings: [],
   };
 }
 
@@ -745,9 +753,9 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
       const [salonRows, bookingRows, custRows] = await Promise.all([
-        sb("salons", "GET", null, "?order=id.desc"),
-        sb("bookings", "GET", null, "?order=created_at.desc"),
-        sb("customers", "GET", null, ""),
+        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,oath_done&order=id.desc"),
+        sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status&order=created_at.desc"),
+        sb("customers","GET",null,"?select=id,name,phone,email,password,google_uid,history,favs,created_at"),
       ]);
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
