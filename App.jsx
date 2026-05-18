@@ -747,7 +747,7 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
       const [salonRows, bookingRows, custRows] = await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen&order=id.desc"),
+        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status&order=id.desc"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status&order=created_at.desc"),
         sb("customers","GET",null,"?select=id,name,phone,email,password,google_uid,history,favs,created_at"),
       ]);
