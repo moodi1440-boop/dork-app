@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase, sb } from "./src/lib/supabase.js";
-import { toAppSalon, toDbSalon, toAppCustomer } from "./src/utils/transforms.js";
-import { getSlotsForSalon, todayStr, openMaps, calcTotal, normPhone, buildHomeReviewsFeed } from "./src/utils/helpers.js";
+import { toAppSalon, toDbSalon, toAppBooking, toAppCustomer } from "./src/utils/transforms.js";
+import { makeSlots, getSlotsForSalon, todayStr, openMaps, calcTotal, normPhone, buildHomeReviewsFeed, SLOT_MIN } from "./src/utils/helpers.js";
 import DorkLogoSvg from "./src/components/DorkLogoSvg.jsx";
 
 // ==============================================
