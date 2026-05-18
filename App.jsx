@@ -542,6 +542,7 @@ const DEMO_SALONS=[
 export default function App(){
   const[salons,setSalons]=useState([]);
   const[customers,setCustomers]=useState([]);
+  const[reviews,setReviews]=useState([]);
   const[extraLoc,setExtraLoc]=useState(()=>{
     try{
       localStorage.removeItem("bbv6_loc");
@@ -752,10 +753,11 @@ export default function App(){
     const silent=opts&&opts.silent;
     try {
       if(!silent)setLoading(true);
-      const [salonRows, bookingRows, custRows] = await Promise.all([
+      const [salonRows, bookingRows, custRows, reviewRows] = await Promise.all([
         sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,oath_done&order=id.desc"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status&order=created_at.desc"),
         sb("customers","GET",null,"?select=id,name,phone,email,password,google_uid,history,favs,created_at"),
+        sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,booking_date,created_at&order=created_at.desc"),
       ]);
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
@@ -778,6 +780,7 @@ export default function App(){
       });
       setSalons(salonsWithBookings);
       setCustomers(custRows.map(toAppCustomer));
+      setReviews(reviewRows||[]);
       setDbError(null);
     } catch(e) {
       console.error(e);
@@ -1076,6 +1079,7 @@ export default function App(){
     addSalon,
     addBooking,updateBookingStatus,
     customers,setCustomers,
+    reviews,setReviews,
     toggleFav,favSet,customer,
     selSalon,setSelSalon,
     onPage:(s)=>{setSelSalon(s);setView("salon");},
@@ -1127,8 +1131,8 @@ export default function App(){
         {view==="nearMap"&&   <NearMapView salons={approvedSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="compare"&&   <CompareSalonsView salons={compareSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="notifs"&&    <NotifsView setView={setView}/>}
-        {view==="allReviews"&&<AllReviewsView customers={customers} approvedSalons={approvedSalons} setSelSalon={setSelSalon} setView={setView}/>}
-        {view==="salonReviews"&&selSalon&&<SalonReviewsView salon={salons.find(s=>s.id===selSalon.id)||selSalon} customers={customers} setView={setView}/>}
+        {view==="allReviews"&&<AllReviewsView reviews={reviews} approvedSalons={approvedSalons} setSelSalon={setSelSalon} setView={setView}/>}
+        {view==="salonReviews"&&selSalon&&<SalonReviewsView salon={salons.find(s=>s.id===selSalon.id)||selSalon} reviews={reviews} setView={setView}/>}
       </div>
     </div>
   );
@@ -1364,20 +1368,17 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 // ==============================================
 //  HOME
 // ==============================================
-function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing}){
+function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing}){
   const[urgentMode,setUrgentMode]=useState(false);
 
   const getRealRating=(salonId)=>{
     const id=Number(salonId);
-    const reviews=(customers||[]).flatMap(c=>
-      (c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0).map(h=>h.rating)
-    );
-    if(!reviews.length)return null;
-    return Math.round(reviews.reduce((a,r)=>a+r,0)/reviews.length*10)/10;
+    const sRatings=(reviews||[]).filter(r=>Number(r.salon_id)===id).map(r=>r.rating);
+    if(!sRatings.length)return null;
+    return Math.round(sRatings.reduce((a,r)=>a+r,0)/sRatings.length*10)/10;
   };
   const getReviewCount=(salonId)=>{
-    const id=Number(salonId);
-    return (customers||[]).reduce((n,c)=>n+(c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0).length,0);
+    return (reviews||[]).filter(r=>Number(r.salon_id)===Number(salonId)).length;
   };
 
   const detectUserLoc=()=>{
@@ -1553,18 +1554,18 @@ function LocFilter({icon,label,value,onChange,options,all}){
 // ==============================================
 //  SALON REVIEWS PAGE
 // ==============================================
-function SalonReviewsView({salon,customers,setView}){
+function SalonReviewsView({salon,reviews,setView}){
   const gold="#d4a017";
   const goldStar="#e8c04a";
-  const reviews=useMemo(()=>{
-    if(!customers||!salon)return[];
+  const salonReviews=useMemo(()=>{
+    if(!reviews||!salon)return[];
     const id=Number(salon.id);
-    return customers
-      .flatMap(c=>(c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0)
-        .map(h=>({name:c.name,rating:h.rating,comment:h.comment||"",date:h.date||""})))
+    return (reviews||[])
+      .filter(r=>Number(r.salon_id)===id)
+      .map(r=>({name:r.customer_name||"عميل",rating:r.rating,comment:r.comment||"",date:r.booking_date||r.created_at?.split("T")[0]||""}))
       .sort((a,b)=>b.date.localeCompare(a.date));
-  },[customers,salon]);
-  const avg=reviews.length?Math.round(reviews.reduce((s,r)=>s+r.rating,0)/reviews.length*10)/10:0;
+  },[reviews,salon]);
+  const avg=salonReviews.length?Math.round(salonReviews.reduce((s,r)=>s+r.rating,0)/salonReviews.length*10)/10:0;
   return(
     <div style={G.page}>
       <div style={G.fp}>
@@ -1575,14 +1576,14 @@ function SalonReviewsView({salon,customers,setView}){
         {/* ملخص الصالون */}
         <div style={{background:"rgba(212,160,23,.07)",border:"1px solid rgba(212,160,23,.18)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
           <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:6}}>✂ {salon?.name}</div>
-          {reviews.length>0?(
+          {salonReviews.length>0?(
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <span style={{fontSize:28,fontWeight:900,color:goldStar,lineHeight:1}}>{avg}</span>
               <div>
                 <div style={{display:"flex",gap:2,marginBottom:2}}>
                   {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:16,color:n<=Math.round(avg)?goldStar:"rgba(212,160,23,.2)"}}>★</span>)}
                 </div>
-                <div style={{fontSize:10,color:"#888"}}>{reviews.length} تقييم</div>
+                <div style={{fontSize:10,color:"#888"}}>{salonReviews.length} تقييم</div>
               </div>
             </div>
           ):(
@@ -1591,7 +1592,7 @@ function SalonReviewsView({salon,customers,setView}){
         </div>
         {/* قائمة التقييمات */}
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          {reviews.map((r,i)=>(
+          {salonReviews.map((r,i)=>(
             <div key={i} style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 13px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.comment?6:0}}>
                 <span style={{fontSize:12,color:"#c0c0d0",fontWeight:700}}>👤 {r.name}</span>
@@ -1604,7 +1605,7 @@ function SalonReviewsView({salon,customers,setView}){
             </div>
           ))}
         </div>
-        {reviews.length===0&&<div style={G.empty}>لا توجد تقييمات لهذا الصالون بعد</div>}
+        {salonReviews.length===0&&<div style={G.empty}>لا توجد تقييمات لهذا الصالون بعد</div>}
       </div>
     </div>
   );
@@ -1674,18 +1675,14 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
 // ==============================================
 //  SALON PAGE
 // ==============================================
-function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers}){
+function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,reviews}){
   const[tab,setTab]=useState("book");
   const fav=favSet.has(salon.id);
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
   const canManage=ownerSession===salon.id;
 
-  // جمع تقييمات هذا الصالون من كل العملاء
-  const reviews=(customers||[]).flatMap(c=>
-    (c.history||[]).filter(h=>Number(h.salonId)===Number(salon.id)&&h.rating>0)
-    .map(h=>({name:c.name,rating:h.rating,comment:h.comment||"",date:h.date}))
-  );
-  const avgRating=reviews.length?Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length*10)/10:salon.rating||0;
+  const salonReviews=(reviews||[]).filter(r=>Number(r.salon_id)===Number(salon.id));
+  const avgRating=salonReviews.length?Math.round(salonReviews.reduce((a,r)=>a+r.rating,0)/salonReviews.length*10)/10:salon.rating||0;
 
   return(
     <div style={G.page}>
@@ -1702,8 +1699,8 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
             <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div>
             <div style={{fontSize:11,color:"#888"}}>{salon.gov||salon.region}{salon.village?` > ${salon.village}`:""}</div>
             <div style={{fontSize:11,color:"#888"}}>👤 {salon.owner} - 📞 {salon.phone}</div>
-            {reviews.length>0&&<>
-              <div style={{fontSize:12,color:"#e8c04a",marginTop:2}}>⭐ {avgRating} ({reviews.length} تقييم)</div>
+            {salonReviews.length>0&&<>
+              <div style={{fontSize:12,color:"#e8c04a",marginTop:2}}>⭐ {avgRating} ({salonReviews.length} تقييم)</div>
               <div style={{fontSize:9,color:"#666",marginTop:2}}>آراء العملاء تظهر في الصفحة الرئيسية</div>
             </>}
           </div>
@@ -2328,23 +2325,36 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 // ==============================================
 //  ALL REVIEWS VIEW — صفحة جميع التعليقات
 // ==============================================
-function AllReviewsView({customers,approvedSalons,setSelSalon,setView}){
-  const reviews=buildHomeReviewsFeed(customers,approvedSalons);
+function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
+  const byId=new Map(approvedSalons.map(s=>[Number(s.id),s]));
+  const approvedSet=new Set(approvedSalons.map(s=>Number(s.id)));
+  const feed=(reviews||[])
+    .filter(r=>approvedSet.has(Number(r.salon_id)))
+    .map(r=>({
+      key:`hr-${r.id}`,
+      salonId:Number(r.salon_id),
+      salonName:(byId.get(Number(r.salon_id))?.name||"صالون").trim(),
+      customerName:(r.customer_name||"عميل").trim(),
+      rating:r.rating,
+      comment:(r.comment||"").trim(),
+      date:r.booking_date||r.created_at?.split("T")[0]||"",
+    }))
+    .sort((a,b)=>b.date.localeCompare(a.date));
   const[filter,setFilter]=useState(0); // 0=all, 1-5=star filter
   const[search,setSearch]=useState("");
   const gold="#d4a017";
   const goldStar="#e8c04a";
   const dimStar="rgba(212,160,23,.18)";
 
-  const filtered=reviews.filter(r=>{
+  const filtered=feed.filter(r=>{
     if(filter>0&&r.rating!==filter)return false;
     if(search&&!r.salonName.includes(search)&&!r.customerName.includes(search)&&!r.comment.includes(search))return false;
     return true;
   });
 
-  const globalAvg=reviews.length
-    ?Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length*10)/10:0;
-  const dist=[5,4,3,2,1].map(s=>({star:s,count:reviews.filter(r=>r.rating===s).length}));
+  const globalAvg=feed.length
+    ?Math.round(feed.reduce((a,r)=>a+r.rating,0)/feed.length*10)/10:0;
+  const dist=[5,4,3,2,1].map(s=>({star:s,count:feed.filter(r=>r.rating===s).length}));
 
   const openSalon=sid=>{
     const s=approvedSalons.find(x=>Number(x.id)===Number(sid));
@@ -2360,7 +2370,7 @@ function AllReviewsView({customers,approvedSalons,setSelSalon,setView}){
           <DorkLogoSvg size={26}/>
           <div>
             <div style={{fontSize:15,fontWeight:900,color:"#f0f0f0"}}>جميع التقييمات</div>
-            <div style={{fontSize:10,color:gold,opacity:.8}}>{reviews.length} تقييم — متوسط {globalAvg} ★</div>
+            <div style={{fontSize:10,color:gold,opacity:.8}}>{feed.length} تقييم — متوسط {globalAvg} ★</div>
           </div>
         </div>
         {/* Search */}
@@ -2377,7 +2387,7 @@ function AllReviewsView({customers,approvedSalons,setSelSalon,setView}){
         <div style={{display:"flex",gap:10,overflowX:"auto",scrollbarWidth:"none",paddingBottom:4}}>
           {/* All */}
           <button onClick={()=>setFilter(0)} style={{flex:"0 0 auto",padding:"6px 14px",borderRadius:20,border:`1px solid ${filter===0?gold:"rgba(212,160,23,.2)"}`,background:filter===0?"rgba(212,160,23,.12)":"transparent",color:filter===0?gold:"#888",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
-            الكل ({reviews.length})
+            الكل ({feed.length})
           </button>
           {dist.map(({star,count})=>(
             <button key={star} onClick={()=>setFilter(star===filter?0:star)}
@@ -3659,7 +3669,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     </div></div>
   );
 }
-function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers}){
+function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews}){
   const[tab,setTab]=useState("settings");
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
@@ -3842,19 +3852,30 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                   </div>
                   {/* التقييم فقط بعد القبول */}
                   {status==="approved"&&<InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={async(r,comment)=>{
+                    // تحديث history العميل محلياً (لعرضه في "حجوزاتي")
                     const rev=[...history].reverse();
                     rev[i]={...rev[i],rating:r,comment};
                     const updated=[...rev].reverse();
                     setCustomers(p=>p.map(c=>c.id===customer.id?{...c,history:updated}:c));
                     try{await sb("customers","PATCH",{history:updated},`?id=eq.${customer.id}`);}catch{}
-                    // تحديث تقييم الصالون مباشرة
+                    // كتابة التقييم في جدول reviews المستقل
                     try{
-                      const salonId=h.salonId;
-                      const allRatings=updated.filter(x=>Number(x.salonId)===Number(salonId)&&x.rating>0).map(x=>x.rating);
-                      const newRating=allRatings.length?Math.round(allRatings.reduce((a,x)=>a+x,0)/allRatings.length*10)/10:r;
+                      const salonId=Number(h.salonId);
+                      const existing=(reviews||[]).find(rv=>Number(rv.salon_id)===salonId&&Number(rv.customer_id)===Number(customer.id)&&rv.booking_date===h.date);
+                      let allSalonReviews=(reviews||[]).filter(rv=>Number(rv.salon_id)===salonId);
+                      if(existing){
+                        await sb("reviews","PATCH",{rating:r,comment},`?id=eq.${existing.id}`);
+                        allSalonReviews=allSalonReviews.map(rv=>rv.id===existing.id?{...rv,rating:r,comment}:rv);
+                        setReviews(p=>p.map(rv=>rv.id===existing.id?{...rv,rating:r,comment}:rv));
+                      }else{
+                        const res=await sb("reviews","POST",{salon_id:salonId,customer_id:Number(customer.id),customer_name:customer.name,rating:r,comment,booking_date:h.date});
+                        if(res&&res[0]){allSalonReviews=[...allSalonReviews,res[0]];setReviews(p=>[...p,res[0]]);}
+                      }
+                      // حساب المتوسط من كل تقييمات الصالون (دقيق 100%)
+                      const newRating=allSalonReviews.length?Math.round(allSalonReviews.reduce((a,rv)=>a+rv.rating,0)/allSalonReviews.length*10)/10:r;
                       await sb("salons","PATCH",{rating:newRating},`?id=eq.${salonId}`);
-                      setSalons(p=>p.map(s=>s.id===Number(salonId)||s.id===salonId?{...s,rating:newRating}:s));
-                    }catch{}
+                      setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:newRating}:s));
+                    }catch(e){console.error(e);}
                   }}/>}
                 </div>
               );
