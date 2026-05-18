@@ -1,136 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-// ==============================================
-//  SUPABASE CLIENT
-// ==============================================
-const SUPABASE_URL    = "https://ywrlhvzfefvyogfxfdhl.supabase.co";
-const SUPABASE_ANON   = "sb_publishable_3tbZHK51ohv9AITf-Mt5Ww_MGZ1DMQs";
-
-// Supabase JS client for Realtime subscriptions
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
-
-async function sb(table, method, body, query = "") {
-  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "apikey": SUPABASE_ANON,
-      "Authorization": `Bearer ${SUPABASE_ANON}`,
-      "Content-Type": "application/json",
-      "Prefer": method === "POST" ? "return=representation" : "return=representation",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Supabase ${method} ${table}: ${err}`);
-  }
-  const text = await res.text();
-  return text ? JSON.parse(text) : [];
-}
-
-// تحويل بيانات Supabase > شكل التطبيق
-function toAppSalon(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    owner: row.owner,
-    ownerPhone: row.owner_phone,
-    region: row.region,
-    gov: row.gov,
-    center: row.center,
-    village: row.village,
-    phone: row.phone,
-    address: row.address,
-    locationUrl: row.location_url,
-    services: row.services || [],
-    prices: row.prices || {},
-    shiftEnabled: row.shift_enabled,
-    shift1Start: row.shift1_start,
-    shift1End: row.shift1_end,
-    shift2Start: row.shift2_start,
-    shift2End: row.shift2_end,
-    workStart: row.work_start,
-    workEnd: row.work_end,
-    barbers: row.barbers || [],
-    tone: row.tone,
-    rating: row.rating,
-    status: row.status,
-    bookings: [], // تُحمَّل بشكل منفصل
-  };
-}
-
-// تحويل بيانات التطبيق > Supabase
-function toDbSalon(s) {
-  return {
-    name: s.name,
-    owner: s.owner,
-    owner_phone: s.ownerPhone,
-    region: s.region,
-    gov: s.gov,
-    center: s.center,
-    village: s.village,
-    phone: s.phone,
-    address: s.address,
-    location_url: s.locationUrl,
-    services: s.services,
-    prices: s.prices,
-    shift_enabled: s.shiftEnabled,
-    shift1_start: s.shift1Start,
-    shift1_end: s.shift1End,
-    shift2_start: s.shift2Start,
-    shift2_end: s.shift2End,
-    work_start: s.workStart,
-    work_end: s.workEnd,
-    barbers: s.barbers,
-    tone: s.tone,
-  };
-}
-
-function toAppBooking(row) {
-  return {
-    id: row.id,
-    salonId: row.salon_id,
-    name: row.name,
-    phone: row.phone,
-    email: row.email||"",
-    services: row.services || [],
-    barberId: row.barber_id,
-    barberName: row.barber_name,
-    date: row.date,
-    time: row.time,
-    total: row.total,
-    status: row.status,
-  };
-}
-
-function toAppCustomer(row) {
-  let history=row.history||[];
-  let favs=row.favs||[];
-  if(!history.length){
-    try{const h=localStorage.getItem(`hist_${row.id}`);if(h)history=JSON.parse(h);}catch{}
-  }
-  if(!favs.length){
-    try{const f=localStorage.getItem(`favs_${row.id}`);if(f)favs=JSON.parse(f);}catch{}
-  }
-  return {
-    id: row.id,
-    name: row.name,
-    phone: row.phone,
-    email: row.email||"",
-    password: row.password,
-    googleUid: row.google_uid||"",
-    favs,
-    history,
-    createdAt: row.created_at||new Date().toISOString(),
-  };
-}
+import { supabase, sb } from "./src/lib/supabase.js";
+import { toAppSalon, toDbSalon, toAppBooking, toAppCustomer } from "./src/utils/transforms.js";
+import { makeSlots, getSlotsForSalon, todayStr, openMaps, calcTotal, normPhone, buildHomeReviewsFeed, SLOT_MIN } from "./src/utils/helpers.js";
+import DorkLogoSvg from "./src/components/DorkLogoSvg.jsx";
 
 // ==============================================
 //  CONSTANTS
 // ==============================================
-const SLOT_MIN  = 40;
 const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 
 /** مصدر الحقيقة لإعدادات المنصة في جدول app_settings (Supabase) */
@@ -471,56 +347,6 @@ const BASE_LOC=[
 ]
 const DEFAULT_SERVICES=["قص شعر","حلاقة لحية","تسريح","حلاقة كاملة","عناية بالبشرة","صبغة شعر","تنظيف بشرة","ماسك وجه"];
 
-// ==============================================
-//  UTILS
-// ==============================================
-function makeSlots(s,e,slotMin=40){
-  const r=[]; let[h,m]=s.split(":").map(Number); const[eh,em]=e.split(":").map(Number);
-  while(h<eh||(h===eh&&m<em)){r.push(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);m+=slotMin;if(m>=60){h++;m-=60;}} return r;
-}
-function getSlotsForSalon(s){
-  const sm=s.slotMin||SLOT_MIN;
-  if(s.shiftEnabled){
-    return[...(s.shift1Start&&s.shift1End?makeSlots(s.shift1Start,s.shift1End,sm):[]),...(s.shift2Start&&s.shift2End?makeSlots(s.shift2Start,s.shift2End,sm):[])];
-  }
-  return makeSlots(s.workStart||"09:00",s.workEnd||"22:00",sm);
-}
-function todayStr(){return new Date().toISOString().split("T")[0];}
-function openMaps(url,name,addr){window.open(url?.trim()||`https://www.google.com/maps/search/${encodeURIComponent(name+" "+addr)}`,"_blank");}
-function calcTotal(svcs,prices){return(svcs||[]).reduce((a,s)=>a+(prices?.[s]||0),0);}
-function normPhone(p){return String(p||"").replace(/\D/g,"");}
-
-/** تقييمات معتمدة من عملاء لصالونات مفعّلة — للصفحة الرئيسية */
-function buildHomeReviewsFeed(customers, approvedSalons){
-  const byId=new Map(approvedSalons.map(s=>[Number(s.id),s]));
-  const approvedSet=new Set(approvedSalons.map(s=>Number(s.id)));
-  const rows=[];
-  let k=0;
-  for(const c of customers||[]){
-    for(const h of c.history||[]){
-      if(!h||!h.rating||h.rating<=0)continue;
-      const sid=Number(h.salonId);
-      if(!approvedSet.has(sid))continue;
-      const salon=byId.get(sid);
-      rows.push({
-        key:`hr-${k++}`,
-        salonId:sid,
-        salonName:(h.salonName||salon?.name||"صالون").trim(),
-        customerName:(c.name||"عميل").trim(),
-        rating:h.rating,
-        comment:(h.comment||"").trim(),
-        date:h.date||"",
-        time:h.time||"",
-      });
-    }
-  }
-  rows.sort((a,b)=>{
-    const d=(b.date||"").localeCompare(a.date||"");
-    if(d!==0)return d;
-    return (b.time||"").localeCompare(a.time||"");
-  });
-  return rows;
-}
 
 const DEMO_SALONS=[
   {id:1,name:"صالون الأناقة",owner:"أحمد محمد",ownerPhone:"0501234567",region:"منطقة مكة المكرمة",gov:"محافظة جدة",center:"مركز جدة",village:"الروضة",phone:"0501234567",address:"شارع الملك عبدالعزيز",locationUrl:"https://maps.google.com/?q=21.5433,39.1728",services:["قص شعر","حلاقة لحية","تسريح"],prices:{"قص شعر":50,"حلاقة لحية":30,"تسريح":40},shiftEnabled:true,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"08:00",workEnd:"23:00",barbers:[{id:"b1",name:"أبو خالد"},{id:"b2",name:"محمد"}],tone:"bell",bookings:[],rating:4.8,status:"approved"},
@@ -1142,67 +968,6 @@ export default function App(){
 // ==============================================
 //  DORK LOGO SVG — full brand icon: rounded frame + scissors + clock + rings + pin
 // ==============================================
-function DorkLogoSvg({size=40}){
-  return(
-    <svg width={size} height={size} viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="dlg" x1="0" y1="0" x2="100" y2="110" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#fff8c8"/>
-          <stop offset="22%"  stopColor="#f5d060"/>
-          <stop offset="55%"  stopColor="#d4a017"/>
-          <stop offset="100%" stopColor="#8b6000"/>
-        </linearGradient>
-        <linearGradient id="dlg2" x1="50" y1="0" x2="50" y2="110" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#ffe566"/>
-          <stop offset="100%" stopColor="#c8900a"/>
-        </linearGradient>
-      </defs>
-
-      {/* Outer rounded rectangle frame */}
-      <rect x="5" y="4" width="90" height="102" rx="22" ry="22"
-        stroke="url(#dlg)" strokeWidth="4" fill="none"/>
-
-      {/* Clock arc — upper half circle */}
-      <path d="M 22 46 A 28 28 0 0 1 78 46"
-        stroke="url(#dlg)" strokeWidth="3.8" fill="none" strokeLinecap="round"/>
-
-      {/* Clock tick 12 */}
-      <line x1="50" y1="16" x2="50" y2="22" stroke="url(#dlg)" strokeWidth="3" strokeLinecap="round"/>
-      {/* Clock tick 9 (left) */}
-      <line x1="21" y1="46" x2="27" y2="46" stroke="url(#dlg)" strokeWidth="2.5" strokeLinecap="round"/>
-      {/* Clock tick 3 (right) */}
-      <line x1="79" y1="46" x2="73" y2="46" stroke="url(#dlg)" strokeWidth="2.5" strokeLinecap="round"/>
-
-      {/* Clock hands — 10:10 position */}
-      <line x1="50" y1="46" x2="39" y2="36" stroke="url(#dlg)" strokeWidth="3" strokeLinecap="round"/>
-      <line x1="50" y1="46" x2="61" y2="37" stroke="url(#dlg2)" strokeWidth="2.5" strokeLinecap="round"/>
-      <circle cx="50" cy="46" r="3" fill="url(#dlg)"/>
-
-      {/* Scissors blade 1 — lower-left ring → upper-right */}
-      <line x1="22" y1="94" x2="79" y2="22"
-        stroke="url(#dlg)" strokeWidth="5.5" strokeLinecap="round"/>
-
-      {/* Scissors blade 2 — lower-right ring → upper-left */}
-      <line x1="78" y1="94" x2="21" y2="22"
-        stroke="url(#dlg)" strokeWidth="5.5" strokeLinecap="round"/>
-
-      {/* Pivot screw */}
-      <circle cx="50" cy="58" r="5.5" fill="url(#dlg)"/>
-      <circle cx="50" cy="58" r="2.5" fill="#0b0d1e"/>
-
-      {/* Left handle ring */}
-      <circle cx="22" cy="94" r="9.5" stroke="url(#dlg)" strokeWidth="3.5" fill="none"/>
-      {/* Right handle ring */}
-      <circle cx="78" cy="94" r="9.5" stroke="url(#dlg)" strokeWidth="3.5" fill="none"/>
-
-      {/* Location pin between rings */}
-      <path d="M 50 89 C 47 86 44 83 44 80.5 A 6 6 0 0 1 56 80.5 C 56 83 53 86 50 89 Z"
-        fill="url(#dlg)"/>
-      <circle cx="50" cy="80.5" r="2.5" fill="#0b0d1e"/>
-    </svg>
-  );
-}
-
 // ==============================================
 //  TOP BAR - 3 role buttons on the LEFT
 // ==============================================
