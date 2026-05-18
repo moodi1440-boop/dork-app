@@ -7,3 +7,8 @@ supabase/.temp/
 .env
 .env.local
 CLAUDE.md
+
+# مجلدات داخلية - لا ترفع على GitHub
+_backup_md_docs/
+_backup_split_phase1/
+ملف_الاتفاقيات/
