@@ -8,7 +8,7 @@ interface Stats {
   totalCustomers: number; totalSalons: number;
   approvedSalons: number; pendingSalons: number;
   suspendedSalons: number; rejectedSalons: number;
-  revenue: number;
+  revenue: number; todayBookings: number; todayRevenue: number;
   monthlyData: { month: string; count: number }[];
 }
 
@@ -78,6 +78,9 @@ export default function DashboardPage() {
       const allBookings = allSalons.flatMap((s) => (s.bookings as Booking[]) ?? []);
 
       const now = new Date();
+      const today = now.toISOString().split("T")[0];
+      const todayBks = allBookings.filter((b) => b.date === today);
+
       const monthlyData = Array.from({ length: 6 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -97,6 +100,8 @@ export default function DashboardPage() {
         suspendedSalons:   allSalons.filter((s) => s.status === "suspended").length,
         rejectedSalons:    allSalons.filter((s) => s.status === "rejected").length,
         revenue:           allBookings.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (Number(b.total) || 0), 0),
+        todayBookings:     todayBks.length,
+        todayRevenue:      todayBks.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (Number(b.total) || 0), 0),
         monthlyData,
       });
       setLoading(false);
@@ -124,6 +129,12 @@ export default function DashboardPage() {
         <StatCard icon="📅" label="إجمالي الحجوزات"  value={fmt(stats.totalBookings)}      sub={`${stats.pendingBookings} في الانتظار`} color="gold"  />
         <StatCard icon="👥" label="إجمالي العملاء"    value={fmt(stats.totalCustomers)}                                                  color="blue"  />
         <StatCard icon="💰" label="إجمالي الإيرادات"  value={`${fmt(stats.revenue)} ر.س`}                                               color="green" />
+      </div>
+
+      {/* Row 1b: Today KPIs */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <StatCard icon="📆" label="حجوزات اليوم"   value={fmt(stats.todayBookings)}                       color="purple" />
+        <StatCard icon="🪙" label="إيرادات اليوم"  value={`${fmt(stats.todayRevenue)} ر.س`}              color="gold"   />
       </div>
 
       {/* Row 2: Salon status KPIs */}
