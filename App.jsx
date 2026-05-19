@@ -1837,20 +1837,19 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       {/* Divider */}
       <div style={{height:1,background:"rgba(212,160,23,.1)"}}/>
 
-      {/* Book Button */}
-      <button onClick={onBook} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",width:"100%",fontFamily:"'Cairo',sans-serif"}}>
-        احجز الان
-      </button>
+      {/* Book Button + Action Buttons */}
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <button onClick={onBook} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",flex:1,fontFamily:"'Cairo',sans-serif"}}>
+          احجز الان
+        </button>
 
-      {/* Action Buttons */}
-      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-        <button onClick={()=>{}} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36}}>
+        <button onClick={()=>{}} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           ⚖
         </button>
-        <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"#d4a017":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36}}>
+        <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"#d4a017":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           {fav?"♥":"♡"}
         </button>
-        <button onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#3b9ef5",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36}}>
+        <button onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#3b9ef5",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           📍
         </button>
       </div>
