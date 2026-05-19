@@ -2127,7 +2127,8 @@ function StatsPanel({salon}){
 }
 function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[showWaiting,setShowWaiting]=useState(false);
-  const[filter,setFilter]=useState("pending");
+  const[showAddForm,setShowAddForm]=useState(false);
+  const[filter,setFilter]=useState("approved");
   const[localAtt,setLocalAtt]=useState({});
   const[mForm,setMForm]=useState({name:"",phone:"",date:new Date().toISOString().slice(0,10),slot:""});
   const KEY=`dork_waiting_${salon.id}`;
@@ -2208,86 +2209,89 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
   return(
     <div style={{paddingTop:4}}>
-      {/* فلتر الحجوزات */}
+      {/* فلتر الحجوزات - مقبول / مرفوض / انتظار */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[["pending","⏳ انتظار",counts.pending],["approved","✅ مقبول",counts.approved],["rejected","❌ مرفوض",counts.rejected],["all","الكل",allBks.length]].map(([val,label,count])=>(
+        {[["approved","✅ مقبول",counts.approved],["rejected","❌ مرفوض",counts.rejected],["pending","⏳ انتظار",counts.pending]].map(([val,label,count])=>(
           <button key={val} onClick={()=>setFilter(val)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${filter===val?"var(--p)":"#2a2a3a"}`,background:filter===val?"var(--pa25)":"transparent",color:filter===val?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:filter===val?700:400}}>
             {label}{count>0&&<span style={{background:filter===val?"var(--p)":"#333",color:filter===val?"#000":"#aaa",borderRadius:10,padding:"1px 6px",fontSize:10,marginRight:3}}>{count}</span>}
           </button>
         ))}
       </div>
-      {/* قائمة الانتظار - تظهر فقط عند فلتر "انتظار" */}
-      {filter==="pending"&&waitingList.length>0&&(
-        <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",border:"1px solid var(--pa25)",marginBottom:10}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>⏳ قائمة الانتظار ({waitingList.length})</div>
-            <button onClick={()=>setShowWaiting(w=>!w)} style={{fontSize:10,color:"#888",background:"transparent",border:"none",cursor:"pointer"}}>{showWaiting?"▲ إخفاء":"▼ عرض"}</button>
-          </div>
-          {showWaiting&&waitingList.map((w,idx)=>{
-            const cust=customers.find(c=>c.phone&&w.phone&&c.phone.replace(/\D/g,"").slice(-9)===w.phone.replace(/\D/g,"").slice(-9));
-            const cl=cust?getCustomerClassification(cust):null;
-            return(
-            <div key={w.id} style={{padding:"8px 0",borderTop:"1px solid #2a2a3a"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                <div>
-                  <div style={{fontSize:12,color:"#fff",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{background:"#2a2a3a",color:"var(--p)",borderRadius:10,padding:"1px 6px",fontSize:10}}>#{idx+1}</span>
-                    {w.name}
-                    {cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}
-                  </div>
-                  <div style={{fontSize:11,color:"#888"}}>📞 {w.phone}</div>
-                  {w.slotTime&&<div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>⏰ {w.slotDate} - {w.slotTime}</div>}
-                  <div style={{fontSize:10,color:"#555"}}>أضيف: {w.addedAt}</div>
-                </div>
-                <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
-              </div>
-              {w.slotTime&&<div style={{display:"flex",gap:6,marginTop:6}}>
-                <button style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit",fontWeight:700}} onClick={()=>acceptFromWaiting(w)}>✅ قبول للموعد</button>
-              </div>}
-            </div>
-          )})}
-        </div>
-      )}
 
-      {/* إضافة يدوية لقائمة الانتظار */}
+      {/* قسم الانتظار - يظهر فقط عند فلتر "انتظار" */}
       {filter==="pending"&&(()=>{
         const allSlots=getSlotsForSalon(salon);
         const inp2={padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",width:"100%",boxSizing:"border-box"};
-        return(
-        <div style={{background:"#0d0d1a",borderRadius:10,border:"1px solid #2a2a3a",marginBottom:10,overflow:"hidden"}}>
-          <div style={{background:"#13131f",padding:"10px 14px",borderBottom:"1px solid #2a2a3a",fontSize:12,color:"var(--p)",fontWeight:700}}>➕ إضافة عميل لقائمة الانتظار</div>
-          <div style={{padding:"12px 14px"}}>
-            <div style={{display:"flex",gap:8,marginBottom:8}}>
-              <input value={mForm.name} onChange={e=>setMForm(p=>({...p,name:e.target.value}))} style={{...inp2,direction:"rtl"}} placeholder="الاسم"/>
-              <input value={mForm.phone} onChange={e=>setMForm(p=>({...p,phone:e.target.value}))} style={{...inp2,direction:"ltr"}} placeholder="الجوال"/>
+        return(<>
+          {/* زر إضافة عميل - في الأعلى مع toggle */}
+          <div style={{background:"#0d0d1a",borderRadius:10,border:"1px solid #2a2a3a",marginBottom:10,overflow:"hidden"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",cursor:"pointer"}} onClick={()=>setShowAddForm(v=>!v)}>
+              <button style={{width:28,height:28,borderRadius:"50%",border:"1.5px solid var(--p)",background:showAddForm?"var(--p)":"transparent",color:showAddForm?"#000":"var(--p)",fontSize:18,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,flexShrink:0}}>
+                {showAddForm?"×":"+"}
+              </button>
+              <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>إضافة عميل لقائمة الانتظار</div>
             </div>
-            <input type="date" value={mForm.date} min={new Date().toISOString().slice(0,10)} onChange={e=>setMForm(p=>({...p,date:e.target.value,slot:""}))} style={{...inp2,marginBottom:8}}/>
-            <div style={{fontSize:11,color:"#888",marginBottom:6}}>اختر وقتاً (اختياري)</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
-              {allSlots.map(sl=>{
-                const sel=mForm.slot===sl;
-                return(
+            {showAddForm&&<div style={{borderTop:"1px solid #2a2a3a",padding:"12px 14px"}}>
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <input value={mForm.name} onChange={e=>setMForm(p=>({...p,name:e.target.value}))} style={{...inp2,direction:"rtl"}} placeholder="الاسم"/>
+                <input value={mForm.phone} onChange={e=>setMForm(p=>({...p,phone:e.target.value}))} style={{...inp2,direction:"ltr"}} placeholder="الجوال"/>
+              </div>
+              <input type="date" value={mForm.date} min={new Date().toISOString().slice(0,10)} onChange={e=>setMForm(p=>({...p,date:e.target.value,slot:""}))} style={{...inp2,marginBottom:8}}/>
+              <div style={{fontSize:11,color:"#888",marginBottom:6}}>اختر وقتاً (اختياري)</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
+                {allSlots.map(sl=>{const sel=mForm.slot===sl;return(
                   <button key={sl} onClick={()=>setMForm(p=>({...p,slot:p.slot===sl?"":sl}))}
-                    style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${sel?"var(--p)":"#2a2a3a"}`,
-                      background:sel?"var(--pa25)":"#13131f",color:sel?"var(--p)":"#888",
-                      fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:sel?700:400}}>
+                    style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${sel?"var(--p)":"#2a2a3a"}`,background:sel?"var(--pa25)":"#13131f",color:sel?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:sel?700:400}}>
                     {sl}
                   </button>
-                );
-              })}
-            </div>
-            {mForm.slot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"6px 10px",marginBottom:8,fontSize:11,color:"#f39c12",textAlign:"center"}}>⏳ الوقت المختار: <strong>{mForm.date} - {mForm.slot}</strong></div>}
-            <button onClick={()=>{
-              const n=mForm.name.trim();const p=mForm.phone.trim();
-              if(!n||!p){alert("أدخل الاسم والجوال");return;}
-              addToWaiting(n,p,mForm.date,mForm.slot);
-              setMForm({name:"",phone:"",date:new Date().toISOString().slice(0,10),slot:""});
-            }} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#f39c12,#e67e22)",color:"#fff",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
-              ➕ إضافة للانتظار
-            </button>
+                );})}
+              </div>
+              {mForm.slot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"6px 10px",marginBottom:8,fontSize:11,color:"#f39c12",textAlign:"center"}}>⏳ الوقت المختار: <strong>{mForm.date} - {mForm.slot}</strong></div>}
+              <button onClick={()=>{
+                const n=mForm.name.trim();const p=mForm.phone.trim();
+                if(!n||!p){alert("أدخل الاسم والجوال");return;}
+                addToWaiting(n,p,mForm.date,mForm.slot);
+                setMForm({name:"",phone:"",date:new Date().toISOString().slice(0,10),slot:""});
+                setShowAddForm(false);
+              }} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#f39c12,#e67e22)",color:"#fff",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
+                ➕ إضافة للانتظار
+              </button>
+            </div>}
           </div>
-        </div>
-        );
+
+          {/* قائمة الانتظار */}
+          {waitingList.length>0&&(
+            <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",border:"1px solid var(--pa25)",marginBottom:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>⏳ قائمة الانتظار ({waitingList.length})</div>
+                <button onClick={()=>setShowWaiting(w=>!w)} style={{fontSize:10,color:"#888",background:"transparent",border:"none",cursor:"pointer"}}>{showWaiting?"▲ إخفاء":"▼ عرض"}</button>
+              </div>
+              {showWaiting&&waitingList.map((w,idx)=>{
+                const cust=customers.find(c=>c.phone&&w.phone&&c.phone.replace(/\D/g,"").slice(-9)===w.phone.replace(/\D/g,"").slice(-9));
+                const cl=cust?getCustomerClassification(cust):null;
+                return(
+                <div key={w.id} style={{padding:"8px 0",borderTop:"1px solid #2a2a3a"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div>
+                      <div style={{fontSize:12,color:"#fff",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                        <span style={{background:"#2a2a3a",color:"var(--p)",borderRadius:10,padding:"1px 6px",fontSize:10}}>#{idx+1}</span>
+                        {w.name}
+                        {cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}
+                      </div>
+                      <div style={{fontSize:11,color:"#888"}}>📞 {w.phone}</div>
+                      {w.slotTime&&<div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>⏰ {w.slotDate} - {w.slotTime}</div>}
+                      <div style={{fontSize:10,color:"#555"}}>أضيف: {w.addedAt}</div>
+                    </div>
+                    <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
+                  </div>
+                  {w.slotTime&&<div style={{display:"flex",gap:6,marginTop:6}}>
+                    <button style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit",fontWeight:700}} onClick={()=>acceptFromWaiting(w)}>✅ قبول للموعد</button>
+                  </div>}
+                </div>
+              )})}
+            </div>
+          )}
+        </>);
       })()}
 
       {/* الحجوزات */}
