@@ -83,7 +83,6 @@ function toAppSalon(row) {
     slotMin: row.slot_min || 40,
     password: row.password || "",
     oathDone: row.oath_done || false,
-    cancellationWindow: row.cancellation_window || 2,
     bookings: [],
   };
 }
@@ -578,7 +577,6 @@ export default function App(){
   const[darkMode,setDarkMode]=useState(()=>{try{return localStorage.getItem("dork_dark")!=="0";}catch{return true;}});
   const[compareSalons,setCompareSalons]=useState([]); // مقارنة صالونين
   const[pullRefreshing,setPullRefreshing]=useState(false); // Pull to refresh
-  const[rescheduleId,setRescheduleId]=useState(null);
 
   // تطبيق وضع الإضاءة
   useEffect(()=>{
@@ -846,7 +844,7 @@ export default function App(){
   // جلب مخصص للحجوزات فقط (بدون إعادة تحميل كامل)
   const pollBookings=useCallback(async()=>{
     try{
-      const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance&order=created_at.desc");
+      const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status&order=created_at.desc");
       setSalons(prev=>prev.map(salon=>({
         ...salon,
         bookings:rows
@@ -856,7 +854,7 @@ export default function App(){
             name:b.customer_name||"",phone:b.customer_phone||"",
             services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
             barberId:b.barber_id||"any",barberName:b.barber_name||"",
-            date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",attendance:b.attendance||null,
+            date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",
           })),
       })));
     }catch{}
@@ -962,7 +960,7 @@ export default function App(){
   const refreshSalonBookings=useCallback(async(salonId)=>{
     try{
       const rows=await sb("bookings","GET",null,
-        `?salon_id=eq.${salonId}&select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc`
+        `?salon_id=eq.${salonId}&select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,created_at&order=created_at.desc`
       );
       const bookings=rows.map(b=>({
         id:b.id,
@@ -976,7 +974,6 @@ export default function App(){
         time:b.time||"",
         total:b.total||0,
         status:b.status||"pending",
-        attendance:b.attendance||null,
       }));
       setSalons(prev=>prev.map(s=>String(s.id)===String(salonId)?{...s,bookings}:s));
     }catch(e){console.error(e);}
@@ -1035,11 +1032,10 @@ export default function App(){
       await loadData();
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
-  const addBooking=async(sid,bk,rescheduleOldId=null)=>{
+  const addBooking=async(sid,bk)=>{
     try{
       const salon=salons.find(s=>s.id===sid);
       if(salon?.tone)playTone(salon.tone,0.8);
-      const isReschedule=!!rescheduleOldId;
       const inserted=await sb("bookings","POST",{
         salon_id:String(sid),
         customer_id:customerSession?.id||null,
@@ -1051,14 +1047,9 @@ export default function App(){
         date:bk.date,
         time:bk.time,
         total:bk.total,
-        status:isReschedule?"approved":"pending",
+        status:"pending",
         notes:bk.email||"",
       },"");
-      if(isReschedule){
-        await sb("bookings","PATCH",{status:"cancelled"},"?id=eq."+rescheduleOldId).catch(()=>{});
-        sb("notifications","POST",{target_type:"all",title:"تعديل موعد",body:`${bk.name} عدّل موعده إلى ${bk.date} - ${bk.time}`,icon:"🔄"}).catch(()=>{});
-        setRescheduleId(null);
-      }
       const newBooking=inserted[0]||{};
       if(customerSession){
         const c=customers.find(x=>x.id===customerSession.id);
@@ -1180,7 +1171,7 @@ export default function App(){
     setView,toast$,allLoc,addExtraLoc,
     salons,setSalons,approvedSalons,
     addSalon,
-    addBooking,updateBookingStatus,loadData,refreshSalonBookings,rescheduleId,setRescheduleId,
+    addBooking,updateBookingStatus,loadData,refreshSalonBookings,
     customers,setCustomers,
     reviews,setReviews,
     toggleFav,favSet,customer,
@@ -1833,7 +1824,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
 // ==============================================
 //  BOOK VIEW
 // ==============================================
-function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}){
+function BookView({salon,addBooking,onBack,inline,setView,customer}){
   const[step,setStep]=useState(1);
   const[form,setForm]=useState({
     name: customer?.name||"",
@@ -1924,7 +1915,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:36}}>✅</div><h3 style={{color:"#fff",marginTop:4,fontSize:16}}>تأكيد الحجز</h3></div>
         {[["الاسم",form.name],["الجوال",form.phone],["البريد",form.email||"-"],["الخدمات",form.services.join(" + ")],["الحلاق",barber?.name||"أي حلاق"],["التاريخ",form.date],["الوقت",form.time],["الإجمالي",`${total} ريال`]].map(([l,v])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}><span style={{color:"#888",fontSize:12}}>{l}</span><span style={{color:"#f0f0f0",fontWeight:600,fontSize:12}}>{v}</span></div>)}
         <button style={{...G.mapsBtn,width:"100%",marginTop:10,justifyContent:"center",display:"flex",padding:10}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>📍 افتح على الخريطة</button>
-        <button style={{...G.sub,marginTop:8,background:"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff"}} onClick={()=>addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total},rescheduleId||null)}>{rescheduleId?"✅ تأكيد التعديل":"إرسال طلب الحجز 🎉"}</button>
+        <button style={{...G.sub,marginTop:8,background:"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff"}} onClick={()=>addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total})}>إرسال طلب الحجز 🎉</button>
       </div>}
     </>
   );
@@ -2066,7 +2057,6 @@ function StatsPanel({salon}){
 function NotifPanel({salon,onUpdate}){
   const[showWaiting,setShowWaiting]=useState(false);
   const[filter,setFilter]=useState("pending");
-  const[localAtt,setLocalAtt]=useState({});
   const KEY=`dork_waiting_${salon.id}`;
   const[waitingList,setWaitingList]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
 
@@ -2173,7 +2163,6 @@ function NotifPanel({salon,onUpdate}){
             <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
           </div>
           {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
-          {b.status==="approved"&&(()=>{const att=localAtt[b.id]||b.attendance;return(<div style={{display:"flex",gap:6,marginTop:6,alignItems:"center"}}><span style={{fontSize:10,color:"#666"}}>الحضور:</span>{att?(<span style={{fontSize:11,fontWeight:700,color:att==="attended"?"#27ae60":"#e74c3c"}}>{att==="attended"?"✅ حضر":"❌ لم يحضر"}</span>):(<><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"attended"},"?id=eq."+b.id);setLocalAtt(p=>({...p,[b.id]:"attended"}));}catch{}}}>✅ حضر</button><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"no_show"},"?id=eq."+b.id);setLocalAtt(p=>({...p,[b.id]:"no_show"}));}catch{}}}>❌ لم يحضر</button></>)}</div>);})()}
         </div>
       ))}</div>}
     </div>
@@ -4099,8 +4088,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                 (b.phone===h.phone || b.name===customer.name)
               ) || s?.bookings?.find(b=>b.date===h.date&&b.time===h.time);
               const status=realBooking?.status||h.status||"pending";
-              const stColor=status==="approved"?"#27ae60":status==="rejected"?"#e74c3c":status==="cancelled"?"#888":"#f39c12";
-              const stLabel=status==="approved"?"✅ مقبول":status==="rejected"?"❌ مرفوض":status==="cancelled"?"🚫 ملغى":"⏳ بانتظار الموافقة";
+              const stColor=status==="approved"?"#27ae60":status==="rejected"?"#e74c3c":"#f39c12";
+              const stLabel=status==="approved"?"✅ مقبول":status==="rejected"?"❌ مرفوض":"⏳ بانتظار الموافقة";
               return(
                 <div key={i} style={{...G.bItem,borderRight:`3px solid ${stColor}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
@@ -4115,21 +4104,6 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       {h.rating>0&&<div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><span key={n} style={{fontSize:12,color:n<=h.rating?"#f0c040":"#333"}}>★</span>)}</div>}
                       {s&&<button style={{...G.bookBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setSelSalon(s);setView("book");}}>🔄 احجز مجدداً</button>}
                       <button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>scheduleReminder({...h,salonName:s?.name})}>🔔 ذكّرني</button>
-                      {(status==="pending"||status==="approved")&&realBooking?.id&&(<>
-                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{if(window.confirm("هل تريد تعديل موعدك؟ سيُلغى الحجز الحالي عند تأكيد الجديد.")){setRescheduleId(realBooking.id);setSelSalon(s);setView("book");}}}>✏️ تعديل</button>
-                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{
-                          if(!window.confirm("هل تريد إلغاء هذا الحجز؟"))return;
-                          try{
-                            const bookDT=new Date(`${h.date}T${h.time}`);
-                            const hoursUntil=(bookDT-new Date())/(1000*60*60);
-                            const window_h=s?.cancellationWindow||2;
-                            const lateCancel=hoursUntil>=0&&hoursUntil<window_h;
-                            await sb("bookings","PATCH",{status:"cancelled",...(lateCancel?{attendance:"no_show"}:{})},"?id=eq."+realBooking.id);
-                            sb("notifications","POST",{target_type:"all",title:"إلغاء حجز",body:`${customer?.name||""} ألغى حجزه في ${h.date} - ${h.time}${lateCancel?" (إلغاء متأخر)":""}`,icon:"🚫"}).catch(()=>{});
-                            await loadData({silent:true});
-                          }catch(e){toast$("❌ خطأ في الإلغاء","err");}
-                        }}>🚫 إلغاء</button>
-                      </>)}
                     </div>
                   </div>
                   {/* التقييم فقط بعد القبول */}
