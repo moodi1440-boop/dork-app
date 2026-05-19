@@ -2056,7 +2056,6 @@ function StatsPanel({salon}){
 }
 function NotifPanel({salon,onUpdate}){
   const[showWaiting,setShowWaiting]=useState(false);
-  const[filter,setFilter]=useState("pending");
   const KEY=`dork_waiting_${salon.id}`;
   const[waitingList,setWaitingList]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
 
@@ -2064,7 +2063,7 @@ function NotifPanel({salon,onUpdate}){
     try{
       const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&order=created_at.asc`);
       if(Array.isArray(data)){
-        const converted=data.map(w=>{const ts=w.created_at||"";const d=new Date(ts.includes("+")||ts.endsWith("Z")?ts:ts+"Z");return{id:w.id,name:w.name,phone:w.phone||"",addedAt:d.toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};});
+        const converted=data.map(w=>({id:w.id,name:w.name,phone:w.phone||"",addedAt:new Date(w.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})}));
         setWaitingList(converted);
         try{localStorage.setItem(KEY,JSON.stringify(converted));}catch{}
       }
@@ -2104,7 +2103,7 @@ function NotifPanel({salon,onUpdate}){
     }
   };
 
-  const allBks=[...salon.bookings].sort((a,b)=>{
+  const bks=[...salon.bookings].sort((a,b)=>{
     const order={pending:0,approved:1,rejected:2};
     const so=(order[a.status]??1)-(order[b.status]??1);
     if(so!==0)return so;
@@ -2112,19 +2111,9 @@ function NotifPanel({salon,onUpdate}){
     const db=`${b.date||""} ${b.time||""}`;
     return da.localeCompare(db);
   });
-  const bks=filter==="all"?allBks:allBks.filter(b=>b.status===filter);
-  const counts={pending:allBks.filter(b=>b.status==="pending").length,approved:allBks.filter(b=>b.status==="approved").length,rejected:allBks.filter(b=>b.status==="rejected").length};
 
   return(
     <div style={{paddingTop:4}}>
-      {/* فلتر الحجوزات */}
-      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[["pending","⏳ انتظار",counts.pending],["approved","✅ مقبول",counts.approved],["rejected","❌ مرفوض",counts.rejected],["all","الكل",allBks.length]].map(([val,label,count])=>(
-          <button key={val} onClick={()=>setFilter(val)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${filter===val?"var(--p)":"#2a2a3a"}`,background:filter===val?"var(--pa25)":"transparent",color:filter===val?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:filter===val?700:400}}>
-            {label} {count>0&&<span style={{background:filter===val?"var(--p)":"#333",color:filter===val?"#000":"#aaa",borderRadius:10,padding:"1px 6px",fontSize:10,marginRight:3}}>{count}</span>}
-          </button>
-        ))}
-      </div>
       {/* قائمة الانتظار */}
       <button style={{...G.sub,marginBottom:10,background:showWaiting?"var(--pa25)":"transparent",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>setShowWaiting(w=>!w)}>
         ⏳ قائمة الانتظار {waitingList.length>0&&`(${waitingList.length})`}
@@ -2851,7 +2840,6 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
 }
 function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews}){
   const[tab,setTab]=useState("notif");
-  const[ownerNotifs,setOwnerNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
   const[oathDone,setOathDone]=useState(()=>{
     try{return localStorage.getItem(`dork_oath_${salon?.id}`)==="1";}catch{return false;}
   });
@@ -2965,21 +2953,21 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {tab==="messages"&&(
         <div>
           {/* إشعارات الإدارة */}
-          {ownerNotifs.length>0&&(
-            <div style={{marginBottom:12}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>🔔 إشعارات الإدارة</div>
-                <button onClick={()=>{if(window.confirm("هل تريد مسح كل الإشعارات؟")){localStorage.setItem("dork_notifs","[]");localStorage.setItem("dork_notif_count","0");setOwnerNotifs([]);}}} style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}}>🗑 مسح الكل</button>
+          {(()=>{
+            const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+            return notifs.length>0?(
+              <div style={{marginBottom:12}}>
+                <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>🔔 إشعارات الإدارة</div>
+                {notifs.slice(0,5).map(n=>(
+                  <div key={n.id} style={{...G.bItem,borderRight:"3px solid var(--p)",marginBottom:6}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.icon} {n.title}</div>
+                    <div style={{fontSize:12,color:"#aaa"}}>{n.body}</div>
+                    <div style={{fontSize:10,color:"#555",marginTop:2}}>{n.time}</div>
+                  </div>
+                ))}
               </div>
-              {ownerNotifs.slice(0,5).map(n=>(
-                <div key={n.id} style={{...G.bItem,borderRight:"3px solid var(--p)",marginBottom:6}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.icon} {n.title}</div>
-                  <div style={{fontSize:12,color:"#aaa"}}>{n.body}</div>
-                  <div style={{fontSize:10,color:"#555",marginTop:2}}>{n.time}</div>
-                </div>
-              ))}
-            </div>
-          )}
+            ):null;
+          })()}
           <MessagesPanel salon={salon} toast$={toast$}/>
         </div>
       )}
