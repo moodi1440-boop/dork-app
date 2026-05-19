@@ -1770,19 +1770,13 @@ function SalonReviewsView({salon,reviews,setView}){
 }
 
 function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
-  const[showDetails,setShowDetails]=useState(false);
-  const slots=getSlotsForSalon(salon);
   const displayRating=realRating||salon.rating||"5.0";
 
-  // مسافة
   let distance=null;
   if(userLoc&&getSalonCoords&&haversine){
     const coords=getSalonCoords(salon);
     if(coords)distance=haversine(userLoc.lat,userLoc.lng,coords.lat,coords.lng).toFixed(1);
   }
-
-  // Performance Score (بسيط)
-  const performanceScore=Math.round((displayRating/5)*100);
 
   if(salon.frozen)return(
     <div style={{...G.card,opacity:.5,position:"relative"}}>
@@ -1793,131 +1787,74 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
   );
 
   return(
-    <>
-    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #2a2a3a",cursor:"pointer"}} className="hcard" onClick={()=>setShowDetails(true)}>
-      {/* Compact Version - صغيرة وبسيطة */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-        <div style={{flex:1}}>
-          {/* Rating - الكبير */}
-          <div style={{fontSize:24,fontWeight:900,color:"#d4a017",marginBottom:2}}>⭐ {displayRating}</div>
-          <div style={{fontSize:10,color:"#888",marginBottom:8}}>({reviewCount} تقييم)</div>
+    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #3a3a4a",padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
+      {/* Header - Rating + Name + Icon */}
+      <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+        {/* Rating Badge */}
+        <div style={{border:"1.5px solid rgba(212,160,23,.4)",borderRadius:12,padding:"8px 12px",minWidth:"70px",textAlign:"center",flex:"0 0 auto"}}>
+          <div style={{fontSize:18,fontWeight:900,color:"#d4a017"}}>⭐ {displayRating}</div>
+          <div style={{fontSize:9,color:"#aaa"}}>({reviewCount})</div>
+        </div>
 
-          {/* اسم + موقع */}
-          <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:2}}>{salon.name}</div>
-          <div style={{fontSize:11,color:"#888",marginBottom:4}}>📍 {salon.gov||salon.region}</div>
+        {/* Name + Status + Icon */}
+        <div style={{flex:1,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
+            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
+              <span style={{fontSize:10,background:isOpenNow?"rgba(39,174,96,.25)":"rgba(231,76,60,.25)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"2px 8px",borderRadius:6,fontWeight:700}}>
+                {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
+              </span>
+            </div>
+            <div style={{fontSize:10,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
+          </div>
+          {/* Salon Icon */}
+          <div style={{background:"#d4a017",width:44,height:44,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flex:"0 0 auto"}}>✂</div>
+        </div>
+      </div>
 
-          {/* Status */}
-          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:11,background:isOpenNow?"rgba(39,174,96,.2)":"rgba(231,76,60,.2)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"2px 8px",borderRadius:6,fontWeight:700}}>
-              {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
+      {/* Services Tags */}
+      {salon.services.length>0&&(
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {salon.services.slice(0,4).map(s=>(
+            <span key={s} style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>
+              {s}
             </span>
-          </div>
+          ))}
+          {salon.services.length>4&&<span style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>+{salon.services.length-4}</span>}
+        </div>
+      )}
 
-          {/* Performance Score */}
-          <div style={{fontSize:11,color:"#d4a017",fontWeight:700}}>أداء: {performanceScore}/100</div>
+      {/* Hours & Wait Time */}
+      <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:11,color:"#aaa"}}>
+        <div>
+          ⏰ {salon.shiftEnabled?`${salon.shift1Start}-${salon.shift1End}${salon.shift2Start?' | '+salon.shift2Start+'-'+salon.shift2End:''}`:`${salon.workStart}-${salon.workEnd}`}
+        </div>
+        <div>
+          👥 {salon.barbers?.length||1} حلاق - 20 دقيقة
         </div>
       </div>
 
-      {/* Separator */}
-      <div style={{height:1,background:"rgba(212,160,23,.1)",marginBottom:8}}/>
+      {/* Divider */}
+      <div style={{height:1,background:"rgba(212,160,23,.1)"}}/>
 
-      {/* أساسيات */}
-      <div style={{fontSize:10,color:"#aaa",marginBottom:8}}>
-        ⏰ {salon.shiftEnabled?`${salon.shift1Start}-${salon.shift1End}`:`${salon.workStart}-${salon.workEnd}`}
-        {distance&&<> | 📡 {distance} كم</>}
+      {/* Book Button */}
+      <button onClick={onBook} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",width:"100%",fontFamily:"'Cairo',sans-serif"}}>
+        احجز الان
+      </button>
+
+      {/* Action Buttons */}
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <button onClick={()=>{}} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36}}>
+          ⚖
+        </button>
+        <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"#d4a017":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36}}>
+          {fav?"♥":"♡"}
+        </button>
+        <button onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#3b9ef5",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36}}>
+          📍
+        </button>
       </div>
-      <div style={{fontSize:10,color:"#aaa",marginBottom:10}}>👥 {salon.barbers?.length||1} حلاق</div>
-
-      {/* زر التفاصيل */}
-      <div style={{textAlign:"center",color:"var(--p)",fontSize:11,fontWeight:700}}>شاهد التفاصيل الكاملة ↓</div>
     </div>
-
-    {/* Modal - التفاصيل الكاملة */}
-    {showDetails&&(
-      <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"flex-end",zIndex:10000,animation:"fadeIn .3s ease"}} onClick={()=>setShowDetails(false)}>
-        <div style={{width:"100%",background:"#0d0d1a",borderRadius:"20px 20px 0 0",padding:"20px 16px",maxHeight:"90vh",overflowY:"auto",animation:"slideUp .3s ease"}} onClick={e=>e.stopPropagation()}>
-          {/* Close button */}
-          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
-            <button onClick={()=>setShowDetails(false)} style={{background:"transparent",border:"none",fontSize:24,color:"#888",cursor:"pointer"}}>✕</button>
-          </div>
-
-          {/* Header */}
-          <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:16}}>
-            <div>
-              <div style={{fontSize:22,fontWeight:900,color:"#d4a017",marginBottom:4}}>⭐ {displayRating}</div>
-              <div style={{fontSize:11,color:"#888"}}>({reviewCount} تقييم)</div>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
-              <div style={{fontSize:11,color:"#888",marginBottom:4}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
-              <div style={{fontSize:11,background:isOpenNow?"rgba(39,174,96,.2)":"rgba(231,76,60,.2)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"3px 8px",borderRadius:6,fontWeight:700,display:"inline-block"}}>
-                {isOpenNow?"🟢 مفتوح الآن":"🔴 مغلق"}
-              </div>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{height:1,background:"rgba(212,160,23,.1)",marginBottom:16}}/>
-
-          {/* الأداء */}
-          <div style={{background:"rgba(212,160,23,.08)",borderRadius:12,padding:12,marginBottom:16}}>
-            <div style={{fontSize:12,color:"#d4a017",fontWeight:700,marginBottom:8}}>📊 درجة الأداء: {performanceScore}/100</div>
-            <div style={{fontSize:11,color:"#aaa",lineHeight:1.8}}>
-              ✅ تقييم العملاء: {displayRating}/5<br/>
-              ✅ سرعة الرد: سريع<br/>
-              ✅ نسبة الإتمام: عالية
-            </div>
-          </div>
-
-          {/* معلومات العمل */}
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,color:"#d4a017",fontWeight:700,marginBottom:8}}>⏰ ساعات العمل</div>
-            <div style={{fontSize:11,color:"#fff",lineHeight:1.8}}>
-              {salon.shiftEnabled?(
-                <>
-                  الدوام الأول: {salon.shift1Start} - {salon.shift1End}<br/>
-                  الدوام الثاني: {salon.shift2Start} - {salon.shift2End}
-                </>
-              ):(
-                <>
-                  من {salon.workStart} إلى {salon.workEnd}
-                </>
-              )}<br/>
-              <span style={{color:"#888"}}>الأيام المغلقة: {salon.closedDays?.length>0?salon.closedDays.join(", "):"لا توجد"}</span>
-            </div>
-          </div>
-
-          {/* الفريق */}
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,color:"#d4a017",fontWeight:700,marginBottom:8}}>👥 الفريق</div>
-            <div style={{fontSize:11,color:"#fff"}}>{salon.barbers?.length||1} حلاق متخصص</div>
-          </div>
-
-          {/* الخدمات */}
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,color:"#d4a017",fontWeight:700,marginBottom:8}}>✂ الخدمات</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              {salon.services.map(s=>(
-                <span key={s} style={{fontSize:10,background:"rgba(212,160,23,.1)",color:"#d4a017",padding:"4px 10px",borderRadius:8}}>
-                  {s} {salon.prices?.[s]?`(${salon.prices[s]}ر)`:""}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* الموقع + أزرار */}
-          <div style={{display:"flex",gap:8}}>
-            <button style={{flex:1,...G.bookBtn}} onClick={()=>{setShowDetails(false);onBook&&onBook();}}>احجز الآن</button>
-            <button style={{flex:1,...G.mapsBtn}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>📍 الموقع</button>
-          </div>
-        </div>
-      </div>
-    )}
-    <style>{`
-      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    `}</style>
-    </>
   );
 }
 
