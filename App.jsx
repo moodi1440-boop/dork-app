@@ -775,7 +775,7 @@ export default function App(){
       const [salonRows, bookingRows, custRows] = await Promise.all([
         sb("salons","GET",null,"?select=*&order=id.desc"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status&order=created_at.desc"),
-        sb("customers","GET",null,"?select=id,name,phone,email,password,google_uid,history,favs,created_at"),
+        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,created_at"),
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
       const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,booking_date,created_at&order=created_at.desc").catch(()=>[]);
