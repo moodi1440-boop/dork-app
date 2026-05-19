@@ -1159,6 +1159,7 @@ export default function App(){
       <div id="dork-bg" style={dorkBgStyle}/>
       <style>{CSS}</style>
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
+      {dbError&&<div style={{position:"fixed",top:64,left:8,right:8,zIndex:999,background:"#3a1010",color:"#e74c3c",padding:"8px 12px",borderRadius:8,fontSize:11,direction:"ltr",wordBreak:"break-all",border:"1px solid #e74c3c55"}}>DB Error: {dbError}</div>}
       <TopBar {...sharedProps}/>
       <div style={{paddingTop:64}}>
         {view==="home"&&      <HomeView {...sharedProps}/>}
