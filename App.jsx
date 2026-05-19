@@ -2138,7 +2138,17 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
     try{
       const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&select=id,name,phone,created_at,slot_date,slot_time,status&order=created_at.asc`);
       if(Array.isArray(data)){
-        const converted=data.map(w=>{const ts=w.created_at||"";const d=new Date(ts.includes("+")||ts.endsWith("Z")?ts:ts+"Z");return{id:w.id,name:w.name,phone:w.phone||"",addedAt:d.toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),slotDate:w.slot_date||"",slotTime:w.slot_time||"",status:w.status||"waiting"};});
+        const now=new Date();
+        const expired=data.filter(w=>{
+          if(w.status!=="waiting"||!w.slot_date||!w.slot_time)return false;
+          const slotMs=new Date(`${w.slot_date}T${w.slot_time}:00`).getTime();
+          return now.getTime()>slotMs+30*60*1000; // بعد 30 دقيقة من الوقت المحدد
+        });
+        for(const w of expired){
+          sb("waiting_list","DELETE",null,`?id=eq.${w.id}`).catch(()=>{});
+        }
+        const active=data.filter(w=>!expired.find(e=>e.id===w.id)&&w.status==="waiting");
+        const converted=active.map(w=>{const ts=w.created_at||"";const d=new Date(ts.includes("+")||ts.endsWith("Z")?ts:ts+"Z");return{id:w.id,name:w.name,phone:w.phone||"",addedAt:d.toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),slotDate:w.slot_date||"",slotTime:w.slot_time||"",status:w.status||"waiting"};});
         setWaitingList(converted);
         try{localStorage.setItem(KEY,JSON.stringify(converted));}catch{}
       }
@@ -2146,6 +2156,12 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   },[salon.id,KEY]);
 
   useEffect(()=>{loadWaiting();},[loadWaiting]);
+
+  // تحقق كل دقيقة لإزالة المنتهية
+  useEffect(()=>{
+    const t=setInterval(()=>{loadWaiting();},60*1000);
+    return()=>clearInterval(t);
+  },[loadWaiting]);
 
   // Realtime لقائمة الانتظار
   useEffect(()=>{
