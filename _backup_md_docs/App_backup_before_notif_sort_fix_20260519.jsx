@@ -881,7 +881,6 @@ export default function App(){
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},(payload)=>{
         const n=payload.new;
         if(!n)return;
-        if(n.target_type==="customer")return;
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
         try{
@@ -946,11 +945,11 @@ export default function App(){
       const sidStr=key.split("-")[0];
       const salon=salons.find(x=>String(x.id)===sidStr);
       if(was==="pending"&&now==="approved"){
-        sendNotif("دورك - تأكيد الحجز",`✅ تم قبول حجزك في ${salon?.name||"الصالون"} — يُرجى الحضور في الموعد`,"✅","customer",customerSession?.id);
+        sendNotif("دورك - تأكيد الحجز",`✅ تم قبول حجزك في ${salon?.name||"الصالون"} — يُرجى الحضور في الموعد`,"✅");
         toast$(`✅ تم قبول حجزك في ${salon?.name||""}`);
         try{playTone("bell",0.55);}catch{}
       }else if(was==="pending"&&now==="rejected"){
-        sendNotif("دورك - تحديث الحجز",`تم رفض حجزك في ${salon?.name||"الصالون"}`,"❌","customer",customerSession?.id);
+        sendNotif("دورك - تحديث الحجز",`تم رفض حجزك في ${salon?.name||"الصالون"}`,"❌");
         toast$(`تم رفض حجزك في ${salon?.name||""}`,"warn");
       }
     }
@@ -2103,14 +2102,7 @@ function NotifPanel({salon,onUpdate}){
     }
   };
 
-  const bks=[...salon.bookings].sort((a,b)=>{
-    const order={pending:0,approved:1,rejected:2};
-    const so=(order[a.status]??1)-(order[b.status]??1);
-    if(so!==0)return so;
-    const da=`${a.date||""} ${a.time||""}`;
-    const db=`${b.date||""} ${b.time||""}`;
-    return da.localeCompare(db);
-  });
+  const bks=[...salon.bookings].reverse();
 
   return(
     <div style={{paddingTop:4}}>
