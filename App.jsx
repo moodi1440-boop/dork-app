@@ -1786,7 +1786,6 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
   const performanceScore=Math.round((numRating/5)*100);
 
   // شارات ذكية (من معايير التطبيقات العالمية)
-  const isPremium=numRating>=4.5;
   const isPopular=reviewCount>=50;
   const isHighDemand=salon.bookings&&salon.bookings.filter(b=>b.status==="confirmed"&&new Date(b.date)>=new Date(new Date().setDate(new Date().getDate()-7))).length>=10;
 
@@ -1803,7 +1802,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
     <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #2a2a3a",cursor:"pointer",position:"relative",overflow:"hidden"}} className="hcard" onClick={()=>setShowDetails(true)}>
       {/* شارات ذكية في الزاوية العلوية */}
       <div style={{position:"absolute",top:8,left:8,display:"flex",gap:4,flexWrap:"wrap",zIndex:100}}>
-        {isPremium&&<div style={{background:"rgba(212,160,23,.3)",border:"1px solid #d4a017",color:"#d4a017",fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:12}}>🔥 Premium</div>}
+        <div style={{background:"rgba(212,160,23,.2)",border:"1px solid #d4a017",color:"#d4a017",fontSize:8,fontWeight:700,padding:"3px 8px",borderRadius:12}}>📋 {reviewCount} تقييم</div>
         {isHighDemand&&<div style={{background:"rgba(231,76,60,.3)",border:"1px solid #e74c3c",color:"#e74c3c",fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:12}}>📈 عالي الطلب</div>}
         {isPopular&&<div style={{background:"rgba(155,89,182,.3)",border:"1px solid #9b59b6",color:"#9b59b6",fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:12}}>⭐ محبوب</div>}
       </div>
@@ -1852,7 +1851,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           {/* إغلاق + شارات */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
             <div style={{display:"flex",gap:4}}>
-              {isPremium&&<div style={{background:"rgba(212,160,23,.2)",border:"1px solid #d4a017",color:"#d4a017",fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:12}}>🔥 Premium</div>}
+              <div style={{background:"rgba(212,160,23,.2)",border:"1px solid #d4a017",color:"#d4a017",fontSize:9,fontWeight:700,padding:"4px 10px",borderRadius:12}}>📋 {reviewCount} تقييم</div>
               {isHighDemand&&<div style={{background:"rgba(231,76,60,.2)",border:"1px solid #e74c3c",color:"#e74c3c",fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:12}}>📈 عالي الطلب</div>}
             </div>
             <button onClick={()=>setShowDetails(false)} style={{background:"transparent",border:"none",fontSize:24,color:"#888",cursor:"pointer"}}>✕</button>
