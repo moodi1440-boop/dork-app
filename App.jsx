@@ -1872,7 +1872,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
           {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>}
         </div>
         {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView} rescheduleId={rescheduleId} customer={customer}/>}
-        {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers}/>}
+        {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers} refreshSalonBookings={refreshSalonBookings}/>}
         {tab==="stats"&&canManage&&<StatsPanel salon={salon}/>}
       </div>
     </div>
@@ -2125,7 +2125,7 @@ function StatsPanel({salon}){
     </div>
   );
 }
-function NotifPanel({salon,onUpdate,customers=[]}){
+function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[showWaiting,setShowWaiting]=useState(false);
   const[filter,setFilter]=useState("pending");
   const[localAtt,setLocalAtt]=useState({});
@@ -2165,6 +2165,26 @@ function NotifPanel({salon,onUpdate,customers=[]}){
     }
   };
 
+  const acceptFromWaiting=async(w)=>{
+    if(!w.slotDate||!w.slotTime){alert("لا يوجد وقت محدد لهذا العميل");return;}
+    try{
+      // إنشاء حجز مقبول مباشرة
+      await sb("bookings","POST",{salon_id:String(salon.id),customer_name:w.name,customer_phone:w.phone,date:w.slotDate,time:w.slotTime,status:"approved",service:"[]",barber_id:"any",barber_name:"",total:0});
+      // تغيير الحالة لـ accepted
+      await sb("waiting_list","PATCH",{status:"accepted"},"?id=eq."+w.id);
+      // إشعار للمقبول
+      sb("notifications","POST",{target_type:"all",title:"✅ تم قبولك في الموعد",body:`تم حجزك في ${w.slotDate} - ${w.slotTime} في ${salon.name}. تواصل مع الصالون لتأكيد الخدمة.`,icon:"✅"}).catch(()=>{});
+      // رفض المنتظرين للنفس الوقت
+      const others=waitingList.filter(x=>x.id!==w.id&&x.slotDate===w.slotDate&&x.slotTime===w.slotTime);
+      for(const o of others){
+        await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+o.id).catch(()=>{});
+        sb("notifications","POST",{target_type:"all",title:"❌ عذراً، الوقت امتلأ",body:`الوقت ${w.slotDate} - ${w.slotTime} في ${salon.name} تم أخذه من شخص آخر.`,icon:"❌"}).catch(()=>{});
+      }
+      await loadWaiting();
+      if(refreshSalonBookings)refreshSalonBookings(salon.id);
+    }catch(e){alert("❌ خطأ: "+e.message);}
+  };
+
   const removeFromWaiting=async(id)=>{
     try{
       await sb("waiting_list","DELETE",null,`?id=eq.${id}&salon_id=eq.${salon.id}`);
@@ -2202,17 +2222,29 @@ function NotifPanel({salon,onUpdate,customers=[]}){
             <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>⏳ قائمة الانتظار ({waitingList.length})</div>
             <button onClick={()=>setShowWaiting(w=>!w)} style={{fontSize:10,color:"#888",background:"transparent",border:"none",cursor:"pointer"}}>{showWaiting?"▲ إخفاء":"▼ عرض"}</button>
           </div>
-          {showWaiting&&waitingList.map(w=>(
-            <div key={w.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderTop:"1px solid #2a2a3a"}}>
-              <div>
-                <div style={{fontSize:12,color:"#fff",fontWeight:600}}>{w.name}</div>
-                <div style={{fontSize:11,color:"#888"}}>{w.phone}</div>
-                {w.slotTime&&<div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>⏰ ينتظر: {w.slotDate} {w.slotTime}</div>}
-                <div style={{fontSize:10,color:"#555"}}>أضيف: {w.addedAt}</div>
+          {showWaiting&&waitingList.map((w,idx)=>{
+            const cust=customers.find(c=>c.phone&&w.phone&&c.phone.replace(/\D/g,"").slice(-9)===w.phone.replace(/\D/g,"").slice(-9));
+            const cl=cust?getCustomerClassification(cust):null;
+            return(
+            <div key={w.id} style={{padding:"8px 0",borderTop:"1px solid #2a2a3a"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div>
+                  <div style={{fontSize:12,color:"#fff",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{background:"#2a2a3a",color:"var(--p)",borderRadius:10,padding:"1px 6px",fontSize:10}}>#{idx+1}</span>
+                    {w.name}
+                    {cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}
+                  </div>
+                  <div style={{fontSize:11,color:"#888"}}>📞 {w.phone}</div>
+                  {w.slotTime&&<div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>⏰ {w.slotDate} - {w.slotTime}</div>}
+                  <div style={{fontSize:10,color:"#555"}}>أضيف: {w.addedAt}</div>
+                </div>
+                <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
               </div>
-              <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
+              {w.slotTime&&<div style={{display:"flex",gap:6,marginTop:6}}>
+                <button style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit",fontWeight:700}} onClick={()=>acceptFromWaiting(w)}>✅ قبول للموعد</button>
+              </div>}
             </div>
-          ))}
+          )})}
         </div>
       )}
 
@@ -4029,6 +4061,13 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[showDeleteConfirm,setShowDeleteConfirm]=useState(false);
   const[editEmail,setEditEmail]=useState(customer?.email||"");
   const[reminderMins,setReminderMins]=useState(60);
+  const[myWaiting,setMyWaiting]=useState([]);
+  useEffect(()=>{
+    if(!customer?.phone)return;
+    sb("waiting_list","GET",null,`?phone=eq.${encodeURIComponent(customer.phone)}&select=id,salon_id,slot_date,slot_time,status,created_at&order=created_at.desc`)
+      .then(data=>{if(Array.isArray(data))setMyWaiting(data.filter(w=>w.status==="waiting"));})
+      .catch(()=>{});
+  },[customer?.phone]);
   const[editPinStep,setEditPinStep]=useState(null);
   const[editPinLength,setEditPinLength]=useState(4);
   const[editTempPin,setEditTempPin]=useState("");
@@ -4156,6 +4195,30 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
       {/* الحجوزات */}
       {tab==="hist"&&<>
+        {/* قائمة انتظاري */}
+        {myWaiting.length>0&&(
+          <div style={{background:"rgba(243,156,18,.07)",borderRadius:10,padding:"10px 12px",marginBottom:12,border:"1px solid #f39c1244"}}>
+            <div style={{fontSize:12,color:"#f39c12",fontWeight:700,marginBottom:8}}>⏳ مواعيدي في قائمة الانتظار ({myWaiting.length})</div>
+            {myWaiting.map(w=>{
+              const s=salons.find(x=>String(x.id)===String(w.salon_id));
+              return(
+                <div key={w.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderTop:"1px solid #f39c1222"}}>
+                  <div>
+                    <div style={{fontSize:12,color:"#fff",fontWeight:600}}>✂ {s?.name||"صالون"}</div>
+                    <div style={{fontSize:11,color:"#f39c12"}}>⏰ {w.slot_date} - {w.slot_time}</div>
+                    <div style={{fontSize:10,color:"#888"}}>بانتظار تأكيد الصالون</div>
+                  </div>
+                  <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}}
+                    onClick={async()=>{
+                      if(!window.confirm("هل تريد إلغاء طلب الانتظار؟"))return;
+                      await sb("waiting_list","DELETE",null,"?id=eq."+w.id).catch(()=>{});
+                      setMyWaiting(p=>p.filter(x=>x.id!==w.id));
+                    }}>إلغاء</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
         {/* إعداد التذكير */}
         <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",marginBottom:10,border:"1px solid #2a2a3a"}}>
           <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:8}}>🔔 وقت التذكير بالمواعيد</div>
