@@ -839,23 +839,48 @@ export default function App(){
     bookingStatusSnapRef.current=null;
   },[customerSession?.id]);
 
-  /* تم إلغاء الـ Polling - الـ Realtime يتولى التحديثات الفورية */
+  /* Supabase Realtime - تحديثات لحظية في كل الاتجاهات */
 
-  /* Supabase Realtime - إشعارات لحظية */
+  // جلب مخصص للحجوزات فقط (بدون إعادة تحميل كامل)
+  const pollBookings=useCallback(async()=>{
+    try{
+      const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status&order=created_at.desc");
+      setSalons(prev=>prev.map(salon=>({
+        ...salon,
+        bookings:rows
+          .filter(b=>String(b.salon_id)===String(salon.id))
+          .map(b=>({
+            id:b.id,salonId:b.salon_id,
+            name:b.customer_name||"",phone:b.customer_phone||"",
+            services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
+            barberId:b.barber_id||"any",barberName:b.barber_name||"",
+            date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",
+          })),
+      })));
+    }catch{}
+  },[]);
+
+  // جلب مخصص للتقييمات فقط
+  const pollReviews=useCallback(async()=>{
+    try{
+      const rows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc");
+      setReviews(rows||[]);
+    }catch{}
+  },[]);
+
   useEffect(()=>{
-    // الاستماع لتغييرات الصالونات (الحجوزات مخزنة داخل الصالون)
+    // حجوزات — لحظي في كل الاتجاهات (عميل ↔ صالون)
     const bookingChannel=supabase.channel('realtime-bookings')
       .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
-        loadData({silent:true});
+        pollBookings();
       })
       .subscribe();
 
-    // الاستماع للإشعارات الجديدة من الإدارة
+    // إشعارات الإدارة
     const notifChannel=supabase.channel('realtime-notifications')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},(payload)=>{
         const n=payload.new;
         if(!n)return;
-        // تشغيل إشعار محلي
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
         try{
@@ -869,18 +894,17 @@ export default function App(){
       })
       .subscribe();
 
-    // الاستماع لتغييرات إعدادات التطبيق من الإدارة (مزامنة فورية)
+    // إعدادات التطبيق
     const settingsChannel=supabase.channel('realtime-app-settings')
       .on('postgres_changes',{event:'*',schema:'public',table:'app_settings'},()=>{
         loadAppSettings({silent:true});
       })
       .subscribe();
 
+    // تقييمات — لحظي في كل الاتجاهات (عميل ↔ صالون)
     const reviewsChannel=supabase.channel('realtime-reviews')
       .on('postgres_changes',{event:'*',schema:'public',table:'reviews'},()=>{
-        sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc")
-          .then(rows=>setReviews(rows||[]))
-          .catch(()=>{});
+        pollReviews();
       })
       .subscribe();
 
@@ -890,7 +914,7 @@ export default function App(){
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(reviewsChannel);
     };
-  },[loadData,loadAppSettings]);
+  },[loadAppSettings,pollBookings,pollReviews]);
 
   useEffect(()=>{
     if(!customerSession?.id)return;
@@ -954,34 +978,9 @@ export default function App(){
     }catch(e){console.error(e);}
   },[]);
 
-  // Polling — حجوزات وتقييمات فقط كل 20 ثانية (fallback للـ Realtime)
-  const pollBookings=useCallback(async()=>{
-    try{
-      const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status&order=created_at.desc");
-      setSalons(prev=>prev.map(salon=>({
-        ...salon,
-        bookings:rows
-          .filter(b=>String(b.salon_id)===String(salon.id))
-          .map(b=>({
-            id:b.id,salonId:b.salon_id,
-            name:b.customer_name||"",phone:b.customer_phone||"",
-            services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
-            barberId:b.barber_id||"any",barberName:b.barber_name||"",
-            date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",
-          })),
-      })));
-    }catch{}
-  },[]);
-
-  const pollReviews=useCallback(async()=>{
-    try{
-      const rows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc");
-      setReviews(rows||[]);
-    }catch{}
-  },[]);
-
+  // Polling — fallback للـ Realtime كل 10 ثواني
   useEffect(()=>{
-    const id=setInterval(()=>{pollBookings();pollReviews();},20000);
+    const id=setInterval(()=>{pollBookings();pollReviews();},10000);
     return()=>clearInterval(id);
   },[pollBookings,pollReviews]);
 
