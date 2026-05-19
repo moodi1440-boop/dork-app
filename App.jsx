@@ -2250,7 +2250,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       )}
 
       {/* إضافة يدوية لقائمة الانتظار */}
-      {(()=>{
+      {filter==="pending"&&(()=>{
         const allSlots=getSlotsForSalon(salon);
         const inp2={padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",width:"100%",boxSizing:"border-box"};
         return(
