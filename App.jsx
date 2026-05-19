@@ -1773,6 +1773,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
   const[showDetails,setShowDetails]=useState(false);
   const slots=getSlotsForSalon(salon);
   const displayRating=realRating||salon.rating||"5.0";
+  const numRating=parseFloat(displayRating);
 
   // مسافة
   let distance=null;
@@ -1781,8 +1782,13 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
     if(coords)distance=haversine(userLoc.lat,userLoc.lng,coords.lat,coords.lng).toFixed(1);
   }
 
-  // Performance Score (بسيط)
-  const performanceScore=Math.round((displayRating/5)*100);
+  // Performance Score
+  const performanceScore=Math.round((numRating/5)*100);
+
+  // شارات ذكية (من معايير التطبيقات العالمية)
+  const isPremium=numRating>=4.5;
+  const isPopular=reviewCount>=50;
+  const isHighDemand=salon.bookings&&salon.bookings.filter(b=>b.status==="confirmed"&&new Date(b.date)>=new Date(new Date().setDate(new Date().getDate()-7))).length>=10;
 
   if(salon.frozen)return(
     <div style={{...G.card,opacity:.5,position:"relative"}}>
@@ -1794,70 +1800,88 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
 
   return(
     <>
-    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #2a2a3a",cursor:"pointer"}} className="hcard" onClick={()=>setShowDetails(true)}>
+    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #2a2a3a",cursor:"pointer",position:"relative",overflow:"hidden"}} className="hcard" onClick={()=>setShowDetails(true)}>
+      {/* شارات ذكية في الزاوية العلوية */}
+      <div style={{position:"absolute",top:8,left:8,display:"flex",gap:4,flexWrap:"wrap",zIndex:100}}>
+        {isPremium&&<div style={{background:"rgba(212,160,23,.3)",border:"1px solid #d4a017",color:"#d4a017",fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:12}}>🔥 Premium</div>}
+        {isHighDemand&&<div style={{background:"rgba(231,76,60,.3)",border:"1px solid #e74c3c",color:"#e74c3c",fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:12}}>📈 عالي الطلب</div>}
+        {isPopular&&<div style={{background:"rgba(155,89,182,.3)",border:"1px solid #9b59b6",color:"#9b59b6",fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:12}}>⭐ محبوب</div>}
+      </div>
+
       {/* Compact Version - صغيرة وبسيطة */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
         <div style={{flex:1}}>
           {/* Rating - الكبير */}
           <div style={{fontSize:24,fontWeight:900,color:"#d4a017",marginBottom:2}}>⭐ {displayRating}</div>
-          <div style={{fontSize:10,color:"#888",marginBottom:8}}>({reviewCount} تقييم)</div>
+          <div style={{fontSize:9,color:"#888",marginBottom:8}}>({reviewCount} تقييم)</div>
 
           {/* اسم + موقع */}
           <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:2}}>{salon.name}</div>
-          <div style={{fontSize:11,color:"#888",marginBottom:4}}>📍 {salon.gov||salon.region}</div>
+          <div style={{fontSize:10,color:"#888",marginBottom:6}}>📍 {salon.gov||salon.region}</div>
 
           {/* Status */}
-          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:11,background:isOpenNow?"rgba(39,174,96,.2)":"rgba(231,76,60,.2)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"2px 8px",borderRadius:6,fontWeight:700}}>
+          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6,flexWrap:"wrap"}}>
+            <span style={{fontSize:10,background:isOpenNow?"rgba(39,174,96,.2)":"rgba(231,76,60,.2)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"2px 7px",borderRadius:6,fontWeight:700}}>
               {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
             </span>
+            <span style={{fontSize:10,color:"#d4a017",fontWeight:700}}>📊 {performanceScore}%</span>
           </div>
-
-          {/* Performance Score */}
-          <div style={{fontSize:11,color:"#d4a017",fontWeight:700}}>أداء: {performanceScore}/100</div>
         </div>
       </div>
 
       {/* Separator */}
-      <div style={{height:1,background:"rgba(212,160,23,.1)",marginBottom:8}}/>
+      <div style={{height:1,background:"rgba(212,160,23,.15)",marginBottom:8}}/>
 
-      {/* أساسيات */}
-      <div style={{fontSize:10,color:"#aaa",marginBottom:8}}>
-        ⏰ {salon.shiftEnabled?`${salon.shift1Start}-${salon.shift1End}`:`${salon.workStart}-${salon.workEnd}`}
-        {distance&&<> | 📡 {distance} كم</>}
+      {/* شريط المعلومات السريعة */}
+      <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.05))",borderRadius:8,padding:10,marginBottom:8}}>
+        <div style={{fontSize:9,color:"#aaa",display:"flex",gap:12,flexWrap:"wrap"}}>
+          <div>⏰ {salon.shiftEnabled?`${salon.shift1Start?.slice(0,5)}-${salon.shift1End?.slice(0,5)}`:`${salon.workStart?.slice(0,5)}-${salon.workEnd?.slice(0,5)}`}</div>
+          {distance&&<div>📡 {distance} كم</div>}
+          <div>👥 {salon.barbers?.length||1}</div>
+        </div>
       </div>
-      <div style={{fontSize:10,color:"#aaa",marginBottom:10}}>👥 {salon.barbers?.length||1} حلاق</div>
 
       {/* زر التفاصيل */}
-      <div style={{textAlign:"center",color:"var(--p)",fontSize:11,fontWeight:700}}>شاهد التفاصيل الكاملة ↓</div>
+      <div style={{textAlign:"center",color:"var(--p)",fontSize:10,fontWeight:700,padding:"6px 0"}}>شاهد التفاصيل الكاملة ↓</div>
     </div>
 
     {/* Modal - التفاصيل الكاملة */}
     {showDetails&&(
       <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"flex-end",zIndex:10000,animation:"fadeIn .3s ease"}} onClick={()=>setShowDetails(false)}>
         <div style={{width:"100%",background:"#0d0d1a",borderRadius:"20px 20px 0 0",padding:"20px 16px",maxHeight:"90vh",overflowY:"auto",animation:"slideUp .3s ease"}} onClick={e=>e.stopPropagation()}>
-          {/* Close button */}
-          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+          {/* إغلاق + شارات */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{display:"flex",gap:4}}>
+              {isPremium&&<div style={{background:"rgba(212,160,23,.2)",border:"1px solid #d4a017",color:"#d4a017",fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:12}}>🔥 Premium</div>}
+              {isHighDemand&&<div style={{background:"rgba(231,76,60,.2)",border:"1px solid #e74c3c",color:"#e74c3c",fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:12}}>📈 عالي الطلب</div>}
+            </div>
             <button onClick={()=>setShowDetails(false)} style={{background:"transparent",border:"none",fontSize:24,color:"#888",cursor:"pointer"}}>✕</button>
           </div>
 
           {/* Header */}
           <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:16}}>
             <div>
-              <div style={{fontSize:22,fontWeight:900,color:"#d4a017",marginBottom:4}}>⭐ {displayRating}</div>
-              <div style={{fontSize:11,color:"#888"}}>({reviewCount} تقييم)</div>
+              <div style={{fontSize:26,fontWeight:900,color:"#d4a017",marginBottom:2}}>⭐ {displayRating}</div>
+              <div style={{fontSize:10,color:"#888",fontWeight:600}}>({reviewCount} تقييم)</div>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
-              <div style={{fontSize:11,color:"#888",marginBottom:4}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
-              <div style={{fontSize:11,background:isOpenNow?"rgba(39,174,96,.2)":"rgba(231,76,60,.2)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"3px 8px",borderRadius:6,fontWeight:700,display:"inline-block"}}>
+              <div style={{fontSize:15,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
+              <div style={{fontSize:11,color:"#888",marginBottom:6}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
+              <div style={{fontSize:11,background:isOpenNow?"rgba(39,174,96,.2)":"rgba(231,76,60,.2)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"4px 10px",borderRadius:8,fontWeight:700,display:"inline-block"}}>
                 {isOpenNow?"🟢 مفتوح الآن":"🔴 مغلق"}
               </div>
             </div>
           </div>
 
-          {/* Divider */}
-          <div style={{height:1,background:"rgba(212,160,23,.1)",marginBottom:16}}/>
+          <div style={{height:1,background:"rgba(212,160,23,.15)",marginBottom:16}}/>
+
+          {/* شريط Urgency (إذا كان عالي الطلب) */}
+          {isHighDemand&&(
+            <div style={{background:"rgba(231,76,60,.12)",borderRadius:12,padding:12,marginBottom:16,border:"1px solid rgba(231,76,60,.2)"}}>
+              <div style={{fontSize:11,color:"#e74c3c",fontWeight:700,marginBottom:4}}>📈 عالي الطلب الآن!</div>
+              <div style={{fontSize:10,color:"#888"}}>الكثير من العملاء يحجزون الآن - تأكد من اختيار الموعد المناسب</div>
+            </div>
+          )}
 
           {/* الأداء */}
           <div style={{background:"rgba(212,160,23,.08)",borderRadius:12,padding:12,marginBottom:16}}>
