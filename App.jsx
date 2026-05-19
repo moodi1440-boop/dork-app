@@ -1788,25 +1788,23 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
 
   return(
     <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #3a3a4a",padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
-      {/* Header - Name + Status + Rating on Right */}
-      <div style={{display:"flex",gap:12,alignItems:"flex-start",justifyContent:"space-between"}}>
-        {/* Name + Status on Left */}
-        <div style={{flex:1,display:"flex",gap:12,alignItems:"flex-start"}}>
-          {/* Scissors Icon with Yellow Background */}
-          <div style={{background:"#d4a017",width:44,height:44,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flex:"0 0 auto"}}>✂</div>
+      {/* Header */}
+      <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+        {/* Scissors Icon - Yellow Background */}
+        <div style={{background:"#d4a017",width:44,height:44,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flex:"0 0 auto"}}>✂</div>
 
-          <div style={{flex:1}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
-            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
-              <span style={{fontSize:10,background:isOpenNow?"rgba(39,174,96,.3)":"rgba(231,76,60,.3)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"3px 8px",borderRadius:6,fontWeight:700}}>
-                {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
-              </span>
-            </div>
-            <div style={{fontSize:10,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
+        {/* Name + Status + Location in Middle */}
+        <div style={{flex:1}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
+          <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
+            <span style={{fontSize:10,color:isOpenNow?"#27ae60":"#e74c3c",fontWeight:700}}>
+              {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
+            </span>
           </div>
+          <div style={{fontSize:10,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
         </div>
 
-        {/* Rating Badge on Right */}
+        {/* Rating on Right */}
         <div style={{border:"1.5px solid rgba(212,160,23,.4)",borderRadius:12,padding:"8px 12px",minWidth:"70px",textAlign:"center",flex:"0 0 auto"}}>
           <div style={{fontSize:18,fontWeight:900,color:"#d4a017"}}>⭐ {displayRating}</div>
           <div style={{fontSize:9,color:"#aaa"}}>({reviewCount})</div>
