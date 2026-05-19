@@ -1830,7 +1830,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       {/* شريط المعلومات السريعة */}
       <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.05))",borderRadius:8,padding:10,marginBottom:8}}>
         <div style={{fontSize:9,color:"#aaa",display:"flex",gap:12,flexWrap:"wrap"}}>
-          <div>⏰ {salon.shiftEnabled?`${salon.shift1Start.slice(0,5)}-${salon.shift1End.slice(0,5)}`:`${salon.workStart.slice(0,5)}-${salon.workEnd.slice(0,5)}`}</div>
+          <div>⏰ {salon.shiftEnabled?(salon.shift1Start&&salon.shift1End?`${salon.shift1Start.slice(0,5)}-${salon.shift1End.slice(0,5)}`:"--:-- - --:--"):(salon.workStart&&salon.workEnd?`${salon.workStart.slice(0,5)}-${salon.workEnd.slice(0,5)}`:"--:-- - --:--")}</div>
           {distance&&<div>📡 {distance} كم</div>}
           <div>👥 {salon.barbers?.length||1}</div>
         </div>
@@ -1893,11 +1893,11 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
               <div style={{fontSize:9,color:"#aaa",lineHeight:1.8}}>
                 {salon.shiftEnabled?(
                   <>
-                    <div style={{marginBottom:3}}>الأول: {salon.shift1Start.slice(0,5)}</div>
-                    <div>الثاني: {salon.shift2Start.slice(0,5)}</div>
+                    <div style={{marginBottom:3}}>الأول: {salon.shift1Start?salon.shift1Start.slice(0,5):"--:--"}</div>
+                    <div>الثاني: {salon.shift2Start?salon.shift2Start.slice(0,5):"--:--"}</div>
                   </>
                 ):(
-                  <div>{salon.workStart.slice(0,5)} - {salon.workEnd.slice(0,5)}</div>
+                  <div>{salon.workStart?salon.workStart.slice(0,5):"--:--"} - {salon.workEnd?salon.workEnd.slice(0,5):"--:--"}</div>
                 )}
               </div>
             </div>
