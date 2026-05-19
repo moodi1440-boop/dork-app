@@ -1770,23 +1770,13 @@ function SalonReviewsView({salon,reviews,setView}){
 }
 
 function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
-  const[showDetails,setShowDetails]=useState(false);
-  const slots=getSlotsForSalon(salon);
   const displayRating=realRating||salon.rating||"5.0";
-  const numRating=parseFloat(displayRating);
 
   let distance=null;
   if(userLoc&&getSalonCoords&&haversine){
     const coords=getSalonCoords(salon);
     if(coords)distance=haversine(userLoc.lat,userLoc.lng,coords.lat,coords.lng).toFixed(1);
   }
-
-  const performanceScore=Math.round((numRating/5)*100);
-
-  // شارات ذكية
-  const isPremium=numRating>=4.5;
-  const isPopular=reviewCount>=50;
-  const isHighDemand=salon.bookings&&salon.bookings.filter(b=>b.status==="confirmed"&&new Date(b.date)>=new Date(new Date().setDate(new Date().getDate()-7))).length>=10;
 
   if(salon.frozen)return(
     <div style={{...G.card,opacity:.5,position:"relative"}}>
@@ -1797,166 +1787,74 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
   );
 
   return(
-    <>
-    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #2a2a3a",cursor:"pointer",position:"relative",overflow:"hidden"}} className="hcard" onClick={()=>setShowDetails(true)}>
-      {/* شارات في الزاوية العلوية */}
-      <div style={{position:"absolute",top:8,left:8,display:"flex",gap:4,flexWrap:"wrap",zIndex:100}}>
-        {isPremium&&<div style={{background:"rgba(212,160,23,.3)",border:"1px solid #d4a017",color:"#d4a017",fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:12}}>🔥 Premium</div>}
-        {isHighDemand&&<div style={{background:"rgba(231,76,60,.3)",border:"1px solid #e74c3c",color:"#e74c3c",fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:12}}>📈 عالي الطلب</div>}
-        {isPopular&&<div style={{background:"rgba(155,89,182,.3)",border:"1px solid #9b59b6",color:"#9b59b6",fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:12}}>⭐ محبوب</div>}
+    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #3a3a4a",padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
+      {/* Header - Rating + Name + Icon */}
+      <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+        {/* Rating Badge */}
+        <div style={{border:"1.5px solid rgba(212,160,23,.4)",borderRadius:12,padding:"8px 12px",minWidth:"70px",textAlign:"center",flex:"0 0 auto"}}>
+          <div style={{fontSize:18,fontWeight:900,color:"#d4a017"}}>⭐ {displayRating}</div>
+          <div style={{fontSize:9,color:"#aaa"}}>({reviewCount})</div>
+        </div>
+
+        {/* Name + Status + Icon */}
+        <div style={{flex:1,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
+            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
+              <span style={{fontSize:10,background:isOpenNow?"rgba(39,174,96,.25)":"rgba(231,76,60,.25)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"2px 8px",borderRadius:6,fontWeight:700}}>
+                {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
+              </span>
+            </div>
+            <div style={{fontSize:10,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
+          </div>
+          {/* Salon Icon */}
+          <div style={{background:"#d4a017",width:44,height:44,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flex:"0 0 auto"}}>✂</div>
+        </div>
       </div>
 
-      {/* المحتوى الرئيسي */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-        <div style={{flex:1}}>
-          <div style={{fontSize:24,fontWeight:900,color:"#d4a017",marginBottom:2}}>⭐ {displayRating}</div>
-          <div style={{fontSize:9,color:"#888",marginBottom:8}}>({reviewCount} تقييم)</div>
-
-          <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:2}}>{salon.name}</div>
-          <div style={{fontSize:10,color:"#888",marginBottom:6}}>📍 {salon.gov||salon.region}</div>
-
-          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6,flexWrap:"wrap"}}>
-            <span style={{fontSize:10,background:isOpenNow?"rgba(39,174,96,.2)":"rgba(231,76,60,.2)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"2px 7px",borderRadius:6,fontWeight:700}}>
-              {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
+      {/* Services Tags */}
+      {salon.services.length>0&&(
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {salon.services.slice(0,4).map(s=>(
+            <span key={s} style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>
+              {s}
             </span>
-            <span style={{fontSize:10,color:"#d4a017",fontWeight:700}}>📊 {performanceScore}%</span>
-          </div>
+          ))}
+          {salon.services.length>4&&<span style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>+{salon.services.length-4}</span>}
+        </div>
+      )}
+
+      {/* Hours & Wait Time */}
+      <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:11,color:"#aaa"}}>
+        <div>
+          ⏰ {salon.shiftEnabled?(salon.shift1Start&&salon.shift1End?`${salon.shift1Start.slice(0,5)}-${salon.shift1End.slice(0,5)}`:"--:-- - --:--"):(salon.workStart&&salon.workEnd?`${salon.workStart.slice(0,5)}-${salon.workEnd.slice(0,5)}`:"--:-- - --:--")}
+        </div>
+        <div>
+          👥 {salon.barbers?.length||1} حلاق - 20 دقيقة
         </div>
       </div>
 
-      {/* فاصل */}
-      <div style={{height:1,background:"rgba(212,160,23,.15)",marginBottom:8}}/>
+      {/* Divider */}
+      <div style={{height:1,background:"rgba(212,160,23,.1)"}}/>
 
-      {/* شريط المعلومات السريعة */}
-      <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.05))",borderRadius:8,padding:10,marginBottom:8}}>
-        <div style={{fontSize:9,color:"#aaa",display:"flex",gap:12,flexWrap:"wrap"}}>
-          <div>⏰ {salon.shiftEnabled?(salon.shift1Start&&salon.shift1End?`${salon.shift1Start.slice(0,5)}-${salon.shift1End.slice(0,5)}`:"--:-- - --:--"):(salon.workStart&&salon.workEnd?`${salon.workStart.slice(0,5)}-${salon.workEnd.slice(0,5)}`:"--:-- - --:--")}</div>
-          {distance&&<div>📡 {distance} كم</div>}
-          <div>👥 {salon.barbers?.length||1}</div>
-        </div>
+      {/* Book Button */}
+      <button onClick={onBook} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",width:"100%",fontFamily:"'Cairo',sans-serif"}}>
+        احجز الان
+      </button>
+
+      {/* Action Buttons */}
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <button onClick={()=>{}} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36}}>
+          ⚖
+        </button>
+        <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"#d4a017":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36}}>
+          {fav?"♥":"♡"}
+        </button>
+        <button onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#3b9ef5",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36}}>
+          📍
+        </button>
       </div>
-
-      {/* زر التفاصيل */}
-      <div style={{textAlign:"center",color:"var(--p)",fontSize:10,fontWeight:700,padding:"6px 0"}}>شاهد التفاصيل الكاملة ↓</div>
     </div>
-
-    {showDetails&&(
-      <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"flex-end",zIndex:10000,animation:"fadeIn .3s ease"}} onClick={()=>setShowDetails(false)}>
-        <div style={{width:"100%",background:"#0d0d1a",borderRadius:"20px 20px 0 0",padding:"20px 16px",maxHeight:"90vh",overflowY:"auto",animation:"slideUp .3s ease"}} onClick={e=>e.stopPropagation()}>
-          {/* إغلاق + شارات */}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={{display:"flex",gap:4}}>
-              {isPremium&&<div style={{background:"rgba(212,160,23,.2)",border:"1px solid #d4a017",color:"#d4a017",fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:12}}>🔥 Premium</div>}
-              {isHighDemand&&<div style={{background:"rgba(231,76,60,.2)",border:"1px solid #e74c3c",color:"#e74c3c",fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:12}}>📈 عالي الطلب</div>}
-            </div>
-            <button onClick={()=>setShowDetails(false)} style={{background:"transparent",border:"none",fontSize:24,color:"#888",cursor:"pointer"}}>✕</button>
-          </div>
-
-          {/* الرأس */}
-          <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:16}}>
-            <div>
-              <div style={{fontSize:26,fontWeight:900,color:"#d4a017",marginBottom:2}}>⭐ {displayRating}</div>
-              <div style={{fontSize:10,color:"#888",fontWeight:600}}>({reviewCount} تقييم)</div>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:15,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
-              <div style={{fontSize:11,color:"#888",marginBottom:6}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
-              <div style={{fontSize:11,background:isOpenNow?"rgba(39,174,96,.2)":"rgba(231,76,60,.2)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"4px 10px",borderRadius:8,fontWeight:700,display:"inline-block"}}>
-                {isOpenNow?"🟢 مفتوح الآن":"🔴 مغلق"}
-              </div>
-            </div>
-          </div>
-
-          <div style={{height:1,background:"rgba(212,160,23,.15)",marginBottom:16}}/>
-
-          {/* شريط Urgency (إذا كان عالي الطلب) */}
-          {isHighDemand&&(
-            <div style={{background:"linear-gradient(135deg,rgba(231,76,60,.15),rgba(231,76,60,.08))",borderRadius:12,padding:12,marginBottom:16,border:"1px solid rgba(231,76,60,.2)"}}>
-              <div style={{fontSize:11,color:"#e74c3c",fontWeight:700,marginBottom:4}}>📈 عالي الطلب الآن!</div>
-              <div style={{fontSize:10,color:"#888"}}>الكثير من العملاء يحجزون الآن - تأكد من اختيار الموعد المناسب</div>
-            </div>
-          )}
-
-          {/* شبكة المعلومات (2x2) */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-            <div style={{background:"rgba(212,160,23,.1)",borderRadius:12,padding:12,border:"1px solid rgba(212,160,23,.2)"}}>
-              <div style={{fontSize:11,color:"#d4a017",fontWeight:700,marginBottom:8}}>📊 الأداء</div>
-              <div style={{fontSize:9,color:"#aaa",lineHeight:1.8}}>
-                <div style={{marginBottom:6}}>⭐ {displayRating}/5</div>
-                <div style={{marginBottom:6}}>📈 {performanceScore}%</div>
-                <div>📋 {reviewCount} تقييم</div>
-              </div>
-            </div>
-
-            <div style={{background:"rgba(212,160,23,.1)",borderRadius:12,padding:12,border:"1px solid rgba(212,160,23,.2)"}}>
-              <div style={{fontSize:11,color:"#d4a017",fontWeight:700,marginBottom:8}}>⏰ الأوقات</div>
-              <div style={{fontSize:9,color:"#aaa",lineHeight:1.8}}>
-                {salon.shiftEnabled?(
-                  <>
-                    <div style={{marginBottom:3}}>الأول: {salon.shift1Start?salon.shift1Start.slice(0,5):"--:--"}</div>
-                    <div>الثاني: {salon.shift2Start?salon.shift2Start.slice(0,5):"--:--"}</div>
-                  </>
-                ):(
-                  <div>{salon.workStart?salon.workStart.slice(0,5):"--:--"} - {salon.workEnd?salon.workEnd.slice(0,5):"--:--"}</div>
-                )}
-              </div>
-            </div>
-
-            <div style={{background:"rgba(212,160,23,.1)",borderRadius:12,padding:12,border:"1px solid rgba(212,160,23,.2)"}}>
-              <div style={{fontSize:11,color:"#d4a017",fontWeight:700,marginBottom:8}}>👥 الفريق</div>
-              <div style={{fontSize:9,color:"#aaa",lineHeight:1.8}}>
-                <div style={{marginBottom:6,fontWeight:700,fontSize:12,color:"#fff"}}>{salon.barbers?.length||1}</div>
-                <div>حلاقين متخصصين</div>
-              </div>
-            </div>
-
-            <div style={{background:"rgba(212,160,23,.1)",borderRadius:12,padding:12,border:"1px solid rgba(212,160,23,.2)"}}>
-              <div style={{fontSize:11,color:"#d4a017",fontWeight:700,marginBottom:8}}>📍 الموقع</div>
-              <div style={{fontSize:9,color:"#aaa",lineHeight:1.8}}>
-                <div style={{marginBottom:6}}>{salon.gov||salon.region}</div>
-                {distance&&<div style={{fontWeight:600,color:"#d4a017"}}>{distance} كم</div>}
-              </div>
-            </div>
-          </div>
-
-          {/* الخدمات */}
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,color:"#d4a017",fontWeight:700,marginBottom:10}}>✂ الخدمات والأسعار</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {salon.services.map(s=>(
-                <div key={s} style={{background:"rgba(212,160,23,.12)",borderRadius:10,padding:12,textAlign:"center",border:"1px solid rgba(212,160,23,.2)"}}>
-                  <div style={{fontSize:10,color:"#fff",fontWeight:700,marginBottom:4}}>{s}</div>
-                  {salon.prices?.[s]?(
-                    <div style={{fontSize:11,color:"#d4a017",fontWeight:700}}>{salon.prices[s]} ريال</div>
-                  ):(
-                    <div style={{fontSize:9,color:"#666"}}>السعر يختلف</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* أيام مغلقة */}
-          {salon.closedDays?.length>0&&(
-            <div style={{background:"rgba(231,76,60,.12)",borderRadius:12,padding:12,marginBottom:16,border:"1px solid rgba(231,76,60,.2)"}}>
-              <div style={{fontSize:11,color:"#e74c3c",fontWeight:700,marginBottom:4}}>🚫 أيام مغلقة</div>
-              <div style={{fontSize:10,color:"#aaa"}}>{salon.closedDays.join(" • ")}</div>
-            </div>
-          )}
-
-          {/* أزرار الإجراء */}
-          <div style={{display:"flex",gap:8}}>
-            <button style={{flex:1,...G.bookBtn}} onClick={()=>{setShowDetails(false);onBook&&onBook();}}>احجز الآن</button>
-            <button style={{flex:1,...G.mapsBtn}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>📍 الموقع</button>
-          </div>
-        </div>
-      </div>
-    )}
-    <style>{`
-      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    `}</style>
-    </>
   );
 }
 
