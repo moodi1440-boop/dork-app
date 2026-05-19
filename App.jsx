@@ -954,6 +954,37 @@ export default function App(){
     }catch(e){console.error(e);}
   },[]);
 
+  // Polling — حجوزات وتقييمات فقط كل 20 ثانية (fallback للـ Realtime)
+  const pollBookings=useCallback(async()=>{
+    try{
+      const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status&order=created_at.desc");
+      setSalons(prev=>prev.map(salon=>({
+        ...salon,
+        bookings:rows
+          .filter(b=>String(b.salon_id)===String(salon.id))
+          .map(b=>({
+            id:b.id,salonId:b.salon_id,
+            name:b.customer_name||"",phone:b.customer_phone||"",
+            services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
+            barberId:b.barber_id||"any",barberName:b.barber_name||"",
+            date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",
+          })),
+      })));
+    }catch{}
+  },[]);
+
+  const pollReviews=useCallback(async()=>{
+    try{
+      const rows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc");
+      setReviews(rows||[]);
+    }catch{}
+  },[]);
+
+  useEffect(()=>{
+    const id=setInterval(()=>{pollBookings();pollReviews();},20000);
+    return()=>clearInterval(id);
+  },[pollBookings,pollReviews]);
+
   // شاشة الشروط والأحكام
   if(!termsAccepted) return <TermsView onAccept={()=>{setTermsAccepted(true);try{localStorage.setItem("dork_terms","1");}catch{}}} />;
 
