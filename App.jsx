@@ -2129,6 +2129,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[showWaiting,setShowWaiting]=useState(false);
   const[filter,setFilter]=useState("pending");
   const[localAtt,setLocalAtt]=useState({});
+  const[mForm,setMForm]=useState({name:"",phone:"",date:new Date().toISOString().slice(0,10),slot:""});
   const KEY=`dork_waiting_${salon.id}`;
   const[waitingList,setWaitingList]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
 
@@ -2215,8 +2216,8 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
           </button>
         ))}
       </div>
-      {/* قائمة الانتظار */}
-      {waitingList.length>0&&(
+      {/* قائمة الانتظار - تظهر فقط عند فلتر "انتظار" */}
+      {filter==="pending"&&waitingList.length>0&&(
         <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",border:"1px solid var(--pa25)",marginBottom:10}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>⏳ قائمة الانتظار ({waitingList.length})</div>
@@ -2249,29 +2250,45 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       )}
 
       {/* إضافة يدوية لقائمة الانتظار */}
-      <div style={{background:"#0d0d1a",borderRadius:8,padding:"10px 12px",border:"1px solid #2a2a3a",marginBottom:10}}>
-        <div style={{fontSize:11,color:"#888",marginBottom:8}}>➕ إضافة عميل للانتظار يدوياً</div>
-        <div style={{display:"flex",gap:6,marginBottom:6}}>
-          <input id="wname" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl"}} placeholder="الاسم"/>
-          <input id="wphone" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"ltr"}} placeholder="الجوال"/>
+      {(()=>{
+        const allSlots=getSlotsForSalon(salon);
+        const inp2={padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",width:"100%",boxSizing:"border-box"};
+        return(
+        <div style={{background:"#0d0d1a",borderRadius:10,border:"1px solid #2a2a3a",marginBottom:10,overflow:"hidden"}}>
+          <div style={{background:"#13131f",padding:"10px 14px",borderBottom:"1px solid #2a2a3a",fontSize:12,color:"var(--p)",fontWeight:700}}>➕ إضافة عميل لقائمة الانتظار</div>
+          <div style={{padding:"12px 14px"}}>
+            <div style={{display:"flex",gap:8,marginBottom:8}}>
+              <input value={mForm.name} onChange={e=>setMForm(p=>({...p,name:e.target.value}))} style={{...inp2,direction:"rtl"}} placeholder="الاسم"/>
+              <input value={mForm.phone} onChange={e=>setMForm(p=>({...p,phone:e.target.value}))} style={{...inp2,direction:"ltr"}} placeholder="الجوال"/>
+            </div>
+            <input type="date" value={mForm.date} min={new Date().toISOString().slice(0,10)} onChange={e=>setMForm(p=>({...p,date:e.target.value,slot:""}))} style={{...inp2,marginBottom:8}}/>
+            <div style={{fontSize:11,color:"#888",marginBottom:6}}>اختر وقتاً (اختياري)</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
+              {allSlots.map(sl=>{
+                const sel=mForm.slot===sl;
+                return(
+                  <button key={sl} onClick={()=>setMForm(p=>({...p,slot:p.slot===sl?"":sl}))}
+                    style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${sel?"var(--p)":"#2a2a3a"}`,
+                      background:sel?"var(--pa25)":"#13131f",color:sel?"var(--p)":"#888",
+                      fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:sel?700:400}}>
+                    {sl}
+                  </button>
+                );
+              })}
+            </div>
+            {mForm.slot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"6px 10px",marginBottom:8,fontSize:11,color:"#f39c12",textAlign:"center"}}>⏳ الوقت المختار: <strong>{mForm.date} - {mForm.slot}</strong></div>}
+            <button onClick={()=>{
+              const n=mForm.name.trim();const p=mForm.phone.trim();
+              if(!n||!p){alert("أدخل الاسم والجوال");return;}
+              addToWaiting(n,p,mForm.date,mForm.slot);
+              setMForm({name:"",phone:"",date:new Date().toISOString().slice(0,10),slot:""});
+            }} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#f39c12,#e67e22)",color:"#fff",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
+              ➕ إضافة للانتظار
+            </button>
+          </div>
         </div>
-        <div style={{display:"flex",gap:6}}>
-          <input id="wdate" type="date" defaultValue={new Date().toISOString().slice(0,10)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none"}}/>
-          <input id="wtime" type="time" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none"}} placeholder="الوقت (اختياري)"/>
-          <button style={{...G.sub,width:"auto",padding:"0 14px",marginTop:0,fontSize:13,fontWeight:700}} onClick={()=>{
-            const n=document.getElementById("wname")?.value?.trim();
-            const p=document.getElementById("wphone")?.value?.trim();
-            const d=document.getElementById("wdate")?.value;
-            const t=document.getElementById("wtime")?.value;
-            if(n&&p){
-              addToWaiting(n,p,d,t);
-              document.getElementById("wname").value="";
-              document.getElementById("wphone").value="";
-              document.getElementById("wtime").value="";
-            }
-          }}>+</button>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* الحجوزات */}
       {!bks.length?<div style={G.empty}>لا توجد حجوزات</div>:
