@@ -286,19 +286,6 @@ function playTone(id, vol=0.7){
 // ==============================================
 //  PUSH NOTIFICATIONS
 // ==============================================
-function getCustomerClassification(customer){
-  const history=(customer?.history||[]);
-  const total=history.filter(h=>h.status!=="rejected").length;
-  const completed=history.filter(h=>h.status==="approved").length;
-  const noShows=history.filter(h=>h.status==="cancelled"&&h.attendance==="no_show").length;
-  const lateCancels=history.filter(h=>h.status==="cancelled").length;
-  if(lateCancels>=3||noShows>=3)return{label:"⚠️ غير ملتزم",color:"#e74c3c",key:"unreliable"};
-  if(total===0)return{label:"🆕 جديد",color:"#3498db",key:"new"};
-  if(completed>=5&&lateCancels===0)return{label:"🌟 مميز",color:"#d4a017",key:"vip"};
-  if(completed>=2&&lateCancels<=1)return{label:"✅ منتظم",color:"#27ae60",key:"regular"};
-  return{label:"🆕 جديد",color:"#3498db",key:"new"};
-}
-
 async function requestNotifPermission(){
   if(!("Notification" in window))return false;
   if(Notification.permission==="granted")return true;
@@ -1000,41 +987,6 @@ export default function App(){
     const id=setInterval(()=>{pollBookings();pollReviews();},10000);
     return()=>clearInterval(id);
   },[pollBookings,pollReviews]);
-
-  // إشعار التذكير التلقائي + طلب التقييم
-  useEffect(()=>{
-    if(!customerSession)return;
-    const check=()=>{
-      const cust=customers.find(c=>c.id===customerSession.id);
-      if(!cust)return;
-      const now=new Date();
-      const reminderMins=parseInt(localStorage.getItem("dork_reminder")||"60");
-      const reminded=JSON.parse(localStorage.getItem("dork_auto_reminded")||"[]");
-      const reviewed=JSON.parse(localStorage.getItem("dork_auto_review")||"[]");
-      for(const h of (cust.history||[])){
-        if(!h.date||!h.time||h.status==="rejected"||h.status==="cancelled")continue;
-        const dt=new Date(`${h.date}T${h.time}`);
-        const minsUntil=(dt-now)/60000;
-        const minsAfter=(now-dt)/60000;
-        const key=`${h.salonId}-${h.date}-${h.time}`;
-        // تذكير قبل الموعد
-        if(minsUntil>0&&minsUntil<=reminderMins&&!reminded.includes(key)){
-          sendNotif("⏰ تذكير موعدك",`موعدك قريب في ${h.salonName||"الصالون"} — الساعة ${h.time}`,"⏰","customer",customerSession.id);
-          reminded.push(key);
-          localStorage.setItem("dork_auto_reminded",JSON.stringify(reminded.slice(-50)));
-        }
-        // طلب تقييم بعد الموعد بساعة
-        if(minsAfter>=60&&minsAfter<=120&&!reviewed.includes(key)&&h.status==="approved"&&!h.rating){
-          sendNotif("⭐ كيف كانت تجربتك؟",`قيّم ${h.salonName||"الصالون"} الآن وساعدنا في التحسين`,"⭐","customer",customerSession.id);
-          reviewed.push(key);
-          localStorage.setItem("dork_auto_review",JSON.stringify(reviewed.slice(-50)));
-        }
-      }
-    };
-    check();
-    const id=setInterval(check,60000);
-    return()=>clearInterval(id);
-  },[customerSession,customers]);
 
   // شاشة الشروط والأحكام
   if(!termsAccepted) return <TermsView onAccept={()=>{setTermsAccepted(true);try{localStorage.setItem("dork_terms","1");}catch{}}} />;
@@ -1871,7 +1823,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
           {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>}
         </div>
         {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView}/>}
-        {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers}/>}
+        {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus}/>}
         {tab==="stats"&&canManage&&<StatsPanel salon={salon}/>}
       </div>
     </div>
@@ -1965,26 +1917,14 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {salon.shiftEnabled&&<div style={{fontSize:11,color:"var(--p)",background:"var(--pa07)",borderRadius:8,padding:"6px 10px",marginBottom:8}}>⏰ {salon.shift1Start}-{salon.shift1End} | {salon.shift2Start}-{salon.shift2End}</div>}
         <div style={{fontSize:12,color:"#aaa",marginBottom:7}}>اختر الوقت{form.barberId?` - ${barber?.name||""}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
-        <div style={G.timeGrid}>{slots.map(sl=>{const used=slotUsed(sl);const full=slotFull(sl);const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={full&&!waiting} onClick={()=>!full&&setForm(p=>({...p,time:sl,waitSlot:""}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div><div style={{fontSize:9,marginTop:1,color:full?"#555":sel?"var(--p)":"#666"}}>{full?"محجوز":`${bc-used} متاح`}</div></button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:8,padding:"2px 4px",borderRadius:6,border:`1px solid ${waiting?"var(--p)":"#444"}`,background:waiting?"var(--pa12)":"transparent",color:waiting?"var(--p)":"#666",cursor:"pointer",fontFamily:"inherit"}}>⏳ انتظار</button>}</div>);})}</div>
+        <div style={G.timeGrid}>{slots.map(sl=>{const used=slotUsed(sl);const full=slotFull(sl);const sel=form.time===sl;return(<button key={sl} disabled={full} onClick={()=>!full&&setForm(p=>({...p,time:sl}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div><div style={{fontSize:9,marginTop:1,color:full?"#555":sel?"var(--p)":"#666"}}>{full?"محجوز":`${bc-used} متاح`}</div></button>);})}</div>
         <button style={G.sub} onClick={()=>{if(v2())setStep(3);}}>التالي ></button>
       </div>}
       {step===3&&<div style={G.fc}>
         <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:36}}>✅</div><h3 style={{color:"#fff",marginTop:4,fontSize:16}}>تأكيد الحجز</h3></div>
         {[["الاسم",form.name],["الجوال",form.phone],["البريد",form.email||"-"],["الخدمات",form.services.join(" + ")],["الحلاق",barber?.name||"أي حلاق"],["التاريخ",form.date],["الوقت",form.time],["الإجمالي",`${total} ريال`]].map(([l,v])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}><span style={{color:"#888",fontSize:12}}>{l}</span><span style={{color:"#f0f0f0",fontWeight:600,fontSize:12}}>{v}</span></div>)}
         <button style={{...G.mapsBtn,width:"100%",marginTop:10,justifyContent:"center",display:"flex",padding:10}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>📍 افتح على الخريطة</button>
-        {form.waitSlot&&<div style={{background:"rgba(243,156,18,.1)",border:"1px solid #f39c1255",borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:11,color:"#f39c12"}}>⏳ ستنضم لقائمة الانتظار للساعة {form.waitSlot} — ستُبلَّغ عند تحرر الوقت</div>}
-        <button style={{...G.sub,marginTop:8,background:form.waitSlot?"linear-gradient(135deg,#f39c12,#e67e22)":"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff"}} onClick={async()=>{
-          if(form.waitSlot){
-            if(!form.name||!form.phone){alert("أدخل الاسم والجوال أولاً");return;}
-            try{
-              await sb("waiting_list","POST",{salon_id:salon.id,name:form.name,phone:form.phone,slot_date:form.date,slot_time:form.waitSlot,customer_id:null,status:"waiting"});
-              alert("✅ تم انضمامك لقائمة الانتظار! سيصلك إشعار عند تحرر الوقت.");
-              if(setView)setView("home");
-            }catch(e){alert("❌ حدث خطأ، حاول مرة أخرى");}
-          }else{
-            addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total},rescheduleId||null);
-          }
-        }}>{form.waitSlot?"⏳ انضم لقائمة الانتظار":rescheduleId?"✅ تأكيد التعديل":"إرسال طلب الحجز 🎉"}</button>
+        <button style={{...G.sub,marginTop:8,background:"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff"}} onClick={()=>addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total},rescheduleId||null)}>{rescheduleId?"✅ تأكيد التعديل":"إرسال طلب الحجز 🎉"}</button>
       </div>}
     </>
   );
@@ -2123,7 +2063,7 @@ function StatsPanel({salon}){
     </div>
   );
 }
-function NotifPanel({salon,onUpdate,customers=[]}){
+function NotifPanel({salon,onUpdate}){
   const[showWaiting,setShowWaiting]=useState(false);
   const[filter,setFilter]=useState("pending");
   const[localAtt,setLocalAtt]=useState({});
@@ -2229,7 +2169,7 @@ function NotifPanel({salon,onUpdate,customers=[]}){
       <div style={{display:"flex",flexDirection:"column",gap:8}}>{bks.map(b=>(
         <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
           <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
-            {(()=>{const cust=customers.find(c=>c.phone&&b.phone&&c.phone.replace(/\D/g,"").slice(-9)===b.phone.replace(/\D/g,"").slice(-9));const cl=cust?getCustomerClassification(cust):null;return(<div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name}{cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>);})()}
+            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {b.name}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>
             <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
           </div>
           {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
@@ -3019,14 +2959,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       </div>
       {salon.paused&&<div style={{background:"rgba(231,76,60,.08)",border:"1px solid #e74c3c55",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:"#e74c3c"}}>⚠ الحجوزات موقوفة - لن يتمكن العملاء من الحجز الآن</div>}
 
-      {/* بانر إشعارات الإدارة */}
-      {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,2).map(n=>(
-        <div key={n.id} style={{background:"rgba(212,160,23,.08)",border:"1px solid rgba(212,160,23,.3)",borderRadius:8,padding:"10px 12px",marginBottom:8,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span>{n.icon} {n.title} — {n.body}</span>
-          <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:14,padding:0}}>✕</button>
-        </div>
-      ))}
-
       <div style={{...G.tabRow,flexWrap:"nowrap",overflowX:"auto"}}>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");refreshSalonBookings(salon.id);}}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>{
@@ -3040,7 +2972,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙</button>
       </div>
-      {tab==="notif"&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers}/>}
+      {tab==="notif"&&<NotifPanel salon={salon} onUpdate={updateBookingStatus}/>}
       {tab==="messages"&&(
         <div>
           {/* إشعارات الإدارة */}
@@ -4022,8 +3954,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const favSalons=salons.filter(s=>favSet.has(s.id)&&s.status==="approved");
   const history=customer.history||[];
   const totalSpent=history.reduce((a,h)=>a+(h.total||0),0);
-  const classification=getCustomerClassification(customer);
-  const badge=classification.label;
+  const badge=history.length>=10?"🏆 عميل مميز":history.length>=5?"⭐ عميل نشط":"🆕 عميل جديد";
 
   // avatar بالحرف الأول
   const initials=(customer.name||"?")[0];
@@ -4080,7 +4011,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       {!editMode?(
         <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
           {/* البادج في الزاوية اليسرى */}
-          <div style={{position:"absolute",top:12,left:12,background:`${classification.color}22`,border:`1px solid ${classification.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:classification.color}}>{badge}</div>
+          <div style={{position:"absolute",top:12,left:12,background:"rgba(240,192,64,0.2)",border:"1px solid #f0c040",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#f0c040"}}>{badge}</div>
 
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
