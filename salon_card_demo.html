@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بطاقة الصالون - المقارنة التفصيلية</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #09112e;
+            font-family: 'Cairo', sans-serif;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #d4a017;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .column {
+            background: #0d0d1a;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #2a2a3a;
+        }
+
+        .column h2 {
+            color: #d4a017;
+            margin-bottom: 20px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        /* البطاقة القديمة */
+        .old-card {
+            background: #1a1a2e;
+            border: 1px solid #2a2a3a;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .old-card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .old-rating {
+            font-size: 22px;
+            font-weight: 900;
+            color: #d4a017;
+        }
+
+        .old-review-count {
+            font-size: 9px;
+            color: #888;
+        }
+
+        .old-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .old-location {
+            font-size: 10px;
+            color: #888;
+        }
+
+        .old-status {
+            display: inline-block;
+            font-size: 9px;
+            background: rgba(39, 174, 96, 0.2);
+            color: #27ae60;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .old-info {
+            font-size: 9px;
+            color: #aaa;
+            margin-top: 8px;
+        }
+
+        /* البطاقة الجديدة */
+        .new-card {
+            background: #1a1a2e;
+            border: 1px solid #2a2a3a;
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .badges {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            z-index: 100;
+        }
+
+        .badge {
+            font-size: 8px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            border: 1px solid;
+        }
+
+        .badge.premium {
+            background: rgba(212, 160, 23, 0.3);
+            border-color: #d4a017;
+            color: #d4a017;
+        }
+
+        .badge.high-demand {
+            background: rgba(231, 76, 60, 0.3);
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .badge.popular {
+            background: rgba(155, 89, 182, 0.3);
+            border-color: #9b59b6;
+            color: #9b59b6;
+        }
+
+        .new-card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .new-rating {
+            font-size: 24px;
+            font-weight: 900;
+            color: #d4a017;
+        }
+
+        .new-review-count {
+            font-size: 9px;
+            color: #888;
+            font-weight: 600;
+        }
+
+        .new-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .new-location {
+            font-size: 10px;
+            color: #888;
+        }
+
+        .new-status-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .new-status {
+            display: inline-block;
+            font-size: 10px;
+            background: rgba(39, 174, 96, 0.2);
+            color: #27ae60;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .new-performance {
+            font-size: 10px;
+            color: #d4a017;
+            font-weight: 700;
+        }
+
+        .new-info-bar {
+            background: linear-gradient(135deg, rgba(212, 160, 23, 0.12), rgba(212, 160, 23, 0.05));
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 9px;
+            color: #aaa;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(212, 160, 23, 0.15);
+            margin: 8px 0;
+        }
+
+        /* Modal التفصيلي */
+        .modal {
+            background: #0d0d1a;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .modal h3 {
+            color: #d4a017;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .grid-2x2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .grid-item {
+            background: rgba(212, 160, 23, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid rgba(212, 160, 23, 0.2);
+            font-size: 9px;
+        }
+
+        .grid-item-title {
+            color: #d4a017;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .grid-item-content {
+            color: #aaa;
+            line-height: 1.6;
+        }
+
+        .features-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .feature {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .feature-icon {
+            color: #d4a017;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .feature-text {
+            flex: 1;
+        }
+
+        .feature-title {
+            color: #fff;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .feature-desc {
+            color: #888;
+            font-size: 11px;
+        }
+
+        .improvements {
+            background: rgba(212, 160, 23, 0.1);
+            border-left: 3px solid #d4a017;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+
+        .improvements h4 {
+            color: #d4a017;
+            margin-bottom: 8px;
+        }
+
+        .improvements ul {
+            color: #aaa;
+            font-size: 11px;
+            line-height: 1.8;
+            margin-left: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 بطاقة الصالون - المقارنة التفصيلية</h1>
+
+        <div class="comparison">
+            <!-- العمود الأول: البطاقة القديمة -->
+            <div class="column">
+                <h2>❌ التصميم القديم</h2>
+
+                <div class="old-card">
+                    <div class="old-card-content">
+                        <div class="old-rating">⭐ 4.7</div>
+                        <div class="old-review-count">(45 تقييم)</div>
+                        <div class="old-name">صالون الأمير</div>
+                        <div class="old-location">📍 بغداد</div>
+                        <div class="old-status">🟢 مفتوح</div>
+                        <div class="old-info">أداء: 94/100</div>
+                        <div style="font-size: 9px; color: #aaa; margin-top: 8px;">
+                            ⏰ 09:00 - 21:00 | 📡 2.5 كم
+                        </div>
+                        <div style="font-size: 9px; color: #aaa;">👥 3 حلاقين</div>
+                    </div>
+                </div>
+
+                <div class="improvements">
+                    <h4>📋 المشاكل:</h4>
+                    <ul>
+                        <li>❌ لا توجد شارات تميز</li>
+                        <li>❌ لا يعرض الطلب العالي</li>
+                        <li>❌ المعلومات مبعثرة</li>
+                        <li>❌ لا يوضح الجودة بوضوح</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- العمود الثاني: البطاقة الجديدة -->
+            <div class="column">
+                <h2>✅ التصميم الجديد (10÷10)</h2>
+
+                <div class="new-card">
+                    <div class="badges">
+                        <div class="badge premium">🔥 Premium</div>
+                        <div class="badge high-demand">📈 عالي الطلب</div>
+                    </div>
+
+                    <div class="new-card-content">
+                        <div class="new-rating">⭐ 4.7</div>
+                        <div class="new-review-count">(45 تقييم)</div>
+                        <div class="new-name">صالون الأمير</div>
+                        <div class="new-location">📍 بغداد</div>
+                        <div class="divider"></div>
+                        <div class="new-status-bar">
+                            <span class="new-status">🟢 مفتوح</span>
+                            <span class="new-performance">📊 94%</span>
+                        </div>
+                        <div class="new-info-bar">
+                            <div>⏰ 09:00 - 21:00</div>
+                            <div>📡 2.5 كم</div>
+                            <div>👥 3</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="improvements">
+                    <h4>🎯 التحسينات:</h4>
+                    <ul>
+                        <li>✅ شارات ملونة وذكية في الزاوية</li>
+                        <li>✅ شريط معلومات ملون بـ gradient</li>
+                        <li>✅ ترتيب منظم وواضح</li>
+                        <li>✅ يعكس الجودة والطلب العالي</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal التفصيلي -->
+        <div style="background: #0d0d1a; padding: 20px; border-radius: 12px; border: 1px solid #2a2a3a;">
+            <h2 style="color: #d4a017; margin-bottom: 20px;">📱 Modal التفاصيل الكاملة</h2>
+
+            <div class="modal">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="display: flex; gap: 4px;">
+                        <div class="badge premium">🔥 Premium</div>
+                        <div class="badge high-demand">📈 عالي الطلب</div>
+                    </div>
+                    <button style="background: transparent; border: none; color: #888; font-size: 20px; cursor: pointer;">✕</button>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <div>
+                        <div style="font-size: 26px; font-weight: 900; color: #d4a017; margin-bottom: 2px;">⭐ 4.7</div>
+                        <div style="font-size: 10px; color: #888; font-weight: 600;">(45 تقييم)</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px;">صالون الأمير</div>
+                        <div style="font-size: 11px; color: #888; margin-bottom: 6px;">📍 بغداد</div>
+                        <div style="font-size: 11px; background: rgba(39, 174, 96, 0.2); color: #27ae60; padding: 4px 10px; border-radius: 8px; font-weight: 700; display: inline-block;">
+                            🟢 مفتوح الآن
+                        </div>
+                    </div>
+                </div>
+
+                <div style="height: 1px; background: rgba(212, 160, 23, 0.15); margin-bottom: 16px;"></div>
+
+                <!-- Urgency Strip -->
+                <div style="background: rgba(231, 76, 60, 0.12); border-radius: 12px; padding: 12px; margin-bottom: 16px; border: 1px solid rgba(231, 76, 60, 0.2);">
+                    <div style="font-size: 11px; color: #e74c3c; font-weight: 700; margin-bottom: 4px;">📈 عالي الطلب الآن!</div>
+                    <div style="font-size: 10px; color: #888;">الكثير من العملاء يحجزون الآن - تأكد من اختيار الموعد المناسب</div>
+                </div>
+
+                <!-- Grid 2x2 -->
+                <h3 style="color: #d4a017; font-size: 12px; font-weight: 700; margin-bottom: 12px;">المعلومات الأساسية</h3>
+                <div class="grid-2x2">
+                    <div class="grid-item">
+                        <div class="grid-item-title">📊 الأداء</div>
+                        <div class="grid-item-content">
+                            <div style="margin-bottom: 6px;">⭐ 4.7/5</div>
+                            <div style="margin-bottom: 6px;">📈 94%</div>
+                            <div>📋 45 تقييم</div>
+                        </div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="grid-item-title">⏰ الأوقات</div>
+                        <div class="grid-item-content">
+                            <div style="margin-bottom: 3px;">الأول: 09:00</div>
+                            <div>الثاني: 13:00</div>
+                        </div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="grid-item-title">👥 الفريق</div>
+                        <div class="grid-item-content">
+                            <div style="margin-bottom: 6px; font-weight: 700; font-size: 12px; color: #fff;">3</div>
+                            <div>حلاقين متخصصين</div>
+                        </div>
+                    </div>
+                    <div class="grid-item">
+                        <div class="grid-item-title">📍 الموقع</div>
+                        <div class="grid-item-content">
+                            <div style="margin-bottom: 6px;">بغداد</div>
+                            <div style="font-weight: 600; color: #d4a017;">2.5 كم</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- الميزات -->
+        <div style="margin-top: 40px;">
+            <h2 style="color: #d4a017; margin-bottom: 20px; font-size: 20px;">💎 الميزات الاحترافية المضافة</h2>
+
+            <div class="features-list">
+                <div class="feature">
+                    <div class="feature-icon">🔥</div>
+                    <div class="feature-text">
+                        <div class="feature-title">شارات ذكية (Smart Badges)</div>
+                        <div class="feature-desc">تظهر تلقائياً: Premium (للتقييم 4.5+)، عالي الطلب (للحجوزات الكثيرة)، محبوب (للتقييمات 50+)</div>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">📈</div>
+                    <div class="feature-text">
+                        <div class="feature-title">Urgency Indicators (عرض الطلب)</div>
+                        <div class="feature-desc">شريط أحمر في Modal يعرض "عالي الطلب الآن" لتشجيع الحجز السريع (مثل Booking)</div>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🎨</div>
+                    <div class="feature-text">
+                        <div class="feature-title">Gradient Background</div>
+                        <div class="feature-desc">شريط معلومات بـ gradient احترافي: linear-gradient(135deg, rgba(212,160,23,.12), rgba(212,160,23,.05))</div>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-text">
+                        <div class="feature-title">Grid Layout 2x2</div>
+                        <div class="feature-desc">معلومات منظمة في 4 أقسام (الأداء | الأوقات | الفريق | الموقع) - مثل Booking.com و Talabat</div>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">✨</div>
+                    <div class="feature-text">
+                        <div class="feature-title">Typography محترفة</div>
+                        <div class="feature-desc">التقييم: 24px في البطاقة و 26px في Modal | الاسم: 13-15px | التفاصيل: 9-11px</div>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-text">
+                        <div class="feature-title">Performance Score واضح</div>
+                        <div class="feature-desc">عرض الأداء كنسبة مئوية (94%) بجنب الحالة المفتوح/المغلق في سطر واحد منظم</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- المقارنة مع التطبيقات -->
+        <div style="margin-top: 40px; background: rgba(212, 160, 23, 0.08); padding: 20px; border-radius: 12px; border: 1px solid rgba(212, 160, 23, 0.2);">
+            <h2 style="color: #d4a017; margin-bottom: 20px; font-size: 20px;">🌍 المقارنة مع التطبيقات العالمية</h2>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                <div style="background: #0d0d1a; padding: 12px; border-radius: 8px;">
+                    <div style="color: #d4a017; font-weight: 700; margin-bottom: 8px;">📱 Airbnb</div>
+                    <ul style="color: #aaa; font-size: 11px; line-height: 1.8;">
+                        <li>✅ تقييم كبير وبارز</li>
+                        <li>✅ شريط معلومات سفلي</li>
+                        <li>✅ صورة Hero (عندهم)</li>
+                    </ul>
+                </div>
+
+                <div style="background: #0d0d1a; padding: 12px; border-radius: 8px;">
+                    <div style="color: #d4a017; font-weight: 700; margin-bottom: 8px;">🍔 Talabat</div>
+                    <ul style="color: #aaa; font-size: 11px; line-height: 1.8;">
+                        <li>✅ شارات ملونة ذكية</li>
+                        <li>✅ معلومات سريعة</li>
+                        <li>✅ gradient backgrounds</li>
+                    </ul>
+                </div>
+
+                <div style="background: #0d0d1a; padding: 12px; border-radius: 8px;">
+                    <div style="color: #d4a017; font-weight: 700; margin-bottom: 8px;">🏨 Booking</div>
+                    <ul style="color: #aaa; font-size: 11px; line-height: 1.8;">
+                        <li>✅ Urgency indicators</li>
+                        <li>✅ Grid layout</li>
+                        <li>✅ نصوص تنبيهية</li>
+                    </ul>
+                </div>
+
+                <div style="background: #0d0d1a; padding: 12px; border-radius: 8px;">
+                    <div style="color: #d4a017; font-weight: 700; margin-bottom: 8px;">🚗 Uber Eats</div>
+                    <ul style="color: #aaa; font-size: 11px; line-height: 1.8;">
+                        <li>✅ Badges للتميز</li>
+                        <li>✅ معلومات مختصرة</li>
+                        <li>✅ Focus على الجودة</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
