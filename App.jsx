@@ -1788,41 +1788,25 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
 
   return(
     <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #3a3a4a",padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
-      {/* Header - Rating + Name + Icon */}
-      <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-        {/* Rating Badge */}
+      {/* Header - Name + Status + Rating on Right */}
+      <div style={{display:"flex",gap:12,alignItems:"flex-start",justifyContent:"space-between"}}>
+        {/* Name + Status on Left */}
+        <div style={{flex:1}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
+          <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
+            <span style={{fontSize:10,background:isOpenNow?"rgba(39,174,96,.25)":"rgba(231,76,60,.25)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"2px 8px",borderRadius:6,fontWeight:700}}>
+              {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
+            </span>
+          </div>
+          <div style={{fontSize:10,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
+        </div>
+
+        {/* Rating Badge on Right */}
         <div style={{border:"1.5px solid rgba(212,160,23,.4)",borderRadius:12,padding:"8px 12px",minWidth:"70px",textAlign:"center",flex:"0 0 auto"}}>
           <div style={{fontSize:18,fontWeight:900,color:"#d4a017"}}>⭐ {displayRating}</div>
           <div style={{fontSize:9,color:"#aaa"}}>({reviewCount})</div>
         </div>
-
-        {/* Name + Status + Icon */}
-        <div style={{flex:1,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-          <div style={{flex:1}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
-            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
-              <span style={{fontSize:10,background:isOpenNow?"rgba(39,174,96,.25)":"rgba(231,76,60,.25)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"2px 8px",borderRadius:6,fontWeight:700}}>
-                {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
-              </span>
-            </div>
-            <div style={{fontSize:10,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
-          </div>
-          {/* Salon Icon */}
-          <div style={{background:"#d4a017",width:44,height:44,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flex:"0 0 auto"}}>✂</div>
-        </div>
       </div>
-
-      {/* Services Tags */}
-      {salon.services.length>0&&(
-        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {salon.services.slice(0,4).map(s=>(
-            <span key={s} style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>
-              {s}
-            </span>
-          ))}
-          {salon.services.length>4&&<span style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>+{salon.services.length-4}</span>}
-        </div>
-      )}
 
       {/* Hours & Wait Time */}
       <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:11,color:"#aaa"}}>
@@ -1834,23 +1818,34 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
         </div>
       </div>
 
+      {/* Services Tags - Below Barbers */}
+      {salon.services.length>0&&(
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {salon.services.slice(0,4).map(s=>(
+            <span key={s} style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>
+              {s}
+            </span>
+          ))}
+          {salon.services.length>4&&<span style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>+{salon.services.length-4}</span>}
+        </div>
+      )}
+
       {/* Divider */}
       <div style={{height:1,background:"rgba(212,160,23,.1)"}}/>
 
-      {/* Book Button + Action Buttons */}
+      {/* Book Button + Action Buttons - Reordered */}
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        <button onClick={onBook} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",flex:1,fontFamily:"'Cairo',sans-serif"}}>
-          احجز الان
-        </button>
-
-        <button onClick={()=>{}} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
-          ⚖
+        <button onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#e74c3c",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+          📍
         </button>
         <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"#d4a017":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           {fav?"♥":"♡"}
         </button>
-        <button onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#3b9ef5",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
-          📍
+        <button onClick={()=>{}} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+          ⚖
+        </button>
+        <button onClick={onBook} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",flex:1,fontFamily:"'Cairo',sans-serif"}}>
+          احجز الان
         </button>
       </div>
     </div>
