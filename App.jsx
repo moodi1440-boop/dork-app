@@ -2,14 +2,16 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 class ErrorBoundary extends React.Component {
-  constructor(props){super(props);this.state={err:null};}
+  constructor(props){super(props);this.state={err:null,info:null};}
   static getDerivedStateFromError(e){return{err:e};}
+  componentDidCatch(e,info){this.setState({info:info?.componentStack||""});}
   render(){
     if(this.state.err)return(
       <div style={{minHeight:"100vh",background:"#09112e",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:20,gap:12}}>
         <div style={{fontSize:32}}>⚠️</div>
         <div style={{color:"#e74c3c",fontSize:14,fontWeight:700}}>خطأ في التطبيق</div>
-        <div style={{color:"#aaa",fontSize:11,background:"#1a1a2e",padding:"12px 16px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"right",direction:"ltr"}}>{String(this.state.err)}</div>
+        <div style={{color:"#aaa",fontSize:11,background:"#1a1a2e",padding:"12px 16px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr"}}>{String(this.state.err)}</div>
+        {this.state.info&&<div style={{color:"#666",fontSize:9,background:"#111",padding:"8px 12px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr",maxHeight:120,overflow:"auto"}}>{this.state.info}</div>}
         <button onClick={()=>window.location.reload()} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:8,padding:"8px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer"}}>إعادة تحميل</button>
       </div>
     );
@@ -909,6 +911,28 @@ export default function App(){
     bookingStatusSnapRef.current=snap;
   },[salons,customers,customerSession]);
 
+  const refreshSalonBookings=useCallback(async(salonId)=>{
+    try{
+      const rows=await sb("bookings","GET",null,
+        `?salon_id=eq.${salonId}&select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,created_at&order=created_at.desc`
+      );
+      const bookings=rows.map(b=>({
+        id:b.id,
+        salonId:b.salon_id,
+        name:b.customer_name||"",
+        phone:b.customer_phone||"",
+        services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
+        barberId:b.barber_id||"any",
+        barberName:b.barber_name||"",
+        date:b.date||"",
+        time:b.time||"",
+        total:b.total||0,
+        status:b.status||"pending",
+      }));
+      setSalons(prev=>prev.map(s=>String(s.id)===String(salonId)?{...s,bookings}:s));
+    }catch(e){console.error(e);}
+  },[]);
+
   // شاشة الشروط والأحكام
   if(!termsAccepted) return <TermsView onAccept={()=>{setTermsAccepted(true);try{localStorage.setItem("dork_terms","1");}catch{}}} />;
 
@@ -1004,28 +1028,6 @@ export default function App(){
       await loadData();
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
-  const refreshSalonBookings=useCallback(async(salonId)=>{
-    try{
-      const rows=await sb("bookings","GET",null,
-        `?salon_id=eq.${salonId}&select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,created_at&order=created_at.desc`
-      );
-      const bookings=rows.map(b=>({
-        id:b.id,
-        salonId:b.salon_id,
-        name:b.customer_name||"",
-        phone:b.customer_phone||"",
-        services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
-        barberId:b.barber_id||"any",
-        barberName:b.barber_name||"",
-        date:b.date||"",
-        time:b.time||"",
-        total:b.total||0,
-        status:b.status||"pending",
-      }));
-      setSalons(prev=>prev.map(s=>String(s.id)===String(salonId)?{...s,bookings}:s));
-    }catch(e){console.error(e);}
-  },[]);
-
   const updateBookingStatus=async(sid,bid,status)=>{
     try{
       const salon=salons.find(s=>s.id===sid);
