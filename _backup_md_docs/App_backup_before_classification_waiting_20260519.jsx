@@ -286,19 +286,6 @@ function playTone(id, vol=0.7){
 // ==============================================
 //  PUSH NOTIFICATIONS
 // ==============================================
-function getCustomerClassification(customer){
-  const history=(customer?.history||[]);
-  const total=history.filter(h=>h.status!=="rejected").length;
-  const completed=history.filter(h=>h.status==="approved").length;
-  const noShows=history.filter(h=>h.status==="cancelled"&&h.attendance==="no_show").length;
-  const lateCancels=history.filter(h=>h.status==="cancelled").length;
-  if(lateCancels>=3||noShows>=3)return{label:"⚠️ غير ملتزم",color:"#e74c3c",key:"unreliable"};
-  if(total===0)return{label:"🆕 جديد",color:"#3498db",key:"new"};
-  if(completed>=5&&lateCancels===0)return{label:"🌟 مميز",color:"#d4a017",key:"vip"};
-  if(completed>=2&&lateCancels<=1)return{label:"✅ منتظم",color:"#27ae60",key:"regular"};
-  return{label:"🆕 جديد",color:"#3498db",key:"new"};
-}
-
 async function requestNotifPermission(){
   if(!("Notification" in window))return false;
   if(Notification.permission==="granted")return true;
@@ -789,8 +776,8 @@ export default function App(){
       if(!silent)setLoading(true);
       const [salonRows, bookingRows, custRows] = await Promise.all([
         sb("salons","GET",null,"?select=*&order=id.desc"),
-        sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance&order=created_at.desc"),
-        sb("customers","GET",null,"?select=id,name,phone,email,password,google_uid,history,favs,created_at"),
+        sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status&order=created_at.desc"),
+        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,created_at"),
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
       const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc").catch(()=>[]);
@@ -1000,41 +987,6 @@ export default function App(){
     const id=setInterval(()=>{pollBookings();pollReviews();},10000);
     return()=>clearInterval(id);
   },[pollBookings,pollReviews]);
-
-  // إشعار التذكير التلقائي + طلب التقييم
-  useEffect(()=>{
-    if(!customerSession)return;
-    const check=()=>{
-      const cust=customers.find(c=>c.id===customerSession.id);
-      if(!cust)return;
-      const now=new Date();
-      const reminderMins=parseInt(localStorage.getItem("dork_reminder")||"60");
-      const reminded=JSON.parse(localStorage.getItem("dork_auto_reminded")||"[]");
-      const reviewed=JSON.parse(localStorage.getItem("dork_auto_review")||"[]");
-      for(const h of (cust.history||[])){
-        if(!h.date||!h.time||h.status==="rejected"||h.status==="cancelled")continue;
-        const dt=new Date(`${h.date}T${h.time}`);
-        const minsUntil=(dt-now)/60000;
-        const minsAfter=(now-dt)/60000;
-        const key=`${h.salonId}-${h.date}-${h.time}`;
-        // تذكير قبل الموعد
-        if(minsUntil>0&&minsUntil<=reminderMins&&!reminded.includes(key)){
-          sendNotif("⏰ تذكير موعدك",`موعدك قريب في ${h.salonName||"الصالون"} — الساعة ${h.time}`,"⏰","customer",customerSession.id);
-          reminded.push(key);
-          localStorage.setItem("dork_auto_reminded",JSON.stringify(reminded.slice(-50)));
-        }
-        // طلب تقييم بعد الموعد بساعة
-        if(minsAfter>=60&&minsAfter<=120&&!reviewed.includes(key)&&h.status==="approved"&&!h.rating){
-          sendNotif("⭐ كيف كانت تجربتك؟",`قيّم ${h.salonName||"الصالون"} الآن وساعدنا في التحسين`,"⭐","customer",customerSession.id);
-          reviewed.push(key);
-          localStorage.setItem("dork_auto_review",JSON.stringify(reviewed.slice(-50)));
-        }
-      }
-    };
-    check();
-    const id=setInterval(check,60000);
-    return()=>clearInterval(id);
-  },[customerSession,customers]);
 
   // شاشة الشروط والأحكام
   if(!termsAccepted) return <TermsView onAccept={()=>{setTermsAccepted(true);try{localStorage.setItem("dork_terms","1");}catch{}}} />;
@@ -1871,7 +1823,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
           {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>}
         </div>
         {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView}/>}
-        {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers}/>}
+        {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus}/>}
         {tab==="stats"&&canManage&&<StatsPanel salon={salon}/>}
       </div>
     </div>
@@ -1887,7 +1839,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
     name: customer?.name||"",
     phone: customer?.phone||"",
     email: customer?.email||"",
-    services:[], barberId:"", date:todayStr(), time:"", waitSlot:""
+    services:[], barberId:"", date:todayStr(), time:""
   });
   const[errors,setErrors]=useState({});
   const allSlots=getSlotsForSalon(salon);
@@ -1896,7 +1848,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const slots=form.date===todayStr()
     ? allSlots.filter(sl=>{
         const[h,m]=sl.split(":").map(Number);
-        const now=new Date();
+        const now=new Date(); 
         return h*60+m > now.getHours()*60+now.getMinutes();
       })
     : allSlots;
@@ -1906,7 +1858,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const barber=salon.barbers?.find(b=>b.id===form.barberId);
   const toggle=s=>setForm(p=>({...p,services:p.services.includes(s)?p.services.filter(x=>x!==s):[...p.services,s]}));
   const v1=()=>{const e={};if(!form.name.trim())e.name="مطلوب";if(!form.phone.trim())e.phone="مطلوب";if(!form.services.length)e.services="اختر خدمة";if(salon.barbers?.length&&!form.barberId)e.barberId="اختر الحلاق";setErrors(e);return!Object.keys(e).length;};
-  const v2=()=>{const e={};if(!form.date)e.date="مطلوب";if(!form.time&&!form.waitSlot)e.time="اختر وقتاً أو ينتظر في قائمة الانتظار";setErrors(e);return!Object.keys(e).length;};
+  const v2=()=>{const e={};if(!form.date)e.date="مطلوب";if(!form.time)e.time="اختر وقتاً";setErrors(e);return!Object.keys(e).length;};
   const inner=(
     <>
       {!inline&&<div style={G.salonBadge}><span style={{fontSize:20,color:"var(--p)"}}>✂</span><div style={{flex:1}}><div style={{fontWeight:700,color:"#fff"}}>{salon.name}</div><div style={{fontSize:11,color:"#888"}}>{salon.gov||salon.region}</div></div><button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg></button></div>}
@@ -1965,27 +1917,14 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {salon.shiftEnabled&&<div style={{fontSize:11,color:"var(--p)",background:"var(--pa07)",borderRadius:8,padding:"6px 10px",marginBottom:8}}>⏰ {salon.shift1Start}-{salon.shift1End} | {salon.shift2Start}-{salon.shift2End}</div>}
         <div style={{fontSize:12,color:"#aaa",marginBottom:7}}>اختر الوقت{form.barberId?` - ${barber?.name||""}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
-        <div style={G.timeGrid}>{slots.map(sl=>{const used=slotUsed(sl);const full=slotFull(sl);const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={full&&!waiting} onClick={()=>!full&&setForm(p=>({...p,time:sl,waitSlot:""}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div><div style={{fontSize:9,marginTop:1,color:full?"#555":sel?"var(--p)":"#666"}}>{full?"محجوز":`${bc-used} متاح`}</div></button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>
-        {form.waitSlot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:11,color:"#f39c12",textAlign:"center"}}>⏳ ستنضم لقائمة الانتظار للساعة <strong>{form.waitSlot}</strong> — سيصلك إشعار عند تحرر الوقت</div>}
-        <button style={G.sub} onClick={()=>{if(v2())setStep(3);}}>{form.waitSlot?"التالي (انتظار) >":"التالي >"}</button>
+        <div style={G.timeGrid}>{slots.map(sl=>{const used=slotUsed(sl);const full=slotFull(sl);const sel=form.time===sl;return(<button key={sl} disabled={full} onClick={()=>!full&&setForm(p=>({...p,time:sl}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div><div style={{fontSize:9,marginTop:1,color:full?"#555":sel?"var(--p)":"#666"}}>{full?"محجوز":`${bc-used} متاح`}</div></button>);})}</div>
+        <button style={G.sub} onClick={()=>{if(v2())setStep(3);}}>التالي ></button>
       </div>}
       {step===3&&<div style={G.fc}>
-        <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:36}}>{form.waitSlot?"⏳":"✅"}</div><h3 style={{color:"#fff",marginTop:4,fontSize:16}}>{form.waitSlot?"تأكيد الانضمام للانتظار":"تأكيد الحجز"}</h3></div>
-        {[["الاسم",form.name],["الجوال",form.phone],["البريد",form.email||"-"],["الخدمات",form.services.join(" + ")],["الحلاق",barber?.name||"أي حلاق"],["التاريخ",form.date],["الوقت",form.waitSlot?`⏳ انتظار ${form.waitSlot}`:form.time],["الإجمالي",`${total} ريال`]].map(([l,v])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}><span style={{color:"#888",fontSize:12}}>{l}</span><span style={{color:"#f0f0f0",fontWeight:600,fontSize:12}}>{v}</span></div>)}
+        <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:36}}>✅</div><h3 style={{color:"#fff",marginTop:4,fontSize:16}}>تأكيد الحجز</h3></div>
+        {[["الاسم",form.name],["الجوال",form.phone],["البريد",form.email||"-"],["الخدمات",form.services.join(" + ")],["الحلاق",barber?.name||"أي حلاق"],["التاريخ",form.date],["الوقت",form.time],["الإجمالي",`${total} ريال`]].map(([l,v])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}><span style={{color:"#888",fontSize:12}}>{l}</span><span style={{color:"#f0f0f0",fontWeight:600,fontSize:12}}>{v}</span></div>)}
         <button style={{...G.mapsBtn,width:"100%",marginTop:10,justifyContent:"center",display:"flex",padding:10}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>📍 افتح على الخريطة</button>
-        {form.waitSlot&&<div style={{background:"rgba(243,156,18,.1)",border:"1px solid #f39c1255",borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:11,color:"#f39c12"}}>⏳ ستنضم لقائمة الانتظار للساعة {form.waitSlot} — ستُبلَّغ عند تحرر الوقت</div>}
-        <button style={{...G.sub,marginTop:8,background:form.waitSlot?"linear-gradient(135deg,#f39c12,#e67e22)":rescheduleId?"linear-gradient(135deg,#8e44ad,#9b59b6)":"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff"}} onClick={async()=>{
-          if(form.waitSlot){
-            if(!form.name||!form.phone){alert("أدخل الاسم والجوال أولاً");return;}
-            try{
-              await sb("waiting_list","POST",{salon_id:salon.id,name:form.name,phone:form.phone,slot_date:form.date,slot_time:form.waitSlot,customer_id:null,status:"waiting"});
-              alert("✅ تم انضمامك لقائمة الانتظار! سيصلك إشعار عند تحرر الوقت.");
-              if(setView)setView("home");
-            }catch(e){alert("❌ حدث خطأ، حاول مرة أخرى");}
-          }else{
-            addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total},rescheduleId||null);
-          }
-        }}>{form.waitSlot?"⏳ انضم لقائمة الانتظار":rescheduleId?"✅ تأكيد التعديل":"إرسال طلب الحجز 🎉"}</button>
+        <button style={{...G.sub,marginTop:8,background:"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff"}} onClick={()=>addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total},rescheduleId||null)}>{rescheduleId?"✅ تأكيد التعديل":"إرسال طلب الحجز 🎉"}</button>
       </div>}
     </>
   );
@@ -2124,7 +2063,7 @@ function StatsPanel({salon}){
     </div>
   );
 }
-function NotifPanel({salon,onUpdate,customers=[]}){
+function NotifPanel({salon,onUpdate}){
   const[showWaiting,setShowWaiting]=useState(false);
   const[filter,setFilter]=useState("pending");
   const[localAtt,setLocalAtt]=useState({});
@@ -2133,9 +2072,9 @@ function NotifPanel({salon,onUpdate,customers=[]}){
 
   const loadWaiting=useCallback(async()=>{
     try{
-      const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&select=id,name,phone,created_at,slot_date,slot_time,status&order=created_at.asc`);
+      const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&order=created_at.asc`);
       if(Array.isArray(data)){
-        const converted=data.map(w=>{const ts=w.created_at||"";const d=new Date(ts.includes("+")||ts.endsWith("Z")?ts:ts+"Z");return{id:w.id,name:w.name,phone:w.phone||"",addedAt:d.toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),slotDate:w.slot_date||"",slotTime:w.slot_time||"",status:w.status||"waiting"};});
+        const converted=data.map(w=>{const ts=w.created_at||"";const d=new Date(ts.includes("+")||ts.endsWith("Z")?ts:ts+"Z");return{id:w.id,name:w.name,phone:w.phone||"",addedAt:d.toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};});
         setWaitingList(converted);
         try{localStorage.setItem(KEY,JSON.stringify(converted));}catch{}
       }
@@ -2179,63 +2118,58 @@ function NotifPanel({salon,onUpdate,customers=[]}){
     const order={pending:0,approved:1,rejected:2};
     const so=(order[a.status]??1)-(order[b.status]??1);
     if(so!==0)return so;
-    return `${a.date||""} ${a.time||""}`.localeCompare(`${b.date||""} ${b.time||""}`);
+    const da=`${a.date||""} ${a.time||""}`;
+    const db=`${b.date||""} ${b.time||""}`;
+    return da.localeCompare(db);
   });
+  const bks=filter==="all"?allBks:allBks.filter(b=>b.status===filter);
   const counts={pending:allBks.filter(b=>b.status==="pending").length,approved:allBks.filter(b=>b.status==="approved").length,rejected:allBks.filter(b=>b.status==="rejected").length};
-  const activeFilter=filter==="pending"&&counts.pending===0?"all":filter;
-  const bks=activeFilter==="all"?allBks:allBks.filter(b=>b.status===activeFilter);
 
   return(
     <div style={{paddingTop:4}}>
       {/* فلتر الحجوزات */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         {[["pending","⏳ انتظار",counts.pending],["approved","✅ مقبول",counts.approved],["rejected","❌ مرفوض",counts.rejected],["all","الكل",allBks.length]].map(([val,label,count])=>(
-          <button key={val} onClick={()=>setFilter(val)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${activeFilter===val?"var(--p)":"#2a2a3a"}`,background:activeFilter===val?"var(--pa25)":"transparent",color:activeFilter===val?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:activeFilter===val?700:400}}>
-            {label}{count>0&&<span style={{background:activeFilter===val?"var(--p)":"#333",color:activeFilter===val?"#000":"#aaa",borderRadius:10,padding:"1px 6px",fontSize:10,marginRight:3}}>{count}</span>}
+          <button key={val} onClick={()=>setFilter(val)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${filter===val?"var(--p)":"#2a2a3a"}`,background:filter===val?"var(--pa25)":"transparent",color:filter===val?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:filter===val?700:400}}>
+            {label} {count>0&&<span style={{background:filter===val?"var(--p)":"#333",color:filter===val?"#000":"#aaa",borderRadius:10,padding:"1px 6px",fontSize:10,marginRight:3}}>{count}</span>}
           </button>
         ))}
       </div>
       {/* قائمة الانتظار */}
-      {waitingList.length>0&&(
-        <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",border:"1px solid var(--pa25)",marginBottom:10}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>⏳ قائمة الانتظار ({waitingList.length})</div>
-            <button onClick={()=>setShowWaiting(w=>!w)} style={{fontSize:10,color:"#888",background:"transparent",border:"none",cursor:"pointer"}}>{showWaiting?"▲ إخفاء":"▼ عرض"}</button>
-          </div>
-          {showWaiting&&waitingList.map(w=>(
-            <div key={w.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderTop:"1px solid #2a2a3a"}}>
+      <button style={{...G.sub,marginBottom:10,background:showWaiting?"var(--pa25)":"transparent",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>setShowWaiting(w=>!w)}>
+        ⏳ قائمة الانتظار {waitingList.length>0&&`(${waitingList.length})`}
+      </button>
+      {showWaiting&&(
+        <div style={{background:"#13131f",borderRadius:12,padding:12,border:"1px solid var(--pa25)",marginBottom:12}}>
+          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>⏳ العملاء في قائمة الانتظار</div>
+          {waitingList.length===0&&<div style={{fontSize:12,color:"#888",marginBottom:8}}>لا يوجد أحد في قائمة الانتظار</div>}
+          {waitingList.map(w=>(
+            <div key={w.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}>
               <div>
                 <div style={{fontSize:12,color:"#fff",fontWeight:600}}>{w.name}</div>
-                <div style={{fontSize:11,color:"#888"}}>{w.phone}</div>
-                {w.slotTime&&<div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>⏰ ينتظر: {w.slotDate} {w.slotTime}</div>}
-                <div style={{fontSize:10,color:"#555"}}>أضيف: {w.addedAt}</div>
+                <div style={{fontSize:11,color:"#888"}}>{w.phone} - {w.addedAt}</div>
               </div>
               <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
             </div>
           ))}
+          <div style={{display:"flex",gap:6,marginTop:8}}>
+            <input id="wname" style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl"}} placeholder="الاسم"/>
+            <input id="wphone" style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"ltr"}} placeholder="الجوال"/>
+            <button style={{...G.sub,width:"auto",padding:"0 10px",marginTop:0,fontSize:12}} onClick={()=>{
+              const n=document.getElementById("wname")?.value;
+              const p=document.getElementById("wphone")?.value;
+              if(n&&p){addToWaiting(n,p);document.getElementById("wname").value="";document.getElementById("wphone").value="";}
+            }}>+</button>
+          </div>
         </div>
       )}
-
-      {/* إضافة يدوية لقائمة الانتظار */}
-      <div style={{background:"#0d0d1a",borderRadius:8,padding:"8px 10px",border:"1px solid #2a2a3a",marginBottom:10}}>
-        <div style={{fontSize:11,color:"#888",marginBottom:6}}>➕ إضافة عميل للانتظار يدوياً</div>
-        <div style={{display:"flex",gap:6}}>
-          <input id="wname" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl"}} placeholder="الاسم"/>
-          <input id="wphone" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"ltr"}} placeholder="الجوال"/>
-          <button style={{...G.sub,width:"auto",padding:"0 12px",marginTop:0,fontSize:12}} onClick={()=>{
-            const n=document.getElementById("wname")?.value?.trim();
-            const p=document.getElementById("wphone")?.value?.trim();
-            if(n&&p){addToWaiting(n,p);document.getElementById("wname").value="";document.getElementById("wphone").value="";}
-          }}>+</button>
-        </div>
-      </div>
 
       {/* الحجوزات */}
       {!bks.length?<div style={G.empty}>لا توجد حجوزات</div>:
       <div style={{display:"flex",flexDirection:"column",gap:8}}>{bks.map(b=>(
         <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
           <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
-            {(()=>{const cust=customers.find(c=>c.phone&&b.phone&&c.phone.replace(/\D/g,"").slice(-9)===b.phone.replace(/\D/g,"").slice(-9));const cl=cust?getCustomerClassification(cust):null;return(<div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name}{cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>);})()}
+            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {b.name}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>
             <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
           </div>
           {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
@@ -2926,7 +2860,7 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
     </div></div>
   );
 }
-function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews,customers=[]}){
+function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews}){
   const[tab,setTab]=useState("notif");
   const[ownerNotifs,setOwnerNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
   const[oathDone,setOathDone]=useState(()=>{
@@ -3025,14 +2959,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       </div>
       {salon.paused&&<div style={{background:"rgba(231,76,60,.08)",border:"1px solid #e74c3c55",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:"#e74c3c"}}>⚠ الحجوزات موقوفة - لن يتمكن العملاء من الحجز الآن</div>}
 
-      {/* بانر إشعارات الإدارة */}
-      {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,2).map(n=>(
-        <div key={n.id} style={{background:"rgba(212,160,23,.08)",border:"1px solid rgba(212,160,23,.3)",borderRadius:8,padding:"10px 12px",marginBottom:8,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span>{n.icon} {n.title} — {n.body}</span>
-          <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:14,padding:0}}>✕</button>
-        </div>
-      ))}
-
       <div style={{...G.tabRow,flexWrap:"nowrap",overflowX:"auto"}}>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");refreshSalonBookings(salon.id);}}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>{
@@ -3046,7 +2972,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>
         <button style={{...G.tabBtn,flexShrink:0,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙</button>
       </div>
-      {tab==="notif"&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers}/>}
+      {tab==="notif"&&<NotifPanel salon={salon} onUpdate={updateBookingStatus}/>}
       {tab==="messages"&&(
         <div>
           {/* إشعارات الإدارة */}
@@ -4010,7 +3936,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     </div></div>
   );
 }
-function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$}){
+function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews}){
   const[tab,setTab]=useState("settings");
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
@@ -4028,8 +3954,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const favSalons=salons.filter(s=>favSet.has(s.id)&&s.status==="approved");
   const history=customer.history||[];
   const totalSpent=history.reduce((a,h)=>a+(h.total||0),0);
-  const classification=getCustomerClassification(customer);
-  const badge=classification.label;
+  const badge=history.length>=10?"🏆 عميل مميز":history.length>=5?"⭐ عميل نشط":"🆕 عميل جديد";
 
   // avatar بالحرف الأول
   const initials=(customer.name||"?")[0];
@@ -4086,7 +4011,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       {!editMode?(
         <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
           {/* البادج في الزاوية اليسرى */}
-          <div style={{position:"absolute",top:12,left:12,background:`${classification.color}22`,border:`1px solid ${classification.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:classification.color}}>{badge}</div>
+          <div style={{position:"absolute",top:12,left:12,background:"rgba(240,192,64,0.2)",border:"1px solid #f0c040",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#f0c040"}}>{badge}</div>
 
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
