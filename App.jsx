@@ -1791,14 +1791,19 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       {/* Header - Name + Status + Rating on Right */}
       <div style={{display:"flex",gap:12,alignItems:"flex-start",justifyContent:"space-between"}}>
         {/* Name + Status on Left */}
-        <div style={{flex:1}}>
-          <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>✂ {salon.name}</div>
-          <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
-            <span style={{fontSize:10,background:isOpenNow?"rgba(39,174,96,.25)":"rgba(231,76,60,.25)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"2px 8px",borderRadius:6,fontWeight:700}}>
-              {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
-            </span>
+        <div style={{flex:1,display:"flex",gap:12,alignItems:"flex-start"}}>
+          {/* Scissors Icon with Yellow Background */}
+          <div style={{background:"#d4a017",width:44,height:44,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flex:"0 0 auto"}}>✂</div>
+
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
+            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
+              <span style={{fontSize:10,background:isOpenNow?"rgba(39,174,96,.3)":"rgba(231,76,60,.3)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"3px 8px",borderRadius:6,fontWeight:700}}>
+                {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
+              </span>
+            </div>
+            <div style={{fontSize:10,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
           </div>
-          <div style={{fontSize:10,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
         </div>
 
         {/* Rating Badge on Right */}
