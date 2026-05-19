@@ -1984,9 +1984,9 @@ function NotifPanel({salon,onUpdate}){
 
   const loadWaiting=useCallback(async()=>{
     try{
-      const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&order=created_at.asc`);
+      const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&select=id,name,phone,created_at,slot_date,slot_time,status&order=created_at.asc`);
       if(Array.isArray(data)){
-        const converted=data.map(w=>({id:w.id,name:w.name,phone:w.phone||"",addedAt:new Date(w.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})}));
+        const converted=data.map(w=>{const ts=w.created_at||"";const d=new Date(ts.includes("+")||ts.endsWith("Z")?ts:ts+"Z");return{id:w.id,name:w.name,phone:w.phone||"",addedAt:d.toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),slotDate:w.slot_date||"",slotTime:w.slot_time||"",status:w.status||"waiting"};});
         setWaitingList(converted);
         try{localStorage.setItem(KEY,JSON.stringify(converted));}catch{}
       }
@@ -2026,38 +2026,61 @@ function NotifPanel({salon,onUpdate}){
     }
   };
 
-  const bks=[...salon.bookings].reverse();
+  const allBks=[...salon.bookings].sort((a,b)=>{
+    const order={pending:0,approved:1,rejected:2};
+    const so=(order[a.status]??1)-(order[b.status]??1);
+    if(so!==0)return so;
+    return `${a.date||""} ${a.time||""}`.localeCompare(`${b.date||""} ${b.time||""}`);
+  });
+  const counts={pending:allBks.filter(b=>b.status==="pending").length,approved:allBks.filter(b=>b.status==="approved").length,rejected:allBks.filter(b=>b.status==="rejected").length};
+  const activeFilter=filter==="pending"&&counts.pending===0?"all":filter;
+  const bks=activeFilter==="all"?allBks:allBks.filter(b=>b.status===activeFilter);
 
   return(
     <div style={{paddingTop:4}}>
+      {/* فلتر الحجوزات */}
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+        {[["pending","⏳ انتظار",counts.pending],["approved","✅ مقبول",counts.approved],["rejected","❌ مرفوض",counts.rejected],["all","الكل",allBks.length]].map(([val,label,count])=>(
+          <button key={val} onClick={()=>setFilter(val)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${activeFilter===val?"var(--p)":"#2a2a3a"}`,background:activeFilter===val?"var(--pa25)":"transparent",color:activeFilter===val?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:activeFilter===val?700:400}}>
+            {label}{count>0&&<span style={{background:activeFilter===val?"var(--p)":"#333",color:activeFilter===val?"#000":"#aaa",borderRadius:10,padding:"1px 6px",fontSize:10,marginRight:3}}>{count}</span>}
+          </button>
+        ))}
+      </div>
+
       {/* قائمة الانتظار */}
-      <button style={{...G.sub,marginBottom:10,background:showWaiting?"var(--pa25)":"transparent",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>setShowWaiting(w=>!w)}>
-        ⏳ قائمة الانتظار {waitingList.length>0&&`(${waitingList.length})`}
-      </button>
-      {showWaiting&&(
-        <div style={{background:"#13131f",borderRadius:12,padding:12,border:"1px solid var(--pa25)",marginBottom:12}}>
-          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>⏳ العملاء في قائمة الانتظار</div>
-          {waitingList.length===0&&<div style={{fontSize:12,color:"#888",marginBottom:8}}>لا يوجد أحد في قائمة الانتظار</div>}
-          {waitingList.map(w=>(
-            <div key={w.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}>
+      {waitingList.length>0&&(
+        <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",border:"1px solid var(--pa25)",marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>⏳ قائمة الانتظار ({waitingList.length})</div>
+            <button onClick={()=>setShowWaiting(w=>!w)} style={{fontSize:10,color:"#888",background:"transparent",border:"none",cursor:"pointer"}}>{showWaiting?"▲ إخفاء":"▼ عرض"}</button>
+          </div>
+          {showWaiting&&waitingList.map(w=>(
+            <div key={w.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderTop:"1px solid #2a2a3a"}}>
               <div>
                 <div style={{fontSize:12,color:"#fff",fontWeight:600}}>{w.name}</div>
-                <div style={{fontSize:11,color:"#888"}}>{w.phone} - {w.addedAt}</div>
+                <div style={{fontSize:11,color:"#888"}}>{w.phone}</div>
+                {w.slotTime&&<div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>⏰ ينتظر: {w.slotDate} {w.slotTime}</div>}
+                <div style={{fontSize:10,color:"#555"}}>أضيف: {w.addedAt}</div>
               </div>
               <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
             </div>
           ))}
-          <div style={{display:"flex",gap:6,marginTop:8}}>
-            <input id="wname" style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl"}} placeholder="الاسم"/>
-            <input id="wphone" style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"ltr"}} placeholder="الجوال"/>
-            <button style={{...G.sub,width:"auto",padding:"0 10px",marginTop:0,fontSize:12}} onClick={()=>{
-              const n=document.getElementById("wname")?.value;
-              const p=document.getElementById("wphone")?.value;
-              if(n&&p){addToWaiting(n,p);document.getElementById("wname").value="";document.getElementById("wphone").value="";}
-            }}>+</button>
-          </div>
         </div>
       )}
+
+      {/* إضافة يدوية لقائمة الانتظار */}
+      <div style={{background:"#0d0d1a",borderRadius:8,padding:"8px 10px",border:"1px solid #2a2a3a",marginBottom:10}}>
+        <div style={{fontSize:11,color:"#888",marginBottom:6}}>➕ إضافة عميل للانتظار يدوياً</div>
+        <div style={{display:"flex",gap:6}}>
+          <input id="wname" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl"}} placeholder="الاسم"/>
+          <input id="wphone" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"ltr"}} placeholder="الجوال"/>
+          <button style={{...G.sub,width:"auto",padding:"0 12px",marginTop:0,fontSize:12}} onClick={()=>{
+            const n=document.getElementById("wname")?.value?.trim();
+            const p=document.getElementById("wphone")?.value?.trim();
+            if(n&&p){addToWaiting(n,p);document.getElementById("wname").value="";document.getElementById("wphone").value="";}
+          }}>+</button>
+        </div>
+      </div>
 
       {/* الحجوزات */}
       {!bks.length?<div style={G.empty}>لا توجد حجوزات</div>:
@@ -3692,7 +3715,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     </div></div>
   );
 }
-function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews}){
+function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$}){
   const[tab,setTab]=useState("settings");
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
