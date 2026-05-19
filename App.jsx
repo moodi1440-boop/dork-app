@@ -822,6 +822,18 @@ export default function App(){
 
   useEffect(()=>{ loadData(); loadAppSettings(); }, [loadData,loadAppSettings]);
 
+  // تحديث البيانات لما يرجع المستخدم للتطبيق من الخلفية
+  useEffect(()=>{
+    const onVisible=()=>{
+      if(document.visibilityState==="visible"){
+        loadData({silent:true});
+        loadAppSettings({silent:true});
+      }
+    };
+    document.addEventListener("visibilitychange",onVisible);
+    return()=>document.removeEventListener("visibilitychange",onVisible);
+  },[loadData,loadAppSettings]);
+
   useEffect(()=>{
     customerNotifyPrimedRef.current=false;
     bookingStatusSnapRef.current=null;
