@@ -1833,7 +1833,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
 // ==============================================
 //  SALON PAGE
 // ==============================================
-function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,reviews,refreshSalonBookings}){
+function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,reviews,refreshSalonBookings,rescheduleId,customer}){
   const[tab,setTab]=useState("book");
   const fav=favSet.has(salon.id);
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
@@ -1871,7 +1871,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
           {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");refreshSalonBookings(salon.id);}}>🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}</button>}
           {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>}
         </div>
-        {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView}/>}
+        {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView} rescheduleId={rescheduleId} customer={customer}/>}
         {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers}/>}
         {tab==="stats"&&canManage&&<StatsPanel salon={salon}/>}
       </div>
@@ -2153,12 +2153,12 @@ function NotifPanel({salon,onUpdate,customers=[]}){
     return()=>{supabase.removeChannel(channel);};
   },[salon.id,loadWaiting]);
 
-  const addToWaiting=async(name,phone)=>{
+  const addToWaiting=async(name,phone,slotDate,slotTime)=>{
     try{
-      await sb("waiting_list","POST",{salon_id:salon.id,name,phone});
+      await sb("waiting_list","POST",{salon_id:salon.id,name,phone,slot_date:slotDate||null,slot_time:slotTime||null});
       await loadWaiting();
     }catch{
-      const item={id:Date.now(),name,phone,addedAt:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
+      const item={id:Date.now(),name,phone,addedAt:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),slotDate:slotDate||"",slotTime:slotTime||""};
       const newList=[...waitingList,item];
       setWaitingList(newList);
       try{localStorage.setItem(KEY,JSON.stringify(newList));}catch{}
@@ -2183,16 +2183,15 @@ function NotifPanel({salon,onUpdate,customers=[]}){
     return `${a.date||""} ${a.time||""}`.localeCompare(`${b.date||""} ${b.time||""}`);
   });
   const counts={pending:allBks.filter(b=>b.status==="pending").length,approved:allBks.filter(b=>b.status==="approved").length,rejected:allBks.filter(b=>b.status==="rejected").length};
-  const activeFilter=filter==="pending"&&counts.pending===0?"all":filter;
-  const bks=activeFilter==="all"?allBks:allBks.filter(b=>b.status===activeFilter);
+  const bks=filter==="all"?allBks:allBks.filter(b=>b.status===filter);
 
   return(
     <div style={{paddingTop:4}}>
       {/* فلتر الحجوزات */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         {[["pending","⏳ انتظار",counts.pending],["approved","✅ مقبول",counts.approved],["rejected","❌ مرفوض",counts.rejected],["all","الكل",allBks.length]].map(([val,label,count])=>(
-          <button key={val} onClick={()=>setFilter(val)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${activeFilter===val?"var(--p)":"#2a2a3a"}`,background:activeFilter===val?"var(--pa25)":"transparent",color:activeFilter===val?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:activeFilter===val?700:400}}>
-            {label}{count>0&&<span style={{background:activeFilter===val?"var(--p)":"#333",color:activeFilter===val?"#000":"#aaa",borderRadius:10,padding:"1px 6px",fontSize:10,marginRight:3}}>{count}</span>}
+          <button key={val} onClick={()=>setFilter(val)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${filter===val?"var(--p)":"#2a2a3a"}`,background:filter===val?"var(--pa25)":"transparent",color:filter===val?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:filter===val?700:400}}>
+            {label}{count>0&&<span style={{background:filter===val?"var(--p)":"#333",color:filter===val?"#000":"#aaa",borderRadius:10,padding:"1px 6px",fontSize:10,marginRight:3}}>{count}</span>}
           </button>
         ))}
       </div>
@@ -2218,15 +2217,26 @@ function NotifPanel({salon,onUpdate,customers=[]}){
       )}
 
       {/* إضافة يدوية لقائمة الانتظار */}
-      <div style={{background:"#0d0d1a",borderRadius:8,padding:"8px 10px",border:"1px solid #2a2a3a",marginBottom:10}}>
-        <div style={{fontSize:11,color:"#888",marginBottom:6}}>➕ إضافة عميل للانتظار يدوياً</div>
-        <div style={{display:"flex",gap:6}}>
+      <div style={{background:"#0d0d1a",borderRadius:8,padding:"10px 12px",border:"1px solid #2a2a3a",marginBottom:10}}>
+        <div style={{fontSize:11,color:"#888",marginBottom:8}}>➕ إضافة عميل للانتظار يدوياً</div>
+        <div style={{display:"flex",gap:6,marginBottom:6}}>
           <input id="wname" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl"}} placeholder="الاسم"/>
           <input id="wphone" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"ltr"}} placeholder="الجوال"/>
-          <button style={{...G.sub,width:"auto",padding:"0 12px",marginTop:0,fontSize:12}} onClick={()=>{
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          <input id="wdate" type="date" defaultValue={new Date().toISOString().slice(0,10)} style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+          <input id="wtime" type="time" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none"}} placeholder="الوقت (اختياري)"/>
+          <button style={{...G.sub,width:"auto",padding:"0 14px",marginTop:0,fontSize:13,fontWeight:700}} onClick={()=>{
             const n=document.getElementById("wname")?.value?.trim();
             const p=document.getElementById("wphone")?.value?.trim();
-            if(n&&p){addToWaiting(n,p);document.getElementById("wname").value="";document.getElementById("wphone").value="";}
+            const d=document.getElementById("wdate")?.value;
+            const t=document.getElementById("wtime")?.value;
+            if(n&&p){
+              addToWaiting(n,p,d,t);
+              document.getElementById("wname").value="";
+              document.getElementById("wphone").value="";
+              document.getElementById("wtime").value="";
+            }
           }}>+</button>
         </div>
       </div>
