@@ -1792,7 +1792,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       <div style={{display:"flex",gap:12,alignItems:"flex-start",justifyContent:"space-between"}}>
         {/* Name + Status on Left */}
         <div style={{flex:1}}>
-          <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>{salon.name}</div>
+          <div style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>✂ {salon.name}</div>
           <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
             <span style={{fontSize:10,background:isOpenNow?"rgba(39,174,96,.25)":"rgba(231,76,60,.25)",color:isOpenNow?"#27ae60":"#e74c3c",padding:"2px 8px",borderRadius:6,fontWeight:700}}>
               {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
