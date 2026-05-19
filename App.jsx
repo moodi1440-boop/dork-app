@@ -3069,7 +3069,18 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const[showBalanceModal,setShowBalanceModal]=useState(false);
 
   return(
-    <div style={G.page}><div style={G.fp}>
+    <div style={G.page}>
+      <style>{`
+        @keyframes fadeInUp {from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes slideInFromRight {from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+        @keyframes scaleIn {from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+        .stat-card {animation:fadeInUp .5s ease-out;transition:all .3s ease;}
+        .stat-card:hover {transform:translateY(-2px);box-shadow:0 8px 16px rgba(212,160,23,.15);}
+        .tab-button {transition:all .2s ease;}
+        .balance-tab {animation:slideInFromRight .4s cubic-bezier(0.4, 0, 0.2, 1);}
+        .notif-banner {animation:fadeInUp .4s ease-out;transition:all .3s ease;}
+      `}</style>
+      <div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>لوحة صالوني</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setOwnerSession(null);setView("home");}}>خروج</button></div>
       <div style={G.salonBadge}>
         <span style={{fontSize:20,color:"var(--p)"}}>✂</span>
@@ -3078,15 +3089,15 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       </div>
       {salon.status!=="approved"&&<div style={{background:"rgba(240,192,64,.08)",border:"1px solid var(--pl)55",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--pl)"}}>🔔 صالونك في انتظار موافقة الإدارة - سيظهر للعملاء بعد القبول</div>}
 
-      {/* الإحصائيات الرئيسية - 4 مربعات */}
+      {/* الإحصائيات الرئيسية - 4 مربعات احترافية */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
         {[
           {label:"الحجوزات",value:salon.bookings.length,icon:"🔔",color:"var(--p)"},
           {label:"المعلقة",value:pending,icon:"⏳",color:"var(--pl)"},
           {label:"المقبول",value:approvedBookings.length,icon:"✅",color:"#27ae60"},
           {label:"المرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,icon:"❌",color:"#e74c3c"}
-        ].map(({label,value,icon,color})=>(
-          <div key={label} style={{background:"linear-gradient(135deg,rgba(212,160,23,.08),rgba(212,160,23,.04))",borderRadius:12,padding:"14px",border:`1.5px solid ${color}33`,cursor:"pointer",transition:"all .3s ease",transform:"translateY(0)"}}>
+        ].map(({label,value,icon,color},idx)=>(
+          <div key={label} className="stat-card" style={{background:"linear-gradient(135deg,rgba(212,160,23,.08),rgba(212,160,23,.04))",borderRadius:12,padding:"14px",border:`1.5px solid ${color}33`,cursor:"pointer",animationDelay:`${idx*100}ms`}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontSize:11,color:"#888",marginBottom:4}}>{label}</div>
@@ -3098,28 +3109,28 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         ))}
       </div>
 
-      {/* بانر إشعارات الإدارة - محسّن */}
+      {/* بانر إشعارات الإدارة - محسّن مع animations */}
       {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
-        <div key={n.id} style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",border:"1px solid rgba(212,160,23,.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center",transition:"all .3s"}}>
+        <div key={n.id} className="notif-banner" style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",border:"1px solid rgba(212,160,23,.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span>{n.icon} {n.title} — {n.body}</span>
-          <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:14,padding:0}}>✕</button>
+          <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:14,padding:0,transition:"all .2s"}}>✕</button>
         </div>
       ))}
 
-      {/* التبويبات الرئيسية - محسّنة */}
+      {/* التبويبات الرئيسية - محسّنة مع animations */}
       <div style={{...G.tabRow,flexWrap:"nowrap",overflowX:"auto",marginBottom:2}}>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");refreshSalonBookings(salon.id);}}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>{
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");refreshSalonBookings(salon.id);}}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>{
           localStorage.setItem("dork_notif_count","0");
           setTab("messages");
         }}>
           💬 رسائل {(()=>{const n=parseInt(localStorage.getItem("dork_notif_count")||"0");return n>0?<span style={{...G.notifDot,background:"#e74c3c"}}>{n}</span>:null;})()}
         </button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="calendar"?G.tabOn:{})}} onClick={()=>setTab("calendar")}>🗓 تقويم</button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="reviews"?G.tabOn:{})}} onClick={()=>setTab("reviews")}>⭐ تقييمات</button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊 إحصائيات</button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="balance"?G.tabOn:{})}} onClick={()=>setTab("balance")}>💰 الميزان</button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙ إعدادات</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="calendar"?G.tabOn:{})}} onClick={()=>setTab("calendar")}>🗓 تقويم</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="reviews"?G.tabOn:{})}} onClick={()=>setTab("reviews")}>⭐ تقييمات</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊 إحصائيات</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="balance"?G.tabOn:{})}} onClick={()=>setTab("balance")}>💰 الميزان</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙ إعدادات</button>
       </div>
       {tab==="notif"&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers}/>}
       {tab==="messages"&&(
@@ -3147,20 +3158,20 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {tab==="stats"&&<StatsPanel salon={salon}/>}
       {tab==="balance"&&(
         <div style={{paddingTop:8}}>
-          <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(212,160,23,.3)",marginBottom:12}}>
+          <div className="balance-tab" style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(212,160,23,.3)",marginBottom:12}}>
             <div style={{fontSize:11,color:"#888",marginBottom:8}}>رصيدك المتاح</div>
-            <div style={{fontSize:32,fontWeight:900,color:"#d4a017",marginBottom:10}}>{balance} <span style={{fontSize:14}}>ريال</span></div>
+            <div style={{fontSize:32,fontWeight:900,color:"#d4a017",marginBottom:10,transition:"all .3s ease"}}>{balance} <span style={{fontSize:14}}>ريال</span></div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <div style={{background:"rgba(39,174,96,.1)",borderRadius:10,padding:"10px",border:"1px solid #27ae6055"}}>
+              <div style={{background:"rgba(39,174,96,.1)",borderRadius:10,padding:"10px",border:"1px solid #27ae6055",transition:"all .3s ease",cursor:"pointer"}}>
                 <div style={{fontSize:10,color:"#888",marginBottom:3}}>المستحق</div>
                 <div style={{fontSize:16,fontWeight:700,color:"#27ae60"}}>{totalEarned} ر</div>
               </div>
-              <div style={{background:"rgba(212,160,23,.1)",borderRadius:10,padding:"10px",border:"1px solid rgba(212,160,23,.3)"}}>
+              <div style={{background:"rgba(212,160,23,.1)",borderRadius:10,padding:"10px",border:"1px solid rgba(212,160,23,.3)",transition:"all .3s ease",cursor:"pointer"}}>
                 <div style={{fontSize:10,color:"#888",marginBottom:3}}>المدفوع</div>
                 <div style={{fontSize:16,fontWeight:700,color:"#d4a017"}}>{totalPaid} ر</div>
               </div>
             </div>
-            {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"10px",fontSize:11,color:"#e74c3c",marginTop:10,textAlign:"center"}}>⚠ يوجد مبلغ مستحق — يُرجى السداد</div>}
+            {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"10px",fontSize:11,color:"#e74c3c",marginTop:10,textAlign:"center",animation:"fadeInUp .5s ease-out .2s both"}}>⚠ يوجد مبلغ مستحق — يُرجى السداد</div>}
           </div>
         </div>
       )}
