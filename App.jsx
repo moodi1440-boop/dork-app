@@ -2187,6 +2187,14 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
     }catch(e){alert("❌ خطأ: "+e.message);}
   };
 
+  const rejectFromWaiting=async(w)=>{
+    try{
+      await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+w.id);
+      sb("notifications","POST",{target_type:"all",title:"❌ عذراً، تعذّر الحجز",body:`نأسف، لم نتمكن من تأكيد حجزك في ${salon.name}${w.slotDate?` (${w.slotDate} - ${w.slotTime})`:""}. يمكنك المحاولة مرة أخرى.`,icon:"❌"}).catch(()=>{});
+      await loadWaiting();
+    }catch(e){alert("❌ خطأ: "+e.message);}
+  };
+
   const removeFromWaiting=async(id)=>{
     try{
       await sb("waiting_list","DELETE",null,`?id=eq.${id}&salon_id=eq.${salon.id}`);
@@ -2284,9 +2292,10 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                     </div>
                     <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
                   </div>
-                  {w.slotTime&&<div style={{display:"flex",gap:6,marginTop:6}}>
-                    <button style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit",fontWeight:700}} onClick={()=>acceptFromWaiting(w)}>✅ قبول للموعد</button>
-                  </div>}
+                  <div style={{display:"flex",gap:6,marginTop:6}}>
+                    {w.slotTime&&<button style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit",fontWeight:700}} onClick={()=>acceptFromWaiting(w)}>✅ قبول للموعد</button>}
+                    <button style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit",fontWeight:700}} onClick={()=>rejectFromWaiting(w)}>❌ رفض</button>
+                  </div>
                 </div>
               )})}
             </div>
