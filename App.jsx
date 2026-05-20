@@ -371,7 +371,12 @@ export default function App(){
       setDbError(null);
     } catch(e) {
       console.error("Data loading error:", e);
-      console.log("Using demo data due to RLS/auth issue");
+      console.warn("⚠️ Supabase data loading failed. Possible causes:");
+      console.warn("1. RLS (Row Level Security) policies are blocking anonymous access");
+      console.warn("2. Network connectivity issue");
+      console.warn("3. Supabase API key is invalid");
+      console.warn("See SUPABASE_SETUP.md for configuration instructions");
+      console.log("Using demo data as fallback");
       setSalons(DEMO_SALONS);
       setCustomers([]);
       setReviews([]);
