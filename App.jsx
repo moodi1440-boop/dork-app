@@ -368,62 +368,9 @@ export default function App(){
       setSalons(salonsWithBookings);
       setCustomers(custRows.map(toAppCustomer));
       setReviews(reviewRows||[]);
-
-      // استخراج المناطق والمحافظات والمراكز من الصالونات
-      const locs = {};
-      salonRows.forEach(s => {
-        const r = s.region, g = s.gov, c = s.center, v = s.village;
-        if (r) {
-          if (!locs[r]) locs[r] = { region: r, govs: {} };
-          if (g) {
-            if (!locs[r].govs[g]) locs[r].govs[g] = { name: g, centers: new Set() };
-            if (c) locs[r].govs[g].centers.add(c);
-          }
-        }
-      });
-      const extra = Object.values(locs).map(r => ({
-        region: r.region,
-        govs: Object.values(r.govs).map(g => ({
-          name: g.name,
-          centers: Array.from(g.centers)
-        }))
-      }));
-      setExtraLoc(extra);
-
       setDbError(null);
     } catch(e) {
-      console.error("Data loading error:", e);
-      console.warn("⚠️ Supabase data loading failed. Possible causes:");
-      console.warn("1. RLS (Row Level Security) policies are blocking anonymous access");
-      console.warn("2. Network connectivity issue");
-      console.warn("3. Supabase API key is invalid");
-      console.warn("See SUPABASE_SETUP.md for configuration instructions");
-      console.log("Using demo data as fallback");
-      setSalons(DEMO_SALONS);
-      setCustomers([]);
-      setReviews([]);
-
-      // استخراج المناطق من بيانات العرض التوضيحي
-      const locs = {};
-      DEMO_SALONS.forEach(s => {
-        const r = s.region, g = s.gov, c = s.center;
-        if (r) {
-          if (!locs[r]) locs[r] = { region: r, govs: {} };
-          if (g) {
-            if (!locs[r].govs[g]) locs[r].govs[g] = { name: g, centers: new Set() };
-            if (c) locs[r].govs[g].centers.add(c);
-          }
-        }
-      });
-      const extra = Object.values(locs).map(r => ({
-        region: r.region,
-        govs: Object.values(r.govs).map(g => ({
-          name: g.name,
-          centers: Array.from(g.centers)
-        }))
-      }));
-      setExtraLoc(extra);
-
+      console.error(e);
       setDbError(e.message);
     } finally {
       if(!silent)setLoading(false);

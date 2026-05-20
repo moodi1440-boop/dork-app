@@ -26,7 +26,6 @@ const G={
 
   inp:{width:"100%",padding:"10px 12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",boxSizing:"border-box"},
   ta:{width:"100%",padding:"10px 12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",boxSizing:"border-box",resize:"vertical",minHeight:80},
-  fSel:{width:"100%",padding:"8px 12px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"'Cairo',sans-serif",boxSizing:"border-box",cursor:"pointer"},
 
   card:{background:"var(--surface-1)",borderRadius:12,padding:12,border:"1px solid var(--border-ui)",display:"flex",flexDirection:"column",gap:8},
 
