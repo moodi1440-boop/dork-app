@@ -368,6 +368,28 @@ export default function App(){
       setSalons(salonsWithBookings);
       setCustomers(custRows.map(toAppCustomer));
       setReviews(reviewRows||[]);
+
+      // استخراج المناطق والمحافظات والمراكز من الصالونات
+      const locs = {};
+      salonRows.forEach(s => {
+        const r = s.region, g = s.gov, c = s.center, v = s.village;
+        if (r) {
+          if (!locs[r]) locs[r] = { region: r, govs: {} };
+          if (g) {
+            if (!locs[r].govs[g]) locs[r].govs[g] = { name: g, centers: new Set() };
+            if (c) locs[r].govs[g].centers.add(c);
+          }
+        }
+      });
+      const extra = Object.values(locs).map(r => ({
+        region: r.region,
+        govs: Object.values(r.govs).map(g => ({
+          name: g.name,
+          centers: Array.from(g.centers)
+        }))
+      }));
+      setExtraLoc(extra);
+
       setDbError(null);
     } catch(e) {
       console.error("Data loading error:", e);
@@ -380,6 +402,28 @@ export default function App(){
       setSalons(DEMO_SALONS);
       setCustomers([]);
       setReviews([]);
+
+      // استخراج المناطق من بيانات العرض التوضيحي
+      const locs = {};
+      DEMO_SALONS.forEach(s => {
+        const r = s.region, g = s.gov, c = s.center;
+        if (r) {
+          if (!locs[r]) locs[r] = { region: r, govs: {} };
+          if (g) {
+            if (!locs[r].govs[g]) locs[r].govs[g] = { name: g, centers: new Set() };
+            if (c) locs[r].govs[g].centers.add(c);
+          }
+        }
+      });
+      const extra = Object.values(locs).map(r => ({
+        region: r.region,
+        govs: Object.values(r.govs).map(g => ({
+          name: g.name,
+          centers: Array.from(g.centers)
+        }))
+      }));
+      setExtraLoc(extra);
+
       setDbError(e.message);
     } finally {
       if(!silent)setLoading(false);
