@@ -31,6 +31,17 @@ import {
 
 import { playTone } from "./src/utils/audio";
 
+import {
+  DEFAULT_SOCIAL_LINKS,
+  TONES,
+  THEMES,
+  BACKGROUNDS,
+  BG_LIGHT_STYLES,
+  DEFAULT_SERVICES
+} from "./src/constants";
+
+import { DorkLogoSvg } from "./src/components/Logo";
+
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
   static getDerivedStateFromError(e){return{err:e};}
@@ -53,80 +64,7 @@ class ErrorBoundary extends React.Component {
 
 // Data transformers imported from src/utils/transformers.js
 
-// Constants imported from utils
-
-/** مصدر الحقيقة لإعدادات المنصة في جدول app_settings (Supabase) */
-const DEFAULT_SOCIAL_LINKS={email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false,customFields:[]};
-
-// ==============================================
-//  TONES  - louder + barbershop themed
-// ==============================================
-const TONES = [
-  { id:"scissors",  label:"مقص ✂"          },
-  { id:"razor",     label:"ماكينة 🪒"       },
-  { id:"bell",      label:"جرس الباب 🔔"    },
-  { id:"cash",      label:"صندوق النقد 💰"  },
-  { id:"welcome",   label:"أهلاً وسهلاً 🎉" },
-  { id:"chime3",    label:"جرس ثلاثي 🎶"   },
-  { id:"alert",     label:"تنبيه عاجل ⚡"   },
-  { id:"classic",   label:"كلاسيك 🎵"       },
-  { id:"barberpole",label:"عمود الحلاق 💈"  },
-  { id:"clippers",  label:"ماكينة كهربائية ⚡"},
-  { id:"towel",     label:"منشفة ساخنة 🧖"  },
-  { id:"mirror",    label:"المرايا ✨"       },
-  { id:"spray",     label:"رشاش الماء 💦"   },
-  { id:"magazine",  label:"مجلة انتظار 📖"  },
-  { id:"fanfare",   label:"فانفاري 🎺"       },
-  { id:"vip",       label:"VIP دخول 👑"      },
-];
-
-const THEMES = {
-  gold:      {primary:"#d4a017", light:"#f0c040", dark:"#a07810", lightest:"#f5d76e", rgb:"212,160,23"},
-  emerald:   {primary:"#10b981", light:"#34d399", dark:"#047857", lightest:"#6ee7b7", rgb:"16,185,129"},
-  sapphire:  {primary:"#3b82f6", light:"#60a5fa", dark:"#1e40af", lightest:"#93c5fd", rgb:"59,130,246"},
-  royalBlue: {primary:"#1e3a8a", light:"#3b82f6", dark:"#172554", lightest:"#93c5fd", rgb:"30,58,138"},
-  bronze:    {primary:"#8b5a2b", light:"#c9a227", dark:"#5c3d1a", lightest:"#e8c97a", rgb:"139,90,43"},
-  rose:      {primary:"#ec4899", light:"#f472b6", dark:"#9d174d", lightest:"#f9a8d4", rgb:"236,72,153"},
-  violet:    {primary:"#8b5cf6", light:"#a78bfa", dark:"#5b21b6", lightest:"#c4b5fd", rgb:"139,92,246"},
-  crimson:   {primary:"#ef4444", light:"#f87171", dark:"#991b1b", lightest:"#fca5a5", rgb:"239,68,68"},
-};
-
-const BACKGROUNDS=[
-  {id:"none",    label:"بلا خلفية",    emoji:"⬛", style:{background:"#0d0d1a",backgroundImage:"none"}},
-  {id:"stars",   label:"نجوم",          emoji:"✨", style:{background:"radial-gradient(ellipse at top,#1a1a3a 0%,#0d0d1a 70%)",backgroundImage:"radial-gradient(circle,rgba(255,255,255,.08) 1px,transparent 1px)",backgroundSize:"40px 40px"}},
-  {id:"grid",    label:"شبكة",          emoji:"🔲", style:{background:"#0d0d1a",backgroundImage:"linear-gradient(rgba(212,160,23,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(212,160,23,.05) 1px,transparent 1px)",backgroundSize:"30px 30px"}},
-  {id:"waves",   label:"أمواج",         emoji:"🌊", style:{background:"linear-gradient(180deg,#0d0d1a 0%,#0a1628 50%,#0d0d1a 100%)",backgroundImage:"none"}},
-  {id:"marble",  label:"رخام",          emoji:"🪨", style:{background:"linear-gradient(135deg,#111118 25%,#1a1a2a 25%,#1a1a2a 50%,#111118 50%,#111118 75%,#1a1a2a 75%)",backgroundSize:"20px 20px",backgroundImage:"none"}},
-  {id:"circuit", label:"دوائر",         emoji:"🔌", style:{background:"#0d0d1a",backgroundImage:"radial-gradient(circle at 50% 50%,rgba(212,160,23,.03) 0%,transparent 60%)"}},
-  {id:"royal",   label:"ملكي",          emoji:"👑", style:{
-    background:"linear-gradient(160deg,#12081f 0%,#1a0a28 45%,#0f0818 100%)",
-    backgroundImage:"radial-gradient(ellipse 90% 45% at 50% -15%, rgba(212,160,23,.18), transparent), radial-gradient(circle at 100% 100%, rgba(91,33,182,.14), transparent 55%)",
-  }},
-  {id:"tech",    label:"تقني",          emoji:"⚡", style:{
-    background:"#050a12",
-    backgroundImage:"linear-gradient(rgba(56,189,248,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.07) 1px,transparent 1px), radial-gradient(ellipse 100% 40% at 50% 0%, rgba(34,211,238,.09), transparent 60%)",
-    backgroundSize:"22px 22px,22px 22px,100% 100%",
-  }},
-  {id:"goldMarble",label:"رخام ذهبي",   emoji:"✦", style:{
-    background:"linear-gradient(118deg,#141210 0%,#1c1812 30%,#12100c 60%,#1a1612 100%)",
-    backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(212,160,23,.05) 3px,rgba(212,160,23,.05) 6px), radial-gradient(ellipse 70% 50% at 25% 15%, rgba(240,192,64,.14), transparent 55%)",
-  }},
-];
-
-/** أوضاع فاتحة لطبقة الخلفية خلف المحتوى */
-const BG_LIGHT_STYLES={
-  none:{background:"#eef0f6",backgroundImage:"none",backgroundSize:"auto"},
-  stars:{background:"linear-gradient(180deg,#e4e8f4 0%,#f4f5fb 100%)",backgroundImage:"radial-gradient(circle,rgba(30,58,138,.07) 1px,transparent 1px)",backgroundSize:"40px 40px"},
-  grid:{background:"#eef0f6",backgroundImage:"linear-gradient(rgba(30,58,138,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(30,58,138,.06) 1px,transparent 1px)",backgroundSize:"30px 30px"},
-  waves:{background:"linear-gradient(180deg,#f0f2f8 0%,#e2e8f4 50%,#f0f2f8 100%)",backgroundImage:"none"},
-  marble:{background:"linear-gradient(135deg,#f8f7f5 25%,#ece8e4 25%,#ece8e4 50%,#f8f7f5 50%,#f8f7f5 75%,#ece8e4 75%)",backgroundSize:"20px 20px",backgroundImage:"none"},
-  circuit:{background:"#eef1f8",backgroundImage:"radial-gradient(circle at 50% 40%,rgba(59,130,246,.06) 0%,transparent 65%)"},
-  royal:{background:"linear-gradient(165deg,#ede8f5 0%,#e8e4f2 50%,#f2f0fa 100%)",backgroundImage:"radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,.12), transparent), radial-gradient(circle at 100% 100%, rgba(212,160,23,.08), transparent 50%)"},
-  tech:{background:"#f0f4fa",backgroundImage:"linear-gradient(rgba(14,116,144,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(14,116,144,.05) 1px,transparent 1px), radial-gradient(ellipse 100% 35% at 50% 0%, rgba(56,189,248,.1), transparent 55%)",backgroundSize:"22px 22px,22px 22px,100% 100%"},
-  goldMarble:{background:"linear-gradient(120deg,#faf8f5 0%,#f3efe8 45%,#faf7f2 100%)",backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(166,124,41,.06) 3px,rgba(166,124,41,.06) 6px), radial-gradient(ellipse 65% 45% at 30% 10%, rgba(201,162,39,.12), transparent 50%)"},
-};
-
-// buildDorkBgStyle will be imported from ui.js later
+// Constants imported from src/constants.js
 function buildDorkBgStyle(bgId,darkMode){
   const BACKGROUNDS=[
     {id:"none",    label:"بلا خلفية",    emoji:"⬛", style:{background:"#0d0d1a",backgroundImage:"none"}},
@@ -345,7 +283,6 @@ const BASE_LOC=[
     {name:"صوير",centers:["طلعة عمار","زلوم","الشويحيطية","الرفيعة","هديب","الحرة","غدير الخيل"]},
   ]},
 ]
-const DEFAULT_SERVICES=["قص شعر","حلاقة لحية","تسريح","حلاقة كاملة","عناية بالبشرة","صبغة شعر","تنظيف بشرة","ماسك وجه"];
 
 // Utilities imported from src/utils/helpers.js
 
@@ -1108,69 +1045,7 @@ export default function App(){
   );
 }
 
-// ==============================================
-//  DORK LOGO SVG — full brand icon: rounded frame + scissors + clock + rings + pin
-// ==============================================
-function DorkLogoSvg({size=40}){
-  return(
-    <svg width={size} height={size} viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="dlg" x1="0" y1="0" x2="100" y2="110" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#fff8c8"/>
-          <stop offset="22%"  stopColor="#f5d060"/>
-          <stop offset="55%"  stopColor="#d4a017"/>
-          <stop offset="100%" stopColor="#8b6000"/>
-        </linearGradient>
-        <linearGradient id="dlg2" x1="50" y1="0" x2="50" y2="110" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#ffe566"/>
-          <stop offset="100%" stopColor="#c8900a"/>
-        </linearGradient>
-      </defs>
-
-      {/* Outer rounded rectangle frame */}
-      <rect x="5" y="4" width="90" height="102" rx="22" ry="22"
-        stroke="url(#dlg)" strokeWidth="4" fill="none"/>
-
-      {/* Clock arc — upper half circle */}
-      <path d="M 22 46 A 28 28 0 0 1 78 46"
-        stroke="url(#dlg)" strokeWidth="3.8" fill="none" strokeLinecap="round"/>
-
-      {/* Clock tick 12 */}
-      <line x1="50" y1="16" x2="50" y2="22" stroke="url(#dlg)" strokeWidth="3" strokeLinecap="round"/>
-      {/* Clock tick 9 (left) */}
-      <line x1="21" y1="46" x2="27" y2="46" stroke="url(#dlg)" strokeWidth="2.5" strokeLinecap="round"/>
-      {/* Clock tick 3 (right) */}
-      <line x1="79" y1="46" x2="73" y2="46" stroke="url(#dlg)" strokeWidth="2.5" strokeLinecap="round"/>
-
-      {/* Clock hands — 10:10 position */}
-      <line x1="50" y1="46" x2="39" y2="36" stroke="url(#dlg)" strokeWidth="3" strokeLinecap="round"/>
-      <line x1="50" y1="46" x2="61" y2="37" stroke="url(#dlg2)" strokeWidth="2.5" strokeLinecap="round"/>
-      <circle cx="50" cy="46" r="3" fill="url(#dlg)"/>
-
-      {/* Scissors blade 1 — lower-left ring → upper-right */}
-      <line x1="22" y1="94" x2="79" y2="22"
-        stroke="url(#dlg)" strokeWidth="5.5" strokeLinecap="round"/>
-
-      {/* Scissors blade 2 — lower-right ring → upper-left */}
-      <line x1="78" y1="94" x2="21" y2="22"
-        stroke="url(#dlg)" strokeWidth="5.5" strokeLinecap="round"/>
-
-      {/* Pivot screw */}
-      <circle cx="50" cy="58" r="5.5" fill="url(#dlg)"/>
-      <circle cx="50" cy="58" r="2.5" fill="#0b0d1e"/>
-
-      {/* Left handle ring */}
-      <circle cx="22" cy="94" r="9.5" stroke="url(#dlg)" strokeWidth="3.5" fill="none"/>
-      {/* Right handle ring */}
-      <circle cx="78" cy="94" r="9.5" stroke="url(#dlg)" strokeWidth="3.5" fill="none"/>
-
-      {/* Location pin between rings */}
-      <path d="M 50 89 C 47 86 44 83 44 80.5 A 6 6 0 0 1 56 80.5 C 56 83 53 86 50 89 Z"
-        fill="url(#dlg)"/>
-      <circle cx="50" cy="80.5" r="2.5" fill="#0b0d1e"/>
-    </svg>
-  );
-}
+// DorkLogoSvg imported from src/components/Logo.jsx
 
 // ==============================================
 //  TOP BAR - 3 role buttons on the LEFT
