@@ -2153,10 +2153,10 @@ function StatsPanel({salon}){
     </div>
   );
 }
-function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved"}){
+function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[showWaiting,setShowWaiting]=useState(false);
   const[showAddForm,setShowAddForm]=useState(false);
-  const[filter,setFilter]=useState(defaultFilter);
+  const[filter,setFilter]=useState("approved");
   const[localAtt,setLocalAtt]=useState({});
   const[mForm,setMForm]=useState({name:"",phone:"",date:new Date().toISOString().slice(0,10),slot:""});
   const KEY=`dork_waiting_${salon.id}`;
@@ -3044,8 +3044,7 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
   );
 }
 function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews,customers=[]}){
-  const[tab,setTab]=useState(null);
-  const[activeCard,setActiveCard]=useState(null);
+  const[tab,setTab]=useState("notif");
   const[ownerNotifs,setOwnerNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
   const[oathDone,setOathDone]=useState(()=>{
     try{return localStorage.getItem(`dork_oath_${salon?.id}`)==="1";}catch{return false;}
@@ -3140,34 +3139,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setOwnerSession(null);setView("home");}}>خروج</button>
       </div>
 
-      {/* ── صف أيقونات التبويبات ── */}
-      <div style={{display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",marginBottom:12,paddingBottom:2}}>
-        {[
-          {id:"messages",icon:"💬",label:"رسائل"},
-          {id:"calendar",icon:"🗓",label:"تقويم"},
-          {id:"reviews",icon:"⭐",label:"تقييمات"},
-          {id:"stats",icon:"📊",label:"إحصائيات"},
-          {id:"balance",icon:"💰",label:"الميزان"},
-          {id:"settings",icon:"⚙",label:"إعدادات"},
-        ].map(({id,icon,label})=>{
-          const isActive=tab===id;
-          const hasBadge=(id==="messages"&&parseInt(localStorage.getItem("dork_notif_count")||"0")>0)||(id==="balance"&&balance>0);
-          return(
-            <button key={id}
-              onClick={()=>{
-                if(id==="messages")localStorage.setItem("dork_notif_count","0");
-                setTab(t=>t===id?null:id);
-                setActiveCard(null);
-              }}
-              style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:isActive?"rgba(212,160,23,.13)":"rgba(255,255,255,.04)",border:`1px solid ${isActive?"rgba(212,160,23,.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"8px 12px",cursor:"pointer",flexShrink:0,position:"relative",fontFamily:"inherit",transition:"all .2s ease",minWidth:54}}>
-              <span style={{fontSize:20}}>{icon}</span>
-              <span style={{fontSize:9,color:isActive?"#d4a017":"#666",fontWeight:isActive?700:400,whiteSpace:"nowrap"}}>{label}</span>
-              {hasBadge&&<div style={{position:"absolute",top:5,right:5,width:7,height:7,borderRadius:"50%",background:"#e74c3c",boxShadow:"0 0 4px #e74c3c"}}/>}
-            </button>
-          );
-        })}
-      </div>
-
       {/* ── بادج الصالون المحسّن ── */}
       <div style={{display:"flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,rgba(212,160,23,.1),rgba(212,160,23,.04))",border:"1px solid rgba(212,160,23,.22)",borderRadius:14,padding:"11px 14px",marginBottom:10}}>
         <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#d4a017,#f0c040)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:"0 4px 12px rgba(212,160,23,.35)"}}>✂</div>
@@ -3249,45 +3220,48 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         )}
       </div>
 
-      {/* بانر إشعارات الإدارة */}
+      {/* ── إحصائيات سريعة 4 مربعات ── */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
+        {[
+          {label:"الكل",value:salon.bookings.length,color:"#d4a017",bg:"rgba(212,160,23,.07)",delay:0},
+          {label:"انتظار",value:pending,color:"#f39c12",bg:"rgba(243,156,18,.07)",delay:80},
+          {label:"مقبول",value:approvedBookings.length,color:"#27ae60",bg:"rgba(39,174,96,.07)",delay:160},
+          {label:"مرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,color:"#e74c3c",bg:"rgba(231,76,60,.07)",delay:240}
+        ].map(({label,value,color,bg,delay})=>(
+          <div key={label} className="stat-card" style={{background:bg,borderRadius:13,padding:"11px 6px",border:`1px solid ${color}20`,textAlign:"center",animationDelay:`${delay}ms`,cursor:"pointer"}}>
+            <div style={{fontSize:22,fontWeight:900,color,marginBottom:3,lineHeight:1}}>{value}</div>
+            <div style={{fontSize:10,color:"#666",fontWeight:600}}>{label}</div>
+            <div style={{height:2,background:`${color}30`,borderRadius:2,margin:"6px 8px 0",overflow:"hidden"}}>
+              <div style={{height:"100%",width:value>0?"100%":"0%",background:color,borderRadius:2,transition:"width .6s ease"}}/>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* بانر إشعارات الإدارة - محسّن مع animations */}
       {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
         <div key={n.id} className="notif-banner" style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",border:"1px solid rgba(212,160,23,.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span>{n.icon} {n.title} — {n.body}</span>
-          <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:14,padding:0}}>✕</button>
+          <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:14,padding:0,transition:"all .2s"}}>✕</button>
         </div>
       ))}
 
-      {/* ── الـ 4 مربعات (تظهر فقط لما ما في تبويب مفتوح) ── */}
-      {tab===null&&(
-        <>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
-            {[
-              {label:"الكل",value:salon.bookings.length,color:"#d4a017",filter:"all",delay:0},
-              {label:"انتظار",value:pending,color:"#f39c12",filter:"pending",delay:80},
-              {label:"مقبول",value:approvedBookings.length,color:"#27ae60",filter:"approved",delay:160},
-              {label:"مرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,color:"#e74c3c",filter:"rejected",delay:240}
-            ].map(({label,value,color,filter,delay})=>{
-              const isOpen=activeCard===filter;
-              return(
-                <div key={label} className="stat-card"
-                  onClick={()=>{setActiveCard(c=>c===filter?null:filter);if(filter==="all"||filter==="approved")refreshSalonBookings(salon.id);}}
-                  style={{background:isOpen?`${color}18`:`${color}0f`,borderRadius:isOpen?"13px 13px 0 0":13,padding:"11px 6px",border:`1.5px solid ${isOpen?`${color}55`:`${color}1a`}`,borderBottom:isOpen?`1.5px solid ${color}55`:"",textAlign:"center",animationDelay:`${delay}ms`,cursor:"pointer",transition:"all .22s ease",boxShadow:isOpen?`0 0 14px ${color}1a`:"none"}}>
-                  <div style={{fontSize:22,fontWeight:900,color,marginBottom:2,lineHeight:1}}>{value}</div>
-                  <div style={{fontSize:10,color:isOpen?color:"#666",fontWeight:600,marginBottom:3}}>{label}</div>
-                  <div style={{fontSize:9,color:isOpen?color:"#444",lineHeight:1,transition:"transform .2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▼</div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* قائمة الحجوزات المنسدلة */}
-          {activeCard&&(
-            <div style={{animation:"fadeInUp .3s ease-out",marginBottom:14,border:`1.5px solid ${activeCard==="all"?"#d4a017":activeCard==="pending"?"#f39c12":activeCard==="approved"?"#27ae60":"#e74c3c"}33`,borderTop:"none",borderRadius:"0 0 14px 14px",overflow:"hidden",background:"rgba(255,255,255,.02)"}}>
-              <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings}/>
-            </div>
-          )}
-        </>
-      )}
+      {/* التبويبات الرئيسية - محسّنة مع animations */}
+      <div style={{...G.tabRow,flexWrap:"nowrap",overflowX:"auto",marginBottom:2}}>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");refreshSalonBookings(salon.id);}}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>{
+          localStorage.setItem("dork_notif_count","0");
+          setTab("messages");
+        }}>
+          💬 رسائل {(()=>{const n=parseInt(localStorage.getItem("dork_notif_count")||"0");return n>0?<span style={{...G.notifDot,background:"#e74c3c"}}>{n}</span>:null;})()}
+        </button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="calendar"?G.tabOn:{})}} onClick={()=>setTab("calendar")}>🗓 تقويم</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="reviews"?G.tabOn:{})}} onClick={()=>setTab("reviews")}>⭐ تقييمات</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊 إحصائيات</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="balance"?G.tabOn:{})}} onClick={()=>setTab("balance")}>💰 الميزان</button>
+        <button className="tab-button" style={{...G.tabBtn,flexShrink:0,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙ إعدادات</button>
+      </div>
+      {tab==="notif"&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers}/>}
       {tab==="messages"&&(
         <div>
           {ownerNotifs.length>0&&(
