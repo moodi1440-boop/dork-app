@@ -3096,42 +3096,143 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
   const[showBalanceModal,setShowBalanceModal]=useState(false);
 
+  // ── حسابات ملخص اليوم ──
+  const _td=new Date().toISOString().slice(0,10);
+  const _tdBks=salon.bookings.filter(b=>b.date===_td);
+  const _tdApproved=_tdBks.filter(b=>b.status==="approved");
+  const _tdPending=_tdBks.filter(b=>b.status==="pending");
+  const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
+  const _now=new Date();
+  const _nowMins=_now.getHours()*60+_now.getMinutes();
+  const _nextBk=_tdApproved
+    .filter(b=>{const[h,m]=(b.time||"0:0").split(":").map(Number);return h*60+m>_nowMins;})
+    .sort((a,b)=>(a.time||"").localeCompare(b.time||""))[0];
+  const _totalSlots=Math.max((getSlotsForSalon(salon).length)*(salon.barbers?.length||1),1);
+  const _occ=Math.min(100,Math.round(_tdApproved.length/_totalSlots*100));
+  const _dNames=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+  const _mNames=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+  const _dayLabel=`${_dNames[_now.getDay()]}، ${_now.getDate()} ${_mNames[_now.getMonth()]}`;
+
   return(
     <div style={G.page}>
       <style>{`
-        @keyframes fadeInUp {from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes fadeInUp {from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
         @keyframes slideInFromRight {from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
-        @keyframes scaleIn {from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
-        .stat-card {animation:fadeInUp .5s ease-out;transition:all .3s ease;}
-        .stat-card:hover {transform:translateY(-2px);box-shadow:0 8px 16px rgba(212,160,23,.15);}
-        .tab-button {transition:all .2s ease;}
-        .balance-tab {animation:slideInFromRight .4s cubic-bezier(0.4, 0, 0.2, 1);}
-        .notif-banner {animation:fadeInUp .4s ease-out;transition:all .3s ease;}
+        @keyframes scaleIn {from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
+        @keyframes growBar {from{width:0;}to{width:100%;}}
+        @keyframes pulse {0%,100%{opacity:1;}50%{opacity:.6;}}
+        .stat-card{animation:fadeInUp .45s ease-out both;transition:all .25s ease;}
+        .stat-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(212,160,23,.18);}
+        .tab-button{transition:all .2s ease;}
+        .balance-tab{animation:slideInFromRight .4s cubic-bezier(0.4,0,0.2,1);}
+        .notif-banner{animation:fadeInUp .4s ease-out;transition:all .3s ease;}
+        .today-card{animation:scaleIn .4s ease-out;}
+        .occ-bar{animation:growBar 1.2s cubic-bezier(0.4,0,0.2,1) both;}
+        .pending-pulse{animation:pulse 2s infinite;}
       `}</style>
       <div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>لوحة صالوني</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setOwnerSession(null);setView("home");}}>خروج</button></div>
-      <div style={G.salonBadge}>
-        <span style={{fontSize:20,color:"var(--p)"}}>✂</span>
-        <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div><div style={{fontSize:11,color:"#888"}}>{salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div></div>
-        <span style={{fontSize:11,fontWeight:700,color:statusColor,background:`${statusColor}22`,padding:"3px 8px",borderRadius:8}}>{statusLabel}</span>
-      </div>
-      {salon.status!=="approved"&&<div style={{background:"rgba(240,192,64,.08)",border:"1px solid var(--pl)55",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--pl)"}}>🔔 صالونك في انتظار موافقة الإدارة - سيظهر للعملاء بعد القبول</div>}
 
-      {/* الإحصائيات الرئيسية - 4 مربعات احترافية */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-        {[
-          {label:"الحجوزات",value:salon.bookings.length,icon:"🔔",color:"var(--p)"},
-          {label:"المعلقة",value:pending,icon:"⏳",color:"var(--pl)"},
-          {label:"المقبول",value:approvedBookings.length,icon:"✅",color:"#27ae60"},
-          {label:"المرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,icon:"❌",color:"#e74c3c"}
-        ].map(({label,value,icon,color},idx)=>(
-          <div key={label} className="stat-card" style={{background:"linear-gradient(135deg,rgba(212,160,23,.08),rgba(212,160,23,.04))",borderRadius:12,padding:"14px",border:`1.5px solid ${color}33`,cursor:"pointer",animationDelay:`${idx*100}ms`}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
-                <div style={{fontSize:11,color:"#888",marginBottom:4}}>{label}</div>
-                <div style={{fontSize:22,fontWeight:900,color}}>{value}</div>
+      {/* ── الهيدر ── */}
+      <div style={G.fh}>
+        <button style={G.bb} onClick={()=>setView("home")}>{">"}</button>
+        <h2 style={{...G.ft,flex:1}}>لوحة صالوني</h2>
+        <button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setOwnerSession(null);setView("home");}}>خروج</button>
+      </div>
+
+      {/* ── بادج الصالون المحسّن ── */}
+      <div style={{display:"flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,rgba(212,160,23,.1),rgba(212,160,23,.04))",border:"1px solid rgba(212,160,23,.22)",borderRadius:14,padding:"11px 14px",marginBottom:10}}>
+        <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#d4a017,#f0c040)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:"0 4px 12px rgba(212,160,23,.35)"}}>✂</div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:.3}}>{salon.name}</div>
+          <div style={{fontSize:11,color:"#999",marginTop:1}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
+        </div>
+        <span style={{fontSize:11,fontWeight:700,color:statusColor,background:`${statusColor}18`,padding:"4px 10px",borderRadius:10,border:`1px solid ${statusColor}33`}}>{statusLabel}</span>
+      </div>
+
+      {salon.status!=="approved"&&(
+        <div style={{background:"rgba(240,192,64,.07)",border:"1px solid rgba(240,192,64,.25)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:12,color:"var(--pl)"}}>
+          🔔 صالونك في انتظار موافقة الإدارة — سيظهر للعملاء بعد القبول
+        </div>
+      )}
+
+      {/* ── بطاقة ملخص اليوم ── */}
+      <div className="today-card" style={{background:"linear-gradient(145deg,#16112a,#0e0e1e)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(212,160,23,.2)",boxShadow:"0 0 30px rgba(212,160,23,.06),inset 0 1px 0 rgba(212,160,23,.08)"}}>
+
+        {/* التاريخ + حالة المعلقة */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#d4a017"}}>🌅 {_dayLabel}</div>
+          {_tdPending.length>0
+            ?<div className="pending-pulse" style={{fontSize:10,color:"#f39c12",background:"rgba(243,156,18,.12)",padding:"3px 9px",borderRadius:8,fontWeight:700,border:"1px solid rgba(243,156,18,.25)"}}>⏳ {_tdPending.length} بانتظارك</div>
+            :<div style={{fontSize:10,color:"#27ae60",background:"rgba(39,174,96,.1)",padding:"3px 9px",borderRadius:8,fontWeight:700,border:"1px solid rgba(39,174,96,.2)"}}>✅ لا معلقة</div>
+          }
+        </div>
+
+        {/* حجوزات اليوم + إيراد اليوم */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          <div style={{background:"rgba(212,160,23,.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(212,160,23,.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.06}}>📅</div>
+            <div style={{fontSize:30,fontWeight:900,color:"#d4a017",lineHeight:1}}>{_tdApproved.length}</div>
+            <div style={{fontSize:10,color:"#888",marginTop:5}}>حجز مقبول اليوم</div>
+          </div>
+          <div style={{background:"rgba(39,174,96,.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(39,174,96,.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.06}}>💰</div>
+            <div style={{fontSize:30,fontWeight:900,color:"#27ae60",lineHeight:1}}>{_tdRevenue}</div>
+            <div style={{fontSize:10,color:"#888",marginTop:5}}>ريال إيراد اليوم</div>
+          </div>
+        </div>
+
+        {/* شريط الامتلاء */}
+        <div style={{marginBottom:_nextBk?14:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <div style={{fontSize:11,color:"#777"}}>امتلاء اليوم</div>
+            <div style={{fontSize:12,fontWeight:800,color:_occ>=80?"#e74c3c":_occ>=50?"#d4a017":"#27ae60"}}>{_occ}%</div>
+          </div>
+          <div style={{height:7,background:"rgba(255,255,255,.05)",borderRadius:10,overflow:"hidden"}}>
+            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,#a07810,#f0c040)":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,boxShadow:_occ>0?`0 0 8px ${_occ>=80?"rgba(231,76,60,.5)":_occ>=50?"rgba(212,160,23,.5)":"rgba(39,174,96,.5)"}`:""}}/>
+          </div>
+        </div>
+
+        {/* الحجز القادم */}
+        {_nextBk&&(
+          <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(212,160,23,.06)",borderRadius:11,padding:"10px 12px",border:"1px dashed rgba(212,160,23,.2)"}}>
+            <div style={{width:32,height:32,borderRadius:9,background:"rgba(212,160,23,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>⏰</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:10,color:"#666",marginBottom:2}}>الحجز القادم</div>
+              <div style={{fontSize:13,fontWeight:700,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                {_nextBk.customerName||_nextBk.customer_name||"عميل"} — {_nextBk.time}
               </div>
-              <div style={{fontSize:24}}>{icon}</div>
+            </div>
+            <div style={{fontSize:11,fontWeight:800,color:"#d4a017",background:"rgba(212,160,23,.12)",padding:"4px 9px",borderRadius:8,flexShrink:0,whiteSpace:"nowrap"}}>
+              {(()=>{
+                const[h,m]=(_nextBk.time||"0:0").split(":").map(Number);
+                const diff=h*60+m-_nowMins;
+                if(diff<=0)return"الآن";
+                if(diff>=60)return`${Math.floor(diff/60)}س ${diff%60}د`;
+                return`${diff} دقيقة`;
+              })()}
+            </div>
+          </div>
+        )}
+        {!_nextBk&&(
+          <div style={{fontSize:11,color:"#444",textAlign:"center",paddingTop:_tdApproved.length>0?8:0}}>
+            {_tdApproved.length>0?"✓ انتهت جميع حجوزات اليوم":"لا توجد حجوزات مؤكدة لهذا اليوم"}
+          </div>
+        )}
+      </div>
+
+      {/* ── إحصائيات سريعة 4 مربعات ── */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
+        {[
+          {label:"الكل",value:salon.bookings.length,color:"#d4a017",bg:"rgba(212,160,23,.07)",delay:0},
+          {label:"انتظار",value:pending,color:"#f39c12",bg:"rgba(243,156,18,.07)",delay:80},
+          {label:"مقبول",value:approvedBookings.length,color:"#27ae60",bg:"rgba(39,174,96,.07)",delay:160},
+          {label:"مرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,color:"#e74c3c",bg:"rgba(231,76,60,.07)",delay:240}
+        ].map(({label,value,color,bg,delay})=>(
+          <div key={label} className="stat-card" style={{background:bg,borderRadius:13,padding:"11px 6px",border:`1px solid ${color}20`,textAlign:"center",animationDelay:`${delay}ms`,cursor:"pointer"}}>
+            <div style={{fontSize:22,fontWeight:900,color,marginBottom:3,lineHeight:1}}>{value}</div>
+            <div style={{fontSize:10,color:"#666",fontWeight:600}}>{label}</div>
+            <div style={{height:2,background:`${color}30`,borderRadius:2,margin:"6px 8px 0",overflow:"hidden"}}>
+              <div style={{height:"100%",width:value>0?"100%":"0%",background:color,borderRadius:2,transition:"width .6s ease"}}/>
             </div>
           </div>
         ))}
