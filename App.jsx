@@ -3133,13 +3133,14 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       `}</style>
       <div style={G.fp}>
 
-      {/* ── الهيدر ── */}
-      <div style={G.fh}>
-        <h2 style={{...G.ft,flex:1,cursor:"pointer"}} onClick={()=>{setTab(null);setActiveCard(null);}}>لوحة صالوني</h2>
-      </div>
-
       {/* ── صف أيقونات التبويبات ── */}
       <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:12,paddingBottom:2}}>
+        <button
+          onClick={()=>{setTab(null);setActiveCard(null);}}
+          style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:tab===null?"rgba(212,160,23,.13)":"rgba(255,255,255,.04)",border:`1px solid ${tab===null?"rgba(212,160,23,.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
+          <span style={{fontSize:18}}>📋</span>
+          <span style={{fontSize:8,color:tab===null?"#d4a017":"#666",fontWeight:tab===null?700:400,whiteSpace:"nowrap"}}>لوحتي</span>
+        </button>
         {[
           {id:"messages",icon:"💬",label:"رسائل"},
           {id:"calendar",icon:"🗓",label:"تقويم"},
@@ -3157,7 +3158,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
                 setTab(t=>t===id?null:id);
                 setActiveCard(null);
               }}
-              style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:isActive?"rgba(212,160,23,.13)":"rgba(255,255,255,.04)",border:`1px solid ${isActive?"rgba(212,160,23,.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,position:"relative",fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
+              style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:isActive?"rgba(212,160,23,.13)":"rgba(255,255,255,.04)",border:`1px solid ${isActive?"rgba(212,160,23,.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,position:"relative",fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
               <span style={{fontSize:18}}>{icon}</span>
               <span style={{fontSize:8,color:isActive?"#d4a017":"#666",fontWeight:isActive?700:400,whiteSpace:"nowrap"}}>{label}</span>
               {hasBadge&&<div style={{position:"absolute",top:4,right:4,width:6,height:6,borderRadius:"50%",background:"#e74c3c",boxShadow:"0 0 4px #e74c3c"}}/>}
@@ -3165,8 +3166,8 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           );
         })}
         <button
-          onClick={()=>{setOwnerSession(null);setView("home");}}
-          style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"rgba(231,76,60,.07)",border:"1px solid rgba(231,76,60,.2)",borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
+          onClick={()=>{if(window.confirm("هل أنت متأكد من الخروج؟")){setOwnerSession(null);setView("home");}}}
+          style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:"rgba(231,76,60,.07)",border:"1px solid rgba(231,76,60,.2)",borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
           <span style={{fontSize:18}}>🚪</span>
           <span style={{fontSize:8,color:"#e74c3c",fontWeight:600,whiteSpace:"nowrap"}}>خروج</span>
         </button>
@@ -3187,6 +3188,18 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           🔔 صالونك في انتظار موافقة الإدارة — سيظهر للعملاء بعد القبول
         </div>
       )}
+
+      {/* بانر إشعارات الإدارة */}
+      {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
+        <div key={n.id} className="notif-banner" style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",border:"1px solid rgba(212,160,23,.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span>{n.icon} {n.title} — {n.body}</span>
+          <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:14,padding:0}}>✕</button>
+        </div>
+      ))}
+
+      {/* ── الواجهة الرئيسية (لوحتي) ── */}
+      {tab===null&&(
+        <>
 
       {/* ── بطاقة ملخص اليوم ── */}
       <div className="today-card" style={{background:"linear-gradient(145deg,#16112a,#0e0e1e)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(212,160,23,.2)",boxShadow:"0 0 30px rgba(212,160,23,.06),inset 0 1px 0 rgba(212,160,23,.08)"}}>
@@ -3253,17 +3266,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         )}
       </div>
 
-      {/* بانر إشعارات الإدارة */}
-      {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
-        <div key={n.id} className="notif-banner" style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",border:"1px solid rgba(212,160,23,.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span>{n.icon} {n.title} — {n.body}</span>
-          <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:14,padding:0}}>✕</button>
-        </div>
-      ))}
-
-      {/* ── الـ 4 مربعات (تظهر فقط لما ما في تبويب مفتوح) ── */}
-      {tab===null&&(
-        <>
+      {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
               {label:"الكل",value:salon.bookings.length,color:"#d4a017",filter:"all",delay:0},
@@ -3275,7 +3278,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
               return(
                 <div key={label} className="stat-card"
                   onClick={()=>{setActiveCard(c=>c===filter?null:filter);if(filter==="all"||filter==="approved")refreshSalonBookings(salon.id);}}
-                  style={{background:isOpen?`${color}18`:`${color}0f`,borderRadius:isOpen?"13px 13px 0 0":13,padding:"11px 6px",border:`1.5px solid ${isOpen?`${color}55`:`${color}1a`}`,borderBottom:isOpen?`1.5px solid ${color}55`:"",textAlign:"center",animationDelay:`${delay}ms`,cursor:"pointer",transition:"all .22s ease",boxShadow:isOpen?`0 0 14px ${color}1a`:"none"}}>
+                  style={{background:isOpen?`${color}18`:`${color}0f`,borderRadius:isOpen?"13px 13px 0 0":13,padding:"11px 6px",height:68,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:`1.5px solid ${isOpen?`${color}55`:`${color}1a`}`,borderBottom:isOpen?`1.5px solid ${color}55`:"",textAlign:"center",animationDelay:`${delay}ms`,cursor:"pointer",transition:"all .22s ease",boxShadow:isOpen?`0 0 14px ${color}1a`:"none"}}>
                   <div style={{fontSize:22,fontWeight:900,color,marginBottom:2,lineHeight:1}}>{value}</div>
                   <div style={{fontSize:10,color:isOpen?color:"#666",fontWeight:600,marginBottom:3}}>{label}</div>
                   <div style={{fontSize:9,color:isOpen?color:"#444",lineHeight:1,transition:"transform .2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▼</div>
