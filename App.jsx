@@ -1061,7 +1061,6 @@ export default function App(){
     govList,villageList,centerList2,
     showFavs,setShowFavs,
     displaySalons,
-    salons,
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
     socialLinks,setSocialLinks:updateSocial,
     handleCustomerLogin,
@@ -1789,7 +1788,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
             })}
           </div>
         </F>}
-        <button style={G.sub} onClick={()=>{if(v1())setStep(2);}}>التالي ></button>
+        <button style={G.sub} onClick={()=>{if(v1())setStep(2);}}>التالي &gt;</button>
       </div>}
       {step===2&&<div style={G.fc}>
         <F label="التاريخ" error={errors.date}>
@@ -2377,7 +2376,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           <button style={{...G.locTab,...(locMethod==="detect"?G.locTabOn:{})}} onClick={()=>setLocMethod("detect")}>📡 تلقائي</button>
         </div>
         {locMethod==="link"
-          ?<F error={errors.locationUrl}><input style={fi(errors.locationUrl)} placeholder="https://maps.google.com/..." value={form.locationUrl} onChange={e=>setForm(p=>({...p,locationUrl:e.target.value}))}/><div style={{fontSize:10,color:"#555",marginTop:3}}>افتح Google Maps > الموقع > شارك > انسخ</div></F>
+          ?<F error={errors.locationUrl}><input style={fi(errors.locationUrl)} placeholder="https://maps.google.com/..." value={form.locationUrl} onChange={e=>setForm(p=>({...p,locationUrl:e.target.value}))}/><div style={{fontSize:10,color:"#555",marginTop:3}}>افتح Google Maps &gt; الموقع &gt; شارك &gt; انسخ</div></F>
           :<div style={{marginBottom:11}}><button style={{...G.detectBtn,opacity:detecting?0.6:1}} disabled={detecting} onClick={detect}>{detecting?"⏳ جاري...":"📡 تحديد موقعي"}</button>{form.locationUrl&&locMethod==="detect"&&<div style={{color:"#4caf50",fontSize:11,marginTop:4,textAlign:"center"}}>✅ تم</div>}{errors.locationUrl&&<div style={G.err}>{errors.locationUrl}</div>}</div>
         }
       </div>
