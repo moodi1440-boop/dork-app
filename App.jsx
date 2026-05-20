@@ -370,7 +370,11 @@ export default function App(){
       setReviews(reviewRows||[]);
       setDbError(null);
     } catch(e) {
-      console.error(e);
+      console.error("Data loading error:", e);
+      console.log("Using demo data due to RLS/auth issue");
+      setSalons(DEMO_SALONS);
+      setCustomers([]);
+      setReviews([]);
       setDbError(e.message);
     } finally {
       if(!silent)setLoading(false);
