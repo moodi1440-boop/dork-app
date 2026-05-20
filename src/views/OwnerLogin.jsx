@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { G } from "../styles";
 
+import { F, SL } from "../helpers/FormHelpers";
 function OwnerLogin({salons,setOwnerSession,setView,toast$}){
   const[tab,setTab]=useState("phone");
   const[phone,setPhone]=useState(""); const[err,setErr]=useState("");

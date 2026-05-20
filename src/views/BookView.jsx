@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { G } from "../styles";
 import { supabase, sb } from "../api/supabase";
+import { F, SL } from "../helpers/FormHelpers";
 import { SLOT_MIN, MONTHS_AR, normalizeBgId, makeSlots, getSlotsForSalon, todayStr, openMaps, calcTotal, normPhone } from "../utils/helpers";
 
 function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}){
