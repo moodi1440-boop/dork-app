@@ -37,8 +37,29 @@
   - 16 نوع صوت (scissors, bell, welcome, etc)
   - يستخدم Web Audio API
 
+#### **`ui.js`** (جديد)
+- `buildDorkBgStyle()` - بناء نمط الخلفية الديناميكي
+- `buildHomeReviewsFeed()` - تجميع وترتيب تقييمات العملاء
+
 ### `/components` - مكونات React
-(سيتم تقسيمها لاحقاً - كل مكون في ملف منفصل)
+
+#### **`Logo.jsx`** (جديد)
+- `DorkLogoSvg` - شعار التطبيق (scissors + clock + pin design)
+
+(باقي المكونات سيتم تقسيمها لاحقاً)
+
+### `/data` - بيانات ثابتة (جديد)
+
+#### **`locations.js`**
+- `BASE_LOC` - هرمية المناطق والمحافظات والمراكز والقرى الكاملة
+
+### `/constants.js` (جديد)
+- `TONES` - 16 صوت تنبيه
+- `THEMES` - 8 أنماط لونية
+- `BACKGROUNDS` - 9 أنماط خلفية
+- `BG_LIGHT_STYLES` - نسخة فاتحة من الخلفيات
+- `DEFAULT_SERVICES` - الخدمات الافتراضية
+- `DEFAULT_SOCIAL_LINKS` - إعدادات الوسائط الاجتماعية
 
 ### `/hooks` - Custom React Hooks
 (للمراحل المستقبلية)
@@ -46,12 +67,20 @@
 ## طريقة الاستخدام
 
 ```javascript
-// استيراد من الملفات المنفصلة
+// API و البيانات
 import { supabase, sb } from "./src/api/supabase";
-import { normPhone, calcTotal } from "./src/utils/helpers";
+import { BASE_LOC } from "./src/data/locations";
+import { TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES } from "./src/constants";
+
+// دوال مساعدة
+import { normPhone, calcTotal, openMaps } from "./src/utils/helpers";
 import { toAppSalon } from "./src/utils/transformers";
 import { sendNotif } from "./src/utils/notifications";
 import { playTone } from "./src/utils/audio";
+import { buildDorkBgStyle, buildHomeReviewsFeed } from "./src/utils/ui";
+
+// مكونات
+import { DorkLogoSvg } from "./src/components/Logo";
 ```
 
 ## معايير الترتيب
@@ -75,9 +104,20 @@ import { playTone } from "./src/utils/audio";
 ✅ لا تضارب - كل ملف له مسؤولية واحدة
 ```
 
-## المرحلة التالية
+## التقدم حالياً
 
-سيتم تقسيم:
-1. المكونات الرئيسية (TopBar, HomeView, SalonPage, etc) في `components/`
-2. Custom hooks في `hooks/`
-3. الثوابت والإعدادات في `config.js` أو `constants.js`
+✅ **تم:**
+- استخراج الثوابت الأساسية → `constants.js`
+- استخراج بيانات المواقع → `data/locations.js`
+- استخراج دوال بناء الواجهة → `utils/ui.js`
+- استخراج مكون الشعار → `components/Logo.jsx`
+- تقليل App.jsx من 4851 إلى 4641 سطر
+
+⏳ **المرحلة التالية:**
+1. استخراج مكونات العروض (TopBar, HomeView, SalonPage, etc)
+2. تنظيم المكونات في مجلدات حسب النوع:
+   - `components/` - عناصر واجهة
+   - `views/` - صفحات كاملة
+   - `pages/` - تدفقات معقدة
+3. Custom hooks في `hooks/`
+4. نماذج في `forms/`
