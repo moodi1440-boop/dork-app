@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { G } from "../styles.js";
-import { supabase, sb } from "../api/supabase.js";
-import { playTone } from "../utils/audio.js";
-import { TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES, DEFAULT_SOCIAL_LINKS } from "../constants.js";
+import { G } from "../styles";
+import { supabase, sb } from "../api/supabase";
+import { playTone } from "../utils/audio";
+import { TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES, DEFAULT_SOCIAL_LINKS } from "../constants";
 
 function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
   const[form,setForm]=useState({name:"",owner:"",ownerPhone:"",region:"",gov:"",center:"",village:"",phone:"",address:"",locationUrl:"",services:[],prices:{},shiftEnabled:false,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"09:00",workEnd:"22:00",barbers:[{id:"b"+Date.now(),name:""}],tone:"bell"});

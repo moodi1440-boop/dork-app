@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { G } from "../styles.js";
-import { supabase, sb } from "../api/supabase.js";
+import { G } from "../styles";
+import { supabase, sb } from "../api/supabase";
 
 function MessagesPanel({salon,toast$}){
   const KEY=`dork_msgs_${salon.id}`;

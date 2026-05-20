@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { G } from "../styles.js";
-import { playTone } from "../utils/audio.js";
-import { TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES, DEFAULT_SOCIAL_LINKS } from "../constants.js";
+import { G } from "../styles";
+import { playTone } from "../utils/audio";
+import { TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES, DEFAULT_SOCIAL_LINKS } from "../constants";
 
 function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,persistUiToSupabase}){
   const[sec,setSec]=useState("theme");

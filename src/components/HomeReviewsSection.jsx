@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { buildDorkBgStyle, buildHomeReviewsFeed } from "../utils/ui.js";
+import { buildDorkBgStyle, buildHomeReviewsFeed } from "../utils/ui";
 
 function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
   const reviews=buildHomeReviewsFeed(customers,approvedSalons);

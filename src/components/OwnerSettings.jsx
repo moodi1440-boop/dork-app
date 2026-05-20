@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { G } from "../styles.js";
-import { supabase, sb } from "../api/supabase.js";
-import { TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES, DEFAULT_SOCIAL_LINKS } from "../constants.js";
-import { playTone } from "../utils/audio.js";
+import { G } from "../styles";
+import { supabase, sb } from "../api/supabase";
+import { TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES, DEFAULT_SOCIAL_LINKS } from "../constants";
+import { playTone } from "../utils/audio";
 
 function OwnerSettings({salon,setSalons,toast$}){
   const[saving,setSaving]=useState(false);

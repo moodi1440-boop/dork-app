@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { G } from "../styles.js";
+import { G } from "../styles";
 
 function BookingCalendar({salon,onUpdate}){
   const[selDate,setSelDate]=useState(todayStr());

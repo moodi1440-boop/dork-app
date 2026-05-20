@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { G } from "../styles.js";
-import { supabase, sb } from "../api/supabase.js";
-import { getCustomerClassification, requestNotifPermission, sendNotif } from "../utils/notifications.js";
+import { G } from "../styles";
+import { supabase, sb } from "../api/supabase";
+import { getCustomerClassification, requestNotifPermission, sendNotif } from "../utils/notifications";
 
 function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$}){
   const[tab,setTab]=useState("settings");

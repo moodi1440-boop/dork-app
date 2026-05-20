@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { G } from "../styles.js";
+import { G } from "../styles";
 
 function OwnerLogin({salons,setOwnerSession,setView,toast$}){
   const[tab,setTab]=useState("phone");

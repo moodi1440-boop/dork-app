@@ -1,5 +1,5 @@
 import React from "react";
-import { G } from "../styles.js";
+import { G } from "../styles";
 
 function LocFilter({icon,label,value,onChange,options,all}){
   return(

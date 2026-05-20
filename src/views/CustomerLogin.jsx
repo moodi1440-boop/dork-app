@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { G } from "../styles.js";
-import { supabase, sb } from "../api/supabase.js";
+import { G } from "../styles";
+import { supabase, sb } from "../api/supabase";
 import { toAppSalon, toDbSalon, toAppBooking, toAppCustomer } from "../utils/transformers";
 
 function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$}){

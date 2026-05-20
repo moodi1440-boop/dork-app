@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 // Import Supabase API
-import { supabase, sb } from "./src/api/supabase.js";
+import { supabase, sb } from "./src/api/supabase";
 
 // Import utilities
 import {
@@ -14,22 +14,22 @@ import {
   openMaps,
   calcTotal,
   normPhone
-} from "./src/utils/helpers.js";
+} from "./src/utils/helpers";
 
 import {
   toAppSalon,
   toDbSalon,
   toAppBooking,
   toAppCustomer
-} from "./src/utils/transformers.js";
+} from "./src/utils/transformers";
 
 import {
   getCustomerClassification,
   requestNotifPermission,
   sendNotif
-} from "./src/utils/notifications.js";
+} from "./src/utils/notifications";
 
-import { playTone } from "./src/utils/audio.js";
+import { playTone } from "./src/utils/audio";
 
 import {
   DEFAULT_SOCIAL_LINKS,
@@ -40,8 +40,8 @@ import {
   DEFAULT_SERVICES
 } from "./src/constants";
 
-import { buildDorkBgStyle, buildHomeReviewsFeed } from "./src/utils/ui.js";
-import { BASE_LOC } from "./src/data/locations.js";
+import { buildDorkBgStyle, buildHomeReviewsFeed } from "./src/utils/ui";
+import { BASE_LOC } from "./src/data/locations";
 import { DorkLogoSvg } from "./src/components/Logo";
 import { G } from "./src/styles";
 
@@ -60,7 +60,7 @@ import { OwnerSettings } from "./src/components/OwnerSettings";
 import { OtpInput } from "./src/components/OtpInput";
 import { InlineStarRating } from "./src/components/InlineStarRating";
 import { FAQItem } from "./src/components/FAQItem";
-import { SL, F } from "./src/helpers/FormHelpers.jsx";
+import { SL, F } from "./src/helpers/FormHelpers";
 
 // Import views
 import { HomeView } from "./src/views/HomeView";

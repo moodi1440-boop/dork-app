@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { G } from "../styles.js";
+import { G } from "../styles";
 
 function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,reviews,refreshSalonBookings,rescheduleId,customer}){
   const[tab,setTab]=useState("book");

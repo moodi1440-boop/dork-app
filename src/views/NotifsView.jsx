@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { G } from "../styles.js";
-import { supabase, sb } from "../api/supabase.js";
+import { G } from "../styles";
+import { supabase, sb } from "../api/supabase";
 
 function NotifsView({setView}){
   const[notifs,setNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
