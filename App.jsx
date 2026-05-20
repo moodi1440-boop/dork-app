@@ -21,6 +21,14 @@ import {
   toAppCustomer
 } from "./src/utils/transformers";
 
+import {
+  getCustomerClassification,
+  requestNotifPermission,
+  sendNotif
+} from "./src/utils/notifications";
+
+import { playTone } from "./src/utils/audio";
+
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
   static getDerivedStateFromError(e){return{err:e};}
@@ -178,87 +186,9 @@ function buildDorkBgStyle(bgId,darkMode){
   return{...base,...bg.style};
 }
 
-function playTone(id, vol=0.7){
-  try{
-    const A=window.AudioContext||window.webkitAudioContext;
-    if(!A)return;
-    const ctx=new A();
-    const g=ctx.createGain(); g.gain.value=vol; g.connect(ctx.destination);
-    const beep=(freq,start,dur,type="sine",v=vol)=>{
-      const o=ctx.createOscillator(),gn=ctx.createGain();
-      o.type=type; o.frequency.value=freq;
-      gn.gain.setValueAtTime(v,ctx.currentTime+start);
-      gn.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
-      o.connect(gn); gn.connect(ctx.destination);
-      o.start(ctx.currentTime+start); o.stop(ctx.currentTime+start+dur);
-    };
-    const plays={
-      scissors:   ()=>{ beep(1200,0,.05,"square",.6); beep(900,0.08,.05,"square",.6); beep(1200,0.16,.05,"square",.6); beep(900,0.24,.05,"square",.6); },
-      razor:      ()=>{ [0,.06,.12,.18,.24].forEach(t=>beep(80+Math.random()*40,t,.07,"sawtooth",.7)); },
-      bell:       ()=>{ beep(880,0,.6,"sine",.8); beep(1100,.15,.5,"sine",.6); beep(1320,.3,.8,"sine",.5); },
-      cash:       ()=>{ beep(1800,0,.04,"square",.7); beep(2400,.05,.04,"square",.6); beep(1200,.12,.3,"triangle",.5); },
-      welcome:    ()=>{ [523,659,784,1047].forEach((f,i)=>beep(f,i*.12,.25,"sine",.7)); },
-      chime3:     ()=>{ [[880,.0],[1100,.18],[1320,.36],[1100,.54],[880,.72]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
-      alert:      ()=>{ [0,.1,.2].forEach(t=>beep(1400,t,.08,"square",.8)); },
-      classic:    ()=>{ [[440,0],[554,.15],[659,.3],[880,.5]].forEach(([f,t])=>beep(f,t,.3,"triangle",.7)); },
-      barberpole: ()=>{ [440,550,660,770,880,770,660,550].forEach((f,i)=>beep(f,i*.1,.15,"sine",.6)); },
-      clippers:   ()=>{ [0,.04,.08,.12,.16,.20,.24,.28].forEach(t=>beep(150+Math.random()*50,t,.05,"sawtooth",.5)); },
-      towel:      ()=>{ beep(300,0,.2,"sine",.4); beep(400,.2,.3,"sine",.5); beep(500,.4,.4,"sine",.6); },
-      mirror:     ()=>{ [[1047,0],[1319,.1],[1568,.2],[2093,.35]].forEach(([f,t])=>beep(f,t,.2,"sine",.7)); },
-      spray:      ()=>{ [0,.05,.1,.15,.2,.25,.3].forEach(t=>beep(2000+Math.random()*500,t,.04,"square",.3)); },
-      magazine:   ()=>{ beep(440,0,.1,"triangle",.5); beep(330,.15,.1,"triangle",.5); beep(440,.3,.3,"triangle",.6); },
-      fanfare:    ()=>{ [[523,0],[659,.1],[784,.2],[1047,.3],[784,.5],[1047,.65]].forEach(([f,t])=>beep(f,t,.2,"square",.6)); },
-      vip:        ()=>{ [[1047,0],[880,.15],[659,.3],[784,.45],[1047,.6],[1319,.8]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
-    };
-    plays[id]?.();
-  }catch(e){}
-}
+// playTone imported from src/utils/audio.js
 
-// ==============================================
-//  PUSH NOTIFICATIONS
-// ==============================================
-function getCustomerClassification(customer){
-  const history=(customer?.history||[]);
-  const total=history.filter(h=>h.status!=="rejected").length;
-  const completed=history.filter(h=>h.status==="approved").length;
-  const noShows=history.filter(h=>h.status==="cancelled"&&h.attendance==="no_show").length;
-  const lateCancels=history.filter(h=>h.status==="cancelled").length;
-  if(lateCancels>=3||noShows>=3)return{label:"⚠️ غير ملتزم",color:"#e74c3c",key:"unreliable"};
-  if(total===0)return{label:"🆕 جديد",color:"#3498db",key:"new"};
-  if(completed>=5&&lateCancels===0)return{label:"🌟 مميز",color:"#d4a017",key:"vip"};
-  if(completed>=2&&lateCancels<=1)return{label:"✅ منتظم",color:"#27ae60",key:"regular"};
-  return{label:"🆕 جديد",color:"#3498db",key:"new"};
-}
-
-async function requestNotifPermission(){
-  if(!("Notification" in window))return false;
-  if(Notification.permission==="granted")return true;
-  const p=await Notification.requestPermission();
-  return p==="granted";
-}
-
-function sendNotif(title,body,icon="✂",targetType="all",targetId=null){
-  // زيادة عداد الجرس
-  const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
-  localStorage.setItem("dork_notif_count",String(count+1));
-  // حفظ الإشعار محلياً
-  try{
-    const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-    notifs.unshift({id:Date.now(),title,body,icon,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
-    localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
-  }catch{}
-  // حفظ الإشعار في Supabase لمزامنة الويب
-  sb("notifications","POST",{target_type:targetType,target_id:targetId,title,body,icon}).catch(()=>{});
-  if(!("Notification" in window)||Notification.permission!=="granted")return;
-  try{new Notification(`${icon} ${title}`,{body,icon:"/favicon.ico",dir:"rtl",lang:"ar"});}catch{}
-}
-
-// طلب الإذن عند تحميل التطبيق
-if(typeof window!=="undefined"){
-  setTimeout(()=>requestNotifPermission(),3000);
-}
-//  المصدر: الخطة الموحدة للمراكز الإدارية ١٤٤٧هـ
-//  كل منطقة > محافظات > مراكز إدارية
+// Notification functions imported from src/utils/notifications.js
 // ==============================================
 const BASE_LOC=[
   {region:"الرياض",govs:[
