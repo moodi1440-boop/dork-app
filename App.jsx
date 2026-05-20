@@ -3120,7 +3120,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         @keyframes fadeInUp {from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
         @keyframes slideInFromRight {from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
         @keyframes scaleIn {from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
-        @keyframes growBar {from{width:0;}to{width:100%;}}
+        @keyframes growBar {from{transform:scaleX(0);}to{transform:scaleX(1);}}
         @keyframes pulse {0%,100%{opacity:1;}50%{opacity:.6;}}
         .stat-card{animation:fadeInUp .45s ease-out both;transition:all .25s ease;}
         .stat-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(212,160,23,.18);}
@@ -3128,20 +3128,18 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         .balance-tab{animation:slideInFromRight .4s cubic-bezier(0.4,0,0.2,1);}
         .notif-banner{animation:fadeInUp .4s ease-out;transition:all .3s ease;}
         .today-card{animation:scaleIn .4s ease-out;}
-        .occ-bar{animation:growBar 1.2s cubic-bezier(0.4,0,0.2,1) both;}
+        .occ-bar{animation:growBar 1.2s cubic-bezier(0.4,0,0.2,1);}
         .pending-pulse{animation:pulse 2s infinite;}
       `}</style>
       <div style={G.fp}>
 
       {/* ── الهيدر ── */}
       <div style={G.fh}>
-        <button style={G.bb} onClick={()=>setView("home")}>{">"}</button>
-        <h2 style={{...G.ft,flex:1}}>لوحة صالوني</h2>
-        <button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setOwnerSession(null);setView("home");}}>خروج</button>
+        <h2 style={{...G.ft,flex:1,cursor:"pointer"}} onClick={()=>{setTab(null);setActiveCard(null);}}>لوحة صالوني</h2>
       </div>
 
       {/* ── صف أيقونات التبويبات ── */}
-      <div style={{display:"flex",gap:7,overflowX:"auto",scrollbarWidth:"none",marginBottom:12,paddingBottom:2}}>
+      <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:12,paddingBottom:2}}>
         {[
           {id:"messages",icon:"💬",label:"رسائل"},
           {id:"calendar",icon:"🗓",label:"تقويم"},
@@ -3159,13 +3157,19 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
                 setTab(t=>t===id?null:id);
                 setActiveCard(null);
               }}
-              style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:isActive?"rgba(212,160,23,.13)":"rgba(255,255,255,.04)",border:`1px solid ${isActive?"rgba(212,160,23,.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"8px 12px",cursor:"pointer",flexShrink:0,position:"relative",fontFamily:"inherit",transition:"all .2s ease",minWidth:54}}>
-              <span style={{fontSize:20}}>{icon}</span>
-              <span style={{fontSize:9,color:isActive?"#d4a017":"#666",fontWeight:isActive?700:400,whiteSpace:"nowrap"}}>{label}</span>
-              {hasBadge&&<div style={{position:"absolute",top:5,right:5,width:7,height:7,borderRadius:"50%",background:"#e74c3c",boxShadow:"0 0 4px #e74c3c"}}/>}
+              style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:isActive?"rgba(212,160,23,.13)":"rgba(255,255,255,.04)",border:`1px solid ${isActive?"rgba(212,160,23,.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,position:"relative",fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
+              <span style={{fontSize:18}}>{icon}</span>
+              <span style={{fontSize:8,color:isActive?"#d4a017":"#666",fontWeight:isActive?700:400,whiteSpace:"nowrap"}}>{label}</span>
+              {hasBadge&&<div style={{position:"absolute",top:4,right:4,width:6,height:6,borderRadius:"50%",background:"#e74c3c",boxShadow:"0 0 4px #e74c3c"}}/>}
             </button>
           );
         })}
+        <button
+          onClick={()=>{setOwnerSession(null);setView("home");}}
+          style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"rgba(231,76,60,.07)",border:"1px solid rgba(231,76,60,.2)",borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
+          <span style={{fontSize:18}}>🚪</span>
+          <span style={{fontSize:8,color:"#e74c3c",fontWeight:600,whiteSpace:"nowrap"}}>خروج</span>
+        </button>
       </div>
 
       {/* ── بادج الصالون المحسّن ── */}
@@ -3217,7 +3221,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             <div style={{fontSize:12,fontWeight:800,color:_occ>=80?"#e74c3c":_occ>=50?"#d4a017":"#27ae60"}}>{_occ}%</div>
           </div>
           <div style={{height:7,background:"rgba(255,255,255,.05)",borderRadius:10,overflow:"hidden"}}>
-            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,#a07810,#f0c040)":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,boxShadow:_occ>0?`0 0 8px ${_occ>=80?"rgba(231,76,60,.5)":_occ>=50?"rgba(212,160,23,.5)":"rgba(39,174,96,.5)"}`:""}}/>
+            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,#a07810,#f0c040)":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center",boxShadow:_occ>0?`0 0 8px ${_occ>=80?"rgba(231,76,60,.5)":_occ>=50?"rgba(212,160,23,.5)":"rgba(39,174,96,.5)"}`:""}}/>
           </div>
         </div>
 
