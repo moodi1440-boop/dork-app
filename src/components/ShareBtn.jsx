@@ -1,5 +1,5 @@
 import React from "react";
-import { G } from "../styles";
+import { G } from "../styles.js";
 
 function ShareBtn({salon}){
   const shareUrl=`${window.location.origin}${window.location.pathname}?salon=${salon.id}`;

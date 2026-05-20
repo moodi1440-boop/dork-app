@@ -1,5 +1,5 @@
 import React from "react";
-import { G } from "../styles";
+import { G } from "../styles.js";
 
 function SL({children}){return <div style={G.sl2}>{children}</div>;}
 function F({label,error,children,style}){return <div style={{marginBottom:11,...style}}>{label&&<label style={{display:"block",fontSize:12,color:"#aaa",marginBottom:3,fontWeight:600}}>{label}</label>}{children}{error&&<div style={G.err}>{error}</div>}</div>;}

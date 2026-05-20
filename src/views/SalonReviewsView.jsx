@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { G } from "../styles";
+import { G } from "../styles.js";
 
 function SalonReviewsView({salon,reviews,setView}){
   const gold="#d4a017";

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { G } from "../styles";
+import { G } from "../styles.js";
 
 function NearMapView({salons,setView,setSelSalon}){
   const[userLoc,setUserLoc]=useState(null);

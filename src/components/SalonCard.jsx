@@ -1,5 +1,5 @@
 import React from "react";
-import { G } from "../styles";
+import { G } from "../styles.js";
 
 function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
   const displayRating=realRating||salon.rating||"5.0";

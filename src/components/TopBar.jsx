@@ -1,5 +1,5 @@
 import React from "react";
-import { G } from "../styles";
+import { G } from "../styles.js";
 
 function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustomerSession,darkMode,setDarkMode,resetHome}){
   return(

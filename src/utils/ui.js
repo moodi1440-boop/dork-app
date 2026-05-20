@@ -1,5 +1,5 @@
-import { BACKGROUNDS, BG_LIGHT_STYLES } from "../constants";
-import { normalizeBgId } from "./helpers";
+import { BACKGROUNDS, BG_LIGHT_STYLES } from "../constants.js";
+import { normalizeBgId } from "./helpers.js";
 
 function buildDorkBgStyle(bgId, darkMode) {
   const id = normalizeBgId(bgId);

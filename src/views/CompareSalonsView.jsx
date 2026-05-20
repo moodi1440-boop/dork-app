@@ -1,5 +1,5 @@
 import React from "react";
-import { G } from "../styles";
+import { G } from "../styles.js";
 
 function CompareSalonsView({salons,setView,setSelSalon}){
   if(!salons||salons.length<2)return(

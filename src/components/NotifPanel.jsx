@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { G } from "../styles";
-import { supabase, sb } from "../api/supabase";
-import { SLOT_MIN, MONTHS_AR, normalizeBgId, makeSlots, getSlotsForSalon, todayStr, openMaps, calcTotal, normPhone } from "../utils/helpers";
+import { G } from "../styles.js";
+import { supabase, sb } from "../api/supabase.js";
+import { SLOT_MIN, MONTHS_AR, normalizeBgId, makeSlots, getSlotsForSalon, todayStr, openMaps, calcTotal, normPhone } from "../utils/helpers.js";
 
 function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved"}){
   const[showWaiting,setShowWaiting]=useState(false);

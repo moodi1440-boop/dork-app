@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { G } from "../styles";
+import { G } from "../styles.js";
 
 function InlineStarRating({rated,comment,onRate}){
   const[hover,setHover]=useState(0);
