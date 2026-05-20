@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { G } from "../styles";
 import { playTone } from "../utils/audio";
+import { F, SL } from "../helpers/FormHelpers";
 import { TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES, DEFAULT_SOCIAL_LINKS } from "../constants";
 
 function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,persistUiToSupabase}){
