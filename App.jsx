@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { createClient } from "@supabase/supabase-js";
+
+// Import Supabase API
+import { supabase, sb } from "./src/api/supabase";
 
 // Import utilities
 import {
@@ -47,34 +49,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// ==============================================
-//  SUPABASE CLIENT
-// ==============================================
-const SUPABASE_URL    = "https://ywrlhvzfefvyogfxfdhl.supabase.co";
-const SUPABASE_ANON   = "sb_publishable_3tbZHK51ohv9AITf-Mt5Ww_MGZ1DMQs";
-
-// Supabase JS client for Realtime subscriptions
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
-
-async function sb(table, method, body, query = "") {
-  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "apikey": SUPABASE_ANON,
-      "Authorization": `Bearer ${SUPABASE_ANON}`,
-      "Content-Type": "application/json",
-      "Prefer": method === "POST" ? "return=representation" : "return=representation",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Supabase ${method} ${table}: ${err}`);
-  }
-  const text = await res.text();
-  return text ? JSON.parse(text) : [];
-}
+// Supabase client and sb function imported from src/api/supabase.js
 
 // Data transformers imported from src/utils/transformers.js
 
