@@ -1,5 +1,38 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { createClient } from "@supabase/supabase-js";
+
+// =============================================
+//  IMPORTS FROM NEW LAYER STRUCTURE
+// =============================================
+
+// Core & Data Layer
+import { supabase } from "./src/core/supabase";
+import {
+  toAppSalon,
+  toDbSalon,
+  toAppBooking,
+  toAppCustomer,
+  getCustomerClassification,
+} from "./src/data/transformers";
+import * as API from "./src/data/api";
+
+// Utils
+import {
+  normPhone,
+  calcTotal,
+  todayStr,
+  normalizeBgId,
+  buildDorkBgStyle,
+  makeSlots,
+  getSlotsForSalon,
+} from "./src/utils/formatters";
+import {
+  openMaps,
+  haversine,
+  getSalonCoords,
+  calculateDistance,
+  isOpenNow,
+} from "./src/utils/locationUtils";
+import { playTone } from "./src/utils/audioUtils";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -19,269 +52,11 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// ==============================================
-//  SUPABASE CLIENT
-// ==============================================
-const SUPABASE_URL    = "https://ywrlhvzfefvyogfxfdhl.supabase.co";
-const SUPABASE_ANON   = "sb_publishable_3tbZHK51ohv9AITf-Mt5Ww_MGZ1DMQs";
-
-// Supabase JS client for Realtime subscriptions
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
-
-async function sb(table, method, body, query = "") {
-  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "apikey": SUPABASE_ANON,
-      "Authorization": `Bearer ${SUPABASE_ANON}`,
-      "Content-Type": "application/json",
-      "Prefer": method === "POST" ? "return=representation" : "return=representation",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Supabase ${method} ${table}: ${err}`);
-  }
-  const text = await res.text();
-  return text ? JSON.parse(text) : [];
-}
-
-// تحويل بيانات Supabase > شكل التطبيق
-function toAppSalon(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    owner: row.owner,
-    ownerPhone: row.owner_phone,
-    region: row.region,
-    gov: row.gov,
-    center: row.center,
-    village: row.village,
-    phone: row.phone,
-    address: row.address,
-    locationUrl: row.location_url,
-    services: row.services || [],
-    prices: row.prices || {},
-    shiftEnabled: row.shift_enabled,
-    shift1Start: row.shift1_start,
-    shift1End: row.shift1_end,
-    shift2Start: row.shift2_start,
-    shift2End: row.shift2_end,
-    workStart: row.work_start,
-    workEnd: row.work_end,
-    barbers: row.barbers || [],
-    tone: row.tone,
-    rating: row.rating,
-    status: row.status,
-    paused: row.paused || false,
-    frozen: row.frozen || false,
-    banned: row.banned || false,
-    welcomeMsg: row.welcome_msg || "",
-    closedDays: row.closed_days || [],
-    slotMin: row.slot_min || 40,
-    password: row.password || "",
-    oathDone: row.oath_done || false,
-    cancellationWindow: row.cancellation_window || 2,
-    bookings: [],
-  };
-}
-
-// تحويل بيانات التطبيق > Supabase
-function toDbSalon(s) {
-  return {
-    name: s.name,
-    owner: s.owner,
-    owner_phone: s.ownerPhone,
-    region: s.region,
-    gov: s.gov,
-    center: s.center,
-    village: s.village,
-    phone: s.phone,
-    address: s.address,
-    location_url: s.locationUrl,
-    services: s.services,
-    prices: s.prices,
-    shift_enabled: s.shiftEnabled,
-    shift1_start: s.shift1Start,
-    shift1_end: s.shift1End,
-    shift2_start: s.shift2Start,
-    shift2_end: s.shift2End,
-    work_start: s.workStart,
-    work_end: s.workEnd,
-    barbers: s.barbers,
-    tone: s.tone,
-  };
-}
-
-function toAppBooking(row) {
-  return {
-    id: row.id,
-    salonId: row.salon_id,
-    name: row.name,
-    phone: row.phone,
-    email: row.email||"",
-    services: row.services || [],
-    barberId: row.barber_id,
-    barberName: row.barber_name,
-    date: row.date,
-    time: row.time,
-    total: row.total,
-    status: row.status,
-  };
-}
-
-function toAppCustomer(row) {
-  let history=row.history||[];
-  let favs=row.favs||[];
-  if(!history.length){
-    try{const h=localStorage.getItem(`hist_${row.id}`);if(h)history=JSON.parse(h);}catch{}
-  }
-  if(!favs.length){
-    try{const f=localStorage.getItem(`favs_${row.id}`);if(f)favs=JSON.parse(f);}catch{}
-  }
-  return {
-    id: row.id,
-    name: row.name,
-    phone: row.phone,
-    email: row.email||"",
-    password: row.password,
-    googleUid: row.google_uid||"",
-    favs,
-    history,
-    createdAt: row.created_at||new Date().toISOString(),
-  };
-}
-
-// ==============================================
-//  CONSTANTS
-// ==============================================
-const SLOT_MIN  = 40;
-const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
-
-/** مصدر الحقيقة لإعدادات المنصة في جدول app_settings (Supabase) */
-const DEFAULT_SOCIAL_LINKS={email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false,customFields:[]};
-
-// ==============================================
-//  TONES  - louder + barbershop themed
-// ==============================================
-const TONES = [
-  { id:"scissors",  label:"مقص ✂"          },
-  { id:"razor",     label:"ماكينة 🪒"       },
-  { id:"bell",      label:"جرس الباب 🔔"    },
-  { id:"cash",      label:"صندوق النقد 💰"  },
-  { id:"welcome",   label:"أهلاً وسهلاً 🎉" },
-  { id:"chime3",    label:"جرس ثلاثي 🎶"   },
-  { id:"alert",     label:"تنبيه عاجل ⚡"   },
-  { id:"classic",   label:"كلاسيك 🎵"       },
-  { id:"barberpole",label:"عمود الحلاق 💈"  },
-  { id:"clippers",  label:"ماكينة كهربائية ⚡"},
-  { id:"towel",     label:"منشفة ساخنة 🧖"  },
-  { id:"mirror",    label:"المرايا ✨"       },
-  { id:"spray",     label:"رشاش الماء 💦"   },
-  { id:"magazine",  label:"مجلة انتظار 📖"  },
-  { id:"fanfare",   label:"فانفاري 🎺"       },
-  { id:"vip",       label:"VIP دخول 👑"      },
-];
-
-const THEMES = {
-  gold:      {primary:"#d4a017", light:"#f0c040", dark:"#a07810", lightest:"#f5d76e", rgb:"212,160,23"},
-  emerald:   {primary:"#10b981", light:"#34d399", dark:"#047857", lightest:"#6ee7b7", rgb:"16,185,129"},
-  sapphire:  {primary:"#3b82f6", light:"#60a5fa", dark:"#1e40af", lightest:"#93c5fd", rgb:"59,130,246"},
-  royalBlue: {primary:"#1e3a8a", light:"#3b82f6", dark:"#172554", lightest:"#93c5fd", rgb:"30,58,138"},
-  bronze:    {primary:"#8b5a2b", light:"#c9a227", dark:"#5c3d1a", lightest:"#e8c97a", rgb:"139,90,43"},
-  rose:      {primary:"#ec4899", light:"#f472b6", dark:"#9d174d", lightest:"#f9a8d4", rgb:"236,72,153"},
-  violet:    {primary:"#8b5cf6", light:"#a78bfa", dark:"#5b21b6", lightest:"#c4b5fd", rgb:"139,92,246"},
-  crimson:   {primary:"#ef4444", light:"#f87171", dark:"#991b1b", lightest:"#fca5a5", rgb:"239,68,68"},
-};
-
-const BACKGROUNDS=[
-  {id:"none",    label:"بلا خلفية",    emoji:"⬛", style:{background:"#0d0d1a",backgroundImage:"none"}},
-  {id:"stars",   label:"نجوم",          emoji:"✨", style:{background:"radial-gradient(ellipse at top,#1a1a3a 0%,#0d0d1a 70%)",backgroundImage:"radial-gradient(circle,rgba(255,255,255,.08) 1px,transparent 1px)",backgroundSize:"40px 40px"}},
-  {id:"grid",    label:"شبكة",          emoji:"🔲", style:{background:"#0d0d1a",backgroundImage:"linear-gradient(rgba(212,160,23,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(212,160,23,.05) 1px,transparent 1px)",backgroundSize:"30px 30px"}},
-  {id:"waves",   label:"أمواج",         emoji:"🌊", style:{background:"linear-gradient(180deg,#0d0d1a 0%,#0a1628 50%,#0d0d1a 100%)",backgroundImage:"none"}},
-  {id:"marble",  label:"رخام",          emoji:"🪨", style:{background:"linear-gradient(135deg,#111118 25%,#1a1a2a 25%,#1a1a2a 50%,#111118 50%,#111118 75%,#1a1a2a 75%)",backgroundSize:"20px 20px",backgroundImage:"none"}},
-  {id:"circuit", label:"دوائر",         emoji:"🔌", style:{background:"#0d0d1a",backgroundImage:"radial-gradient(circle at 50% 50%,rgba(212,160,23,.03) 0%,transparent 60%)"}},
-  {id:"royal",   label:"ملكي",          emoji:"👑", style:{
-    background:"linear-gradient(160deg,#12081f 0%,#1a0a28 45%,#0f0818 100%)",
-    backgroundImage:"radial-gradient(ellipse 90% 45% at 50% -15%, rgba(212,160,23,.18), transparent), radial-gradient(circle at 100% 100%, rgba(91,33,182,.14), transparent 55%)",
-  }},
-  {id:"tech",    label:"تقني",          emoji:"⚡", style:{
-    background:"#050a12",
-    backgroundImage:"linear-gradient(rgba(56,189,248,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.07) 1px,transparent 1px), radial-gradient(ellipse 100% 40% at 50% 0%, rgba(34,211,238,.09), transparent 60%)",
-    backgroundSize:"22px 22px,22px 22px,100% 100%",
-  }},
-  {id:"goldMarble",label:"رخام ذهبي",   emoji:"✦", style:{
-    background:"linear-gradient(118deg,#141210 0%,#1c1812 30%,#12100c 60%,#1a1612 100%)",
-    backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(212,160,23,.05) 3px,rgba(212,160,23,.05) 6px), radial-gradient(ellipse 70% 50% at 25% 15%, rgba(240,192,64,.14), transparent 55%)",
-  }},
-];
-
-/** أوضاع فاتحة لطبقة الخلفية خلف المحتوى */
-const BG_LIGHT_STYLES={
-  none:{background:"#eef0f6",backgroundImage:"none",backgroundSize:"auto"},
-  stars:{background:"linear-gradient(180deg,#e4e8f4 0%,#f4f5fb 100%)",backgroundImage:"radial-gradient(circle,rgba(30,58,138,.07) 1px,transparent 1px)",backgroundSize:"40px 40px"},
-  grid:{background:"#eef0f6",backgroundImage:"linear-gradient(rgba(30,58,138,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(30,58,138,.06) 1px,transparent 1px)",backgroundSize:"30px 30px"},
-  waves:{background:"linear-gradient(180deg,#f0f2f8 0%,#e2e8f4 50%,#f0f2f8 100%)",backgroundImage:"none"},
-  marble:{background:"linear-gradient(135deg,#f8f7f5 25%,#ece8e4 25%,#ece8e4 50%,#f8f7f5 50%,#f8f7f5 75%,#ece8e4 75%)",backgroundSize:"20px 20px",backgroundImage:"none"},
-  circuit:{background:"#eef1f8",backgroundImage:"radial-gradient(circle at 50% 40%,rgba(59,130,246,.06) 0%,transparent 65%)"},
-  royal:{background:"linear-gradient(165deg,#ede8f5 0%,#e8e4f2 50%,#f2f0fa 100%)",backgroundImage:"radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,.12), transparent), radial-gradient(circle at 100% 100%, rgba(212,160,23,.08), transparent 50%)"},
   tech:{background:"#f0f4fa",backgroundImage:"linear-gradient(rgba(14,116,144,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(14,116,144,.05) 1px,transparent 1px), radial-gradient(ellipse 100% 35% at 50% 0%, rgba(56,189,248,.1), transparent 55%)",backgroundSize:"22px 22px,22px 22px,100% 100%"},
   goldMarble:{background:"linear-gradient(120deg,#faf8f5 0%,#f3efe8 45%,#faf7f2 100%)",backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(166,124,41,.06) 3px,rgba(166,124,41,.06) 6px), radial-gradient(ellipse 65% 45% at 30% 10%, rgba(201,162,39,.12), transparent 50%)"},
 };
 
-function normalizeBgId(id){
-  if(BACKGROUNDS.some(b=>b.id===id))return id;
-  return"none";
-}
 
-function buildDorkBgStyle(bgId,darkMode){
-  const id=normalizeBgId(bgId);
-  const base={position:"fixed",inset:0,zIndex:-1,pointerEvents:"none"};
-  if(!darkMode){
-    const L=BG_LIGHT_STYLES[id]||BG_LIGHT_STYLES.none;
-    return{...base,...L};
-  }
-  const bg=BACKGROUNDS.find(b=>b.id===id)||BACKGROUNDS[0];
-  return{...base,...bg.style};
-}
-
-function playTone(id, vol=0.7){
-  try{
-    const A=window.AudioContext||window.webkitAudioContext;
-    if(!A)return;
-    const ctx=new A();
-    const g=ctx.createGain(); g.gain.value=vol; g.connect(ctx.destination);
-    const beep=(freq,start,dur,type="sine",v=vol)=>{
-      const o=ctx.createOscillator(),gn=ctx.createGain();
-      o.type=type; o.frequency.value=freq;
-      gn.gain.setValueAtTime(v,ctx.currentTime+start);
-      gn.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
-      o.connect(gn); gn.connect(ctx.destination);
-      o.start(ctx.currentTime+start); o.stop(ctx.currentTime+start+dur);
-    };
-    const plays={
-      scissors:   ()=>{ beep(1200,0,.05,"square",.6); beep(900,0.08,.05,"square",.6); beep(1200,0.16,.05,"square",.6); beep(900,0.24,.05,"square",.6); },
-      razor:      ()=>{ [0,.06,.12,.18,.24].forEach(t=>beep(80+Math.random()*40,t,.07,"sawtooth",.7)); },
-      bell:       ()=>{ beep(880,0,.6,"sine",.8); beep(1100,.15,.5,"sine",.6); beep(1320,.3,.8,"sine",.5); },
-      cash:       ()=>{ beep(1800,0,.04,"square",.7); beep(2400,.05,.04,"square",.6); beep(1200,.12,.3,"triangle",.5); },
-      welcome:    ()=>{ [523,659,784,1047].forEach((f,i)=>beep(f,i*.12,.25,"sine",.7)); },
-      chime3:     ()=>{ [[880,.0],[1100,.18],[1320,.36],[1100,.54],[880,.72]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
-      alert:      ()=>{ [0,.1,.2].forEach(t=>beep(1400,t,.08,"square",.8)); },
-      classic:    ()=>{ [[440,0],[554,.15],[659,.3],[880,.5]].forEach(([f,t])=>beep(f,t,.3,"triangle",.7)); },
-      barberpole: ()=>{ [440,550,660,770,880,770,660,550].forEach((f,i)=>beep(f,i*.1,.15,"sine",.6)); },
-      clippers:   ()=>{ [0,.04,.08,.12,.16,.20,.24,.28].forEach(t=>beep(150+Math.random()*50,t,.05,"sawtooth",.5)); },
-      towel:      ()=>{ beep(300,0,.2,"sine",.4); beep(400,.2,.3,"sine",.5); beep(500,.4,.4,"sine",.6); },
-      mirror:     ()=>{ [[1047,0],[1319,.1],[1568,.2],[2093,.35]].forEach(([f,t])=>beep(f,t,.2,"sine",.7)); },
-      spray:      ()=>{ [0,.05,.1,.15,.2,.25,.3].forEach(t=>beep(2000+Math.random()*500,t,.04,"square",.3)); },
-      magazine:   ()=>{ beep(440,0,.1,"triangle",.5); beep(330,.15,.1,"triangle",.5); beep(440,.3,.3,"triangle",.6); },
-      fanfare:    ()=>{ [[523,0],[659,.1],[784,.2],[1047,.3],[784,.5],[1047,.65]].forEach(([f,t])=>beep(f,t,.2,"square",.6)); },
-      vip:        ()=>{ [[1047,0],[880,.15],[659,.3],[784,.45],[1047,.6],[1319,.8]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
-    };
-    plays[id]?.();
-  }catch(e){}
-}
 
 // ==============================================
 //  PUSH NOTIFICATIONS
@@ -549,21 +324,6 @@ function buildHomeReviewsFeed(customers, approvedSalons){
         customerName:(c.name||"عميل").trim(),
         rating:h.rating,
         comment:(h.comment||"").trim(),
-        date:h.date||"",
-        time:h.time||"",
-      });
-    }
-  }
-  rows.sort((a,b)=>{
-    const d=(b.date||"").localeCompare(a.date||"");
-    if(d!==0)return d;
-    return (b.time||"").localeCompare(a.time||"");
-  });
-  return rows;
-}
-
-const DEMO_SALONS=[
-  {id:1,name:"صالون الأناقة",owner:"أحمد محمد",ownerPhone:"0501234567",region:"منطقة مكة المكرمة",gov:"محافظة جدة",center:"مركز جدة",village:"الروضة",phone:"0501234567",address:"شارع الملك عبدالعزيز",locationUrl:"https://maps.google.com/?q=21.5433,39.1728",services:["قص شعر","حلاقة لحية","تسريح"],prices:{"قص شعر":50,"حلاقة لحية":30,"تسريح":40},shiftEnabled:true,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"08:00",workEnd:"23:00",barbers:[{id:"b1",name:"أبو خالد"},{id:"b2",name:"محمد"}],tone:"bell",bookings:[],rating:4.8,status:"approved"},
   {id:2,name:"بارشوب كلاسيك",owner:"سالم العتيبي",ownerPhone:"0559876543",region:"منطقة الرياض",gov:"محافظة الرياض",center:"مركز الرياض",village:"العليا",phone:"0559876543",address:"طريق الملك فهد",locationUrl:"https://maps.google.com/?q=24.6877,46.7219",services:["قص شعر","حلاقة كاملة","عناية بالبشرة"],prices:{"قص شعر":60,"حلاقة كاملة":80,"عناية بالبشرة":100},shiftEnabled:false,workStart:"10:00",workEnd:"23:00",barbers:[{id:"b3",name:"يوسف"},{id:"b4",name:"عبدالله"},{id:"b5",name:"فهد"}],tone:"welcome",bookings:[],rating:4.6,status:"approved"},
   {id:3,name:"صالون النخبة",owner:"فهد القحطاني",ownerPhone:"0533445566",region:"منطقة عسير",gov:"محافظة أبها",center:"مركز أبها",village:"السودة",phone:"0533445566",address:"شارع الأمير سلطان",locationUrl:"https://maps.google.com/?q=18.2164,42.5053",services:["قص شعر","تسريح","صبغة شعر"],prices:{"قص شعر":45,"تسريح":35,"صبغة شعر":100},shiftEnabled:false,workStart:"09:00",workEnd:"22:00",barbers:[{id:"b6",name:"عبدالرحمن"}],tone:"scissors",bookings:[],rating:4.5,status:"pending"},
 ];
