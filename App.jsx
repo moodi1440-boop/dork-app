@@ -11,7 +11,6 @@ import {
   toDbSalon,
   toAppBooking,
   toAppCustomer,
-  getCustomerClassification,
 } from "./src/data/transformers";
 import * as API from "./src/data/api";
 
@@ -52,11 +51,82 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// ==============================================
+//  CONSTANTS
+// ==============================================
+const SLOT_MIN  = 40;
+const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+
+/** مصدر الحقيقة لإعدادات المنصة في جدول app_settings (Supabase) */
+const DEFAULT_SOCIAL_LINKS={email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false,customFields:[]};
+
+// ==============================================
+//  TONES  - louder + barbershop themed
+// ==============================================
+const TONES = [
+  { id:"scissors",  label:"مقص ✂"          },
+  { id:"razor",     label:"ماكينة 🪒"       },
+  { id:"bell",      label:"جرس الباب 🔔"    },
+  { id:"cash",      label:"صندوق النقد 💰"  },
+  { id:"welcome",   label:"أهلاً وسهلاً 🎉" },
+  { id:"chime3",    label:"جرس ثلاثي 🎶"   },
+  { id:"alert",     label:"تنبيه عاجل ⚡"   },
+  { id:"classic",   label:"كلاسيك 🎵"       },
+  { id:"barberpole",label:"عمود الحلاق 💈"  },
+  { id:"clippers",  label:"ماكينة كهربائية ⚡"},
+  { id:"towel",     label:"منشفة ساخنة 🧖"  },
+  { id:"mirror",    label:"المرايا ✨"       },
+  { id:"spray",     label:"رشاش الماء 💦"   },
+  { id:"magazine",  label:"مجلة انتظار 📖"  },
+  { id:"fanfare",   label:"فانفاري 🎺"       },
+  { id:"vip",       label:"VIP دخول 👑"      },
+];
+
+const THEMES = {
+  gold:      {primary:"#d4a017", light:"#f0c040", dark:"#a07810", lightest:"#f5d76e", rgb:"212,160,23"},
+  emerald:   {primary:"#10b981", light:"#34d399", dark:"#047857", lightest:"#6ee7b7", rgb:"16,185,129"},
+  sapphire:  {primary:"#3b82f6", light:"#60a5fa", dark:"#1e40af", lightest:"#93c5fd", rgb:"59,130,246"},
+  royalBlue: {primary:"#1e3a8a", light:"#3b82f6", dark:"#172554", lightest:"#93c5fd", rgb:"30,58,138"},
+  bronze:    {primary:"#8b5a2b", light:"#c9a227", dark:"#5c3d1a", lightest:"#e8c97a", rgb:"139,90,43"},
+  rose:      {primary:"#ec4899", light:"#f472b6", dark:"#9d174d", lightest:"#f9a8d4", rgb:"236,72,153"},
+  violet:    {primary:"#8b5cf6", light:"#a78bfa", dark:"#5b21b6", lightest:"#c4b5fd", rgb:"139,92,246"},
+  crimson:   {primary:"#ef4444", light:"#f87171", dark:"#991b1b", lightest:"#fca5a5", rgb:"239,68,68"},
+};
+
+const BACKGROUNDS=[
+  {id:"none",    label:"بلا خلفية",    emoji:"⬛", style:{background:"#0d0d1a",backgroundImage:"none"}},
+  {id:"stars",   label:"نجوم",          emoji:"✨", style:{background:"radial-gradient(ellipse at top,#1a1a3a 0%,#0d0d1a 70%)",backgroundImage:"radial-gradient(circle,rgba(255,255,255,.08) 1px,transparent 1px)",backgroundSize:"40px 40px"}},
+  {id:"grid",    label:"شبكة",          emoji:"🔲", style:{background:"#0d0d1a",backgroundImage:"linear-gradient(rgba(212,160,23,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(212,160,23,.05) 1px,transparent 1px)",backgroundSize:"30px 30px"}},
+  {id:"waves",   label:"أمواج",         emoji:"🌊", style:{background:"linear-gradient(180deg,#0d0d1a 0%,#0a1628 50%,#0d0d1a 100%)",backgroundImage:"none"}},
+  {id:"marble",  label:"رخام",          emoji:"🪨", style:{background:"linear-gradient(135deg,#111118 25%,#1a1a2a 25%,#1a1a2a 50%,#111118 50%,#111118 75%,#1a1a2a 75%)",backgroundSize:"20px 20px",backgroundImage:"none"}},
+  {id:"circuit", label:"دوائر",         emoji:"🔌", style:{background:"#0d0d1a",backgroundImage:"radial-gradient(circle at 50% 50%,rgba(212,160,23,.03) 0%,transparent 60%)"}},
+  {id:"royal",   label:"ملكي",          emoji:"👑", style:{
+    background:"linear-gradient(160deg,#12081f 0%,#1a0a28 45%,#0f0818 100%)",
+    backgroundImage:"radial-gradient(ellipse 90% 45% at 50% -15%, rgba(212,160,23,.18), transparent), radial-gradient(circle at 100% 100%, rgba(91,33,182,.14), transparent 55%)",
+  }},
+  {id:"tech",    label:"تقني",          emoji:"⚡", style:{
+    background:"#050a12",
+    backgroundImage:"linear-gradient(rgba(56,189,248,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.07) 1px,transparent 1px), radial-gradient(ellipse 100% 40% at 50% 0%, rgba(34,211,238,.09), transparent 60%)",
+    backgroundSize:"22px 22px,22px 22px,100% 100%",
+  }},
+  {id:"goldMarble",label:"رخام ذهبي",   emoji:"✦", style:{
+    background:"linear-gradient(118deg,#141210 0%,#1c1812 30%,#12100c 60%,#1a1612 100%)",
+    backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(212,160,23,.05) 3px,rgba(212,160,23,.05) 6px), radial-gradient(ellipse 70% 50% at 25% 15%, rgba(240,192,64,.14), transparent 55%)",
+  }},
+];
+
+/** أوضاع فاتحة لطبقة الخلفية خلف المحتوى */
+const BG_LIGHT_STYLES={
+  none:{background:"#eef0f6",backgroundImage:"none",backgroundSize:"auto"},
+  stars:{background:"linear-gradient(180deg,#e4e8f4 0%,#f4f5fb 100%)",backgroundImage:"radial-gradient(circle,rgba(30,58,138,.07) 1px,transparent 1px)",backgroundSize:"40px 40px"},
+  grid:{background:"#eef0f6",backgroundImage:"linear-gradient(rgba(30,58,138,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(30,58,138,.06) 1px,transparent 1px)",backgroundSize:"30px 30px"},
+  waves:{background:"linear-gradient(180deg,#f0f2f8 0%,#e2e8f4 50%,#f0f2f8 100%)",backgroundImage:"none"},
+  marble:{background:"linear-gradient(135deg,#f8f7f5 25%,#ece8e4 25%,#ece8e4 50%,#f8f7f5 50%,#f8f7f5 75%,#ece8e4 75%)",backgroundSize:"20px 20px",backgroundImage:"none"},
+  circuit:{background:"#eef1f8",backgroundImage:"radial-gradient(circle at 50% 40%,rgba(59,130,246,.06) 0%,transparent 65%)"},
+  royal:{background:"linear-gradient(165deg,#ede8f5 0%,#e8e4f2 50%,#f2f0fa 100%)",backgroundImage:"radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,.12), transparent), radial-gradient(circle at 100% 100%, rgba(212,160,23,.08), transparent 50%)"},
   tech:{background:"#f0f4fa",backgroundImage:"linear-gradient(rgba(14,116,144,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(14,116,144,.05) 1px,transparent 1px), radial-gradient(ellipse 100% 35% at 50% 0%, rgba(56,189,248,.1), transparent 55%)",backgroundSize:"22px 22px,22px 22px,100% 100%"},
   goldMarble:{background:"linear-gradient(120deg,#faf8f5 0%,#f3efe8 45%,#faf7f2 100%)",backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(166,124,41,.06) 3px,rgba(166,124,41,.06) 6px), radial-gradient(ellipse 65% 45% at 30% 10%, rgba(201,162,39,.12), transparent 50%)"},
 };
-
-
 
 // ==============================================
 //  PUSH NOTIFICATIONS
@@ -288,23 +358,6 @@ const DEFAULT_SERVICES=["قص شعر","حلاقة لحية","تسريح","حلا
 
 // ==============================================
 //  UTILS
-// ==============================================
-function makeSlots(s,e,slotMin=40){
-  const r=[]; let[h,m]=s.split(":").map(Number); const[eh,em]=e.split(":").map(Number);
-  while(h<eh||(h===eh&&m<em)){r.push(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);m+=slotMin;if(m>=60){h++;m-=60;}} return r;
-}
-function getSlotsForSalon(s){
-  const sm=s.slotMin||SLOT_MIN;
-  if(s.shiftEnabled){
-    return[...(s.shift1Start&&s.shift1End?makeSlots(s.shift1Start,s.shift1End,sm):[]),...(s.shift2Start&&s.shift2End?makeSlots(s.shift2Start,s.shift2End,sm):[])];
-  }
-  return makeSlots(s.workStart||"09:00",s.workEnd||"22:00",sm);
-}
-function todayStr(){return new Date().toISOString().split("T")[0];}
-function openMaps(url,name,addr){window.open(url?.trim()||`https://www.google.com/maps/search/${encodeURIComponent(name+" "+addr)}`,"_blank");}
-function calcTotal(svcs,prices){return(svcs||[]).reduce((a,s)=>a+(prices?.[s]||0),0);}
-function normPhone(p){return String(p||"").replace(/\D/g,"");}
-
 /** تقييمات معتمدة من عملاء لصالونات مفعّلة — للصفحة الرئيسية */
 function buildHomeReviewsFeed(customers, approvedSalons){
   const byId=new Map(approvedSalons.map(s=>[Number(s.id),s]));
@@ -324,6 +377,21 @@ function buildHomeReviewsFeed(customers, approvedSalons){
         customerName:(c.name||"عميل").trim(),
         rating:h.rating,
         comment:(h.comment||"").trim(),
+        date:h.date||"",
+        time:h.time||"",
+      });
+    }
+  }
+  rows.sort((a,b)=>{
+    const d=(b.date||"").localeCompare(a.date||"");
+    if(d!==0)return d;
+    return (b.time||"").localeCompare(a.time||"");
+  });
+  return rows;
+}
+
+const DEMO_SALONS=[
+  {id:1,name:"صالون الأناقة",owner:"أحمد محمد",ownerPhone:"0501234567",region:"منطقة مكة المكرمة",gov:"محافظة جدة",center:"مركز جدة",village:"الروضة",phone:"0501234567",address:"شارع الملك عبدالعزيز",locationUrl:"https://maps.google.com/?q=21.5433,39.1728",services:["قص شعر","حلاقة لحية","تسريح"],prices:{"قص شعر":50,"حلاقة لحية":30,"تسريح":40},shiftEnabled:true,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"08:00",workEnd:"23:00",barbers:[{id:"b1",name:"أبو خالد"},{id:"b2",name:"محمد"}],tone:"bell",bookings:[],rating:4.8,status:"approved"},
   {id:2,name:"بارشوب كلاسيك",owner:"سالم العتيبي",ownerPhone:"0559876543",region:"منطقة الرياض",gov:"محافظة الرياض",center:"مركز الرياض",village:"العليا",phone:"0559876543",address:"طريق الملك فهد",locationUrl:"https://maps.google.com/?q=24.6877,46.7219",services:["قص شعر","حلاقة كاملة","عناية بالبشرة"],prices:{"قص شعر":60,"حلاقة كاملة":80,"عناية بالبشرة":100},shiftEnabled:false,workStart:"10:00",workEnd:"23:00",barbers:[{id:"b3",name:"يوسف"},{id:"b4",name:"عبدالله"},{id:"b5",name:"فهد"}],tone:"welcome",bookings:[],rating:4.6,status:"approved"},
   {id:3,name:"صالون النخبة",owner:"فهد القحطاني",ownerPhone:"0533445566",region:"منطقة عسير",gov:"محافظة أبها",center:"مركز أبها",village:"السودة",phone:"0533445566",address:"شارع الأمير سلطان",locationUrl:"https://maps.google.com/?q=18.2164,42.5053",services:["قص شعر","تسريح","صبغة شعر"],prices:{"قص شعر":45,"تسريح":35,"صبغة شعر":100},shiftEnabled:false,workStart:"09:00",workEnd:"22:00",barbers:[{id:"b6",name:"عبدالرحمن"}],tone:"scissors",bookings:[],rating:4.5,status:"pending"},
 ];
