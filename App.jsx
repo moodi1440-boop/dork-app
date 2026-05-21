@@ -732,6 +732,7 @@ export default function App(){
         if(n.target_type==="customer")return;
         playTone("notification",0.6);
         toast$(`${n.icon||"🔔"} ${n.title}`);
+        loadData({silent:true});
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
         try{
