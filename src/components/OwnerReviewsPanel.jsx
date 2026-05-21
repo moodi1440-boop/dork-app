@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { G } from "../styles";
-import { supabase, sb } from "../api/supabase";
+import { supabase, sb } from "../../core/supabase";
 
 function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
   const gold="#d4a017";

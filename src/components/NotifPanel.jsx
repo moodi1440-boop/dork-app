@@ -1,7 +1,21 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { G } from "../styles";
-import { supabase, sb } from "../api/supabase";
-import { SLOT_MIN, MONTHS_AR, normalizeBgId, makeSlots, getSlotsForSalon, todayStr, openMaps, calcTotal, normPhone } from "../utils/helpers";
+import { supabase, sb } from "../../core/supabase";
+import {
+  makeSlots,
+  getSlotsForSalon,
+  todayStr,
+  calcTotal,
+  normPhone
+} from "../../utils/formatters";
+import { openMaps } from "../../utils/locationUtils";
+
+const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const SLOT_MIN = 40;
+
+function normalizeBgId(id) {
+  return (id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
 function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved"}){
   const[showWaiting,setShowWaiting]=useState(false);
