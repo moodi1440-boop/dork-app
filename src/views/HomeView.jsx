@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { G } from "../styles";
+import { LocFilter } from "../components/LocFilter";
+import { SalonCard } from "../components/SalonCard";
 
 function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing}){
   const[urgentMode,setUrgentMode]=useState(false);

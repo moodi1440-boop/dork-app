@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { G } from "../styles";
 import { supabase, sb } from "../api/supabase";
 import { getCustomerClassification, requestNotifPermission, sendNotif } from "../utils/notifications";
+import { InlineStarRating } from "../components/InlineStarRating";
 
 function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$}){
   const[tab,setTab]=useState("settings");

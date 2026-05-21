@@ -2,6 +2,12 @@ import React, { useState } from "react";
 import { G } from "../styles";
 import { supabase, sb } from "../api/supabase";
 import { SLOT_MIN, MONTHS_AR, normalizeBgId, makeSlots, getSlotsForSalon, todayStr, openMaps, calcTotal, normPhone } from "../utils/helpers";
+import { BookingCalendar } from "../components/BookingCalendar";
+import { MessagesPanel } from "../components/MessagesPanel";
+import { NotifPanel } from "../components/NotifPanel";
+import { OwnerReviewsPanel } from "../components/OwnerReviewsPanel";
+import { OwnerSettings } from "../components/OwnerSettings";
+import { StatsPanel } from "../components/StatsPanel";
 
 function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews,customers=[]}){
   const[tab,setTab]=useState(null);
