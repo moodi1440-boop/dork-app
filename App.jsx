@@ -730,17 +730,8 @@ export default function App(){
         const n=payload.new;
         if(!n)return;
         if(n.target_type==="customer")return;
-        const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
-        localStorage.setItem("dork_notif_count",String(count+1));
-        try{
-          const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-          notifs.unshift({id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔔",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
-          localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
-        }catch{}
-        if("Notification" in window&&Notification.permission==="granted"){
-          try{new Notification(`${n.icon||"🔔"} ${n.title}`,{body:n.body||"",dir:"rtl",lang:"ar"});}catch{}
-        }
-        pollBookings();
+        sendNotif(n.title,n.body,n.icon||"🔔",n.target_type,n.target_id);
+        loadData({silent:true});
       })
       .subscribe();
 
