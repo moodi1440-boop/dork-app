@@ -4,9 +4,13 @@ import { supabase, sb } from "../../core/supabase";
 import { playTone } from "../../utils/audioUtils";
 
 const TONES = [
-  {id:"bell",label:"🔔 جرس"},
-  {id:"welcome",label:"✨ ترحيب"},
   {id:"scissors",label:"✂ مقص"},
+  {id:"bell",label:"🔔 جرس الباب"},
+  {id:"welcome",label:"🎉 أهلاً وسهلاً"},
+  {id:"notification",label:"🔔 إشعار"},
+  {id:"click",label:"👆 نقرة"},
+  {id:"success",label:"✅ نجاح"},
+  {id:"error",label:"❌ خطأ"},
 ];
 
 const THEMES = [
