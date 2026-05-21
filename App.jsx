@@ -999,7 +999,16 @@ export default function App(){
           setCustomers(p=>p.map(x=>x.id===c.id?{...x,history:hist}:x));
         }
       }
-      toast$(status==="approved"?"✅ تم قبول الحجز":"تم تحديث حالة الحجز");
+      if(status==="approved"){
+        try{playTone("success",0.7);}catch{}
+        toast$("✅ تم قبول الحجز");
+      }else if(status==="rejected"){
+        try{playTone("error",0.7);}catch{}
+        toast$("تم تحديث حالة الحجز","warn");
+      }else{
+        try{playTone("click",0.5);}catch{}
+        toast$("تم تحديث حالة الحجز");
+      }
       await loadData();
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
