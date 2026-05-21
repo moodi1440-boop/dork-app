@@ -1,8 +1,31 @@
 import React, { useState } from "react";
 import { G } from "../styles";
-import { supabase, sb } from "../api/supabase";
-import { TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES, DEFAULT_SOCIAL_LINKS } from "../constants";
-import { playTone } from "../utils/audio";
+import { supabase, sb } from "../../core/supabase";
+import { playTone } from "../../utils/audioUtils";
+
+const TONES = [
+  {id:"bell",label:"🔔 جرس"},
+  {id:"welcome",label:"✨ ترحيب"},
+  {id:"scissors",label:"✂ مقص"},
+];
+
+const THEMES = [
+  {id:"gold",label:"ذهبي",color:"#d4a017"},
+  {id:"silver",label:"فضي",color:"#c0c0c0"},
+  {id:"copper",label:"نحاسي",color:"#b87333"},
+];
+
+const BACKGROUNDS = [
+  {id:"none",label:"بدون خلفية"},
+  {id:"gold",label:"ذهبي متدرج"},
+  {id:"silver",label:"فضي متدرج"},
+  {id:"gradient1",label:"بنفسجي"},
+  {id:"gradient2",label:"زهري"},
+];
+
+const DEFAULT_SERVICES = [];
+const DEFAULT_SOCIAL_LINKS = {};
+
 
 function OwnerSettings({salon,setSalons,toast$}){
   const[saving,setSaving]=useState(false);
