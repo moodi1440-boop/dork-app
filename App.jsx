@@ -730,6 +730,7 @@ export default function App(){
         const n=payload.new;
         if(!n)return;
         if(n.target_type==="customer")return;
+        playTone("notification",0.6);
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
         try{
