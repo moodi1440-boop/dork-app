@@ -47,13 +47,11 @@ export function calculateDistance(userLoc, salonCoords) {
 export function isOpenNow(salon) {
   const now = new Date();
 
-  // استخراج التاريخ بصيغة YYYY-MM-DD بتوقيت السعودية
-  const dateStr = now.toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" }); // "2026-05-21"
+  // توقيت السعودية الثابت (GMT+3) - Asia/Riyadh
+  const dateStr = now.toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" });
+  const timeStr = now.toLocaleTimeString("en-GB", { timeZone: "Asia/Riyadh" }).slice(0, 5);
 
-  // استخراج الوقت بصيغة HH:MM بتوقيت السعودية
-  const timeStr = now.toLocaleTimeString("en-GB", { timeZone: "Asia/Riyadh" }).slice(0, 5); // "14:30"
-
-  // تحقق من الأيام المغلقة (مخزنة كـ YYYY-MM-DD)
+  // تحقق من الأيام المغلقة
   if ((salon.closedDays || []).includes(dateStr)) return false;
 
   // تحقق من أوقات العمل والـ Shifts
