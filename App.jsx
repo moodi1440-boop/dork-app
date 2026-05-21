@@ -766,7 +766,7 @@ export default function App(){
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(reviewsChannel);
     };
-  },[loadAppSettings,pollBookings,pollReviews]);
+  },[loadAppSettings,loadData,pollBookings,pollReviews]);
 
   useEffect(()=>{
     if(!customerSession?.id)return;
