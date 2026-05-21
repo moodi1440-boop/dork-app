@@ -175,20 +175,53 @@ export async function deleteCustomer(customerId) {
 export function subscribeToSalons(callback) {
   return supabase
     .channel("salons")
-    .on("postgres_changes", { event: "*", schema: "public", table: "salons" }, callback)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "salons" },
+      (payload) => {
+        const transformed = {
+          ...payload,
+          new: payload.new ? toAppSalon(payload.new) : null,
+          old: payload.old ? toAppSalon(payload.old) : null,
+        };
+        callback(transformed);
+      }
+    )
     .subscribe();
 }
 
 export function subscribeToBookings(callback) {
   return supabase
     .channel("bookings")
-    .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, callback)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "bookings" },
+      (payload) => {
+        const transformed = {
+          ...payload,
+          new: payload.new ? toAppBooking(payload.new) : null,
+          old: payload.old ? toAppBooking(payload.old) : null,
+        };
+        callback(transformed);
+      }
+    )
     .subscribe();
 }
 
 export function subscribeToCustomers(callback) {
   return supabase
     .channel("customers")
-    .on("postgres_changes", { event: "*", schema: "public", table: "customers" }, callback)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "customers" },
+      (payload) => {
+        const transformed = {
+          ...payload,
+          new: payload.new ? toAppCustomer(payload.new) : null,
+          old: payload.old ? toAppCustomer(payload.old) : null,
+        };
+        callback(transformed);
+      }
+    )
     .subscribe();
 }
