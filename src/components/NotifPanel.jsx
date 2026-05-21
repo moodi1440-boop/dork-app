@@ -35,7 +35,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
         const expired=data.filter(w=>{
           if(w.status!=="waiting"||!w.slot_date||!w.slot_time)return false;
           const slotMs=new Date(`${w.slot_date}T${w.slot_time}:00`).getTime();
-          return now.getTime()>slotMs+30*60*1000; // بعد 30 دقيقة من الوقت المحدد
+          return now.getTime()>slotMs+30*60*1000;
         });
         for(const w of expired){
           sb("waiting_list","DELETE",null,`?id=eq.${w.id}`).catch(()=>{});
@@ -50,21 +50,34 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
 
   useEffect(()=>{loadWaiting();},[loadWaiting]);
 
-  // تحقق كل دقيقة لإزالة المنتهية
   useEffect(()=>{
     const t=setInterval(()=>{loadWaiting();},60*1000);
     return()=>clearInterval(t);
   },[loadWaiting]);
 
-  // Realtime لقائمة الانتظار
+  // 🔔 ربط الـ Realtime المشترك والمصلح للحجوزات والانتظار والعدادات الفورية
   useEffect(()=>{
-    const channel=supabase.channel(`waiting-${salon.id}`)
+    if (!salon?.id) return;
+
+    // قناة الاستماع لقائمة الانتظار
+    const waitingChannel=supabase.channel(`waiting-${salon.id}`)
       .on('postgres_changes',{event:'*',schema:'public',table:'waiting_list',filter:`salon_id=eq.${salon.id}`},()=>{
         loadWaiting();
       })
       .subscribe();
-    return()=>{supabase.removeChannel(channel);};
-  },[salon.id,loadWaiting]);
+
+    // قناة الاستماع للحجوزات وتحديث العدادات والأرقام فوراً
+    const bookingsChannel=supabase.channel(`bookings-${salon.id}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'bookings',filter:`salon_id=eq.${salon.id}`},()=>{
+        if(refreshSalonBookings) refreshSalonBookings(salon.id);
+      })
+      .subscribe();
+
+    return()=>{
+      supabase.removeChannel(waitingChannel);
+      supabase.removeChannel(bookingsChannel);
+    };
+  },[salon.id,loadWaiting,refreshSalonBookings]);
 
   const addToWaiting=async(name,phone,slotDate,slotTime)=>{
     try{
@@ -81,13 +94,9 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   const acceptFromWaiting=async(w)=>{
     if(!w.slotDate||!w.slotTime){alert("لا يوجد وقت محدد لهذا العميل");return;}
     try{
-      // إنشاء حجز مقبول مباشرة
       await sb("bookings","POST",{salon_id:String(salon.id),customer_name:w.name,customer_phone:w.phone,date:w.slotDate,time:w.slotTime,status:"approved",service:"[]",barber_id:"any",barber_name:"",total:0});
-      // تغيير الحالة لـ accepted
       await sb("waiting_list","PATCH",{status:"accepted"},"?id=eq."+w.id);
-      // إشعار للمقبول
       sb("notifications","POST",{target_type:"all",title:"✅ تم قبولك في الموعد",body:`تم حجزك في ${w.slotDate} - ${w.slotTime} في ${salon.name}. تواصل مع الصالون لتأكيد الخدمة.`,icon:"✅"}).catch(()=>{});
-      // رفض المنتظرين للنفس الوقت
       const others=waitingList.filter(x=>x.id!==w.id&&x.slotDate===w.slotDate&&x.slotTime===w.slotTime);
       for(const o of others){
         await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+o.id).catch(()=>{});
@@ -128,7 +137,6 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
 
   return(
     <div style={{paddingTop:4}}>
-      {/* فلتر الحجوزات - مقبول / مرفوض / انتظار */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         {[["approved","✅ مقبول",counts.approved],["rejected","❌ مرفوض",counts.rejected],["pending","⏳ انتظار",counts.pending]].map(([val,label,count])=>(
           <button key={val} onClick={()=>setFilter(val)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${filter===val?"var(--p)":"#2a2a3a"}`,background:filter===val?"var(--pa25)":"transparent",color:filter===val?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:filter===val?700:400}}>
@@ -137,14 +145,12 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
         ))}
       </div>
 
-      {/* قسم الانتظار - يظهر فقط عند فلتر "انتظار" */}
       {filter==="pending"&&(()=>{
         const allSlots=getSlotsForSalon(salon);
         const inp2={padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",width:"100%",boxSizing:"border-box"};
         return(<>
-          {/* زر إضافة عميل - في الأعلى مع toggle */}
           <div style={{background:"#0d0d1a",borderRadius:10,border:"1px solid #2a2a3a",marginBottom:10,overflow:"hidden"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",cursor:"pointer"}} onClick={()=>setShowAddForm(v=>!v)}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",cursor:"pointer"} } onClick={()=>setShowAddForm(v=>!v)}>
               <button style={{width:28,height:28,borderRadius:"50%",border:"1.5px solid var(--p)",background:showAddForm?"var(--p)":"transparent",color:showAddForm?"#000":"var(--p)",fontSize:18,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,flexShrink:0}}>
                 {showAddForm?"×":"+"}
               </button>
@@ -178,7 +184,6 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
             </div>}
           </div>
 
-          {/* قائمة الانتظار */}
           {waitingList.length>0&&(
             <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",border:"1px solid var(--pa25)",marginBottom:10}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -214,7 +219,6 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
         </>);
       })()}
 
-      {/* الحجوزات */}
       {!bks.length?<div style={G.empty}>لا توجد حجوزات</div>:
       <div style={{display:"flex",flexDirection:"column",gap:8}}>{bks.map(b=>(
         <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
@@ -229,6 +233,5 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
     </div>
   );
 }
-
 
 export { NotifPanel };
