@@ -46,16 +46,22 @@ export function calculateDistance(userLoc, salonCoords) {
 
 export function isOpenNow(salon) {
   const now = new Date();
-  const day = now.toLocaleDateString("en-CA");
-  const time = now.toTimeString().slice(0, 5);
 
-  if ((salon.closedDays || []).includes(day)) return false;
+  // استخراج التاريخ بصيغة YYYY-MM-DD بتوقيت السعودية
+  const dateStr = now.toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" }); // "2026-05-21"
 
+  // استخراج الوقت بصيغة HH:MM بتوقيت السعودية
+  const timeStr = now.toLocaleTimeString("en-GB", { timeZone: "Asia/Riyadh" }).slice(0, 5); // "14:30"
+
+  // تحقق من الأيام المغلقة (مخزنة كـ YYYY-MM-DD)
+  if ((salon.closedDays || []).includes(dateStr)) return false;
+
+  // تحقق من أوقات العمل والـ Shifts
   if (salon.shiftEnabled) {
-    const inShift1 = time >= salon.shift1Start && time < salon.shift1End;
-    const inShift2 = time >= salon.shift2Start && time < salon.shift2End;
+    const inShift1 = timeStr >= salon.shift1Start && timeStr < salon.shift1End;
+    const inShift2 = timeStr >= salon.shift2Start && timeStr < salon.shift2End;
     return inShift1 || inShift2;
   }
 
-  return time >= salon.workStart && time < salon.workEnd;
+  return timeStr >= salon.workStart && timeStr < salon.workEnd;
 }
