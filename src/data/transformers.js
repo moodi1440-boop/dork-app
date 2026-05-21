@@ -121,6 +121,7 @@ export function toAppCustomer(row) {
     lastBook: row.last_book,
     totalBooks: row.total_books || 0,
     totalSpent: row.total_spent || 0,
+    createdAt: row.created_at,
     bookings: [],
   };
 }

@@ -68,3 +68,13 @@ export function calcTotal(svcs, prices) {
 export function normPhone(p) {
   return String(p || "").replace(/\D/g, "");
 }
+
+export function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr.includes("+") || dateStr.endsWith("Z") ? dateStr : dateStr + "Z");
+    return isNaN(d.getTime()) ? "—" : d.toLocaleDateString("ar");
+  } catch {
+    return "—";
+  }
+}
