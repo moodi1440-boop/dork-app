@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { G } from "../styles";
 import { supabase, sb } from "../../core/supabase";
+import { playNotificationSound } from "../../utils/audioUtils";
 import {
   makeSlots,
   getSlotsForSalon,
@@ -58,7 +59,10 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   // Realtime لقائمة الانتظار
   useEffect(()=>{
     const channel=supabase.channel(`waiting-${salon.id}`)
-      .on('postgres_changes',{event:'*',schema:'public',table:'waiting_list',filter:`salon_id=eq.${salon.id}`},()=>{loadWaiting();})
+      .on('postgres_changes',{event:'*',schema:'public',table:'waiting_list',filter:`salon_id=eq.${salon.id}`},()=>{
+        playNotificationSound();
+        loadWaiting();
+      })
       .subscribe();
     return()=>{supabase.removeChannel(channel);};
   },[salon.id,loadWaiting]);
@@ -78,6 +82,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   const acceptFromWaiting=async(w)=>{
     if(!w.slotDate||!w.slotTime){alert("لا يوجد وقت محدد لهذا العميل");return;}
     try{
+      playNotificationSound();
       // إنشاء حجز مقبول مباشرة
       await sb("bookings","POST",{salon_id:String(salon.id),customer_name:w.name,customer_phone:w.phone,date:w.slotDate,time:w.slotTime,status:"approved",service:"[]",barber_id:"any",barber_name:"",total:0});
       // تغيير الحالة لـ accepted
@@ -97,6 +102,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
 
   const rejectFromWaiting=async(w)=>{
     try{
+      playNotificationSound();
       await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+w.id);
       sb("notifications","POST",{target_type:"all",title:"❌ عذراً، تعذّر الحجز",body:`نأسف، لم نتمكن من تأكيد حجزك في ${salon.name}${w.slotDate?` (${w.slotDate} - ${w.slotTime})`:""}. يمكنك المحاولة مرة أخرى.`,icon:"❌"}).catch(()=>{});
       await loadWaiting();
