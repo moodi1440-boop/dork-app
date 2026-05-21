@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 // =============================================
 
 // Core & Data Layer
-import { supabase } from "./src/core/supabase";
+import { supabase, sb } from "./src/core/supabase";
 import {
   toAppSalon,
   toDbSalon,
