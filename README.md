@@ -1,141 +1,176 @@
-# 🎯 Dork App - تطبيق حجز الصالونات الذكي
+# Dork App - Source Code Structure
 
-تطبيق ويب متقدم لإدارة وحجز الصالونات والخدمات، مبني بـ React وSupabase مع معمارية احترافية قابلة للتوسع.
+## مجلدات المشروع
 
-## 🌟 المميزات الرئيسية
+### `/api` - اتصالات وخدمات خارجية
+- **`supabase.js`** - Supabase client configuration + REST API (`sb` function)
+  - يتعامل مع جميع اتصالات قاعدة البيانات
+  - يوفر دالة عامة `sb()` لجميع عمليات REST
 
-- ✅ **نظام حجز ذكي** - حجز سهل مع فترات زمنية متاحة
-- ✅ **لوحة تحكم للمالك** - إدارة كاملة للصالون والحجوزات والموظفين
-- ✅ **لوحة العميل** - تتبع الحجوزات والتقييمات والمفضلة
-- ✅ **نظام التقييمات** - تقييمات وآراء حقيقية من العملاء
-- ✅ **الخريطة التفاعلية** - البحث عن الصالونات القريبة
-- ✅ **المقارنة الذكية** - مقارنة بين صالونات مختلفة
-- ✅ **الإشعارات** - تنبيهات فورية للأحداث المهمة
-- ✅ **الوضع الليلي** - دعم كامل للوضع الليلي والفاتح
+### `/utils` - دوال مساعدة ومنطقيات
 
-## 🚀 البدء السريع
+#### **`helpers.js`**
+- `normPhone()` - تنظيف أرقام الهواتف
+- `calcTotal()` - حساب إجمالي الأسعار
+- `openMaps()` - فتح خريطة جوجل
+- `todayStr()` - التاريخ الحالي بصيغة ISO
+- `makeSlots()` - إنشاء فترات زمنية
+- `getSlotsForSalon()` - الفترات المتاحة للصالون
+- `normalizeBgId()` - تنظيف معرف الخلفية
+- ثوابت: `SLOT_MIN`, `MONTHS_AR`
 
-### المتطلبات
-- Node.js v16 أو أحدث
-- npm أو yarn
+#### **`transformers.js`**
+- `toAppSalon()` - تحويل بيانات الصالون من DB → App
+- `toDbSalon()` - تحويل بيانات الصالون من App → DB
+- `toAppBooking()` - تحويل بيانات الحجز من DB → App
+- `toAppCustomer()` - تحويل بيانات العميل من DB → App
+  - يتعامل مع localStorage للـ history و favs
 
-### التثبيت
+#### **`notifications.js`**
+- `getCustomerClassification()` - تصنيف العميل (جديد/منتظم/مميز/غير ملتزم)
+- `requestNotifPermission()` - طلب إذن الإشعارات
+- `sendNotif()` - إرسال إشعار (محلي + Supabase)
+- يطلب الإذن تلقائياً عند تحميل التطبيق
 
-```bash
-# استنساخ المستودع
-git clone https://github.com/moodi1440-boop/dork-app.git
-cd dork-app
+#### **`audio.js`**
+- `playTone()` - تشغيل أصوات تنبيه مختلفة
+  - 16 نوع صوت (scissors, bell, welcome, etc)
+  - يستخدم Web Audio API
 
-# تثبيت المكتبات
-npm install
+#### **`ui.js`** (جديد)
+- `buildDorkBgStyle()` - بناء نمط الخلفية الديناميكي
+- `buildHomeReviewsFeed()` - تجميع وترتيب تقييمات العملاء
 
-# بدء سيرفر التطوير
-npm run dev
+### `/components` - مكونات React
 
-# بناء النسخة الإنتاجية
-npm run build
+#### **`Logo.jsx`** (جديد)
+- `DorkLogoSvg` - شعار التطبيق (scissors + clock + pin design)
+
+(باقي المكونات سيتم تقسيمها لاحقاً)
+
+### `/data` - بيانات ثابتة (جديد)
+
+#### **`locations.js`**
+- `BASE_LOC` - هرمية المناطق والمحافظات والمراكز والقرى الكاملة
+
+### `/constants.js` (جديد)
+- `TONES` - 16 صوت تنبيه
+- `THEMES` - 8 أنماط لونية
+- `BACKGROUNDS` - 9 أنماط خلفية
+- `BG_LIGHT_STYLES` - نسخة فاتحة من الخلفيات
+- `DEFAULT_SERVICES` - الخدمات الافتراضية
+- `DEFAULT_SOCIAL_LINKS` - إعدادات الوسائط الاجتماعية
+
+### `/hooks` - Custom React Hooks
+(للمراحل المستقبلية)
+
+## طريقة الاستخدام
+
+```javascript
+// API و البيانات
+import { supabase, sb } from "./src/api/supabase";
+import { BASE_LOC } from "./src/data/locations";
+import { TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES } from "./src/constants";
+
+// دوال مساعدة
+import { normPhone, calcTotal, openMaps } from "./src/utils/helpers";
+import { toAppSalon } from "./src/utils/transformers";
+import { sendNotif } from "./src/utils/notifications";
+import { playTone } from "./src/utils/audio";
+import { buildDorkBgStyle, buildHomeReviewsFeed } from "./src/utils/ui";
+
+// مكونات
+import { DorkLogoSvg } from "./src/components/Logo";
 ```
 
-التطبيق سيكون متاحاً على `http://localhost:5173`
+## معايير الترتيب والاستخراج
 
-## 📁 هيكل المشروع
+الملفات مرتبة حسب:
+1. **المستوى** - API أولاً (حتى يعتمد عليها الـ utils)
+2. **الوظيفة** - دوال بسيطة أولاً (helpers)، ثم معقدة (transformers)
+3. **الاستقلالية** - كل ملف يعتمد على الملفات اللي قبله
+
+**خطوات استخراج مكون جديد:**
+1. ابحث عن `function ComponentName` في App.jsx
+2. انسخ كود المكون الكامل
+3. أنشئ ملف جديد `src/components/ComponentName.jsx` (أو views/ للصفحات الكاملة)
+4. أضف `import { G } from "../styles";` على رأس الملف
+5. صدّر المكون: `export { ComponentName };`
+6. أضف `import { ComponentName } from "./src/components/ComponentName";` في App.jsx
+7. اختبر البناء: `npm run build`
+8. احذف المكون الأصلي من App.jsx
+9. قم بعمل commit مع رسالة واضحة
+
+## هيكلة النوع المهني
+
+هذه الهيكلة تتبع معايير:
+- **Airbnb** - React Styleguide
+- **Slack** - Code Organization
+- **Facebook** - Component Structure
 
 ```
-dork-app/
-├── src/
-│   ├── api/              # Supabase اتصالات وAPI
-│   ├── components/       # مكونات قابلة لإعادة الاستخدام (14 ملف)
-│   ├── views/            # صفحات كاملة (15 ملف)
-│   ├── helpers/          # مساعدات متخصصة
-│   ├── utils/            # منطق الأعمال والتحويلات
-│   ├── data/             # بيانات ثابتة
-│   ├── constants.js      # الثوابت والتكوينات
-│   ├── styles.js         # الأنماط العالمية
-│   └── README.md         # توثيق src/
-├── App.jsx               # المكون الرئيسي (871 سطر)
-├── .github/              # قوالب و workflows GitHub
-├── public/               # ملفات ثابتة
-├── admin/                # لوحة إدارة Supabase
-└── package.json
+✅ سهولة الصيانة - أي خطأ يكون في ملف واحد
+✅ سرعة التطوير - كل ملف صغير وسهل الفهم
+✅ توفير التوكنات - قراءة ملف واحد بدل الملف الضخم
+✅ لا تضارب - كل ملف له مسؤولية واحدة
 ```
 
-📖 **للمزيد:** اقرأ [توثيق المجلد src](./src/README.md)
+## التقدم حالياً ✅
 
-## 🏗️ المعمارية
+**المرحلة الأولى - استخراج الأساسيات (COMPLETED):**
 
-المشروع يتبع معايير احترافية مع فصل واضح للمسؤوليات:
+✅ تقليل App.jsx من 4851 → 4405 سطر (-446 سطر = -9.2%)
 
-- **Components** - عناصر واجهة صغيرة قابلة لإعادة الاستخدام
-- **Views** - صفحات كاملة تجمع المكونات
-- **Utils** - منطق الأعمال والتحويلات
-- **API** - طبقة الوصول للبيانات (Supabase)
-- **Constants** - التكوينات والثوابت
-- **Styles** - أنماط عالمية موحدة
+**الملفات المستخرجة:**
+- `src/api/supabase.js` - Supabase client ودوال REST
+- `src/constants.js` - TONES, THEMES, BACKGROUNDS, DEFAULT_SERVICES, DEFAULT_SOCIAL_LINKS
+- `src/data/locations.js` - BASE_LOC (هرمية المواقع الكاملة)
+- `src/utils/ui.js` - buildDorkBgStyle, buildHomeReviewsFeed
+- `src/utils/helpers.js` - دوال مساعدة
+- `src/utils/transformers.js` - تحويلات البيانات
+- `src/utils/notifications.js` - إدارة الإشعارات
+- `src/utils/audio.js` - تشغيل الأصوات
+- `src/components/Logo.jsx` - مكون الشعار
+- `src/styles.js` - الأنماط العالمية (G)
 
-## 🔧 تقنيات مستخدمة
+📋 **المرحلة الثانية - استخراج المكونات (المتبقية):**
 
-- **React 18** - مكتبة واجهة المستخدم
-- **Vite** - أداة البناء السريعة
-- **Supabase** - قاعدة البيانات والمصادقة
-- **Cairo Font** - الخط العربي
-- **CSS-in-JS** - تنسيق الكود
+الملفات المتبقية في App.jsx (أكثر من 30 مكون):
 
-## 📊 إحصائيات المشروع
+**مكونات العرض الرئيسية (~10 مكون):**
+- TopBar - شريط التنقل العلوي
+- HomeView - الصفحة الرئيسية
+- HomeReviewsSection - قسم التقييمات
+- SalonPage - صفحة الصالون
+- SalonCard - بطاقة الصالون
+- BookView - عرض الحجز
+- OwnerDash - لوحة المالك
+- CustomerDash - لوحة العميل
+- SettingsView - إعدادات التطبيق
+- TermsView - شروط الاستخدام
 
-| المقياس | القيمة |
-|--------|--------|
-| إجمالي الملفات | 40 ملف |
-| سطور App.jsx | 871 سطر |
-| مكونات React | 30 مكون |
-| وحدات البناء | 111 وحدة |
-| حجم الملف | 516 KB |
+**مكونات إضافية (~20+ مكون):**
+- OwnerLogin, CustomerLogin - تسجيل الدخول
+- OwnerReviewsPanel - لوحة التقييمات
+- BookingCalendar - تقويم الحجوزات
+- NotifsView - إشعارات
+- CompareSalonsView - مقارنة الصالونات
+- والمزيد من المكونات الفرعية
 
-## 🔐 المصادقة والأمان
-
-- تسجيل دخول مشروط (مالك/عميل)
-- Supabase Auth للمصادقة الآمنة
-- localStorage لتخزين الجلسات المحلي
-- معالجة آمنة للبيانات الحساسة
-
-## 📱 القنوات المدعومة
-
-- ✅ ويب (ديسكتوب والجوال)
-- ✅ تطبيق قابل للتثبيت (PWA)
-- ⏳ تطبيق iOS (قريباً)
-- ⏳ تطبيق Android (قريباً)
-
-## 🤝 المساهمة
-
-نرحب بمساهماتك! اقرأ [CONTRIBUTING.md](./CONTRIBUTING.md) لتعرف كيفية المساهمة.
-
-### خطوات المساهمة:
-
-1. **Fork** المستودع
-2. **أنشئ فرع** للميزة (`git checkout -b feature/AmazingFeature`)
-3. **Commit** التغييرات (`git commit -m 'Add some AmazingFeature'`)
-4. **Push** إلى الفرع (`git push origin feature/AmazingFeature`)
-5. **فتح Pull Request**
-
-## 📝 سجل التغييرات
-
-اقرأ [CHANGELOG.md](./CHANGELOG.md) لمشاهدة جميع التحديثات والتغييرات.
-
-## 📄 الرخصة
-
-هذا المشروع مرخص تحت رخصة MIT - انظر ملف [LICENSE](./LICENSE)
-
-## 📧 التواصل والدعم
-
-- 📌 **المشاكل والأخطاء**: [GitHub Issues](https://github.com/moodi1440-boop/dork-app/issues)
-- 💬 **النقاشات**: [GitHub Discussions](https://github.com/moodi1440-boop/dork-app/discussions)
-- 🔔 **الإشعارات**: Subscribe إلى المستودع
-
-## 🙏 شكر وتقدير
-
-شكر خاص لفريق المطورين والمساهمين في هذا المشروع.
-
----
-
-**آخر تحديث:** مايو 2026  
-**الحالة:** ✅ 100% تقسيم وتوثيق المشروع
-
+**التنظيم المقترح:**
+```
+src/
+├── components/      # عناصر واجهة قابلة لإعادة الاستخدام
+│   ├── Logo.jsx
+│   ├── TopBar.jsx
+│   ├── SalonCard.jsx
+│   └── ...
+├── views/          # صفحات كاملة
+│   ├── HomeView.jsx
+│   ├── SalonPage.jsx
+│   ├── OwnerDash.jsx
+│   └── ...
+└── forms/          # نماذج متخصصة
+    ├── BookingForm.jsx
+    └── ...
+```
