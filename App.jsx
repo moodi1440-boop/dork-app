@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 // =============================================
 
 // Core & Data Layer
-import { supabase, sb } from "./src/core/supabase";
+import { supabase, sb, SUPABASE_URL, SUPABASE_ANON } from "./src/core/supabase";
 import {
   toAppSalon,
   toDbSalon,
@@ -686,6 +686,59 @@ export default function App(){
     customerNotifyPrimedRef.current=false;
     bookingStatusSnapRef.current=null;
   },[customerSession?.id]);
+
+  // ========================
+  // FCM Token Registration
+  // ========================
+  const registerFCMToken=useCallback(async(userType,userId)=>{
+    if(!("serviceWorker" in navigator)||!("PushManager" in window))return;
+    if(!("Notification" in window)||Notification.permission!=="granted")return;
+    try{
+      const swReg=await navigator.serviceWorker.register("/service-worker.js",{scope:"/"});
+      const loadScript=(src)=>new Promise((res,rej)=>{
+        if(document.querySelector(`script[src="${src}"]`)){res();return;}
+        const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;
+        document.head.appendChild(s);
+      });
+      await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
+      await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js");
+      const fb=window.firebase;
+      if(!fb.apps.length) fb.initializeApp({
+        apiKey:"AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",
+        authDomain:"dork-app.firebaseapp.com",
+        projectId:"dork-app",
+        messagingSenderId:"659823227621",
+        appId:"1:659823227621:web:befaaa1b5063c86cabda0c",
+      });
+      const VAPID_KEY=import.meta.env.VITE_FIREBASE_VAPID_KEY||"";
+      if(!VAPID_KEY){console.warn("FCM: أضف VITE_FIREBASE_VAPID_KEY في ملف .env");return;}
+      const messaging=fb.messaging();
+      const token=await messaging.getToken({vapidKey:VAPID_KEY,serviceWorkerRegistration:swReg});
+      if(!token)return;
+      const hdrs={apikey:SUPABASE_ANON,Authorization:`Bearer ${SUPABASE_ANON}`,"Content-Type":"application/json"};
+      const checkRes=await fetch(`${SUPABASE_URL}/rest/v1/fcm_tokens?device_token=eq.${encodeURIComponent(token)}&select=id`,{headers:hdrs});
+      const existing=await checkRes.json();
+      if(existing&&existing.length>0){
+        await fetch(`${SUPABASE_URL}/rest/v1/fcm_tokens?id=eq.${existing[0].id}`,{
+          method:"PATCH",headers:{...hdrs,Prefer:"return=minimal"},
+          body:JSON.stringify({user_type:userType,user_id:userId,is_active:true}),
+        });
+      }else{
+        await fetch(`${SUPABASE_URL}/rest/v1/fcm_tokens`,{
+          method:"POST",headers:{...hdrs,Prefer:"return=minimal"},
+          body:JSON.stringify({user_type:userType,user_id:userId,device_token:token,is_active:true}),
+        });
+      }
+    }catch(err){console.error("FCM registration:",err);}
+  },[]);
+
+  useEffect(()=>{
+    if(ownerSession)registerFCMToken("salon",ownerSession);
+  },[ownerSession,registerFCMToken]);
+
+  useEffect(()=>{
+    if(customerSession?.id)registerFCMToken("customer",customerSession.id);
+  },[customerSession?.id,registerFCMToken]);
 
   /* Supabase Realtime - تحديثات لحظية في كل الاتجاهات */
 
