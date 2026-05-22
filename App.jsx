@@ -622,6 +622,11 @@ export default function App(){
     return()=>clearTimeout(t);
   },[]);
 
+  useEffect(()=>{
+    if(typeof window==="undefined"||!("serviceWorker" in navigator))return;
+    (async()=>{try{await navigator.serviceWorker.register("/service-worker.js");const l=(r)=>new Promise((y,n)=>{if(window.firebase)y();else{const s=document.createElement("script");s.src=r;s.onload=()=>{const s2=document.createElement("script");s2.src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js";s2.onload=y;s2.onerror=n;document.head.appendChild(s2)};s.onerror=n;document.head.appendChild(s)}});await l("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");const fb=window.firebase;if(!fb.apps.length)fb.initializeApp({apiKey:"AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",projectId:"dork-app",messagingSenderId:"659823227621",appId:"1:659823227621:web:befaaa1b5063"});const msg=fb.messaging(),vk=import.meta.env.VITE_FIREBASE_VAPID_KEY||"BPJC3oMO-HdxJa1WG7LjB1cP3k9qXMUTCIS2bKsAaWxbmK3uR0YQFiQRXHAWzwOJ64KlCXZ4X0YHmlYpQgVbla0",t=await msg.getToken({vapidKey:vk});if(t){localStorage.setItem("fcm_token",t);try{await sb("fcm_tokens","POST",{token:t});}catch(e){}}msg.onMessage((p)=>{if(p.notification)sendNotif(p.notification.title||"إشعار",p.notification.body||"","🔔","all",p.data?.booking_id);});}catch(e){}})();
+  },[]);
+
   // -- تسجيل الدخول المستمر --
   const[ownerSession,setOwnerSession]=useState(()=>{try{const v=localStorage.getItem("dork_owner");return v?+v:null;}catch{return null;}});
   const[customerSession,setCustomerSession]=useState(()=>{try{const v=localStorage.getItem("dork_customer");return v?JSON.parse(v):null;}catch{return null;}});
