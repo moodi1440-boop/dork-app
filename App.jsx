@@ -1,41 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-
-// =============================================
-//  IMPORTS FROM NEW LAYER STRUCTURE
-// =============================================
-
-// Core & Data Layer
-import { supabase, sb, SUPABASE_URL, SUPABASE_ANON } from "./src/core/supabase";
-import {
-  toAppSalon,
-  toDbSalon,
-  toAppBooking,
-  toAppCustomer,
-} from "./src/data/transformers";
-import * as API from "./src/data/api";
-
-// Utils
-import {
-  normPhone,
-  calcTotal,
-  todayStr,
-  normalizeBgId,
-  buildDorkBgStyle,
-  makeSlots,
-  getSlotsForSalon,
-  formatDate,
-} from "./src/utils/formatters";
-import {
-  openMaps,
-  haversine,
-  getSalonCoords,
-  calculateDistance,
-  isOpenNow,
-} from "./src/utils/locationUtils";
-import { playTone } from "./src/utils/audioUtils";
-
-// OwnerDash Components
-import { StatsPanel } from "./src/components/OwnerDash/StatsPanel";
+import { createClient } from "@supabase/supabase-js";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -53,6 +17,141 @@ class ErrorBoundary extends React.Component {
     );
     return this.props.children;
   }
+}
+
+// ==============================================
+//  SUPABASE CLIENT
+// ==============================================
+const SUPABASE_URL    = "https://ywrlhvzfefvyogfxfdhl.supabase.co";
+const SUPABASE_ANON   = "sb_publishable_3tbZHK51ohv9AITf-Mt5Ww_MGZ1DMQs";
+
+// Supabase JS client for Realtime subscriptions
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+async function sb(table, method, body, query = "") {
+  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "apikey": SUPABASE_ANON,
+      "Authorization": `Bearer ${SUPABASE_ANON}`,
+      "Content-Type": "application/json",
+      "Prefer": method === "POST" ? "return=representation" : "return=representation",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Supabase ${method} ${table}: ${err}`);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+// تحويل بيانات Supabase > شكل التطبيق
+function toAppSalon(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    owner: row.owner,
+    ownerPhone: row.owner_phone,
+    region: row.region,
+    gov: row.gov,
+    center: row.center,
+    village: row.village,
+    phone: row.phone,
+    address: row.address,
+    locationUrl: row.location_url,
+    services: row.services || [],
+    prices: row.prices || {},
+    shiftEnabled: row.shift_enabled,
+    shift1Start: row.shift1_start,
+    shift1End: row.shift1_end,
+    shift2Start: row.shift2_start,
+    shift2End: row.shift2_end,
+    workStart: row.work_start,
+    workEnd: row.work_end,
+    barbers: row.barbers || [],
+    tone: row.tone,
+    rating: row.rating,
+    status: row.status,
+    paused: row.paused || false,
+    frozen: row.frozen || false,
+    banned: row.banned || false,
+    welcomeMsg: row.welcome_msg || "",
+    closedDays: row.closed_days || [],
+    slotMin: row.slot_min || 40,
+    password: row.password || "",
+    oathDone: row.oath_done || false,
+    cancellationWindow: row.cancellation_window || 2,
+    bookings: [],
+  };
+}
+
+// تحويل بيانات التطبيق > Supabase
+function toDbSalon(s) {
+  return {
+    name: s.name,
+    owner: s.owner,
+    owner_phone: s.ownerPhone,
+    region: s.region,
+    gov: s.gov,
+    center: s.center,
+    village: s.village,
+    phone: s.phone,
+    address: s.address,
+    location_url: s.locationUrl,
+    services: s.services,
+    prices: s.prices,
+    shift_enabled: s.shiftEnabled,
+    shift1_start: s.shift1Start,
+    shift1_end: s.shift1End,
+    shift2_start: s.shift2Start,
+    shift2_end: s.shift2End,
+    work_start: s.workStart,
+    work_end: s.workEnd,
+    barbers: s.barbers,
+    tone: s.tone,
+  };
+}
+
+function toAppBooking(row) {
+  return {
+    id: row.id,
+    salonId: row.salon_id,
+    name: row.name,
+    phone: row.phone,
+    email: row.email||"",
+    services: row.services || [],
+    barberId: row.barber_id,
+    barberName: row.barber_name,
+    date: row.date,
+    time: row.time,
+    total: row.total,
+    status: row.status,
+  };
+}
+
+function toAppCustomer(row) {
+  let history=row.history||[];
+  let favs=row.favs||[];
+  if(!history.length){
+    try{const h=localStorage.getItem(`hist_${row.id}`);if(h)history=JSON.parse(h);}catch{}
+  }
+  if(!favs.length){
+    try{const f=localStorage.getItem(`favs_${row.id}`);if(f)favs=JSON.parse(f);}catch{}
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    email: row.email||"",
+    password: row.password,
+    googleUid: row.google_uid||"",
+    favs,
+    history,
+    createdAt: row.created_at||new Date().toISOString(),
+  };
 }
 
 // ==============================================
@@ -132,6 +231,58 @@ const BG_LIGHT_STYLES={
   goldMarble:{background:"linear-gradient(120deg,#faf8f5 0%,#f3efe8 45%,#faf7f2 100%)",backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(166,124,41,.06) 3px,rgba(166,124,41,.06) 6px), radial-gradient(ellipse 65% 45% at 30% 10%, rgba(201,162,39,.12), transparent 50%)"},
 };
 
+function normalizeBgId(id){
+  if(BACKGROUNDS.some(b=>b.id===id))return id;
+  return"none";
+}
+
+function buildDorkBgStyle(bgId,darkMode){
+  const id=normalizeBgId(bgId);
+  const base={position:"fixed",inset:0,zIndex:-1,pointerEvents:"none"};
+  if(!darkMode){
+    const L=BG_LIGHT_STYLES[id]||BG_LIGHT_STYLES.none;
+    return{...base,...L};
+  }
+  const bg=BACKGROUNDS.find(b=>b.id===id)||BACKGROUNDS[0];
+  return{...base,...bg.style};
+}
+
+function playTone(id, vol=0.7){
+  try{
+    const A=window.AudioContext||window.webkitAudioContext;
+    if(!A)return;
+    const ctx=new A();
+    const g=ctx.createGain(); g.gain.value=vol; g.connect(ctx.destination);
+    const beep=(freq,start,dur,type="sine",v=vol)=>{
+      const o=ctx.createOscillator(),gn=ctx.createGain();
+      o.type=type; o.frequency.value=freq;
+      gn.gain.setValueAtTime(v,ctx.currentTime+start);
+      gn.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
+      o.connect(gn); gn.connect(ctx.destination);
+      o.start(ctx.currentTime+start); o.stop(ctx.currentTime+start+dur);
+    };
+    const plays={
+      scissors:   ()=>{ beep(1200,0,.05,"square",.6); beep(900,0.08,.05,"square",.6); beep(1200,0.16,.05,"square",.6); beep(900,0.24,.05,"square",.6); },
+      razor:      ()=>{ [0,.06,.12,.18,.24].forEach(t=>beep(80+Math.random()*40,t,.07,"sawtooth",.7)); },
+      bell:       ()=>{ beep(880,0,.6,"sine",.8); beep(1100,.15,.5,"sine",.6); beep(1320,.3,.8,"sine",.5); },
+      cash:       ()=>{ beep(1800,0,.04,"square",.7); beep(2400,.05,.04,"square",.6); beep(1200,.12,.3,"triangle",.5); },
+      welcome:    ()=>{ [523,659,784,1047].forEach((f,i)=>beep(f,i*.12,.25,"sine",.7)); },
+      chime3:     ()=>{ [[880,.0],[1100,.18],[1320,.36],[1100,.54],[880,.72]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
+      alert:      ()=>{ [0,.1,.2].forEach(t=>beep(1400,t,.08,"square",.8)); },
+      classic:    ()=>{ [[440,0],[554,.15],[659,.3],[880,.5]].forEach(([f,t])=>beep(f,t,.3,"triangle",.7)); },
+      barberpole: ()=>{ [440,550,660,770,880,770,660,550].forEach((f,i)=>beep(f,i*.1,.15,"sine",.6)); },
+      clippers:   ()=>{ [0,.04,.08,.12,.16,.20,.24,.28].forEach(t=>beep(150+Math.random()*50,t,.05,"sawtooth",.5)); },
+      towel:      ()=>{ beep(300,0,.2,"sine",.4); beep(400,.2,.3,"sine",.5); beep(500,.4,.4,"sine",.6); },
+      mirror:     ()=>{ [[1047,0],[1319,.1],[1568,.2],[2093,.35]].forEach(([f,t])=>beep(f,t,.2,"sine",.7)); },
+      spray:      ()=>{ [0,.05,.1,.15,.2,.25,.3].forEach(t=>beep(2000+Math.random()*500,t,.04,"square",.3)); },
+      magazine:   ()=>{ beep(440,0,.1,"triangle",.5); beep(330,.15,.1,"triangle",.5); beep(440,.3,.3,"triangle",.6); },
+      fanfare:    ()=>{ [[523,0],[659,.1],[784,.2],[1047,.3],[784,.5],[1047,.65]].forEach(([f,t])=>beep(f,t,.2,"square",.6)); },
+      vip:        ()=>{ [[1047,0],[880,.15],[659,.3],[784,.45],[1047,.6],[1319,.8]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
+    };
+    plays[id]?.();
+  }catch(e){}
+}
+
 // ==============================================
 //  PUSH NOTIFICATIONS
 // ==============================================
@@ -159,12 +310,14 @@ function sendNotif(title,body,icon="✂",targetType="all",targetId=null){
   // زيادة عداد الجرس
   const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
   localStorage.setItem("dork_notif_count",String(count+1));
-  // حفظ الإشعار محلياً فقط (بدون كتابة في DB لتجنب حلقات Realtime اللانهائية)
+  // حفظ الإشعار محلياً
   try{
     const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
     notifs.unshift({id:Date.now(),title,body,icon,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
     localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
   }catch{}
+  // حفظ الإشعار في Supabase لمزامنة الويب
+  sb("notifications","POST",{target_type:targetType,target_id:targetId,title,body,icon}).catch(()=>{});
   if(!("Notification" in window)||Notification.permission!=="granted")return;
   try{new Notification(`${icon} ${title}`,{body,icon:"/favicon.ico",dir:"rtl",lang:"ar"});}catch{}
 }
@@ -360,6 +513,23 @@ const DEFAULT_SERVICES=["قص شعر","حلاقة لحية","تسريح","حلا
 
 // ==============================================
 //  UTILS
+// ==============================================
+function makeSlots(s,e,slotMin=40){
+  const r=[]; let[h,m]=s.split(":").map(Number); const[eh,em]=e.split(":").map(Number);
+  while(h<eh||(h===eh&&m<em)){r.push(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);m+=slotMin;if(m>=60){h++;m-=60;}} return r;
+}
+function getSlotsForSalon(s){
+  const sm=s.slotMin||SLOT_MIN;
+  if(s.shiftEnabled){
+    return[...(s.shift1Start&&s.shift1End?makeSlots(s.shift1Start,s.shift1End,sm):[]),...(s.shift2Start&&s.shift2End?makeSlots(s.shift2Start,s.shift2End,sm):[])];
+  }
+  return makeSlots(s.workStart||"09:00",s.workEnd||"22:00",sm);
+}
+function todayStr(){return new Date().toISOString().split("T")[0];}
+function openMaps(url,name,addr){window.open(url?.trim()||`https://www.google.com/maps/search/${encodeURIComponent(name+" "+addr)}`,"_blank");}
+function calcTotal(svcs,prices){return(svcs||[]).reduce((a,s)=>a+(prices?.[s]||0),0);}
+function normPhone(p){return String(p||"").replace(/\D/g,"");}
+
 /** تقييمات معتمدة من عملاء لصالونات مفعّلة — للصفحة الرئيسية */
 function buildHomeReviewsFeed(customers, approvedSalons){
   const byId=new Map(approvedSalons.map(s=>[Number(s.id),s]));
@@ -685,59 +855,6 @@ export default function App(){
     bookingStatusSnapRef.current=null;
   },[customerSession?.id]);
 
-  // ========================
-  // FCM Token Registration
-  // ========================
-  const registerFCMToken=useCallback(async(userType,userId)=>{
-    if(!("serviceWorker" in navigator)||!("PushManager" in window))return;
-    if(!("Notification" in window)||Notification.permission!=="granted")return;
-    try{
-      const swReg=await navigator.serviceWorker.register("/service-worker.js",{scope:"/"});
-      const loadScript=(src)=>new Promise((res,rej)=>{
-        if(document.querySelector(`script[src="${src}"]`)){res();return;}
-        const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;
-        document.head.appendChild(s);
-      });
-      await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
-      await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js");
-      const fb=window.firebase;
-      if(!fb.apps.length) fb.initializeApp({
-        apiKey:"AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",
-        authDomain:"dork-app.firebaseapp.com",
-        projectId:"dork-app",
-        messagingSenderId:"659823227621",
-        appId:"1:659823227621:web:befaaa1b5063c86cabda0c",
-      });
-      const VAPID_KEY=import.meta.env.VITE_FIREBASE_VAPID_KEY||"";
-      if(!VAPID_KEY){console.warn("FCM: أضف VITE_FIREBASE_VAPID_KEY في ملف .env");return;}
-      const messaging=fb.messaging();
-      const token=await messaging.getToken({vapidKey:VAPID_KEY,serviceWorkerRegistration:swReg});
-      if(!token)return;
-      const hdrs={apikey:SUPABASE_ANON,Authorization:`Bearer ${SUPABASE_ANON}`,"Content-Type":"application/json"};
-      const checkRes=await fetch(`${SUPABASE_URL}/rest/v1/fcm_tokens?device_token=eq.${encodeURIComponent(token)}&select=id`,{headers:hdrs});
-      const existing=await checkRes.json();
-      if(existing&&existing.length>0){
-        await fetch(`${SUPABASE_URL}/rest/v1/fcm_tokens?id=eq.${existing[0].id}`,{
-          method:"PATCH",headers:{...hdrs,Prefer:"return=minimal"},
-          body:JSON.stringify({user_type:userType,user_id:userId,is_active:true}),
-        });
-      }else{
-        await fetch(`${SUPABASE_URL}/rest/v1/fcm_tokens`,{
-          method:"POST",headers:{...hdrs,Prefer:"return=minimal"},
-          body:JSON.stringify({user_type:userType,user_id:userId,device_token:token,is_active:true}),
-        });
-      }
-    }catch(err){console.error("FCM registration:",err);}
-  },[]);
-
-  useEffect(()=>{
-    if(ownerSession)registerFCMToken("salon",ownerSession);
-  },[ownerSession,registerFCMToken]);
-
-  useEffect(()=>{
-    if(customerSession?.id)registerFCMToken("customer",customerSession.id);
-  },[customerSession?.id,registerFCMToken]);
-
   /* Supabase Realtime - تحديثات لحظية في كل الاتجاهات */
 
   // جلب مخصص للحجوزات فقط (بدون إعادة تحميل كامل)
@@ -1050,16 +1167,7 @@ export default function App(){
           setCustomers(p=>p.map(x=>x.id===c.id?{...x,history:hist}:x));
         }
       }
-      if(status==="approved"){
-        try{playTone("success",0.7);}catch{}
-        toast$("✅ تم قبول الحجز");
-      }else if(status==="rejected"){
-        try{playTone("error",0.7);}catch{}
-        toast$("تم تحديث حالة الحجز","warn");
-      }else{
-        try{playTone("click",0.5);}catch{}
-        toast$("تم تحديث حالة الحجز");
-      }
+      toast$(status==="approved"?"✅ تم قبول الحجز":"تم تحديث حالة الحجز");
       await loadData();
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
@@ -1134,6 +1242,7 @@ export default function App(){
     govList,villageList,centerList2,
     showFavs,setShowFavs,
     displaySalons,
+    salons,
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
     socialLinks,setSocialLinks:updateSocial,
     handleCustomerLogin,
@@ -1695,7 +1804,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
         </div>
 
         {/* Rating on Right */}
-        <div style={{border:"1.5px solid rgba(212,160,23,.4)",borderRadius:10,padding:"6px 10px",minWidth:"65px",textAlign:"center",flex:"0 0 auto",cursor:"pointer"}} onClick={onViewReviews} title="عرض التقييمات والتعليقات">
+        <div style={{border:"1.5px solid rgba(212,160,23,.4)",borderRadius:10,padding:"6px 10px",minWidth:"65px",textAlign:"center",flex:"0 0 auto"}}>
           <div style={{fontSize:16,fontWeight:900,color:"#d4a017"}}>⭐ {displayRating}</div>
           <div style={{fontSize:8,color:"#aaa"}}>({reviewCount})</div>
         </div>
@@ -1738,7 +1847,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
         <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"#d4a017":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           {fav?"♥":"♡"}
         </button>
-        <button onClick={onCompare} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:inCompare?"#d4a017":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+        <button onClick={()=>{}} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           ⚖
         </button>
         <button onClick={onBook} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",flex:1,fontFamily:"'Cairo',sans-serif"}}>
@@ -1861,7 +1970,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
             })}
           </div>
         </F>}
-        <button style={G.sub} onClick={()=>{if(v1())setStep(2);}}>التالي &gt;</button>
+        <button style={G.sub} onClick={()=>{if(v1())setStep(2);}}>التالي ></button>
       </div>}
       {step===2&&<div style={G.fc}>
         <F label="التاريخ" error={errors.date}>
@@ -1958,6 +2067,92 @@ function TermsView({onAccept}){
   );
 }
 
+function StatsPanel({salon}){
+  const[mode,setMode]=useState("month"); // month | year
+  const[m,setM]=useState(new Date().getMonth());
+  const[y,setY]=useState(new Date().getFullYear());
+
+  const bks=salon.bookings.filter(b=>{
+    if(!b.date)return false;
+    const d=new Date(b.date);
+    if(mode==="year")return d.getFullYear()===y;
+    return d.getMonth()===m&&d.getFullYear()===y;
+  });
+
+  // بيانات الرسم البياني
+  const chartData=mode==="year"
+    ?MONTHS_AR.map((mn,i)=>{
+        const cnt=salon.bookings.filter(b=>{const d=new Date(b.date);return d.getMonth()===i&&d.getFullYear()===y;}).length;
+        return{label:mn.slice(0,3),count:cnt};
+      })
+    :Array.from({length:new Date(y,m+1,0).getDate()},(_, i)=>{
+        const day=String(i+1).padStart(2,"0");
+        const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${day}`;
+        const cnt=salon.bookings.filter(b=>b.date===dateStr).length;
+        return{label:String(i+1),count:cnt};
+      }).filter((_, i)=>i%3===0); // كل 3 أيام عشان ما يزدحم
+  const maxCount=Math.max(...chartData.map(d=>d.count),1);
+
+  return(
+    <div style={{paddingTop:4}}>
+      {/* تبديل شهري/سنوي */}
+      <div style={{display:"flex",gap:8,marginBottom:12}}>
+        <button style={{flex:1,padding:"8px 0",borderRadius:9,border:`1.5px solid ${mode==="month"?"var(--p)":"#2a2a3a"}`,background:mode==="month"?"var(--pa12)":"#1a1a2e",color:mode==="month"?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>setMode("month")}>📅 شهري</button>
+        <button style={{flex:1,padding:"8px 0",borderRadius:9,border:`1.5px solid ${mode==="year"?"var(--p)":"#2a2a3a"}`,background:mode==="year"?"var(--pa12)":"#1a1a2e",color:mode==="year"?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>setMode("year")}>📆 سنوي</button>
+      </div>
+
+      {/* فلاتر */}
+      <div style={{display:"flex",gap:7,marginBottom:12}}>
+        {mode==="month"&&<select style={{...fi(),...{flex:1}}} value={m} onChange={e=>setM(+e.target.value)}>{MONTHS_AR.map((mn,i)=><option key={i} value={i}>{mn}</option>)}</select>}
+        <select style={{...fi(),...{width:mode==="year"?"100%":88}}} value={y} onChange={e=>setY(+e.target.value)}>{[2024,2025,2026,2027].map(yr=><option key={yr}>{yr}</option>)}</select>
+      </div>
+
+      {/* إحصائيات */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+        {[["الحجوزات",bks.length,"var(--p)"],["مقبول",bks.filter(b=>b.status==="approved").length,"#27ae60"],["انتظار",bks.filter(b=>b.status==="pending").length,"var(--pl)"],["مرفوض",bks.filter(b=>b.status==="rejected").length,"#e74c3c"]].map(([l,n,c])=>(
+          <div key={l} style={{background:"#13131f",borderRadius:11,padding:"12px 8px",textAlign:"center",border:`1px solid ${c}33`}}><div style={{fontSize:22,fontWeight:900,color:c}}>{n}</div><div style={{fontSize:11,color:"#888"}}>{l}</div></div>
+        ))}
+      </div>
+
+      {/* الإيرادات */}
+      <div style={{background:"var(--pa08)",borderRadius:11,padding:"12px 14px",border:"1px solid var(--pa25)",textAlign:"center",marginBottom:12}}>
+        <div style={{fontSize:11,color:"#888",marginBottom:3}}>الإيرادات - {mode==="year"?y:`${MONTHS_AR[m]} ${y}`}</div>
+        <div style={{fontSize:26,fontWeight:900,color:"var(--p)"}}>{bks.filter(b=>b.status==="approved").reduce((a,b)=>a+(b.total||0),0)} <span style={{fontSize:13}}>ريال</span></div>
+      </div>
+
+      {/* أكثر خدمة مطلوبة */}
+      {(()=>{
+        const svcCount={};
+        bks.forEach(b=>(b.services||[]).forEach(s=>{svcCount[s]=(svcCount[s]||0)+1;}));
+        const top=Object.entries(svcCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        return top.length>0?(
+          <div style={{background:"#13131f",borderRadius:11,padding:"12px 14px",border:"1px solid #2a2a3a",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:"var(--p)",marginBottom:8}}>🏆 أكثر الخدمات طلباً</div>
+            {top.map(([svc,cnt],i)=>(
+              <div key={svc} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                <span style={{fontSize:12,color:"#fff"}}>{["🥇","🥈","🥉"][i]} {svc}</span>
+                <span style={{fontSize:12,color:"var(--p)",fontWeight:700}}>{cnt} مرة</span>
+              </div>
+            ))}
+          </div>
+        ):null;
+      })()}
+
+      {/* رسم بياني */}
+      <div style={{background:"#13131f",borderRadius:11,padding:"12px 8px",border:"1px solid #2a2a3a",marginBottom:4}}>
+        <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:10}}>📊 {mode==="year"?"الحجوزات الشهرية":"الحجوزات اليومية"}</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:mode==="year"?4:2,height:60}}>
+          {chartData.map((d,i)=>(
+            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              <div style={{width:"100%",background:`linear-gradient(180deg,var(--p),var(--pd))`,borderRadius:"3px 3px 0 0",height:`${Math.max((d.count/maxCount)*48,d.count?3:0)}px`,minHeight:d.count?3:0}}/>
+              <div style={{fontSize:8,color:"#555",textAlign:"center"}}>{d.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved"}){
   const[showWaiting,setShowWaiting]=useState(false);
   const[showAddForm,setShowAddForm]=useState(false);
@@ -2363,7 +2558,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           <button style={{...G.locTab,...(locMethod==="detect"?G.locTabOn:{})}} onClick={()=>setLocMethod("detect")}>📡 تلقائي</button>
         </div>
         {locMethod==="link"
-          ?<F error={errors.locationUrl}><input style={fi(errors.locationUrl)} placeholder="https://maps.google.com/..." value={form.locationUrl} onChange={e=>setForm(p=>({...p,locationUrl:e.target.value}))}/><div style={{fontSize:10,color:"#555",marginTop:3}}>افتح Google Maps &gt; الموقع &gt; شارك &gt; انسخ</div></F>
+          ?<F error={errors.locationUrl}><input style={fi(errors.locationUrl)} placeholder="https://maps.google.com/..." value={form.locationUrl} onChange={e=>setForm(p=>({...p,locationUrl:e.target.value}))}/><div style={{fontSize:10,color:"#555",marginTop:3}}>افتح Google Maps > الموقع > شارك > انسخ</div></F>
           :<div style={{marginBottom:11}}><button style={{...G.detectBtn,opacity:detecting?0.6:1}} disabled={detecting} onClick={detect}>{detecting?"⏳ جاري...":"📡 تحديد موقعي"}</button>{form.locationUrl&&locMethod==="detect"&&<div style={{color:"#4caf50",fontSize:11,marginTop:4,textAlign:"center"}}>✅ تم</div>}{errors.locationUrl&&<div style={G.err}>{errors.locationUrl}</div>}</div>
         }
       </div>
@@ -4170,7 +4365,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📋 الحجوزات: <span style={{color:"#f0c040"}}>{history.length} حجز</span></div>
-            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{formatDate(customer.createdAt)}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
           </div>
         </div>
       ):(
