@@ -159,14 +159,12 @@ function sendNotif(title,body,icon="✂",targetType="all",targetId=null){
   // زيادة عداد الجرس
   const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
   localStorage.setItem("dork_notif_count",String(count+1));
-  // حفظ الإشعار محلياً
+  // حفظ الإشعار محلياً فقط (بدون كتابة في DB لتجنب حلقات Realtime اللانهائية)
   try{
     const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
     notifs.unshift({id:Date.now(),title,body,icon,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
     localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
   }catch{}
-  // حفظ الإشعار في Supabase لمزامنة الويب
-  sb("notifications","POST",{target_type:targetType,target_id:targetId,title,body,icon}).catch(()=>{});
   if(!("Notification" in window)||Notification.permission!=="granted")return;
   try{new Notification(`${icon} ${title}`,{body,icon:"/favicon.ico",dir:"rtl",lang:"ar"});}catch{}
 }
@@ -783,8 +781,16 @@ export default function App(){
         const n=payload.new;
         if(!n)return;
         if(n.target_type==="customer")return;
-        sendNotif(n.title,n.body,n.icon||"🔔",n.target_type,n.target_id);
-        loadData({silent:true});
+        const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
+        localStorage.setItem("dork_notif_count",String(count+1));
+        try{
+          const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+          notifs.unshift({id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔔",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
+          localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
+        }catch{}
+        if("Notification" in window&&Notification.permission==="granted"){
+          try{new Notification(`${n.icon||"🔔"} ${n.title}`,{body:n.body||"",dir:"rtl",lang:"ar"});}catch{}
+        }
       })
       .subscribe();
 
@@ -808,7 +814,7 @@ export default function App(){
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(reviewsChannel);
     };
-  },[loadAppSettings,loadData,pollBookings,pollReviews]);
+  },[loadAppSettings,pollBookings,pollReviews]);
 
   useEffect(()=>{
     if(!customerSession?.id)return;
