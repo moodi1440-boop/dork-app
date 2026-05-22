@@ -1,135 +1,63 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { createClient } from "@supabase/supabase-js";
 
-// ==============================================
-//  SUPABASE CLIENT
-// ==============================================
-const SUPABASE_URL    = "https://ywrlhvzfefvyogfxfdhl.supabase.co";
-const SUPABASE_ANON   = "sb_publishable_3tbZHK51ohv9AITf-Mt5Ww_MGZ1DMQs";
+// =============================================
+//  IMPORTS FROM NEW LAYER STRUCTURE
+// =============================================
 
-// Supabase JS client for Realtime subscriptions
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+// Core & Data Layer
+import { supabase, sb, SUPABASE_URL, SUPABASE_ANON } from "./src/core/supabase";
+import {
+  toAppSalon,
+  toDbSalon,
+  toAppBooking,
+  toAppCustomer,
+} from "./src/data/transformers";
+import * as API from "./src/data/api";
 
-async function sb(table, method, body, query = "") {
-  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "apikey": SUPABASE_ANON,
-      "Authorization": `Bearer ${SUPABASE_ANON}`,
-      "Content-Type": "application/json",
-      "Prefer": method === "POST" ? "return=representation" : "return=representation",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Supabase ${method} ${table}: ${err}`);
+// Utils
+import {
+  normPhone,
+  calcTotal,
+  todayStr,
+  normalizeBgId,
+  buildDorkBgStyle,
+  makeSlots,
+  getSlotsForSalon,
+  formatDate,
+} from "./src/utils/formatters";
+import {
+  openMaps,
+  haversine,
+  getSalonCoords,
+  calculateDistance,
+  isOpenNow,
+} from "./src/utils/locationUtils";
+import { playTone } from "./src/utils/audioUtils";
+
+// OwnerDash Components
+import { StatsPanel } from "./src/components/OwnerDash/StatsPanel";
+
+class ErrorBoundary extends React.Component {
+  constructor(props){super(props);this.state={err:null,info:null};}
+  static getDerivedStateFromError(e){return{err:e};}
+  componentDidCatch(e,info){this.setState({info:info?.componentStack||""});}
+  render(){
+    if(this.state.err)return(
+      <div style={{minHeight:"100vh",background:"#09112e",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:20,gap:12}}>
+        <div style={{fontSize:32}}>⚠️</div>
+        <div style={{color:"#e74c3c",fontSize:14,fontWeight:700}}>خطأ في التطبيق</div>
+        <div style={{color:"#aaa",fontSize:11,background:"#1a1a2e",padding:"12px 16px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr"}}>{String(this.state.err)}</div>
+        {this.state.info&&<div style={{color:"#666",fontSize:9,background:"#111",padding:"8px 12px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr",maxHeight:120,overflow:"auto"}}>{this.state.info}</div>}
+        <button onClick={()=>window.location.reload()} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:8,padding:"8px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer"}}>إعادة تحميل</button>
+      </div>
+    );
+    return this.props.children;
   }
-  const text = await res.text();
-  return text ? JSON.parse(text) : [];
-}
-
-// تحويل بيانات Supabase > شكل التطبيق
-function toAppSalon(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    owner: row.owner,
-    ownerPhone: row.owner_phone,
-    region: row.region,
-    gov: row.gov,
-    center: row.center,
-    village: row.village,
-    phone: row.phone,
-    address: row.address,
-    locationUrl: row.location_url,
-    services: row.services || [],
-    prices: row.prices || {},
-    shiftEnabled: row.shift_enabled,
-    shift1Start: row.shift1_start,
-    shift1End: row.shift1_end,
-    shift2Start: row.shift2_start,
-    shift2End: row.shift2_end,
-    workStart: row.work_start,
-    workEnd: row.work_end,
-    barbers: row.barbers || [],
-    tone: row.tone,
-    rating: row.rating,
-    status: row.status,
-    bookings: [], // تُحمَّل بشكل منفصل
-  };
-}
-
-// تحويل بيانات التطبيق > Supabase
-function toDbSalon(s) {
-  return {
-    name: s.name,
-    owner: s.owner,
-    owner_phone: s.ownerPhone,
-    region: s.region,
-    gov: s.gov,
-    center: s.center,
-    village: s.village,
-    phone: s.phone,
-    address: s.address,
-    location_url: s.locationUrl,
-    services: s.services,
-    prices: s.prices,
-    shift_enabled: s.shiftEnabled,
-    shift1_start: s.shift1Start,
-    shift1_end: s.shift1End,
-    shift2_start: s.shift2Start,
-    shift2_end: s.shift2End,
-    work_start: s.workStart,
-    work_end: s.workEnd,
-    barbers: s.barbers,
-    tone: s.tone,
-  };
-}
-
-function toAppBooking(row) {
-  return {
-    id: row.id,
-    salonId: row.salon_id,
-    name: row.name,
-    phone: row.phone,
-    email: row.email||"",
-    services: row.services || [],
-    barberId: row.barber_id,
-    barberName: row.barber_name,
-    date: row.date,
-    time: row.time,
-    total: row.total,
-    status: row.status,
-  };
-}
-
-function toAppCustomer(row) {
-  let history=row.history||[];
-  let favs=row.favs||[];
-  if(!history.length){
-    try{const h=localStorage.getItem(`hist_${row.id}`);if(h)history=JSON.parse(h);}catch{}
-  }
-  if(!favs.length){
-    try{const f=localStorage.getItem(`favs_${row.id}`);if(f)favs=JSON.parse(f);}catch{}
-  }
-  return {
-    id: row.id,
-    name: row.name,
-    phone: row.phone,
-    email: row.email||"",
-    password: row.password,
-    googleUid: row.google_uid||"",
-    favs,
-    history,
-  };
 }
 
 // ==============================================
 //  CONSTANTS
 // ==============================================
-const ADMIN_PWD = "admin123";
 const SLOT_MIN  = 40;
 const MONTHS_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 
@@ -204,61 +132,22 @@ const BG_LIGHT_STYLES={
   goldMarble:{background:"linear-gradient(120deg,#faf8f5 0%,#f3efe8 45%,#faf7f2 100%)",backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(166,124,41,.06) 3px,rgba(166,124,41,.06) 6px), radial-gradient(ellipse 65% 45% at 30% 10%, rgba(201,162,39,.12), transparent 50%)"},
 };
 
-function normalizeBgId(id){
-  if(BACKGROUNDS.some(b=>b.id===id))return id;
-  return"none";
-}
-
-function buildDorkBgStyle(bgId,darkMode){
-  const id=normalizeBgId(bgId);
-  const base={position:"fixed",inset:0,zIndex:-1,pointerEvents:"none"};
-  if(!darkMode){
-    const L=BG_LIGHT_STYLES[id]||BG_LIGHT_STYLES.none;
-    return{...base,...L};
-  }
-  const bg=BACKGROUNDS.find(b=>b.id===id)||BACKGROUNDS[0];
-  return{...base,...bg.style};
-}
-
-function playTone(id, vol=0.7){
-  try{
-    const A=window.AudioContext||window.webkitAudioContext;
-    if(!A)return;
-    const ctx=new A();
-    const g=ctx.createGain(); g.gain.value=vol; g.connect(ctx.destination);
-    const beep=(freq,start,dur,type="sine",v=vol)=>{
-      const o=ctx.createOscillator(),gn=ctx.createGain();
-      o.type=type; o.frequency.value=freq;
-      gn.gain.setValueAtTime(v,ctx.currentTime+start);
-      gn.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
-      o.connect(gn); gn.connect(ctx.destination);
-      o.start(ctx.currentTime+start); o.stop(ctx.currentTime+start+dur);
-    };
-    const plays={
-      scissors:   ()=>{ beep(1200,0,.05,"square",.6); beep(900,0.08,.05,"square",.6); beep(1200,0.16,.05,"square",.6); beep(900,0.24,.05,"square",.6); },
-      razor:      ()=>{ [0,.06,.12,.18,.24].forEach(t=>beep(80+Math.random()*40,t,.07,"sawtooth",.7)); },
-      bell:       ()=>{ beep(880,0,.6,"sine",.8); beep(1100,.15,.5,"sine",.6); beep(1320,.3,.8,"sine",.5); },
-      cash:       ()=>{ beep(1800,0,.04,"square",.7); beep(2400,.05,.04,"square",.6); beep(1200,.12,.3,"triangle",.5); },
-      welcome:    ()=>{ [523,659,784,1047].forEach((f,i)=>beep(f,i*.12,.25,"sine",.7)); },
-      chime3:     ()=>{ [[880,.0],[1100,.18],[1320,.36],[1100,.54],[880,.72]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
-      alert:      ()=>{ [0,.1,.2].forEach(t=>beep(1400,t,.08,"square",.8)); },
-      classic:    ()=>{ [[440,0],[554,.15],[659,.3],[880,.5]].forEach(([f,t])=>beep(f,t,.3,"triangle",.7)); },
-      barberpole: ()=>{ [440,550,660,770,880,770,660,550].forEach((f,i)=>beep(f,i*.1,.15,"sine",.6)); },
-      clippers:   ()=>{ [0,.04,.08,.12,.16,.20,.24,.28].forEach(t=>beep(150+Math.random()*50,t,.05,"sawtooth",.5)); },
-      towel:      ()=>{ beep(300,0,.2,"sine",.4); beep(400,.2,.3,"sine",.5); beep(500,.4,.4,"sine",.6); },
-      mirror:     ()=>{ [[1047,0],[1319,.1],[1568,.2],[2093,.35]].forEach(([f,t])=>beep(f,t,.2,"sine",.7)); },
-      spray:      ()=>{ [0,.05,.1,.15,.2,.25,.3].forEach(t=>beep(2000+Math.random()*500,t,.04,"square",.3)); },
-      magazine:   ()=>{ beep(440,0,.1,"triangle",.5); beep(330,.15,.1,"triangle",.5); beep(440,.3,.3,"triangle",.6); },
-      fanfare:    ()=>{ [[523,0],[659,.1],[784,.2],[1047,.3],[784,.5],[1047,.65]].forEach(([f,t])=>beep(f,t,.2,"square",.6)); },
-      vip:        ()=>{ [[1047,0],[880,.15],[659,.3],[784,.45],[1047,.6],[1319,.8]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
-    };
-    plays[id]?.();
-  }catch(e){}
-}
-
 // ==============================================
 //  PUSH NOTIFICATIONS
 // ==============================================
+function getCustomerClassification(customer){
+  const history=(customer?.history||[]);
+  const total=history.filter(h=>h.status!=="rejected").length;
+  const completed=history.filter(h=>h.status==="approved").length;
+  const noShows=history.filter(h=>h.status==="cancelled"&&h.attendance==="no_show").length;
+  const lateCancels=history.filter(h=>h.status==="cancelled").length;
+  if(lateCancels>=3||noShows>=3)return{label:"⚠️ غير ملتزم",color:"#e74c3c",key:"unreliable"};
+  if(total===0)return{label:"🆕 جديد",color:"#3498db",key:"new"};
+  if(completed>=5&&lateCancels===0)return{label:"🌟 مميز",color:"#d4a017",key:"vip"};
+  if(completed>=2&&lateCancels<=1)return{label:"✅ منتظم",color:"#27ae60",key:"regular"};
+  return{label:"🆕 جديد",color:"#3498db",key:"new"};
+}
+
 async function requestNotifPermission(){
   if(!("Notification" in window))return false;
   if(Notification.permission==="granted")return true;
@@ -270,14 +159,12 @@ function sendNotif(title,body,icon="✂",targetType="all",targetId=null){
   // زيادة عداد الجرس
   const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
   localStorage.setItem("dork_notif_count",String(count+1));
-  // حفظ الإشعار محلياً
+  // حفظ الإشعار محلياً فقط (بدون كتابة في DB لتجنب حلقات Realtime اللانهائية)
   try{
     const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
     notifs.unshift({id:Date.now(),title,body,icon,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
     localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
   }catch{}
-  // حفظ الإشعار في Supabase لمزامنة الويب
-  sb("notifications","POST",{target_type:targetType,target_id:targetId,title,body,icon}).catch(()=>{});
   if(!("Notification" in window)||Notification.permission!=="granted")return;
   try{new Notification(`${icon} ${title}`,{body,icon:"/favicon.ico",dir:"rtl",lang:"ar"});}catch{}
 }
@@ -473,23 +360,6 @@ const DEFAULT_SERVICES=["قص شعر","حلاقة لحية","تسريح","حلا
 
 // ==============================================
 //  UTILS
-// ==============================================
-function makeSlots(s,e,slotMin=40){
-  const r=[]; let[h,m]=s.split(":").map(Number); const[eh,em]=e.split(":").map(Number);
-  while(h<eh||(h===eh&&m<em)){r.push(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);m+=slotMin;if(m>=60){h++;m-=60;}} return r;
-}
-function getSlotsForSalon(s){
-  const sm=s.slotMin||SLOT_MIN;
-  if(s.shiftEnabled){
-    return[...(s.shift1Start&&s.shift1End?makeSlots(s.shift1Start,s.shift1End,sm):[]),...(s.shift2Start&&s.shift2End?makeSlots(s.shift2Start,s.shift2End,sm):[])];
-  }
-  return makeSlots(s.workStart||"09:00",s.workEnd||"22:00",sm);
-}
-function todayStr(){return new Date().toISOString().split("T")[0];}
-function openMaps(url,name,addr){window.open(url?.trim()||`https://www.google.com/maps/search/${encodeURIComponent(name+" "+addr)}`,"_blank");}
-function calcTotal(svcs,prices){return(svcs||[]).reduce((a,s)=>a+(prices?.[s]||0),0);}
-function normPhone(p){return String(p||"").replace(/\D/g,"");}
-
 /** تقييمات معتمدة من عملاء لصالونات مفعّلة — للصفحة الرئيسية */
 function buildHomeReviewsFeed(customers, approvedSalons){
   const byId=new Map(approvedSalons.map(s=>[Number(s.id),s]));
@@ -531,9 +401,11 @@ const DEMO_SALONS=[
 // ==============================================
 //  ROOT
 // ==============================================
+export { ErrorBoundary };
 export default function App(){
   const[salons,setSalons]=useState([]);
   const[customers,setCustomers]=useState([]);
+  const[reviews,setReviews]=useState([]);
   const[extraLoc,setExtraLoc]=useState(()=>{
     try{
       localStorage.removeItem("bbv6_loc");
@@ -549,6 +421,7 @@ export default function App(){
   const[darkMode,setDarkMode]=useState(()=>{try{return localStorage.getItem("dork_dark")!=="0";}catch{return true;}});
   const[compareSalons,setCompareSalons]=useState([]); // مقارنة صالونين
   const[pullRefreshing,setPullRefreshing]=useState(false); // Pull to refresh
+  const[rescheduleId,setRescheduleId]=useState(null);
 
   // تطبيق وضع الإضاءة
   useEffect(()=>{
@@ -580,14 +453,12 @@ export default function App(){
   },[]);
 
   // -- تسجيل الدخول المستمر --
-  const[adminSession,setAdminSession]=useState(()=>{try{return localStorage.getItem("dork_admin")==="1";}catch{return false;}});
   const[ownerSession,setOwnerSession]=useState(()=>{try{const v=localStorage.getItem("dork_owner");return v?+v:null;}catch{return null;}});
   const[customerSession,setCustomerSession]=useState(()=>{try{const v=localStorage.getItem("dork_customer");return v?JSON.parse(v):null;}catch{return null;}});
 
   const bookingStatusSnapRef=useRef(null);
   const customerNotifyPrimedRef=useRef(false);
 
-  useEffect(()=>{try{localStorage.setItem("dork_admin",adminSession?"1":"0");}catch{}},[adminSession]);
   useEffect(()=>{try{if(ownerSession)localStorage.setItem("dork_owner",String(ownerSession));else localStorage.removeItem("dork_owner");}catch{}},[ownerSession]);
   useEffect(()=>{try{if(customerSession)localStorage.setItem("dork_customer",JSON.stringify(customerSession));else localStorage.removeItem("dork_customer");}catch{}},[customerSession]);
 
@@ -746,36 +617,36 @@ export default function App(){
     const silent=opts&&opts.silent;
     try {
       if(!silent)setLoading(true);
-      const salonRows = await sb("salons", "GET", null, "?order=id.desc");
+      const [salonRows, bookingRows, custRows] = await Promise.all([
+        sb("salons","GET",null,"?select=*&order=id.desc"),
+        sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance&order=created_at.desc"),
+        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,created_at"),
+      ]);
+      // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
+      const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc").catch(()=>[]);
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
-        salon.bookings = (row.bookings || []).map(b=>({
-          id: b.id||Date.now(),
-          salonId: b.salonId||row.id,
-          name: b.name||"",
-          phone: b.phone||"",
-          services: b.services||[],
-          barberId: b.barberId||"any",
-          barberName: b.barberName||"",
-          date: b.date||"",
-          time: b.time||"",
-          total: b.total||0,
-          status: b.status||"pending",
-        }));
+        salon.bookings = bookingRows
+          .filter(b => String(b.salon_id) === String(row.id))
+          .map(b => ({
+            id: b.id,
+            salonId: b.salon_id,
+            name: b.customer_name || "",
+            phone: b.customer_phone || "",
+            services: (() => { try { return JSON.parse(b.service || "[]"); } catch { return b.service ? [b.service] : []; } })(),
+            barberId: b.barber_id || "any",
+            barberName: b.barber_name || "",
+            date: b.date || "",
+            time: b.time || "",
+            total: b.total || 0,
+            status: b.status || "pending",
+            attendance: b.attendance || null,
+          }));
         return salon;
       });
-      // تنبيه صوتي للإدارة عند وجود طلبات جديدة (لا يُفعّل أثناء التحديث الصامت لجلسة العميل)
-      if(adminSession&&!silent){
-        const newPending=salonsWithBookings.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="pending").length,0);
-        const prevPending=salons.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="pending").length,0);
-        if(newPending>prevPending){
-          playTone("bell",0.6);
-          sendNotif("دورك - طلب جديد",`يوجد ${newPending} طلب بانتظار المراجعة`,"🔔");
-        }
-      }
       setSalons(salonsWithBookings);
-      const custRows = await sb("customers", "GET", null, "");
       setCustomers(custRows.map(toAppCustomer));
+      setReviews(reviewRows||[]);
       setDbError(null);
     } catch(e) {
       console.error(e);
@@ -783,7 +654,7 @@ export default function App(){
     } finally {
       if(!silent)setLoading(false);
     }
-  }, [adminSession]);
+  }, []);
 
   const handlePullRefresh=useCallback(async()=>{
     setPullRefreshing(true);
@@ -797,35 +668,119 @@ export default function App(){
 
   useEffect(()=>{ loadData(); loadAppSettings(); }, [loadData,loadAppSettings]);
 
+  // تحديث البيانات لما يرجع المستخدم للتطبيق من الخلفية
+  useEffect(()=>{
+    const onVisible=()=>{
+      if(document.visibilityState==="visible"){
+        loadData({silent:true});
+        loadAppSettings({silent:true});
+      }
+    };
+    document.addEventListener("visibilitychange",onVisible);
+    return()=>document.removeEventListener("visibilitychange",onVisible);
+  },[loadData,loadAppSettings]);
+
   useEffect(()=>{
     customerNotifyPrimedRef.current=false;
     bookingStatusSnapRef.current=null;
   },[customerSession?.id]);
 
-  /* إعادة تحقق عالمية: الصالونات (حالة التفعيل/الحجوزات) + إعدادات الإدارة من Supabase لجميع الجلسات */
-  useEffect(()=>{
-    const t=setInterval(()=>{
-      loadData({silent:true});
-      loadAppSettings({silent:true});
-    },16000);
-    return()=>clearInterval(t);
-  },[loadData,loadAppSettings]);
+  // ========================
+  // FCM Token Registration
+  // ========================
+  const registerFCMToken=useCallback(async(userType,userId)=>{
+    if(!("serviceWorker" in navigator)||!("PushManager" in window))return;
+    if(!("Notification" in window)||Notification.permission!=="granted")return;
+    try{
+      const swReg=await navigator.serviceWorker.register("/service-worker.js",{scope:"/"});
+      const loadScript=(src)=>new Promise((res,rej)=>{
+        if(document.querySelector(`script[src="${src}"]`)){res();return;}
+        const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;
+        document.head.appendChild(s);
+      });
+      await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
+      await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js");
+      const fb=window.firebase;
+      if(!fb.apps.length) fb.initializeApp({
+        apiKey:"AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",
+        authDomain:"dork-app.firebaseapp.com",
+        projectId:"dork-app",
+        messagingSenderId:"659823227621",
+        appId:"1:659823227621:web:befaaa1b5063c86cabda0c",
+      });
+      const VAPID_KEY=import.meta.env.VITE_FIREBASE_VAPID_KEY||"";
+      if(!VAPID_KEY){console.warn("FCM: أضف VITE_FIREBASE_VAPID_KEY في ملف .env");return;}
+      const messaging=fb.messaging();
+      const token=await messaging.getToken({vapidKey:VAPID_KEY,serviceWorkerRegistration:swReg});
+      if(!token)return;
+      const hdrs={apikey:SUPABASE_ANON,Authorization:`Bearer ${SUPABASE_ANON}`,"Content-Type":"application/json"};
+      const checkRes=await fetch(`${SUPABASE_URL}/rest/v1/fcm_tokens?device_token=eq.${encodeURIComponent(token)}&select=id`,{headers:hdrs});
+      const existing=await checkRes.json();
+      if(existing&&existing.length>0){
+        await fetch(`${SUPABASE_URL}/rest/v1/fcm_tokens?id=eq.${existing[0].id}`,{
+          method:"PATCH",headers:{...hdrs,Prefer:"return=minimal"},
+          body:JSON.stringify({user_type:userType,user_id:userId,is_active:true}),
+        });
+      }else{
+        await fetch(`${SUPABASE_URL}/rest/v1/fcm_tokens`,{
+          method:"POST",headers:{...hdrs,Prefer:"return=minimal"},
+          body:JSON.stringify({user_type:userType,user_id:userId,device_token:token,is_active:true}),
+        });
+      }
+    }catch(err){console.error("FCM registration:",err);}
+  },[]);
 
-  /* Supabase Realtime - إشعارات لحظية */
   useEffect(()=>{
-    // الاستماع لتغييرات الحجوزات
+    if(ownerSession)registerFCMToken("salon",ownerSession);
+  },[ownerSession,registerFCMToken]);
+
+  useEffect(()=>{
+    if(customerSession?.id)registerFCMToken("customer",customerSession.id);
+  },[customerSession?.id,registerFCMToken]);
+
+  /* Supabase Realtime - تحديثات لحظية في كل الاتجاهات */
+
+  // جلب مخصص للحجوزات فقط (بدون إعادة تحميل كامل)
+  const pollBookings=useCallback(async()=>{
+    try{
+      const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance&order=created_at.desc");
+      setSalons(prev=>prev.map(salon=>({
+        ...salon,
+        bookings:rows
+          .filter(b=>String(b.salon_id)===String(salon.id))
+          .map(b=>({
+            id:b.id,salonId:b.salon_id,
+            name:b.customer_name||"",phone:b.customer_phone||"",
+            services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
+            barberId:b.barber_id||"any",barberName:b.barber_name||"",
+            date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",attendance:b.attendance||null,
+          })),
+      })));
+    }catch{}
+  },[]);
+
+  // جلب مخصص للتقييمات فقط
+  const pollReviews=useCallback(async()=>{
+    try{
+      const rows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc");
+      setReviews(rows||[]);
+    }catch{}
+  },[]);
+
+  useEffect(()=>{
+    // حجوزات — لحظي في كل الاتجاهات (عميل ↔ صالون)
     const bookingChannel=supabase.channel('realtime-bookings')
       .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
-        loadData({silent:true});
+        pollBookings();
       })
       .subscribe();
 
-    // الاستماع للإشعارات الجديدة من الإدارة
+    // إشعارات الإدارة
     const notifChannel=supabase.channel('realtime-notifications')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},(payload)=>{
         const n=payload.new;
         if(!n)return;
-        // تشغيل إشعار محلي
+        if(n.target_type==="customer")return;
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
         try{
@@ -839,10 +794,17 @@ export default function App(){
       })
       .subscribe();
 
-    // الاستماع لتغييرات إعدادات التطبيق من الإدارة (مزامنة فورية)
+    // إعدادات التطبيق
     const settingsChannel=supabase.channel('realtime-app-settings')
       .on('postgres_changes',{event:'*',schema:'public',table:'app_settings'},()=>{
         loadAppSettings({silent:true});
+      })
+      .subscribe();
+
+    // تقييمات — لحظي في كل الاتجاهات (عميل ↔ صالون)
+    const reviewsChannel=supabase.channel('realtime-reviews')
+      .on('postgres_changes',{event:'*',schema:'public',table:'reviews'},()=>{
+        pollReviews();
       })
       .subscribe();
 
@@ -850,8 +812,9 @@ export default function App(){
       supabase.removeChannel(bookingChannel);
       supabase.removeChannel(notifChannel);
       supabase.removeChannel(settingsChannel);
+      supabase.removeChannel(reviewsChannel);
     };
-  },[loadData,loadAppSettings]);
+  },[loadAppSettings,pollBookings,pollReviews]);
 
   useEffect(()=>{
     if(!customerSession?.id)return;
@@ -882,16 +845,80 @@ export default function App(){
       const sidStr=key.split("-")[0];
       const salon=salons.find(x=>String(x.id)===sidStr);
       if(was==="pending"&&now==="approved"){
-        sendNotif("دورك - تأكيد الحجز",`✅ تم قبول حجزك في ${salon?.name||"الصالون"} — يُرجى الحضور في الموعد`,"✅");
+        sendNotif("دورك - تأكيد الحجز",`✅ تم قبول حجزك في ${salon?.name||"الصالون"} — يُرجى الحضور في الموعد`,"✅","customer",customerSession?.id);
         toast$(`✅ تم قبول حجزك في ${salon?.name||""}`);
         try{playTone("bell",0.55);}catch{}
       }else if(was==="pending"&&now==="rejected"){
-        sendNotif("دورك - تحديث الحجز",`تم رفض حجزك في ${salon?.name||"الصالون"}`,"❌");
+        sendNotif("دورك - تحديث الحجز",`تم رفض حجزك في ${salon?.name||"الصالون"}`,"❌","customer",customerSession?.id);
         toast$(`تم رفض حجزك في ${salon?.name||""}`,"warn");
       }
     }
     bookingStatusSnapRef.current=snap;
   },[salons,customers,customerSession]);
+
+  const refreshSalonBookings=useCallback(async(salonId)=>{
+    try{
+      const rows=await sb("bookings","GET",null,
+        `?salon_id=eq.${salonId}&select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc`
+      );
+      const bookings=rows.map(b=>({
+        id:b.id,
+        salonId:b.salon_id,
+        name:b.customer_name||"",
+        phone:b.customer_phone||"",
+        services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
+        barberId:b.barber_id||"any",
+        barberName:b.barber_name||"",
+        date:b.date||"",
+        time:b.time||"",
+        total:b.total||0,
+        status:b.status||"pending",
+        attendance:b.attendance||null,
+      }));
+      setSalons(prev=>prev.map(s=>String(s.id)===String(salonId)?{...s,bookings}:s));
+    }catch(e){console.error(e);}
+  },[]);
+
+  // Polling — fallback للـ Realtime كل 10 ثواني
+  useEffect(()=>{
+    const id=setInterval(()=>{pollBookings();pollReviews();},10000);
+    return()=>clearInterval(id);
+  },[pollBookings,pollReviews]);
+
+  // إشعار التذكير التلقائي + طلب التقييم
+  useEffect(()=>{
+    if(!customerSession)return;
+    const check=()=>{
+      const cust=customers.find(c=>c.id===customerSession.id);
+      if(!cust)return;
+      const now=new Date();
+      const reminderMins=parseInt(localStorage.getItem("dork_reminder")||"60");
+      const reminded=JSON.parse(localStorage.getItem("dork_auto_reminded")||"[]");
+      const reviewed=JSON.parse(localStorage.getItem("dork_auto_review")||"[]");
+      for(const h of (cust.history||[])){
+        if(!h.date||!h.time||h.status==="rejected"||h.status==="cancelled")continue;
+        const dt=new Date(`${h.date}T${h.time}`);
+        const minsUntil=(dt-now)/60000;
+        const minsAfter=(now-dt)/60000;
+        const key=`${h.salonId}-${h.date}-${h.time}`;
+        // تذكير قبل الموعد
+        if(minsUntil>0&&minsUntil<=reminderMins&&!reminded.includes(key)){
+          sendNotif("⏰ تذكير موعدك",`موعدك قريب في ${h.salonName||"الصالون"} — الساعة ${h.time}`,"⏰","customer",customerSession.id);
+          reminded.push(key);
+          localStorage.setItem("dork_auto_reminded",JSON.stringify(reminded.slice(-50)));
+        }
+        // طلب تقييم بعد الموعد بساعة
+        if(minsAfter>=60&&minsAfter<=120&&!reviewed.includes(key)&&h.status==="approved"&&!h.rating){
+          sendNotif("⭐ كيف كانت تجربتك؟",`قيّم ${h.salonName||"الصالون"} الآن وساعدنا في التحسين`,"⭐","customer",customerSession.id);
+          reviewed.push(key);
+          localStorage.setItem("dork_auto_review",JSON.stringify(reviewed.slice(-50)));
+        }
+      }
+    };
+    check();
+    const id=setInterval(check,60000);
+    return()=>clearInterval(id);
+  },[customerSession,customers]);
 
   // شاشة الشروط والأحكام
   if(!termsAccepted) return <TermsView onAccept={()=>{setTermsAccepted(true);try{localStorage.setItem("dork_terms","1");}catch{}}} />;
@@ -940,40 +967,31 @@ export default function App(){
       await loadData();
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
-  const deleteSalon=async(id)=>{
-    try{
-      await sb("salons","DELETE",null,`?id=eq.${id}`);
-      toast$("🗑 تم الحذف","warn");
-      await loadData();
-    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
-  };
-  const approveSalon=async(id,st)=>{
-    try{
-      await sb("salons","PATCH",{status:st},`?id=eq.${id}`);
-      toast$(st==="approved"?"✅ تم قبول الصالون":"❌ تم رفض الصالون");
-      await loadData();
-    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
-  };
-  const addBooking=async(sid,bk)=>{
+  const addBooking=async(sid,bk,rescheduleOldId=null)=>{
     try{
       const salon=salons.find(s=>s.id===sid);
       if(salon?.tone)playTone(salon.tone,0.8);
-      const newBooking={
-        id:Date.now(),
-        salonId:sid,
-        name:bk.name,
-        phone:bk.phone,
-        email:bk.email||"",
-        services:bk.services,
-        barberId:bk.barberId||"any",
-        barberName:bk.barberName||"",
+      const isReschedule=!!rescheduleOldId;
+      const inserted=await sb("bookings","POST",{
+        salon_id:String(sid),
+        customer_id:customerSession?.id||null,
+        customer_name:bk.name,
+        customer_phone:bk.phone,
+        barber_id:bk.barberId||"any",
+        barber_name:bk.barberName||"",
+        service:JSON.stringify(bk.services||[]),
         date:bk.date,
         time:bk.time,
         total:bk.total,
-        status:"pending",
-      };
-      const updatedBookings=[...(salon.bookings||[]),newBooking];
-      await sb("salons","PATCH",{bookings:updatedBookings},`?id=eq.${sid}`);
+        status:isReschedule?"approved":"pending",
+        notes:bk.email||"",
+      },"");
+      if(isReschedule){
+        await sb("bookings","PATCH",{status:"cancelled"},"?id=eq."+rescheduleOldId).catch(()=>{});
+        sb("notifications","POST",{target_type:"all",title:"تعديل موعد",body:`${bk.name} عدّل موعده إلى ${bk.date} - ${bk.time}`,icon:"🔄"}).catch(()=>{});
+        setRescheduleId(null);
+      }
+      const newBooking=inserted[0]||{};
       if(customerSession){
         const c=customers.find(x=>x.id===customerSession.id);
         if(c){
@@ -1009,8 +1027,7 @@ export default function App(){
       if(!salon)return;
       const bk=salon.bookings.find(b=>b.id===bid);
       if(!bk)return;
-      const updatedBookings=salon.bookings.map(b=>b.id===bid?{...b,status}:b);
-      await sb("salons","PATCH",{bookings:updatedBookings},`?id=eq.${sid}`);
+      await sb("bookings","PATCH",{status},`?id=eq.${bid}`);
       const bkn=normPhone(bk.phone);
       const targets=bkn.length>=9?customers.filter(c=>normPhone(c.phone)===bkn):[];
       for(const c of targets){
@@ -1033,7 +1050,16 @@ export default function App(){
           setCustomers(p=>p.map(x=>x.id===c.id?{...x,history:hist}:x));
         }
       }
-      toast$(status==="approved"?"✅ تم قبول الحجز":"تم تحديث حالة الحجز");
+      if(status==="approved"){
+        try{playTone("success",0.7);}catch{}
+        toast$("✅ تم قبول الحجز");
+      }else if(status==="rejected"){
+        try{playTone("error",0.7);}catch{}
+        toast$("تم تحديث حالة الحجز","warn");
+      }else{
+        try{playTone("click",0.5);}catch{}
+        toast$("تم تحديث حالة الحجز");
+      }
       await loadData();
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
@@ -1091,15 +1117,15 @@ export default function App(){
   };
 
   const sharedProps={
-    adminSession,setAdminSession,ownerSession,setOwnerSession,customerSession,setCustomerSession,
+    ownerSession,setOwnerSession,customerSession,setCustomerSession,
     setView,toast$,allLoc,addExtraLoc,
     salons,setSalons,approvedSalons,
-    addSalon,deleteSalon,approveSalon,
-    addBooking,updateBookingStatus,
+    addSalon,
+    addBooking,updateBookingStatus,loadData,refreshSalonBookings,rescheduleId,setRescheduleId,
     customers,setCustomers,
+    reviews,setReviews,
     toggleFav,favSet,customer,
     selSalon,setSelSalon,
-    onEnter:()=>setAdminSession(true),
     onPage:(s)=>{setSelSalon(s);setView("salon");},
     fRegion,setFRegion:v=>{setFRegion(v);setFGov("");setFCenter("");setFVillage("");},
     fGov,setFGov:v=>{setFGov(v);setFCenter("");setFVillage("");},
@@ -1108,7 +1134,6 @@ export default function App(){
     govList,villageList,centerList2,
     showFavs,setShowFavs,
     displaySalons,
-    salons,
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
     socialLinks,setSocialLinks:updateSocial,
     handleCustomerLogin,
@@ -1141,7 +1166,6 @@ export default function App(){
         {view==="register"&&  <RegisterView {...sharedProps}/>}
         {view==="book"&&selSalon&&<BookView salon={selSalon} {...sharedProps}/>}
         {view==="salon"&&selSalon&&<SalonPage salon={salons.find(s=>s.id===selSalon.id)||selSalon} {...sharedProps}/>}
-        {view==="admin"&&     <AdminView {...sharedProps}/>}
         {view==="ownerLogin"&&<OwnerLogin {...sharedProps}/>}
         {view==="ownerDash"&& <OwnerDash  salon={salons.find(s=>s.id===ownerSession)} {...sharedProps}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
@@ -1150,8 +1174,8 @@ export default function App(){
         {view==="nearMap"&&   <NearMapView salons={approvedSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="compare"&&   <CompareSalonsView salons={compareSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="notifs"&&    <NotifsView setView={setView}/>}
-        {view==="allReviews"&&<AllReviewsView customers={customers} approvedSalons={approvedSalons} setSelSalon={setSelSalon} setView={setView}/>}
-        {view==="salonReviews"&&selSalon&&<SalonReviewsView salon={salons.find(s=>s.id===selSalon.id)||selSalon} customers={customers} setView={setView}/>}
+        {view==="allReviews"&&<AllReviewsView reviews={reviews} approvedSalons={approvedSalons} setSelSalon={setSelSalon} setView={setView}/>}
+        {view==="salonReviews"&&selSalon&&<SalonReviewsView salon={salons.find(s=>s.id===selSalon.id)||selSalon} reviews={reviews} setView={setView}/>}
       </div>
     </div>
   );
@@ -1224,15 +1248,11 @@ function DorkLogoSvg({size=40}){
 // ==============================================
 //  TOP BAR - 3 role buttons on the LEFT
 // ==============================================
-function TopBar({adminSession,ownerSession,customerSession,setView,setAdminSession,setOwnerSession,setCustomerSession,salons,darkMode,setDarkMode,resetHome}){
-  const pendingCount=salons.filter(s=>s.status==="pending").length;
+function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustomerSession,darkMode,setDarkMode,resetHome}){
   return(
     <div style={G.topBar}>
       {/* LEFT: role buttons */}
       <div style={{display:"flex",gap:5,alignItems:"center"}}>
-        <button style={{...G.roleBtn,...(adminSession?G.roleBtnActive:{})}} onClick={()=>setView("admin")}>
-          🔐{pendingCount>0&&adminSession&&<span style={G.roleDot}>{pendingCount}</span>}
-        </button>
         <button style={{...G.roleBtn,...(ownerSession?G.roleBtnActive:{})}} onClick={()=>setView(ownerSession?"ownerDash":"ownerLogin")}>✂</button>
         <button style={{...G.roleBtn,...(customerSession?G.roleBtnActive:{})}} onClick={()=>setView(customerSession?"custDash":"custLogin")}>👤</button>
         <button style={G.roleBtn} onClick={()=>setView("settings")}>⚙</button>
@@ -1391,20 +1411,17 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 // ==============================================
 //  HOME
 // ==============================================
-function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing}){
+function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing}){
   const[urgentMode,setUrgentMode]=useState(false);
 
   const getRealRating=(salonId)=>{
     const id=Number(salonId);
-    const reviews=(customers||[]).flatMap(c=>
-      (c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0).map(h=>h.rating)
-    );
-    if(!reviews.length)return null;
-    return Math.round(reviews.reduce((a,r)=>a+r,0)/reviews.length*10)/10;
+    const sRatings=(reviews||[]).filter(r=>Number(r.salon_id)===id).map(r=>r.rating);
+    if(!sRatings.length)return null;
+    return Math.round(sRatings.reduce((a,r)=>a+r,0)/sRatings.length*10)/10;
   };
   const getReviewCount=(salonId)=>{
-    const id=Number(salonId);
-    return (customers||[]).reduce((n,c)=>n+(c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0).length,0);
+    return (reviews||[]).filter(r=>Number(r.salon_id)===Number(salonId)).length;
   };
 
   const detectUserLoc=()=>{
@@ -1477,8 +1494,12 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
       <div style={{background:"linear-gradient(160deg,#12122a,#1a1a3a)",borderBottom:"1px solid #2a2a3a",padding:"14px 14px 0"}}>
         <div style={{textAlign:"center",paddingBottom:10}}>
-          <h1 style={{fontSize:24,fontWeight:900,color:"#fff",lineHeight:1.3}}>احجز وقتك<br/><span style={{color:"var(--p)"}}>بضغطة واحدة</span></h1>
-          <p style={{color:"#777",fontSize:12,marginTop:4}}>أفضل صالونات الحلاقة في مدينتك</p>
+          <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:6,marginBottom:8}}>
+            <span style={{fontSize:20,fontWeight:700,color:"var(--p)",letterSpacing:1}}>احجز</span>
+            <span style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:3,textShadow:"0 4px 20px rgba(212,160,23,0.4)",fontFamily:"'Playfair Display', 'Courier New', serif"}}>DORK</span>
+          </div>
+          <div style={{fontSize:11,color:"#888",letterSpacing:2,marginBottom:8,fontWeight:600}}>✂ حجوزات فاخرة ✂</div>
+          <p style={{color:"#777",fontSize:12,marginTop:2}}>أفضل صالونات الحلاقة في مدينتك</p>
         </div>
 
         {/* حجز سريع */}
@@ -1576,18 +1597,18 @@ function LocFilter({icon,label,value,onChange,options,all}){
 // ==============================================
 //  SALON REVIEWS PAGE
 // ==============================================
-function SalonReviewsView({salon,customers,setView}){
+function SalonReviewsView({salon,reviews,setView}){
   const gold="#d4a017";
   const goldStar="#e8c04a";
-  const reviews=useMemo(()=>{
-    if(!customers||!salon)return[];
+  const salonReviews=useMemo(()=>{
+    if(!reviews||!salon)return[];
     const id=Number(salon.id);
-    return customers
-      .flatMap(c=>(c.history||[]).filter(h=>Number(h.salonId)===id&&h.rating>0)
-        .map(h=>({name:c.name,rating:h.rating,comment:h.comment||"",date:h.date||""})))
+    return (reviews||[])
+      .filter(r=>Number(r.salon_id)===id)
+      .map(r=>({id:r.id,name:r.customer_name||"عميل",rating:r.rating,comment:r.comment||"",ownerReply:r.owner_reply||"",date:r.booking_date||r.created_at?.split("T")[0]||""}))
       .sort((a,b)=>b.date.localeCompare(a.date));
-  },[customers,salon]);
-  const avg=reviews.length?Math.round(reviews.reduce((s,r)=>s+r.rating,0)/reviews.length*10)/10:0;
+  },[reviews,salon]);
+  const avg=salonReviews.length?Math.round(salonReviews.reduce((s,r)=>s+r.rating,0)/salonReviews.length*10)/10:0;
   return(
     <div style={G.page}>
       <div style={G.fp}>
@@ -1598,14 +1619,14 @@ function SalonReviewsView({salon,customers,setView}){
         {/* ملخص الصالون */}
         <div style={{background:"rgba(212,160,23,.07)",border:"1px solid rgba(212,160,23,.18)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
           <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:6}}>✂ {salon?.name}</div>
-          {reviews.length>0?(
+          {salonReviews.length>0?(
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <span style={{fontSize:28,fontWeight:900,color:goldStar,lineHeight:1}}>{avg}</span>
               <div>
                 <div style={{display:"flex",gap:2,marginBottom:2}}>
                   {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:16,color:n<=Math.round(avg)?goldStar:"rgba(212,160,23,.2)"}}>★</span>)}
                 </div>
-                <div style={{fontSize:10,color:"#888"}}>{reviews.length} تقييم</div>
+                <div style={{fontSize:10,color:"#888"}}>{salonReviews.length} تقييم</div>
               </div>
             </div>
           ):(
@@ -1614,7 +1635,7 @@ function SalonReviewsView({salon,customers,setView}){
         </div>
         {/* قائمة التقييمات */}
         <div style={{display:"flex",flexDirection:"column",gap:9}}>
-          {reviews.map((r,i)=>(
+          {salonReviews.map((r,i)=>(
             <div key={i} style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 13px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.comment?6:0}}>
                 <span style={{fontSize:12,color:"#c0c0d0",fontWeight:700}}>👤 {r.name}</span>
@@ -1623,21 +1644,25 @@ function SalonReviewsView({salon,customers,setView}){
                 </div>
               </div>
               {r.comment&&<div style={{fontSize:12,color:"#a8a8bc",fontStyle:"italic",lineHeight:1.5,marginBottom:5}}>«{r.comment}»</div>}
-              {r.date&&<div style={{fontSize:9,color:"#444"}}>📅 {r.date}</div>}
+              {r.date&&<div style={{fontSize:9,color:"#444",marginBottom:r.ownerReply?8:0}}>📅 {r.date}</div>}
+              {r.ownerReply&&(
+                <div style={{marginTop:6,padding:"8px 10px",background:"rgba(212,160,23,.07)",borderRight:"3px solid #d4a017",borderRadius:"0 8px 8px 0"}}>
+                  <div style={{fontSize:10,color:"#d4a017",fontWeight:700,marginBottom:3}}>✂ رد الصالون</div>
+                  <div style={{fontSize:11,color:"#c8c8a8",lineHeight:1.5}}>{r.ownerReply}</div>
+                </div>
+              )}
             </div>
           ))}
         </div>
-        {reviews.length===0&&<div style={G.empty}>لا توجد تقييمات لهذا الصالون بعد</div>}
+        {salonReviews.length===0&&<div style={G.empty}>لا توجد تقييمات لهذا الصالون بعد</div>}
       </div>
     </div>
   );
 }
 
 function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
-  const slots=getSlotsForSalon(salon);
   const displayRating=realRating||salon.rating||"5.0";
 
-  // مسافة
   let distance=null;
   if(userLoc&&getSalonCoords&&haversine){
     const coords=getSalonCoords(salon);
@@ -1653,42 +1678,72 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
   );
 
   return(
-    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #2a2a3a"}} className="hcard">
-      {salon.welcomeMsg&&<div style={{fontSize:11,color:"var(--p)",fontStyle:"italic",marginBottom:6,padding:"5px 8px",background:"var(--pa08)",borderRadius:7}}>💬 {salon.welcomeMsg}</div>}
-      <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:6}}>
-        <div style={G.cav}>✂</div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div>
-            {isOpenNow&&<span style={{fontSize:9,background:"rgba(39,174,96,.2)",color:"#27ae60",padding:"1px 6px",borderRadius:10,fontWeight:700}}>مفتوح</span>}
-          </div>
-          <div style={{fontSize:11,color:"#888"}}>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
-          {distance&&<div style={{fontSize:11,color:"#27ae60"}}>📡 {distance} كم</div>}
+    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #3a3a4a",padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
+      {/* Header Row - Icon + Name + Status + Rating */}
+      <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",gap:8,alignItems:"center",flex:1}}>
+          {/* Scissors Icon - Yellow Background */}
+          <div style={{background:"#d4a017",width:40,height:40,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flex:"0 0 auto"}}>✂</div>
+
+          {/* Name */}
+          <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{salon.name}</div>
+
+          {/* Status */}
+          <span style={{fontSize:9,color:isOpenNow?"#27ae60":"#e74c3c",fontWeight:700}}>
+            {isOpenNow?"🟢 مفتوح":"🔴 مغلق"}
+          </span>
         </div>
-        {/* Rating badge — tapping opens dedicated reviews page */}
-        <div
-          onClick={()=>onViewReviews&&onViewReviews()}
-          style={{...G.ratingBadge,background:realRating?"rgba(240,192,64,.2)":"rgba(100,100,100,.2)",flexDirection:"column",alignItems:"center",gap:0,cursor:"pointer",minWidth:44,padding:"4px 8px"}}>
-          <span>⭐ {displayRating}</span>
-          {reviewCount>0&&<span style={{fontSize:8,color:"#999",marginTop:1,fontWeight:600}}>({reviewCount})</span>}
+
+        {/* Rating on Right */}
+        <div style={{border:"1.5px solid rgba(212,160,23,.4)",borderRadius:10,padding:"6px 10px",minWidth:"65px",textAlign:"center",flex:"0 0 auto",cursor:"pointer"}} onClick={onViewReviews} title="عرض التقييمات والتعليقات">
+          <div style={{fontSize:16,fontWeight:900,color:"#d4a017"}}>⭐ {displayRating}</div>
+          <div style={{fontSize:8,color:"#aaa"}}>({reviewCount})</div>
         </div>
       </div>
 
-      {salon.shiftEnabled
-        ?<div style={{fontSize:11,color:"#aaa",marginBottom:2}}>⏰ {salon.shift1Start}-{salon.shift1End} | {salon.shift2Start}-{salon.shift2End}</div>
-        :<div style={{fontSize:11,color:"#aaa",marginBottom:2}}>⏰ {salon.workStart}-{salon.workEnd}</div>}
-      <div style={{fontSize:11,color:"#aaa",marginBottom:6}}>✂ {salon.barbers?.length||1} حلاق - {slots.length} وقت</div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:9}}>
-        {salon.services.slice(0,3).map(s=><span key={s} style={G.tag}>{s}</span>)}
-        {salon.services.length>3&&<span style={{...G.tag,color:"#888"}}>+{salon.services.length-3}</span>}
+      {/* Location Row */}
+      <div style={{fontSize:10,color:"#888"}}>
+        📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
+
+      {/* Hours & Wait Time */}
+      <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:11,color:"#aaa"}}>
+        <div>
+          ⏰ {salon.shiftEnabled?(salon.shift1Start&&salon.shift1End?`${salon.shift1Start.slice(0,5)}-${salon.shift1End.slice(0,5)}`:"--:-- - --:--"):(salon.workStart&&salon.workEnd?`${salon.workStart.slice(0,5)}-${salon.workEnd.slice(0,5)}`:"--:-- - --:--")}
+        </div>
+        <div>
+          👥 {salon.barbers?.length||1} حلاق - 20 دقيقة
+        </div>
       </div>
-      <div style={{display:"flex",gap:6,alignItems:"center"}}>
-        <button style={{...G.mapsBtn,fontSize:16}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
+
+      {/* Services Tags - Below Barbers */}
+      {salon.services.length>0&&(
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {salon.services.slice(0,4).map(s=>(
+            <span key={s} style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>
+              {s}
+            </span>
+          ))}
+          {salon.services.length>4&&<span style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>+{salon.services.length-4}</span>}
+        </div>
+      )}
+
+      {/* Divider */}
+      <div style={{height:1,background:"rgba(212,160,23,.1)"}}/>
+
+      {/* Book Button + Action Buttons - Reordered */}
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <button onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#e74c3c",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+          📍
         </button>
-        <button style={{...G.heartCardBtn,...(fav?G.heartCardOn:{})}} onClick={onFav}>{fav?"♥":"♡"}</button>
-        {onCompare&&<button style={{...G.mapsBtn,background:inCompare?"var(--pa25)":"transparent",border:`1px solid ${inCompare?"var(--p)":"#444"}`,color:inCompare?"var(--p)":"#888",fontSize:11}} onClick={onCompare}>⚖</button>}
-        <button style={G.bookBtn} onClick={onBook}>احجز الآن</button>
+        <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"#d4a017":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+          {fav?"♥":"♡"}
+        </button>
+        <button onClick={onCompare} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:inCompare?"#d4a017":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+          ⚖
+        </button>
+        <button onClick={onBook} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",flex:1,fontFamily:"'Cairo',sans-serif"}}>
+          احجز الان
+        </button>
       </div>
     </div>
   );
@@ -1697,18 +1752,14 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
 // ==============================================
 //  SALON PAGE
 // ==============================================
-function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,adminSession,ownerSession,deleteSalon,customers}){
+function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,reviews,refreshSalonBookings,rescheduleId,customer}){
   const[tab,setTab]=useState("book");
   const fav=favSet.has(salon.id);
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
-  const canManage=adminSession||(ownerSession===salon.id);
+  const canManage=ownerSession===salon.id;
 
-  // جمع تقييمات هذا الصالون من كل العملاء
-  const reviews=(customers||[]).flatMap(c=>
-    (c.history||[]).filter(h=>Number(h.salonId)===Number(salon.id)&&h.rating>0)
-    .map(h=>({name:c.name,rating:h.rating,comment:h.comment||"",date:h.date}))
-  );
-  const avgRating=reviews.length?Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length*10)/10:salon.rating||0;
+  const salonReviews=(reviews||[]).filter(r=>Number(r.salon_id)===Number(salon.id));
+  const avgRating=salonReviews.length?Math.round(salonReviews.reduce((a,r)=>a+r.rating,0)/salonReviews.length*10)/10:salon.rating||0;
 
   return(
     <div style={G.page}>
@@ -1718,7 +1769,6 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
           <h2 style={{...G.ft,flex:1}}>{salon.name}</h2>
           <button style={{...G.favBtn,...(fav?G.favOn:{}),fontSize:20}} onClick={()=>toggleFav(salon.id)}>{fav?"♥":"♡"}</button>
           <ShareBtn salon={salon}/>
-          {adminSession&&<button style={{...G.delBtn,marginRight:0}} onClick={()=>{deleteSalon(salon.id);setView("home");}}>🗑</button>}
         </div>
         <div style={G.salonBadge}>
           <span style={{fontSize:20,color:"var(--p)"}}>✂</span>
@@ -1726,8 +1776,8 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
             <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div>
             <div style={{fontSize:11,color:"#888"}}>{salon.gov||salon.region}{salon.village?` > ${salon.village}`:""}</div>
             <div style={{fontSize:11,color:"#888"}}>👤 {salon.owner} - 📞 {salon.phone}</div>
-            {reviews.length>0&&<>
-              <div style={{fontSize:12,color:"#e8c04a",marginTop:2}}>⭐ {avgRating} ({reviews.length} تقييم)</div>
+            {salonReviews.length>0&&<>
+              <div style={{fontSize:12,color:"#e8c04a",marginTop:2}}>⭐ {avgRating} ({salonReviews.length} تقييم)</div>
               <div style={{fontSize:9,color:"#666",marginTop:2}}>آراء العملاء تظهر في الصفحة الرئيسية</div>
             </>}
           </div>
@@ -1737,11 +1787,11 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
         </div>
         <div style={G.tabRow}>
           <button style={{...G.tabBtn,...(tab==="book"?G.tabOn:{})}} onClick={()=>setTab("book")}>📅 حجز</button>
-          {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}</button>}
+          {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");refreshSalonBookings(salon.id);}}>🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}</button>}
           {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>}
         </div>
-        {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView}/>}
-        {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus}/>}
+        {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView} rescheduleId={rescheduleId} customer={customer}/>}
+        {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers} refreshSalonBookings={refreshSalonBookings}/>}
         {tab==="stats"&&canManage&&<StatsPanel salon={salon}/>}
       </div>
     </div>
@@ -1751,13 +1801,13 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
 // ==============================================
 //  BOOK VIEW
 // ==============================================
-function BookView({salon,addBooking,onBack,inline,setView,customer}){
+function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}){
   const[step,setStep]=useState(1);
   const[form,setForm]=useState({
     name: customer?.name||"",
     phone: customer?.phone||"",
     email: customer?.email||"",
-    services:[], barberId:"", date:todayStr(), time:""
+    services:[], barberId:"", date:todayStr(), time:"", waitSlot:""
   });
   const[errors,setErrors]=useState({});
   const allSlots=getSlotsForSalon(salon);
@@ -1766,7 +1816,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
   const slots=form.date===todayStr()
     ? allSlots.filter(sl=>{
         const[h,m]=sl.split(":").map(Number);
-        const now=new Date(); 
+        const now=new Date();
         return h*60+m > now.getHours()*60+now.getMinutes();
       })
     : allSlots;
@@ -1776,14 +1826,14 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
   const barber=salon.barbers?.find(b=>b.id===form.barberId);
   const toggle=s=>setForm(p=>({...p,services:p.services.includes(s)?p.services.filter(x=>x!==s):[...p.services,s]}));
   const v1=()=>{const e={};if(!form.name.trim())e.name="مطلوب";if(!form.phone.trim())e.phone="مطلوب";if(!form.services.length)e.services="اختر خدمة";if(salon.barbers?.length&&!form.barberId)e.barberId="اختر الحلاق";setErrors(e);return!Object.keys(e).length;};
-  const v2=()=>{const e={};if(!form.date)e.date="مطلوب";if(!form.time)e.time="اختر وقتاً";setErrors(e);return!Object.keys(e).length;};
+  const v2=()=>{const e={};if(!form.date)e.date="مطلوب";if(!form.time&&!form.waitSlot)e.time="اختر وقتاً أو ينتظر في قائمة الانتظار";setErrors(e);return!Object.keys(e).length;};
   const inner=(
     <>
       {!inline&&<div style={G.salonBadge}><span style={{fontSize:20,color:"var(--p)"}}>✂</span><div style={{flex:1}}><div style={{fontWeight:700,color:"#fff"}}>{salon.name}</div><div style={{fontSize:11,color:"#888"}}>{salon.gov||salon.region}</div></div><button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg></button></div>}
       <div style={G.steps}>{["بياناتك","الموعد","تأكيد"].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:10,color:"var(--p)"}}>{l}</span></div>)}</div>
       {step===1&&<div style={G.fc}>
         <F label="اسمك الكريم" error={errors.name}><input style={fi(errors.name)} placeholder="الاسم الكامل" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></F>
-        <F label="رقم الجوال" error={errors.phone}><input style={fi(errors.phone)} placeholder="05XXXXXXXX" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/></F>
+        <F label="رقم الجوال" error={errors.phone}><input style={fi(errors.phone)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/></F>
         <F label="الخدمات" error={errors.services}><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{salon.services.map(s=><div key={s} style={{...G.chip,...(form.services.includes(s)?G.chipOn:{})}} onClick={()=>toggle(s)}>{s}{salon.prices?.[s]?` (${salon.prices[s]}ر)`:""}</div>)}</div></F>
         {form.services.length>0&&<div style={G.totalBox}>الإجمالي: <strong style={{color:"var(--p)"}}>{total} ريال</strong></div>}
         {salon.barbers?.length>0&&<F label="اختر الحلاق" error={errors.barberId}>
@@ -1811,7 +1861,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
             })}
           </div>
         </F>}
-        <button style={G.sub} onClick={()=>{if(v1())setStep(2);}}>التالي ></button>
+        <button style={G.sub} onClick={()=>{if(v1())setStep(2);}}>التالي &gt;</button>
       </div>}
       {step===2&&<div style={G.fc}>
         <F label="التاريخ" error={errors.date}>
@@ -1835,14 +1885,27 @@ function BookView({salon,addBooking,onBack,inline,setView,customer}){
         {salon.shiftEnabled&&<div style={{fontSize:11,color:"var(--p)",background:"var(--pa07)",borderRadius:8,padding:"6px 10px",marginBottom:8}}>⏰ {salon.shift1Start}-{salon.shift1End} | {salon.shift2Start}-{salon.shift2End}</div>}
         <div style={{fontSize:12,color:"#aaa",marginBottom:7}}>اختر الوقت{form.barberId?` - ${barber?.name||""}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
-        <div style={G.timeGrid}>{slots.map(sl=>{const used=slotUsed(sl);const full=slotFull(sl);const sel=form.time===sl;return(<button key={sl} disabled={full} onClick={()=>!full&&setForm(p=>({...p,time:sl}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div><div style={{fontSize:9,marginTop:1,color:full?"#555":sel?"var(--p)":"#666"}}>{full?"محجوز":`${bc-used} متاح`}</div></button>);})}</div>
-        <button style={G.sub} onClick={()=>{if(v2())setStep(3);}}>التالي ></button>
+        <div style={G.timeGrid}>{slots.map(sl=>{const used=slotUsed(sl);const full=slotFull(sl);const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={full&&!waiting} onClick={()=>!full&&setForm(p=>({...p,time:sl,waitSlot:""}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div><div style={{fontSize:9,marginTop:1,color:full?"#555":sel?"var(--p)":"#666"}}>{full?"محجوز":`${bc-used} متاح`}</div></button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>
+        {form.waitSlot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:11,color:"#f39c12",textAlign:"center"}}>⏳ ستنضم لقائمة الانتظار للساعة <strong>{form.waitSlot}</strong> — سيصلك إشعار عند تحرر الوقت</div>}
+        <button style={G.sub} onClick={()=>{if(v2())setStep(3);}}>{form.waitSlot?"التالي (انتظار) >":"التالي >"}</button>
       </div>}
       {step===3&&<div style={G.fc}>
-        <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:36}}>✅</div><h3 style={{color:"#fff",marginTop:4,fontSize:16}}>تأكيد الحجز</h3></div>
-        {[["الاسم",form.name],["الجوال",form.phone],["البريد",form.email||"-"],["الخدمات",form.services.join(" + ")],["الحلاق",barber?.name||"أي حلاق"],["التاريخ",form.date],["الوقت",form.time],["الإجمالي",`${total} ريال`]].map(([l,v])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}><span style={{color:"#888",fontSize:12}}>{l}</span><span style={{color:"#f0f0f0",fontWeight:600,fontSize:12}}>{v}</span></div>)}
+        <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:36}}>{form.waitSlot?"⏳":"✅"}</div><h3 style={{color:"#fff",marginTop:4,fontSize:16}}>{form.waitSlot?"تأكيد الانضمام للانتظار":"تأكيد الحجز"}</h3></div>
+        {[["الاسم",form.name],["الجوال",form.phone],["البريد",form.email||"-"],["الخدمات",form.services.join(" + ")],["الحلاق",barber?.name||"أي حلاق"],["التاريخ",form.date],["الوقت",form.waitSlot?`⏳ انتظار ${form.waitSlot}`:form.time],["الإجمالي",`${total} ريال`]].map(([l,v])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}><span style={{color:"#888",fontSize:12}}>{l}</span><span style={{color:"#f0f0f0",fontWeight:600,fontSize:12}}>{v}</span></div>)}
         <button style={{...G.mapsBtn,width:"100%",marginTop:10,justifyContent:"center",display:"flex",padding:10}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>📍 افتح على الخريطة</button>
-        <button style={{...G.sub,marginTop:8,background:"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff"}} onClick={()=>addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total})}>إرسال طلب الحجز 🎉</button>
+        {form.waitSlot&&<div style={{background:"rgba(243,156,18,.1)",border:"1px solid #f39c1255",borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:11,color:"#f39c12"}}>⏳ ستنضم لقائمة الانتظار للساعة {form.waitSlot} — ستُبلَّغ عند تحرر الوقت</div>}
+        <button style={{...G.sub,marginTop:8,background:form.waitSlot?"linear-gradient(135deg,#f39c12,#e67e22)":rescheduleId?"linear-gradient(135deg,#8e44ad,#9b59b6)":"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff"}} onClick={async()=>{
+          if(form.waitSlot){
+            if(!form.name||!form.phone){alert("أدخل الاسم والجوال أولاً");return;}
+            try{
+              await sb("waiting_list","POST",{salon_id:salon.id,name:form.name,phone:form.phone,slot_date:form.date,slot_time:form.waitSlot,customer_id:null,status:"waiting"});
+              alert("✅ تم انضمامك لقائمة الانتظار! سيصلك إشعار عند تحرر الوقت.");
+              if(setView)setView("home");
+            }catch(e){alert("❌ حدث خطأ، حاول مرة أخرى");}
+          }else{
+            addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total},rescheduleId||null);
+          }
+        }}>{form.waitSlot?"⏳ انضم لقائمة الانتظار":rescheduleId?"✅ تأكيد التعديل":"إرسال طلب الحجز 🎉"}</button>
       </div>}
     </>
   );
@@ -1895,102 +1958,30 @@ function TermsView({onAccept}){
   );
 }
 
-function StatsPanel({salon}){
-  const[mode,setMode]=useState("month"); // month | year
-  const[m,setM]=useState(new Date().getMonth());
-  const[y,setY]=useState(new Date().getFullYear());
-
-  const bks=salon.bookings.filter(b=>{
-    if(!b.date)return false;
-    const d=new Date(b.date);
-    if(mode==="year")return d.getFullYear()===y;
-    return d.getMonth()===m&&d.getFullYear()===y;
-  });
-
-  // بيانات الرسم البياني
-  const chartData=mode==="year"
-    ?MONTHS_AR.map((mn,i)=>{
-        const cnt=salon.bookings.filter(b=>{const d=new Date(b.date);return d.getMonth()===i&&d.getFullYear()===y;}).length;
-        return{label:mn.slice(0,3),count:cnt};
-      })
-    :Array.from({length:new Date(y,m+1,0).getDate()},(_, i)=>{
-        const day=String(i+1).padStart(2,"0");
-        const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${day}`;
-        const cnt=salon.bookings.filter(b=>b.date===dateStr).length;
-        return{label:String(i+1),count:cnt};
-      }).filter((_, i)=>i%3===0); // كل 3 أيام عشان ما يزدحم
-  const maxCount=Math.max(...chartData.map(d=>d.count),1);
-
-  return(
-    <div style={{paddingTop:4}}>
-      {/* تبديل شهري/سنوي */}
-      <div style={{display:"flex",gap:8,marginBottom:12}}>
-        <button style={{flex:1,padding:"8px 0",borderRadius:9,border:`1.5px solid ${mode==="month"?"var(--p)":"#2a2a3a"}`,background:mode==="month"?"var(--pa12)":"#1a1a2e",color:mode==="month"?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>setMode("month")}>📅 شهري</button>
-        <button style={{flex:1,padding:"8px 0",borderRadius:9,border:`1.5px solid ${mode==="year"?"var(--p)":"#2a2a3a"}`,background:mode==="year"?"var(--pa12)":"#1a1a2e",color:mode==="year"?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>setMode("year")}>📆 سنوي</button>
-      </div>
-
-      {/* فلاتر */}
-      <div style={{display:"flex",gap:7,marginBottom:12}}>
-        {mode==="month"&&<select style={{...fi(),...{flex:1}}} value={m} onChange={e=>setM(+e.target.value)}>{MONTHS_AR.map((mn,i)=><option key={i} value={i}>{mn}</option>)}</select>}
-        <select style={{...fi(),...{width:mode==="year"?"100%":88}}} value={y} onChange={e=>setY(+e.target.value)}>{[2024,2025,2026,2027].map(yr=><option key={yr}>{yr}</option>)}</select>
-      </div>
-
-      {/* إحصائيات */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-        {[["الحجوزات",bks.length,"var(--p)"],["مقبول",bks.filter(b=>b.status==="approved").length,"#27ae60"],["انتظار",bks.filter(b=>b.status==="pending").length,"var(--pl)"],["مرفوض",bks.filter(b=>b.status==="rejected").length,"#e74c3c"]].map(([l,n,c])=>(
-          <div key={l} style={{background:"#13131f",borderRadius:11,padding:"12px 8px",textAlign:"center",border:`1px solid ${c}33`}}><div style={{fontSize:22,fontWeight:900,color:c}}>{n}</div><div style={{fontSize:11,color:"#888"}}>{l}</div></div>
-        ))}
-      </div>
-
-      {/* الإيرادات */}
-      <div style={{background:"var(--pa08)",borderRadius:11,padding:"12px 14px",border:"1px solid var(--pa25)",textAlign:"center",marginBottom:12}}>
-        <div style={{fontSize:11,color:"#888",marginBottom:3}}>الإيرادات - {mode==="year"?y:`${MONTHS_AR[m]} ${y}`}</div>
-        <div style={{fontSize:26,fontWeight:900,color:"var(--p)"}}>{bks.filter(b=>b.status==="approved").reduce((a,b)=>a+(b.total||0),0)} <span style={{fontSize:13}}>ريال</span></div>
-      </div>
-
-      {/* أكثر خدمة مطلوبة */}
-      {(()=>{
-        const svcCount={};
-        bks.forEach(b=>(b.services||[]).forEach(s=>{svcCount[s]=(svcCount[s]||0)+1;}));
-        const top=Object.entries(svcCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
-        return top.length>0?(
-          <div style={{background:"#13131f",borderRadius:11,padding:"12px 14px",border:"1px solid #2a2a3a",marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:700,color:"var(--p)",marginBottom:8}}>🏆 أكثر الخدمات طلباً</div>
-            {top.map(([svc,cnt],i)=>(
-              <div key={svc} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                <span style={{fontSize:12,color:"#fff"}}>{["🥇","🥈","🥉"][i]} {svc}</span>
-                <span style={{fontSize:12,color:"var(--p)",fontWeight:700}}>{cnt} مرة</span>
-              </div>
-            ))}
-          </div>
-        ):null;
-      })()}
-
-      {/* رسم بياني */}
-      <div style={{background:"#13131f",borderRadius:11,padding:"12px 8px",border:"1px solid #2a2a3a",marginBottom:4}}>
-        <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:10}}>📊 {mode==="year"?"الحجوزات الشهرية":"الحجوزات اليومية"}</div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:mode==="year"?4:2,height:60}}>
-          {chartData.map((d,i)=>(
-            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-              <div style={{width:"100%",background:`linear-gradient(180deg,var(--p),var(--pd))`,borderRadius:"3px 3px 0 0",height:`${Math.max((d.count/maxCount)*48,d.count?3:0)}px`,minHeight:d.count?3:0}}/>
-              <div style={{fontSize:8,color:"#555",textAlign:"center"}}>{d.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-function NotifPanel({salon,onUpdate}){
+function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved"}){
   const[showWaiting,setShowWaiting]=useState(false);
+  const[showAddForm,setShowAddForm]=useState(false);
+  const[filter,setFilter]=useState(defaultFilter);
+  const[localAtt,setLocalAtt]=useState({});
+  const[mForm,setMForm]=useState({name:"",phone:"",date:new Date().toISOString().slice(0,10),slot:""});
   const KEY=`dork_waiting_${salon.id}`;
   const[waitingList,setWaitingList]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
 
   const loadWaiting=useCallback(async()=>{
     try{
-      const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&order=created_at.asc`);
+      const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&select=id,name,phone,created_at,slot_date,slot_time,status&order=created_at.asc`);
       if(Array.isArray(data)){
-        const converted=data.map(w=>({id:w.id,name:w.name,phone:w.phone||"",addedAt:new Date(w.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})}));
+        const now=new Date();
+        const expired=data.filter(w=>{
+          if(w.status!=="waiting"||!w.slot_date||!w.slot_time)return false;
+          const slotMs=new Date(`${w.slot_date}T${w.slot_time}:00`).getTime();
+          return now.getTime()>slotMs+30*60*1000; // بعد 30 دقيقة من الوقت المحدد
+        });
+        for(const w of expired){
+          sb("waiting_list","DELETE",null,`?id=eq.${w.id}`).catch(()=>{});
+        }
+        const active=data.filter(w=>!expired.find(e=>e.id===w.id)&&w.status==="waiting");
+        const converted=active.map(w=>{const ts=w.created_at||"";const d=new Date(ts.includes("+")||ts.endsWith("Z")?ts:ts+"Z");return{id:w.id,name:w.name,phone:w.phone||"",addedAt:d.toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),slotDate:w.slot_date||"",slotTime:w.slot_time||"",status:w.status||"waiting"};});
         setWaitingList(converted);
         try{localStorage.setItem(KEY,JSON.stringify(converted));}catch{}
       }
@@ -1998,6 +1989,12 @@ function NotifPanel({salon,onUpdate}){
   },[salon.id,KEY]);
 
   useEffect(()=>{loadWaiting();},[loadWaiting]);
+
+  // تحقق كل دقيقة لإزالة المنتهية
+  useEffect(()=>{
+    const t=setInterval(()=>{loadWaiting();},60*1000);
+    return()=>clearInterval(t);
+  },[loadWaiting]);
 
   // Realtime لقائمة الانتظار
   useEffect(()=>{
@@ -2007,16 +2004,44 @@ function NotifPanel({salon,onUpdate}){
     return()=>{supabase.removeChannel(channel);};
   },[salon.id,loadWaiting]);
 
-  const addToWaiting=async(name,phone)=>{
+  const addToWaiting=async(name,phone,slotDate,slotTime)=>{
     try{
-      await sb("waiting_list","POST",{salon_id:salon.id,name,phone});
+      await sb("waiting_list","POST",{salon_id:salon.id,name,phone,slot_date:slotDate||null,slot_time:slotTime||null});
       await loadWaiting();
     }catch{
-      const item={id:Date.now(),name,phone,addedAt:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
+      const item={id:Date.now(),name,phone,addedAt:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),slotDate:slotDate||"",slotTime:slotTime||""};
       const newList=[...waitingList,item];
       setWaitingList(newList);
       try{localStorage.setItem(KEY,JSON.stringify(newList));}catch{}
     }
+  };
+
+  const acceptFromWaiting=async(w)=>{
+    if(!w.slotDate||!w.slotTime){alert("لا يوجد وقت محدد لهذا العميل");return;}
+    try{
+      // إنشاء حجز مقبول مباشرة
+      await sb("bookings","POST",{salon_id:String(salon.id),customer_name:w.name,customer_phone:w.phone,date:w.slotDate,time:w.slotTime,status:"approved",service:"[]",barber_id:"any",barber_name:"",total:0});
+      // تغيير الحالة لـ accepted
+      await sb("waiting_list","PATCH",{status:"accepted"},"?id=eq."+w.id);
+      // إشعار للمقبول
+      sb("notifications","POST",{target_type:"all",title:"✅ تم قبولك في الموعد",body:`تم حجزك في ${w.slotDate} - ${w.slotTime} في ${salon.name}. تواصل مع الصالون لتأكيد الخدمة.`,icon:"✅"}).catch(()=>{});
+      // رفض المنتظرين للنفس الوقت
+      const others=waitingList.filter(x=>x.id!==w.id&&x.slotDate===w.slotDate&&x.slotTime===w.slotTime);
+      for(const o of others){
+        await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+o.id).catch(()=>{});
+        sb("notifications","POST",{target_type:"all",title:"❌ عذراً، الوقت امتلأ",body:`الوقت ${w.slotDate} - ${w.slotTime} في ${salon.name} تم أخذه من شخص آخر.`,icon:"❌"}).catch(()=>{});
+      }
+      await loadWaiting();
+      if(refreshSalonBookings)refreshSalonBookings(salon.id);
+    }catch(e){alert("❌ خطأ: "+e.message);}
+  };
+
+  const rejectFromWaiting=async(w)=>{
+    try{
+      await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+w.id);
+      sb("notifications","POST",{target_type:"all",title:"❌ عذراً، تعذّر الحجز",body:`نأسف، لم نتمكن من تأكيد حجزك في ${salon.name}${w.slotDate?` (${w.slotDate} - ${w.slotTime})`:""}. يمكنك المحاولة مرة أخرى.`,icon:"❌"}).catch(()=>{});
+      await loadWaiting();
+    }catch(e){alert("❌ خطأ: "+e.message);}
   };
 
   const removeFromWaiting=async(id)=>{
@@ -2030,48 +2055,113 @@ function NotifPanel({salon,onUpdate}){
     }
   };
 
-  const bks=[...salon.bookings].reverse();
+  const allBks=[...salon.bookings].sort((a,b)=>{
+    const order={pending:0,approved:1,rejected:2};
+    const so=(order[a.status]??1)-(order[b.status]??1);
+    if(so!==0)return so;
+    return `${a.date||""} ${a.time||""}`.localeCompare(`${b.date||""} ${b.time||""}`);
+  });
+  const counts={pending:allBks.filter(b=>b.status==="pending").length,approved:allBks.filter(b=>b.status==="approved").length,rejected:allBks.filter(b=>b.status==="rejected").length};
+  const bks=filter==="all"?allBks:allBks.filter(b=>b.status===filter);
 
   return(
     <div style={{paddingTop:4}}>
-      {/* قائمة الانتظار */}
-      <button style={{...G.sub,marginBottom:10,background:showWaiting?"var(--pa25)":"transparent",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>setShowWaiting(w=>!w)}>
-        ⏳ قائمة الانتظار {waitingList.length>0&&`(${waitingList.length})`}
-      </button>
-      {showWaiting&&(
-        <div style={{background:"#13131f",borderRadius:12,padding:12,border:"1px solid var(--pa25)",marginBottom:12}}>
-          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>⏳ العملاء في قائمة الانتظار</div>
-          {waitingList.length===0&&<div style={{fontSize:12,color:"#888",marginBottom:8}}>لا يوجد أحد في قائمة الانتظار</div>}
-          {waitingList.map(w=>(
-            <div key={w.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #2a2a3a"}}>
-              <div>
-                <div style={{fontSize:12,color:"#fff",fontWeight:600}}>{w.name}</div>
-                <div style={{fontSize:11,color:"#888"}}>{w.phone} - {w.addedAt}</div>
-              </div>
-              <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
+      {/* فلتر الحجوزات - مقبول / مرفوض / انتظار */}
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+        {[["approved","✅ مقبول",counts.approved],["rejected","❌ مرفوض",counts.rejected],["pending","⏳ انتظار",counts.pending]].map(([val,label,count])=>(
+          <button key={val} onClick={()=>setFilter(val)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${filter===val?"var(--p)":"#2a2a3a"}`,background:filter===val?"var(--pa25)":"transparent",color:filter===val?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:filter===val?700:400}}>
+            {label}{count>0&&<span style={{background:filter===val?"var(--p)":"#333",color:filter===val?"#000":"#aaa",borderRadius:10,padding:"1px 6px",fontSize:10,marginRight:3}}>{count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* قسم الانتظار - يظهر فقط عند فلتر "انتظار" */}
+      {filter==="pending"&&(()=>{
+        const allSlots=getSlotsForSalon(salon);
+        const inp2={padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",width:"100%",boxSizing:"border-box"};
+        return(<>
+          {/* زر إضافة عميل - في الأعلى مع toggle */}
+          <div style={{background:"#0d0d1a",borderRadius:10,border:"1px solid #2a2a3a",marginBottom:10,overflow:"hidden"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",cursor:"pointer"}} onClick={()=>setShowAddForm(v=>!v)}>
+              <button style={{width:28,height:28,borderRadius:"50%",border:"1.5px solid var(--p)",background:showAddForm?"var(--p)":"transparent",color:showAddForm?"#000":"var(--p)",fontSize:18,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,flexShrink:0}}>
+                {showAddForm?"×":"+"}
+              </button>
+              <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>إضافة عميل لقائمة الانتظار</div>
             </div>
-          ))}
-          <div style={{display:"flex",gap:6,marginTop:8}}>
-            <input id="wname" style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl"}} placeholder="الاسم"/>
-            <input id="wphone" style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none",direction:"ltr"}} placeholder="الجوال"/>
-            <button style={{...G.sub,width:"auto",padding:"0 10px",marginTop:0,fontSize:12}} onClick={()=>{
-              const n=document.getElementById("wname")?.value;
-              const p=document.getElementById("wphone")?.value;
-              if(n&&p){addToWaiting(n,p);document.getElementById("wname").value="";document.getElementById("wphone").value="";}
-            }}>+</button>
+            {showAddForm&&<div style={{borderTop:"1px solid #2a2a3a",padding:"12px 14px"}}>
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <input value={mForm.name} onChange={e=>setMForm(p=>({...p,name:e.target.value}))} style={{...inp2,direction:"rtl"}} placeholder="الاسم"/>
+                <input value={mForm.phone} onChange={e=>setMForm(p=>({...p,phone:e.target.value}))} style={{...inp2,direction:"ltr"}} placeholder="الجوال"/>
+              </div>
+              <input type="date" value={mForm.date} min={new Date().toISOString().slice(0,10)} onChange={e=>setMForm(p=>({...p,date:e.target.value,slot:""}))} style={{...inp2,marginBottom:8}}/>
+              <div style={{fontSize:11,color:"#888",marginBottom:6}}>اختر وقتاً (اختياري)</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
+                {allSlots.map(sl=>{const sel=mForm.slot===sl;return(
+                  <button key={sl} onClick={()=>setMForm(p=>({...p,slot:p.slot===sl?"":sl}))}
+                    style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${sel?"var(--p)":"#2a2a3a"}`,background:sel?"var(--pa25)":"#13131f",color:sel?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:sel?700:400}}>
+                    {sl}
+                  </button>
+                );})}
+              </div>
+              {mForm.slot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"6px 10px",marginBottom:8,fontSize:11,color:"#f39c12",textAlign:"center"}}>⏳ الوقت المختار: <strong>{mForm.date} - {mForm.slot}</strong></div>}
+              <button onClick={()=>{
+                const n=mForm.name.trim();const p=mForm.phone.trim();
+                if(!n||!p){alert("أدخل الاسم والجوال");return;}
+                addToWaiting(n,p,mForm.date,mForm.slot);
+                setMForm({name:"",phone:"",date:new Date().toISOString().slice(0,10),slot:""});
+                setShowAddForm(false);
+              }} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#f39c12,#e67e22)",color:"#fff",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
+                ➕ إضافة للانتظار
+              </button>
+            </div>}
           </div>
-        </div>
-      )}
+
+          {/* قائمة الانتظار */}
+          {waitingList.length>0&&(
+            <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",border:"1px solid var(--pa25)",marginBottom:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>⏳ قائمة الانتظار ({waitingList.length})</div>
+                <button onClick={()=>setShowWaiting(w=>!w)} style={{fontSize:10,color:"#888",background:"transparent",border:"none",cursor:"pointer"}}>{showWaiting?"▲ إخفاء":"▼ عرض"}</button>
+              </div>
+              {showWaiting&&waitingList.map((w,idx)=>{
+                const cust=customers.find(c=>c.phone&&w.phone&&c.phone.replace(/\D/g,"").slice(-9)===w.phone.replace(/\D/g,"").slice(-9));
+                const cl=cust?getCustomerClassification(cust):null;
+                return(
+                <div key={w.id} style={{padding:"8px 0",borderTop:"1px solid #2a2a3a"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div>
+                      <div style={{fontSize:12,color:"#fff",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                        <span style={{background:"#2a2a3a",color:"var(--p)",borderRadius:10,padding:"1px 6px",fontSize:10}}>#{idx+1}</span>
+                        {w.name}
+                        {cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}
+                      </div>
+                      <div style={{fontSize:11,color:"#888"}}>📞 {w.phone}</div>
+                      {w.slotTime&&<div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>⏰ {w.slotDate} - {w.slotTime}</div>}
+                      <div style={{fontSize:10,color:"#555"}}>أضيف: {w.addedAt}</div>
+                    </div>
+                    <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
+                  </div>
+                  <div style={{display:"flex",gap:6,marginTop:6}}>
+                    {w.slotTime&&<button style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit",fontWeight:700}} onClick={()=>acceptFromWaiting(w)}>✅ قبول للموعد</button>}
+                    <button style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit",fontWeight:700}} onClick={()=>rejectFromWaiting(w)}>❌ رفض</button>
+                  </div>
+                </div>
+              )})}
+            </div>
+          )}
+        </>);
+      })()}
 
       {/* الحجوزات */}
       {!bks.length?<div style={G.empty}>لا توجد حجوزات</div>:
       <div style={{display:"flex",flexDirection:"column",gap:8}}>{bks.map(b=>(
         <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
           <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
-            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {b.name}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>
+            {(()=>{const cust=customers.find(c=>c.phone&&b.phone&&c.phone.replace(/\D/g,"").slice(-9)===b.phone.replace(/\D/g,"").slice(-9));const cl=cust?getCustomerClassification(cust):null;return(<div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name}{cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}</div><div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>);})()}
             <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
           </div>
           {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
+          {b.status==="approved"&&(()=>{const att=localAtt[b.id]||b.attendance;return(<div style={{display:"flex",gap:6,marginTop:6,alignItems:"center"}}><span style={{fontSize:10,color:"#666"}}>الحضور:</span>{att?(<span style={{fontSize:11,fontWeight:700,color:att==="attended"?"#27ae60":"#e74c3c"}}>{att==="attended"?"✅ حضر":"❌ لم يحضر"}</span>):(<><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"attended"},"?id=eq."+b.id);setLocalAtt(p=>({...p,[b.id]:"attended"}));}catch{}}}>✅ حضر</button><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"no_show"},"?id=eq."+b.id);setLocalAtt(p=>({...p,[b.id]:"no_show"}));}catch{}}}>❌ لم يحضر</button></>)}</div>);})()}
         </div>
       ))}</div>}
     </div>
@@ -2204,8 +2294,8 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
         <SL>معلومات الصالون</SL>
         <F label="اسم الصالون" error={errors.name}><input style={fi(errors.name)} placeholder="صالون النخبة" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></F>
         <F label="اسم المالك" error={errors.owner}><input style={fi(errors.owner)} placeholder="الاسم الكامل" value={form.owner} onChange={e=>setForm(p=>({...p,owner:e.target.value}))}/></F>
-        <F label="جوال المالك (للدخول لاحقاً)" error={errors.ownerPhone}><input style={fi(errors.ownerPhone)} placeholder="05XXXXXXXX" value={form.ownerPhone} onChange={e=>setForm(p=>({...p,ownerPhone:e.target.value}))}/></F>
-        <F label="جوال الصالون" error={errors.phone}><input style={fi(errors.phone)} placeholder="05XXXXXXXX" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/></F>
+        <F label="جوال المالك (للدخول لاحقاً)" error={errors.ownerPhone}><input style={fi(errors.ownerPhone)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={form.ownerPhone} onChange={e=>setForm(p=>({...p,ownerPhone:e.target.value}))}/></F>
+        <F label="جوال الصالون" error={errors.phone}><input style={fi(errors.phone)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/></F>
         <F label="العنوان" error={errors.address}><input style={fi(errors.address)} placeholder="الشارع والحي" value={form.address} onChange={e=>setForm(p=>({...p,address:e.target.value}))}/></F>
       </div>
 
@@ -2273,7 +2363,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           <button style={{...G.locTab,...(locMethod==="detect"?G.locTabOn:{})}} onClick={()=>setLocMethod("detect")}>📡 تلقائي</button>
         </div>
         {locMethod==="link"
-          ?<F error={errors.locationUrl}><input style={fi(errors.locationUrl)} placeholder="https://maps.google.com/..." value={form.locationUrl} onChange={e=>setForm(p=>({...p,locationUrl:e.target.value}))}/><div style={{fontSize:10,color:"#555",marginTop:3}}>افتح Google Maps > الموقع > شارك > انسخ</div></F>
+          ?<F error={errors.locationUrl}><input style={fi(errors.locationUrl)} placeholder="https://maps.google.com/..." value={form.locationUrl} onChange={e=>setForm(p=>({...p,locationUrl:e.target.value}))}/><div style={{fontSize:10,color:"#555",marginTop:3}}>افتح Google Maps &gt; الموقع &gt; شارك &gt; انسخ</div></F>
           :<div style={{marginBottom:11}}><button style={{...G.detectBtn,opacity:detecting?0.6:1}} disabled={detecting} onClick={detect}>{detecting?"⏳ جاري...":"📡 تحديد موقعي"}</button>{form.locationUrl&&locMethod==="detect"&&<div style={{color:"#4caf50",fontSize:11,marginTop:4,textAlign:"center"}}>✅ تم</div>}{errors.locationUrl&&<div style={G.err}>{errors.locationUrl}</div>}</div>
         }
       </div>
@@ -2350,519 +2440,40 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 }
 
 // ==============================================
-//  ADMIN VIEW
-// ==============================================
-function AdminView({salons,setSalons,customers,setCustomers,setView,deleteSalon,approveSalon,onEnter,adminSession,setAdminSession,onPage,setSelSalon,toast$,socialLinks,setSocialLinks}){
-  const[pw,setPw]=useState(""); const[err,setErr]=useState(false);
-  const[tab,setTab]=useState("pending");
-  const[search,setSearch]=useState("");
-  const[adminPwd,setAdminPwd]=useState(ADMIN_PWD);
-  const[pwForm,setPwForm]=useState({old:"",n1:"",n2:"",err:""});
-  const[bkFilter,setBkFilter]=useState("all");
-  const[bkDate,setBkDate]=useState("");
-  const customFields=socialLinks?.customFields||[];
-  const saveCustom=(f)=>{setSocialLinks&&setSocialLinks(p=>({...p,customFields:Array.isArray(f)?f:[]}));};
-
-  if(!adminSession)return(
-    <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>لوحة الإدارة</h2></div>
-      <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:24,border:"1px solid #2a2a3a",marginBottom:16,textAlign:"center"}}>
-        <div style={{fontSize:40,marginBottom:8}}>🔐</div>
-        <div style={{fontSize:18,fontWeight:900,color:"#fff",marginBottom:4}}>دخول المشرف</div>
-        <div style={{fontSize:12,color:"#666",marginBottom:20}}>منطقة مخصصة للإدارة فقط</div>
-        <input type="password" style={{...fi(err),textAlign:"center",fontSize:16,letterSpacing:4,marginBottom:8}} placeholder="--------" value={pw}
-          onChange={e=>{setPw(e.target.value);setErr(false);}}
-          onKeyDown={e=>e.key==="Enter"&&(pw===adminPwd?onEnter():setErr(true))}/>
-        {err&&<div style={{color:"#e74c3c",fontSize:12,marginBottom:8}}>❌ كلمة المرور غير صحيحة</div>}
-        <button style={{...G.sub,marginTop:4}} onClick={()=>pw===adminPwd?onEnter():setErr(true)}>دخول</button>
-        <div style={{fontSize:10,color:"#333",marginTop:10}}>للتجربة: admin123</div>
-      </div>
-    </div></div>
-  );
-
-  const pending=salons.filter(s=>s.status==="pending");
-  const approved=salons.filter(s=>s.status==="approved");
-  const rejected=salons.filter(s=>s.status==="rejected");
-  const totalBk=salons.reduce((a,s)=>a+s.bookings.length,0);
-  const todayBk=salons.reduce((a,s)=>a+s.bookings.filter(b=>b.date===todayStr()).length,0);
-  const totalRev=salons.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="approved").reduce((x,b)=>x+(b.total||0),0),0);
-  const todayRev=salons.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="approved"&&b.date===todayStr()).reduce((x,b)=>x+(b.total||0),0),0);
-
-  const q=search.trim().toLowerCase();
-  const filterSalons=list=>!q?list:list.filter(s=>[s.name,s.owner,s.phone,s.ownerPhone,s.region,s.gov,s.village].join(" ").toLowerCase().includes(q));
-  const allBookings=salons.flatMap(s=>s.bookings.map(b=>({...b,salonName:s.name}))).sort((a,b)=>b.date>a.date?1:-1);
-  const filteredBookings=!q?allBookings:allBookings.filter(b=>[b.name,b.phone,b.salonName,b.date].join(" ").toLowerCase().includes(q));
-  const filteredCustomers=!q?customers:customers.filter(c=>[c.name,c.phone].join(" ").toLowerCase().includes(q));
-
-  // رسم بياني - آخر 6 أشهر
-  const monthlyData=(()=>{
-    const months=[];
-    for(let i=5;i>=0;i--){
-      const d=new Date(); d.setMonth(d.getMonth()-i);
-      const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
-      const label=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"][d.getMonth()];
-      const count=allBookings.filter(b=>b.date?.startsWith(key)).length;
-      months.push({label,count,key});
-    }
-    return months;
-  })();
-  const maxCount=Math.max(...monthlyData.map(m=>m.count),1);
-
-  return(
-    <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>🔐 لوحة الإدارة</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent",fontSize:11,padding:"5px 10px"}} onClick={()=>{if(confirm("تسجيل خروج من الإدارة؟")){setAdminSession(false);localStorage.removeItem("dork_admin");setView("home");}}}>خروج</button></div>
-
-      {/* إشعار صالون جديد */}
-      {pending.length>0&&(
-        <div style={{background:"rgba(212,160,23,.1)",border:"1.5px solid var(--pa4)",borderRadius:11,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:20}}>🔔</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:700,color:"var(--p)"}}>يوجد {pending.length} طلب {pending.length===1?"جديد":"جديدة"} بانتظار مراجعتك</div>
-            <div style={{fontSize:11,color:"#888"}}>{pending.map(s=>s.name).join(" - ")}</div>
-          </div>
-          <button style={{...G.tabBtn,...G.tabOn,fontSize:11,padding:"5px 10px",flexShrink:0}} onClick={()=>setTab("pending")}>عرض</button>
-        </div>
-      )}
-
-      {/* احصائيات */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-        {[
-          {n:approved.length,l:"صالون مفعّل",c:"#27ae60",i:"✂"},
-          {n:pending.length,l:"بانتظار الموافقة",c:"var(--p)",i:"⏳"},
-          {n:totalBk,l:"إجمالي الحجوزات",c:"#6aadff",i:"📅"},
-          {n:todayBk,l:"حجوزات اليوم",c:"#a78bfa",i:"🕐"},
-          {n:totalRev,l:"إجمالي الإيرادات",c:"#f0c040",i:"💰",s:" ر"},
-          {n:todayRev,l:"إيرادات اليوم",c:"#34d399",i:"💵",s:" ر"},
-        ].map(({n,l,c,i,s})=>(
-          <div key={l} style={{background:"#13131f",borderRadius:13,padding:"13px 10px",textAlign:"center",border:`1px solid ${c}33`,position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",top:8,right:10,fontSize:20,opacity:.12}}>{i}</div>
-            <div style={{fontSize:22,fontWeight:900,color:c,marginBottom:2}}>{n}{s||""}</div>
-            <div style={{fontSize:10,color:"#888"}}>{l}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* رسم بياني - الحجوزات الشهرية */}
-      <div style={{background:"#13131f",borderRadius:13,padding:"14px 12px",marginBottom:12,border:"1px solid #2a2a3a"}}>
-        <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:12}}>📈 الحجوزات - آخر 6 أشهر</div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:6,height:70}}>
-          {monthlyData.map((m,i)=>(
-            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-              <div style={{fontSize:10,color:"var(--p)",fontWeight:700}}>{m.count||""}</div>
-              <div style={{width:"100%",background:`linear-gradient(180deg,var(--p),var(--pd))`,borderRadius:"4px 4px 0 0",height:`${Math.max((m.count/maxCount)*50,m.count?4:0)}px`,minHeight:m.count?4:0,transition:"height .3s"}}/>
-              <div style={{fontSize:9,color:"#555",textAlign:"center",lineHeight:1.2}}>{m.label.slice(0,3)}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* بحث */}
-      <div style={{...G.searchRow,marginBottom:12}}>
-        <span style={{fontSize:14,color:"#555"}}>🔍</span>
-        <input style={G.searchInput} placeholder="ابحث بالاسم أو الجوال أو المنطقة..." value={search} onChange={e=>setSearch(e.target.value)}/>
-        {search&&<button style={G.searchClear} onClick={()=>setSearch("")}>✕</button>}
-      </div>
-
-      {/* تبويبات */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5,marginBottom:12}}>
-        {[
-          {k:"pending",l:"⏳ الطلبات",n:pending.length},
-          {k:"approved",l:"✅ المفعّلة",n:approved.length},
-          {k:"rejected",l:"❌ المرفوضة",n:rejected.length},
-          {k:"salons",l:"✂ الصالونات",n:salons.length},
-          {k:"bookings",l:"📋 الحجوزات",n:totalBk},
-          {k:"customers",l:"👥 العملاء",n:customers.length},
-          {k:"compare",l:"📈 مقارنة",n:0},
-          {k:"finance",l:"💰 الميزان",n:0},
-          {k:"messages",l:"💬 رسائل",n:0},
-          {k:"social",l:"📱 التواصل",n:0},
-          {k:"add",l:"➕ إضافة",n:0},
-          {k:"password",l:"🔑 كلمة المرور",n:0},
-        ].map(({k,l,n})=>(
-          <button key={k} style={{...G.tabBtn,fontSize:11,...(tab===k?G.tabOn:{})}} onClick={()=>setTab(k)}>
-            {l}{n>0&&k!=="password"&&<span style={{...G.notifDot,background:tab===k?"var(--p)":"#555",marginRight:3}}>{n}</span>}
-          </button>
-        ))}
-      </div>
-
-      {/* الطلبات */}
-      {tab==="pending"&&(filterSalons(pending).length===0
-        ?<div style={G.empty}>{search?"لا نتائج":"لا توجد طلبات معلّقة 🎉"}</div>
-        :<>
-          {filterSalons(pending).length>1&&(
-            <button style={{...G.accBtn,width:"100%",marginBottom:10,padding:10}} onClick={()=>{if(confirm(`قبول جميع الطلبات (${filterSalons(pending).length}) دفعة واحدة؟`))filterSalons(pending).forEach(s=>approveSalon(s.id,"approved"));}}>
-              ✅ قبول الكل ({filterSalons(pending).length})
-            </button>
-          )}
-          {filterSalons(pending).map(s=>(
-            <div key={s.id} style={{...G.bItem,marginBottom:10,border:"1px solid var(--pa25)",borderRight:"4px solid var(--p)"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                <div>
-                  <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
-                  <div style={{fontSize:11,color:"#aaa"}}>👤 {s.owner} - 📞 {s.phone}</div>
-                  <div style={{fontSize:11,color:"#aaa"}}>📍 {s.gov||s.region}{s.village?` - ${s.village}`:""}</div>
-                  <div style={{fontSize:11,color:"#aaa"}}>🕐 {s.shiftEnabled?`${s.shift1Start}-${s.shift1End} | ${s.shift2Start}-${s.shift2End}`:`${s.workStart}-${s.workEnd}`}</div>
-                </div>
-                <button style={G.pageBtn} onClick={()=>{setSelSalon(s);setView("salon");}}>معاينة</button>
-              </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
-                {(s.services||[]).map(sv=><span key={sv} style={G.tag}>{sv}</span>)}
-              </div>
-              <div style={{display:"flex",gap:7}}>
-                <button style={{...G.accBtn,flex:2}} onClick={()=>approveSalon(s.id,"approved")}>✅ قبول ونشر</button>
-                <button style={{...G.rejBtn,flex:1}} onClick={()=>{
-                  const reason=prompt("سبب الرفض (اختياري):");
-                  approveSalon(s.id,"rejected",reason||"");
-                }}>❌ رفض</button>
-              </div>
-            </div>
-          ))}
-        </>
-      )}
-
-      {/* المفعّلة */}
-      {tab==="approved"&&(filterSalons(approved).length===0
-        ?<div style={G.empty}>{search?"لا نتائج":"لا توجد صالونات مفعّلة"}</div>
-        :<>
-          <button style={{...G.sub,marginBottom:10,background:"#1a3a1a",border:"1px solid #27ae60",color:"#4caf50"}} onClick={()=>{
-            const rows=[["الاسم","المالك","الجوال","المنطقة","المحافظة","الحجوزات","التقييم"],...filterSalons(approved).map(s=>[s.name,s.owner,s.phone,s.region,s.gov||"",s.bookings.length,s.rating||""])];
-            const csv=rows.map(r=>r.join(",")).join("\n");
-            const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download="salons.csv";a.click();
-          }}>📥 تصدير CSV</button>
-          <button style={{...G.sub,marginBottom:10,background:"#1a1a3a",border:"1px solid #3b82f6",color:"#60a5fa"}} onClick={()=>{
-            const lines=filterSalons(approved).map((s,i)=>`${i+1}. ${s.name} | ${s.gov||s.region} | ${s.bookings.length} حجز | ${s.rating}⭐`).join("\n");
-            const content=`تقرير صالونات دورك\n==================\nالتاريخ: ${new Date().toLocaleDateString("ar")}\nإجمالي الصالونات: ${approved.length}\n\n${lines}\n\nإجمالي الحجوزات: ${totalBk}\nإجمالي الإيرادات: ${totalRev} ريال`;
-            const a=document.createElement("a");a.href="data:text/plain;charset=utf-8,"+encodeURIComponent(content);a.download="dork-report.txt";a.click();
-          }}>📄 تقرير نصي</button>
-          <AdminApprovedList salons={filterSalons(approved)} setSalons={setSalons} deleteSalon={deleteSalon} setSelSalon={setSelSalon} setView={setView} toast$={toast$}/>
-        </>
-      )}
-
-      {/* المرفوضة */}
-      {tab==="rejected"&&(filterSalons(rejected).length===0
-        ?<div style={G.empty}>{search?"لا نتائج":"لا توجد صالونات مرفوضة"}</div>
-        :filterSalons(rejected).map(s=>(
-          <div key={s.id} style={{...G.bItem,marginBottom:8,borderRight:"3px solid #e74c3c"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
-                <div style={{fontSize:11,color:"#888"}}>{s.phone}</div>
-              </div>
-              <div style={{display:"flex",gap:5}}>
-                <button style={G.accBtn} onClick={()=>approveSalon(s.id,"approved")}>✅ قبول</button>
-                <button style={G.delBtn} onClick={()=>deleteSalon(s.id)}>🗑</button>
-              </div>
-            </div>
-          </div>
-        ))
-      )}
-
-      {/* الحجوزات */}
-      {tab==="bookings"&&(()=>{
-        const filtered=filteredBookings.filter(b=>{
-          if(bkFilter!=="all"&&b.status!==bkFilter)return false;
-          if(bkDate&&b.date!==bkDate)return false;
-          return true;
-        });
-        return(
-          <div>
-            {/* فلاتر الحجوزات */}
-            <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-              {[["all","الكل"],["pending","⏳"],["approved","✅"],["rejected","❌"]].map(([k,l])=>(
-                <button key={k} style={{...G.tabBtn,fontSize:11,...(bkFilter===k?G.tabOn:{})}} onClick={()=>setBkFilter(k)}>{l}</button>
-              ))}
-              <input type="date" style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:11,fontFamily:"inherit",outline:"none",direction:"ltr"}} value={bkDate} onChange={e=>setBkDate(e.target.value)}/>
-              {bkDate&&<button style={G.xBtn} onClick={()=>setBkDate("")}>✕</button>}
-            </div>
-            {filtered.length===0
-              ?<div style={G.empty}>لا نتائج</div>
-              :<div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {filtered.map((b,i)=>{
-                  const sc=b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)";
-                  const sl=b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار";
-                  return(
-                    <div key={i} style={{...G.bItem,borderRight:`3px solid ${sc}`}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                        <div>
-                          <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {b.salonName}</div>
-                          <div style={{fontSize:11,color:"#aaa"}}>👤 {b.name} - 📞 {b.phone}{b.email?' - 📧 '+b.email:''}</div>
-                          <div style={{fontSize:11,color:"#aaa"}}>📅 {b.date} - 🕐 {b.time}</div>
-                          <div style={{fontSize:11,color:"#aaa"}}>{(b.services||[]).join(" + ")}</div>
-                        </div>
-                        <div style={{textAlign:"left",flexShrink:0}}>
-                          <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>{b.total||0} ر</div>
-                          <div style={{fontSize:10,color:sc,marginTop:3}}>{sl}</div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            }
-          </div>
-        );
-      })()}
-
-      {/* الصالونات بالاسم */}
-      {tab==="salons"&&(()=>{
-        const allSalons=!q?salons:salons.filter(s=>[s.name,s.owner,s.phone,s.region,s.gov].join(" ").toLowerCase().includes(q));
-        const sorted=[...allSalons].sort((a,b)=>a.name.localeCompare(b.name,"ar"));
-        return sorted.length===0
-          ?<div style={G.empty}>{search?"لا نتائج":"لا توجد صالونات"}</div>
-          :<div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {sorted.map(s=>{
-              const stColor=s.status==="approved"?"#27ae60":s.status==="rejected"?"#e74c3c":"var(--p)";
-              const earned=s.bookings.filter(b=>b.status==="approved").length;
-              const paid=s.totalPaid||0;
-              const bal=earned-paid;
-              return(
-                <div key={s.id} style={{background:"#13131f",borderRadius:14,border:`2px solid ${stColor}`,padding:12,marginBottom:4}}>
-                  {/* اسم وحالة */}
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                    <span style={{fontSize:11,color:stColor,fontWeight:700}}>{s.status==="approved"?"✅ مفعّل":s.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
-                    <span style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</span>
-                  </div>
-                  {/* معلومات */}
-                  <div style={{marginBottom:10}}>
-                    <div style={{fontSize:12,color:"#aaa",marginBottom:2}}>👤 {s.owner} · 📞 {s.phone}</div>
-                    <div style={{fontSize:11,color:"#666"}}>📍 {s.gov||s.region}{s.village?" - "+s.village:""}</div>
-                    <div style={{display:"flex",gap:10,marginTop:4}}>
-                      <span style={{fontSize:11,color:"var(--p)"}}>📅 {s.bookings.length} حجز</span>
-                      <span style={{fontSize:11,color:"var(--p)"}}>⭐ {s.rating||0}</span>
-                    </div>
-                  </div>
-                  {/* ٣ مربعات */}
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:bal>0?8:0}}>
-                    <button style={{padding:"10px 0",borderRadius:10,border:`1.5px solid ${bal>0?"#e74c3c":"#27ae60"}`,background:bal>0?"rgba(231,76,60,.08)":"rgba(39,174,96,.08)",color:bal>0?"#e74c3c":"#27ae60",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700}} onClick={()=>alert(`💰 ميزان ${s.name}\nالمستحق: ${earned} ر\nالمسدد: ${paid} ر\nالمتبقي: ${bal} ر`)}>💰 ميزان</button>
-                    <button style={{padding:"10px 0",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#aaa",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋 صفحة</button>
-                    <button style={{padding:"10px 0",borderRadius:10,border:"1.5px solid var(--pa25)",background:"var(--pa08)",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700}} onClick={()=>{
-                      const msg=prompt(`رسالة للصالون "${s.name}":`);
-                      if(!msg)return;
-                      const KEY=`dork_msgs_${s.id}`;
-                      const msgs=JSON.parse(localStorage.getItem(KEY)||"[]");
-                      msgs.push({id:Date.now(),from:"admin",text:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})});
-                      localStorage.setItem(KEY,JSON.stringify(msgs));
-                      const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-                      notifs.unshift({id:Date.now(),icon:"💬",title:"رسالة من الإدارة",body:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
-                      localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
-                      localStorage.setItem("dork_notif_count",String(parseInt(localStorage.getItem("dork_notif_count")||"0")+1));
-                    }}>💬 رسايل</button>
-                  </div>
-                  {/* سداد لو في متبقي */}
-                  {bal>0&&<button style={{...G.sub,padding:"6px",fontSize:11,marginTop:0}} onClick={async()=>{
-                    if(!confirm(`تسجيل سداد ${bal} ريال من ${s.name}؟`))return;
-                    try{await sb("salons","PATCH",{total_paid:paid+bal},`?id=eq.${s.id}`);setSalons(p=>p.map(x=>x.id===s.id?{...x,totalPaid:paid+bal}:x));}catch{}
-                  }}>✅ تسجيل السداد ({bal} ريال)</button>}
-                  {/* قبول لو pending */}
-                  {s.status==="pending"&&<button style={{...G.accBtn,width:"100%",marginTop:8}} onClick={()=>approveSalon(s.id,"approved")}>✅ قبول الصالون</button>}
-                </div>
-              );
-            })}
-          </div>;
-      })()}
-
-      {/* العملاء */}
-      {tab==="customers"&&(filteredCustomers.length===0
-        ?<div style={G.empty}>{search?"لا نتائج":"لا يوجد عملاء مسجلون"}</div>
-        :<AdminCustomerList customers={filteredCustomers} salons={salons} toast$={toast$} setCustomers={setCustomers}/>
-      )}
-
-      {/* مقارنة الصالونات + PDF */}
-      {tab==="compare"&&(
-        <div>
-          <div style={{display:"flex",gap:8,marginBottom:12}}>
-            <button style={{flex:1,...G.sub,background:"#1a3a1a",border:"1px solid #27ae60",color:"#4caf50",marginTop:0}} onClick={()=>{
-              const rows=[["الصالون","الحجوزات","المقبولة","الإيرادات","التقييم","المنطقة"],
-                ...approved.map(s=>[s.name,s.bookings.length,s.bookings.filter(b=>b.status==="approved").length,s.bookings.filter(b=>b.status==="approved").reduce((a,b)=>a+(b.total||0),0)+" ر",s.rating,s.gov||s.region])];
-              const csv=rows.map(r=>r.join(",")).join("\n");
-              const a=document.createElement("a");
-              a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
-              a.download="تقرير_دورك.csv";a.click();
-              toast$&&toast$("✅ تم تحميل التقرير CSV");
-            }}>📊 تقرير CSV</button>
-            <button style={{flex:1,...G.sub,marginTop:0}} onClick={()=>{
-              const lines=["📊 تقرير دورك - "+new Date().toLocaleDateString("ar-SA"),"=".repeat(40),"",
-                ...approved.map((s,i)=>`${i+1}. ${s.name}\n   📅 ${s.bookings.length} حجز | ✅ ${s.bookings.filter(b=>b.status==="approved").length} مقبول\n   💰 ${s.bookings.filter(b=>b.status==="approved").reduce((a,b)=>a+(b.total||0),0)} ريال | ⭐ ${s.rating}\n   📍 ${s.gov||s.region}`),
-                "","=".repeat(40),`إجمالي الصالونات: ${approved.length}`,`إجمالي الحجوزات: ${approved.reduce((a,s)=>a+s.bookings.length,0)}`,`إجمالي الإيرادات: ${approved.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="approved").reduce((x,b)=>x+(b.total||0),0),0)} ريال`];
-              const a=document.createElement("a");
-              a.href="data:text/plain;charset=utf-8,"+encodeURIComponent(lines.join("\n"));
-              a.download="تقرير_دورك.txt";a.click();
-              toast$&&toast$("✅ تم تحميل التقرير");
-            }}>📄 تقرير نصي</button>
-          </div>
-
-          {approved.length===0
-            ?<div style={G.empty}>لا توجد صالونات مفعّلة</div>
-            :<div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {[...approved].sort((a,b)=>b.bookings.length-a.bookings.length).map((s,i)=>{
-                const rev=s.bookings.filter(b=>b.status==="approved").reduce((a,b)=>a+(b.total||0),0);
-                const maxBk=approved[0]?.bookings.length||1;
-                const pct=Math.round(s.bookings.length/maxBk*100);
-                return(
-                  <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${i===0?"#f0c040":i===1?"#888":"#cd7f32"}`}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":"  "} {s.name}</div>
-                      <div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>{rev} ر</div>
-                    </div>
-                    <div style={{display:"flex",gap:8,marginBottom:6,flexWrap:"wrap"}}>
-                      <span style={{fontSize:11,color:"#888"}}>📅 {s.bookings.length} حجز</span>
-                      <span style={{fontSize:11,color:"#27ae60"}}>✅ {s.bookings.filter(b=>b.status==="approved").length}</span>
-                      <span style={{fontSize:11,color:"var(--p)"}}>⭐ {s.rating}</span>
-                      <span style={{fontSize:11,color:"#6aadff"}}>📍 {s.gov||s.region}</span>
-                    </div>
-                    <div style={{height:6,background:"#1a1a2e",borderRadius:10,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:`${pct}%`,background:"linear-gradient(90deg,var(--p),var(--pl))",borderRadius:10}}/>
-                    </div>
-                    <div style={{fontSize:10,color:"#555",marginTop:3,textAlign:"left"}}>{pct}%</div>
-                  </div>
-                );
-              })}
-            </div>
-          }
-        </div>
-      )}
-
-      {tab==="comparison"&&<SalonComparison salons={approved}/>}
-      {/* رسائل الإدارة */}
-      {tab==="finance"&&<AdminFinanceTab approved={approved} setSalons={setSalons} toast$={toast$}/>}
-      {tab==="messages"&&<AdminMessages salons={approved} toast$={toast$}/>}
-
-      {/* التواصل */}
-      {tab==="social"&&(
-        <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>📱 وسائل التواصل</div>
-          {[{k:"email",l:"📧 البريد",ph:"example@email.com"},{k:"twitter",l:"🐦 تويتر",ph:"@username"},{k:"whatsapp",l:"💬 واتساب",ph:"05XXXXXXXX"},{k:"telegram",l:"✈ تيليجرام (رقم)",ph:"05XXXXXXXX"},{k:"telegramUser",l:"✈ تيليجرام (مستخدم)",ph:"@username"}].map(({k,l,ph})=>(
-            <div key={k} style={{display:"flex",gap:8,marginBottom:10,alignItems:"flex-end"}}>
-              <div style={{flex:1}}>
-                <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600}}>{l}</label>
-                <input style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} placeholder={ph} value={socialLinks?.[k]||""} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,[k]:e.target.value}))}/>
-              </div>
-              <button style={{...G.xBtn,flexShrink:0,marginBottom:0}} onClick={()=>setSocialLinks&&setSocialLinks(p=>({...p,[k]:""}))} title="حذف">✕</button>
-            </div>
-          ))}
-          {customFields.map((f,i)=>(
-            <div key={i} style={{display:"flex",gap:8,marginBottom:10,alignItems:"flex-end"}}>
-              <div style={{flex:1}}>
-                <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600}}>{f.label}</label>
-                <input style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} value={f.value} onChange={e=>saveCustom(customFields.map((x,j)=>j===i?{...x,value:e.target.value}:x))}/>
-              </div>
-              <button style={{...G.xBtn,flexShrink:0}} onClick={()=>saveCustom(customFields.filter((_,j)=>j!==i))}>✕</button>
-            </div>
-          ))}
-          <button style={{...G.pageBtn,width:"100%",marginBottom:12,border:"1.5px dashed var(--p)",color:"var(--p)",background:"transparent"}} onClick={()=>{
-            const label=prompt("اسم الحقل الجديد (مثال: IBAN، رقم البنك):");
-            if(label)saveCustom([...customFields,{label,value:""}]);
-          }}>+ إضافة حقل جديد</button>
-          <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer"}}>
-            <input type="checkbox" checked={socialLinks?.enabled||false} onChange={e=>setSocialLinks&&setSocialLinks(p=>({...p,enabled:e.target.checked}))}/>
-            <span style={{fontSize:12,color:"#fff"}}>إظهار للمستخدمين في الإعدادات</span>
-          </label>
-          <button style={G.sub} onClick={()=>{setSocialLinks&&setSocialLinks({...socialLinks});toast$&&toast$("✅ تم حفظ التواصل");}}>💾 حفظ</button>
-        </div>
-      )}
-
-      {/* إضافة صالون أو عميل */}
-      {tab==="add"&&<AdminAddView salons={salons} setSalons={setSalons} customers={customers} setCustomers={setCustomers} toast$={toast$} approveSalon={approveSalon}/>}
-
-      {tab==="password"&&<div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>🔑 تغيير كلمة مرور الإدارة</div>
-          {[{l:"كلمة المرور الحالية",k:"old"},{l:"كلمة المرور الجديدة",k:"n1"},{l:"تأكيد كلمة المرور",k:"n2"}].map(({l,k})=>(
-            <div key={k} style={{marginBottom:10}}>
-              <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600}}>{l}</label>
-              <input type="password" style={fi(pwForm.err&&k==="old")} value={pwForm[k]} onChange={e=>setPwForm(p=>({...p,[k]:e.target.value,err:""}))}/>
-            </div>
-          ))}
-          {pwForm.err&&<div style={{color:"#e74c3c",fontSize:12,marginBottom:8}}>❌ {pwForm.err}</div>}
-          <button style={G.sub} onClick={()=>{
-            if(pwForm.old!==adminPwd){setPwForm(p=>({...p,err:"كلمة المرور الحالية غير صحيحة"}));return;}
-            if(pwForm.n1.length<4){setPwForm(p=>({...p,err:"كلمة المرور قصيرة جداً"}));return;}
-            if(pwForm.n1!==pwForm.n2){setPwForm(p=>({...p,err:"كلمتا المرور غير متطابقتين"}));return;}
-            setAdminPwd(pwForm.n1);
-            setPwForm({old:"",n1:"",n2:"",err:""});
-            toast$&&toast$("✅ تم تغيير كلمة المرور");
-          }}>💾 حفظ كلمة المرور الجديدة</button>
-          <div style={{fontSize:11,color:"#555",marginTop:8}}>⚠ تُحفظ في الجلسة الحالية فقط</div>
-        </div>}
-
-    </div></div>
-  );
-}
-
-// ==============================================
-//  ADMIN ADD VIEW - إضافة صالون أو عميل
-// ==============================================
-function AdminAddView({salons,setSalons,customers,setCustomers,toast$,approveSalon}){
-  const[mode,setMode]=useState("salon"); // salon | customer
-  const[f,setF]=useState({name:"",owner:"",phone:"",ownerPhone:"",region:"",gov:"",address:""});
-  const[cf,setCf]=useState({name:"",phone:"",password:""});
-
-  const addSalon=async()=>{
-    if(!f.name||!f.phone){toast$&&toast$("❌ الاسم والجوال مطلوبان","err");return;}
-    try{
-      const data={name:f.name,owner:f.owner,phone:f.phone,owner_phone:f.ownerPhone,region:f.region,gov:f.gov,address:f.address,status:"approved",bookings:[],services:[],barbers:[],prices:{},rating:5,workStart:"09:00",workEnd:"23:00"};
-      const res=await sb("salons","POST",data,"");
-      toast$&&toast$("✅ تم إضافة الصالون وتفعيله");
-      setF({name:"",owner:"",phone:"",ownerPhone:"",region:"",gov:"",address:""});
-    }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
-  };
-
-  const addCustomer=async()=>{
-    if(!cf.name||!cf.phone){toast$&&toast$("❌ الاسم والجوال مطلوبان","err");return;}
-    try{
-      await sb("customers","POST",{name:cf.name,phone:cf.phone,password:cf.password||"1234",history:[],favs:[]},"");
-      toast$&&toast$("✅ تم إضافة العميل");
-      setCf({name:"",phone:"",password:""});
-    }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
-  };
-
-  const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box",marginBottom:10};
-  const lbl={display:"block",fontSize:11,color:"#aaa",marginBottom:4,fontWeight:600};
-
-  return(
-    <div>
-      <div style={{display:"flex",gap:8,marginBottom:14}}>
-        <button style={{flex:1,padding:"10px",borderRadius:10,border:`1.5px solid ${mode==="salon"?"var(--p)":"#2a2a3a"}`,background:mode==="salon"?"var(--pa12)":"transparent",color:mode==="salon"?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontWeight:mode==="salon"?700:400}} onClick={()=>setMode("salon")}>✂ إضافة صالون</button>
-        <button style={{flex:1,padding:"10px",borderRadius:10,border:`1.5px solid ${mode==="customer"?"var(--p)":"#2a2a3a"}`,background:mode==="customer"?"var(--pa12)":"transparent",color:mode==="customer"?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontWeight:mode==="customer"?700:400}} onClick={()=>setMode("customer")}>👤 إضافة عميل</button>
-      </div>
-
-      {mode==="salon"&&<div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
-        <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12}}>✂ إضافة صالون جديد</div>
-        {[["اسم الصالون","name"],["اسم المالك","owner"],["جوال الصالون","phone"],["جوال المالك","ownerPhone"],["المنطقة","region"],["المحافظة","gov"],["العنوان","address"]].map(([l,k])=>(
-          <div key={k}><label style={lbl}>{l}</label><input style={inp} value={f[k]} onChange={e=>setF(p=>({...p,[k]:e.target.value}))}/></div>
-        ))}
-        <button style={G.sub} onClick={addSalon}>✅ إضافة وتفعيل الصالون</button>
-      </div>}
-
-      {mode==="customer"&&<div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
-        <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12}}>👤 إضافة عميل جديد</div>
-        {[["الاسم","name"],["رقم الجوال","phone"],["كلمة المرور","password"]].map(([l,k])=>(
-          <div key={k}><label style={lbl}>{l}</label><input style={inp} type={k==="password"?"password":"text"} value={cf[k]} onChange={e=>setCf(p=>({...p,[k]:e.target.value}))}/></div>
-        ))}
-        <button style={G.sub} onClick={addCustomer}>✅ إضافة العميل</button>
-      </div>}
-    </div>
-  );
-}
-// ==============================================
 //  ALL REVIEWS VIEW — صفحة جميع التعليقات
 // ==============================================
-function AllReviewsView({customers,approvedSalons,setSelSalon,setView}){
-  const reviews=buildHomeReviewsFeed(customers,approvedSalons);
-  const[filter,setFilter]=useState(0); // 0=all, 1-5=star filter
+function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
+  const[filter,setFilter]=useState(0);
   const[search,setSearch]=useState("");
   const gold="#d4a017";
   const goldStar="#e8c04a";
   const dimStar="rgba(212,160,23,.18)";
 
-  const filtered=reviews.filter(r=>{
+  const byId=new Map(approvedSalons.map(s=>[Number(s.id),s]));
+  const approvedSet=new Set(approvedSalons.map(s=>Number(s.id)));
+  const feed=(reviews||[])
+    .filter(r=>approvedSet.has(Number(r.salon_id)))
+    .map(r=>({
+      key:`hr-${r.id}`,
+      salonId:Number(r.salon_id),
+      salonName:(byId.get(Number(r.salon_id))?.name||"صالون").trim(),
+      customerName:(r.customer_name||"عميل").trim(),
+      rating:r.rating,
+      comment:(r.comment||"").trim(),
+      ownerReply:(r.owner_reply||"").trim(),
+      date:r.booking_date||r.created_at?.split("T")[0]||"",
+    }))
+    .sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+
+  const filtered=feed.filter(r=>{
     if(filter>0&&r.rating!==filter)return false;
     if(search&&!r.salonName.includes(search)&&!r.customerName.includes(search)&&!r.comment.includes(search))return false;
     return true;
   });
 
-  const globalAvg=reviews.length
-    ?Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length*10)/10:0;
-  const dist=[5,4,3,2,1].map(s=>({star:s,count:reviews.filter(r=>r.rating===s).length}));
+  const globalAvg=feed.length
+    ?Math.round(feed.reduce((a,r)=>a+r.rating,0)/feed.length*10)/10:0;
+  const dist=[5,4,3,2,1].map(s=>({star:s,count:feed.filter(r=>r.rating===s).length}));
 
   const openSalon=sid=>{
     const s=approvedSalons.find(x=>Number(x.id)===Number(sid));
@@ -2878,7 +2489,7 @@ function AllReviewsView({customers,approvedSalons,setSelSalon,setView}){
           <DorkLogoSvg size={26}/>
           <div>
             <div style={{fontSize:15,fontWeight:900,color:"#f0f0f0"}}>جميع التقييمات</div>
-            <div style={{fontSize:10,color:gold,opacity:.8}}>{reviews.length} تقييم — متوسط {globalAvg} ★</div>
+            <div style={{fontSize:10,color:gold,opacity:.8}}>{feed.length} تقييم — متوسط {globalAvg} ★</div>
           </div>
         </div>
         {/* Search */}
@@ -2895,7 +2506,7 @@ function AllReviewsView({customers,approvedSalons,setSelSalon,setView}){
         <div style={{display:"flex",gap:10,overflowX:"auto",scrollbarWidth:"none",paddingBottom:4}}>
           {/* All */}
           <button onClick={()=>setFilter(0)} style={{flex:"0 0 auto",padding:"6px 14px",borderRadius:20,border:`1px solid ${filter===0?gold:"rgba(212,160,23,.2)"}`,background:filter===0?"rgba(212,160,23,.12)":"transparent",color:filter===0?gold:"#888",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
-            الكل ({reviews.length})
+            الكل ({feed.length})
           </button>
           {dist.map(({star,count})=>(
             <button key={star} onClick={()=>setFilter(star===filter?0:star)}
@@ -2929,7 +2540,13 @@ function AllReviewsView({customers,approvedSalons,setSelSalon,setView}){
                 <div style={{fontSize:11,color:"#a0a0bc",fontStyle:"italic",lineHeight:1.55}}>«{r.comment}»</div>
               </>
             )}
-            <div style={{fontSize:9,color:"#363650",marginTop:10}}>📅 {r.date||"—"}{r.time?` · ${r.time}`:""}</div>
+            <div style={{fontSize:9,color:"#363650",marginTop:10}}>📅 {r.date||"—"}</div>
+            {r.ownerReply&&(
+              <div style={{marginTop:8,padding:"7px 10px",background:"rgba(212,160,23,.06)",borderRight:"3px solid #d4a017",borderRadius:"0 7px 7px 0"}}>
+                <div style={{fontSize:9,color:"#d4a017",fontWeight:700,marginBottom:2}}>✂ رد الصالون</div>
+                <div style={{fontSize:10,color:"#b8b880",lineHeight:1.5}}>{r.ownerReply}</div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -3186,21 +2803,40 @@ function ShareBtn({salon}){
 //  OWNER LOGIN + DASHBOARD
 // ==============================================
 function OwnerLogin({salons,setOwnerSession,setView,toast$}){
+  const[tab,setTab]=useState("phone");
   const[phone,setPhone]=useState(""); const[err,setErr]=useState("");
-  const login=()=>{
+  const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
+  const loginWithPhone=()=>{
     const s=salons.find(x=>x.ownerPhone===phone.trim()||x.phone===phone.trim());
     if(!s){setErr("لا يوجد صالون بهذا الرقم");return;}
     if(s.banned){setErr("🚫 تم حظر هذا الصالون من قبل الإدارة — تواصل مع الدعم");return;}
     if(s.frozen){setErr("🔒 الصالون مجمّد مؤقتاً — تواصل مع الإدارة");return;}
     setOwnerSession(s.id); setView("ownerDash");
   };
+  const loginWithPin=()=>{
+    const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
+    if(!s){setPinErr("رمز PIN غير صحيح");setPin("");return;}
+    if(s.banned){setPinErr("🚫 تم حظر هذا الصالون");return;}
+    if(s.frozen){setPinErr("🔒 الصالون مجمّد مؤقتاً");return;}
+    setOwnerSession(s.id); setView("ownerDash");
+  };
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>دخول صاحب الصالون</h2></div>
+      <div style={{...G.tabRow,marginBottom:16}}>
+        <button style={{...G.tabBtn,flex:1,...(tab==="phone"?G.tabOn:{})}} onClick={()=>{setTab("phone");setErr("");setPinErr("");}}>📱 رقم الجوال</button>
+        <button style={{...G.tabBtn,flex:1,...(tab==="pin"?G.tabOn:{})}} onClick={()=>{setTab("pin");setErr("");setPinErr("");}}>🔐 الدخول السريع</button>
+      </div>
       <div style={G.fc}>
-        <SL>أدخل رقم جوالك المسجّل</SL>
-        <F label="رقم الجوال" error={err}><input style={fi(err)} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
-        <button style={G.sub} onClick={login}>دخول</button>
+        {tab==="phone"?<>
+          <SL>أدخل رقم جوالك المسجّل</SL>
+          <F label="رقم الجوال" error={err}><input style={fi(err)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+          <button style={G.sub} onClick={loginWithPhone}>دخول</button>
+        </>:<>
+          <SL>أدخل رمز PIN الخاص بك</SL>
+          <F label="رمز PIN" error={pinErr}><input style={fi(pinErr)} type="password" inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}}/></F>
+          <button style={G.sub} onClick={loginWithPin}>دخول</button>
+        </>}
       </div>
       <div style={{margin:"0 0 16px",background:"rgba(var(--pr),.06)",border:"1.5px dashed rgba(var(--pr),.4)",borderRadius:13,padding:"18px 16px",textAlign:"center"}}>
         <div style={{fontSize:15,color:"var(--p)",fontWeight:700,marginBottom:6}}>لا تملك صالوناً بعد؟</div>
@@ -3212,8 +2848,10 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
     </div></div>
   );
 }
-function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$}){
-  const[tab,setTab]=useState("notif");
+function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews,customers=[]}){
+  const[tab,setTab]=useState(null);
+  const[activeCard,setActiveCard]=useState(null);
+  const[ownerNotifs,setOwnerNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
   const[oathDone,setOathDone]=useState(()=>{
     try{return localStorage.getItem(`dork_oath_${salon?.id}`)==="1";}catch{return false;}
   });
@@ -3257,97 +2895,382 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
   const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
 
-  // الميزان المالي
   const approvedBookings=salon.bookings.filter(b=>b.status==="approved");
-  const totalEarned=approvedBookings.length; // 1 ريال لكل حجز
+  const totalEarned=approvedBookings.length;
   const totalPaid=salon.totalPaid||0;
   const balance=totalEarned-totalPaid;
 
-  const togglePause=async()=>{
-    try{
-      await sb("salons","PATCH",{paused:!salon.paused},`?id=eq.${salon.id}`);
-      setSalons(p=>p.map(s=>s.id===salon.id?{...s,paused:!s.paused}:s));
-      toast$(salon.paused?"✅ تم تفعيل استقبال الحجوزات":"⏸ تم إيقاف استقبال الحجوزات مؤقتاً");
-    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
-  };
+  const[showBalanceModal,setShowBalanceModal]=useState(false);
+
+  // ── حسابات ملخص اليوم ──
+  const _td=new Date().toISOString().slice(0,10);
+  const _tdBks=salon.bookings.filter(b=>b.date===_td);
+  const _tdApproved=_tdBks.filter(b=>b.status==="approved");
+  const _tdPending=_tdBks.filter(b=>b.status==="pending");
+  const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
+  const _now=new Date();
+  const _nowMins=_now.getHours()*60+_now.getMinutes();
+  const _nextBk=_tdApproved
+    .filter(b=>{const[h,m]=(b.time||"0:0").split(":").map(Number);return h*60+m>_nowMins;})
+    .sort((a,b)=>(a.time||"").localeCompare(b.time||""))[0];
+  const _totalSlots=Math.max((getSlotsForSalon(salon).length)*(salon.barbers?.length||1),1);
+  const _occ=Math.min(100,Math.round(_tdApproved.length/_totalSlots*100));
+  const _dNames=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+  const _mNames=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+  const _dayLabel=`${_dNames[_now.getDay()]}، ${_now.getDate()} ${_mNames[_now.getMonth()]}`;
 
   return(
-    <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>لوحة صالوني</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setOwnerSession(null);setView("home");}}>خروج</button></div>
-      <div style={G.salonBadge}>
-        <span style={{fontSize:20,color:"var(--p)"}}>✂</span>
-        <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div><div style={{fontSize:11,color:"#888"}}>{salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div></div>
-        <span style={{fontSize:11,fontWeight:700,color:statusColor,background:`${statusColor}22`,padding:"3px 8px",borderRadius:8}}>{statusLabel}</span>
-      </div>
-      {salon.status!=="approved"&&<div style={{background:"rgba(240,192,64,.08)",border:"1px solid var(--pl)55",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--pl)"}}>🔔 صالونك في انتظار موافقة الإدارة - سيظهر للعملاء بعد القبول</div>}
+    <div style={G.page}>
+      <style>{`
+        @keyframes fadeInUp {from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes slideInFromRight {from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+        @keyframes scaleIn {from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
+        @keyframes growBar {from{transform:scaleX(0);}to{transform:scaleX(1);}}
+        @keyframes pulse {0%,100%{opacity:1;}50%{opacity:.6;}}
+        .stat-card{animation:fadeInUp .45s ease-out both;transition:all .25s ease;}
+        .stat-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(212,160,23,.18);}
+        .tab-button{transition:all .2s ease;}
+        .balance-tab{animation:slideInFromRight .4s cubic-bezier(0.4,0,0.2,1);}
+        .notif-banner{animation:fadeInUp .4s ease-out;transition:all .3s ease;}
+        .today-card{animation:scaleIn .4s ease-out;}
+        .occ-bar{animation:growBar 1.2s cubic-bezier(0.4,0,0.2,1);}
+        .pending-pulse{animation:pulse 2s infinite;}
+      `}</style>
+      <div style={G.fp}>
 
-      {/* الميزان المالي */}
-      <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:14,padding:16,border:"1.5px solid var(--pa25)",marginBottom:12}}>
-        <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:10}}>💰 الميزان المالي</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:balance>0?10:0}}>
-          {[{l:"إجمالي المستحق",v:totalEarned+" ر",c:"var(--p)"},{l:"تم سداده",v:totalPaid+" ر",c:"#27ae60"},{l:"المتبقي",v:balance+" ر",c:balance>0?"#e74c3c":"#27ae60"}].map(({l,v,c})=>(
-            <div key={l} style={{background:"#0d0d1a",borderRadius:10,padding:"10px 8px",textAlign:"center",border:`1px solid ${c}33`}}>
-              <div style={{fontSize:16,fontWeight:900,color:c}}>{v}</div>
-              <div style={{fontSize:9,color:"#888",marginTop:2}}>{l}</div>
-            </div>
-          ))}
+      {/* ── صف أيقونات التبويبات ── */}
+      <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:12,paddingBottom:2}}>
+        <button
+          onClick={()=>{setTab(null);setActiveCard(null);}}
+          style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:tab===null?"rgba(212,160,23,.13)":"rgba(255,255,255,.04)",border:`1px solid ${tab===null?"rgba(212,160,23,.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
+          <span style={{fontSize:18}}>📋</span>
+          <span style={{fontSize:8,color:tab===null?"#d4a017":"#666",fontWeight:tab===null?700:400,whiteSpace:"nowrap"}}>لوحتي</span>
+        </button>
+        {[
+          {id:"messages",icon:"💬",label:"رسائل"},
+          {id:"calendar",icon:"🗓",label:"تقويم"},
+          {id:"reviews",icon:"⭐",label:"تقييمات"},
+          {id:"stats",icon:"📊",label:"إحصائيات"},
+          {id:"balance",icon:"💰",label:"الميزان"},
+          {id:"settings",icon:"⚙",label:"إعدادات"},
+        ].map(({id,icon,label})=>{
+          const isActive=tab===id;
+          const hasBadge=(id==="messages"&&parseInt(localStorage.getItem("dork_notif_count")||"0")>0)||(id==="balance"&&balance>0);
+          return(
+            <button key={id}
+              onClick={()=>{
+                if(id==="messages")localStorage.setItem("dork_notif_count","0");
+                setTab(t=>t===id?null:id);
+                setActiveCard(null);
+              }}
+              style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:isActive?"rgba(212,160,23,.13)":"rgba(255,255,255,.04)",border:`1px solid ${isActive?"rgba(212,160,23,.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,position:"relative",fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
+              <span style={{fontSize:18}}>{icon}</span>
+              <span style={{fontSize:8,color:isActive?"#d4a017":"#666",fontWeight:isActive?700:400,whiteSpace:"nowrap"}}>{label}</span>
+              {hasBadge&&<div style={{position:"absolute",top:4,right:4,width:6,height:6,borderRadius:"50%",background:"#e74c3c",boxShadow:"0 0 4px #e74c3c"}}/>}
+            </button>
+          );
+        })}
+        <button
+          onClick={()=>{if(window.confirm("هل أنت متأكد من الخروج؟")){setOwnerSession(null);setView("home");}}}
+          style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:"rgba(231,76,60,.07)",border:"1px solid rgba(231,76,60,.2)",borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
+          <span style={{fontSize:18}}>🚪</span>
+          <span style={{fontSize:8,color:"#e74c3c",fontWeight:600,whiteSpace:"nowrap"}}>خروج</span>
+        </button>
+      </div>
+
+      {/* ── بادج الصالون المحسّن ── */}
+      <div style={{display:"flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,rgba(212,160,23,.1),rgba(212,160,23,.04))",border:"1px solid rgba(212,160,23,.22)",borderRadius:14,padding:"11px 14px",marginBottom:10}}>
+        <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#d4a017,#f0c040)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:"0 4px 12px rgba(212,160,23,.35)"}}>✂</div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:.3}}>{salon.name}</div>
+          <div style={{fontSize:11,color:"#999",marginTop:1}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
         </div>
-        {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#e74c3c",textAlign:"center"}}>
-          ⚠ يوجد مبلغ مستحق ({balance} ريال) لتطبيق دورك — يُرجى السداد
-        </div>}
+        <span style={{fontSize:11,fontWeight:700,color:statusColor,background:`${statusColor}18`,padding:"4px 10px",borderRadius:10,border:`1px solid ${statusColor}33`}}>{statusLabel}</span>
       </div>
 
-      {/* زر مشاركة الصالون */}
-      <div style={{display:"flex",gap:8,marginBottom:10}}>
-        <button style={{flex:1,padding:"9px 0",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#1a1a2e",color:"#aaa",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>{
-          const url=`${window.location.origin}${window.location.pathname}?salon=${salon.id}`;
-          if(navigator.share){navigator.share({title:`صالون ${salon.name}`,text:`احجز موعدك في ${salon.name} عبر دورك`,url});}
-          else{navigator.clipboard?.writeText(url);toast$&&toast$("✅ تم نسخ رابط الصالون");}
-        }}>📤 مشاركة الصالون</button>
-        <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${salon.paused?"#27ae60":"#f39c12"}`,background:salon.paused?"rgba(39,174,96,.1)":"rgba(243,156,18,.1)",color:salon.paused?"#27ae60":"#f39c12",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={togglePause}>
-          {salon.paused?"✅ تفعيل الحجوزات":"⏸ إيقاف مؤقت"}
-        </button>
-      </div>
-      {salon.paused&&<div style={{background:"rgba(231,76,60,.08)",border:"1px solid #e74c3c55",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:"#e74c3c"}}>⚠ الحجوزات موقوفة - لن يتمكن العملاء من الحجز الآن</div>}
+      {salon.status!=="approved"&&(
+        <div style={{background:"rgba(240,192,64,.07)",border:"1px solid rgba(240,192,64,.25)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:12,color:"var(--pl)"}}>
+          🔔 صالونك في انتظار موافقة الإدارة — سيظهر للعملاء بعد القبول
+        </div>
+      )}
 
-      <div style={{...G.tabRow,flexWrap:"nowrap",overflowX:"auto"}}>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="notif"?G.tabOn:{})}} onClick={()=>setTab("notif")}>🔔 حجوزات {pending>0&&<span style={G.notifDot}>{pending}</span>}</button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="messages"?G.tabOn:{})}} onClick={()=>{
-          localStorage.setItem("dork_notif_count","0");
-          setTab("messages");
-        }}>
-          💬 رسائل {(()=>{const n=parseInt(localStorage.getItem("dork_notif_count")||"0");return n>0?<span style={{...G.notifDot,background:"#e74c3c"}}>{n}</span>:null;})()}
-        </button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="calendar"?G.tabOn:{})}} onClick={()=>setTab("calendar")}>🗓 تقويم</button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")}>📊</button>
-        <button style={{...G.tabBtn,flexShrink:0,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙</button>
+      {/* بانر إشعارات الإدارة */}
+      {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
+        <div key={n.id} className="notif-banner" style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",border:"1px solid rgba(212,160,23,.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span>{n.icon} {n.title} — {n.body}</span>
+          <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:14,padding:0}}>✕</button>
+        </div>
+      ))}
+
+      {/* ── الواجهة الرئيسية (لوحتي) ── */}
+      {tab===null&&(
+        <>
+
+      {/* ── بطاقة ملخص اليوم ── */}
+      <div className="today-card" style={{background:"linear-gradient(145deg,#16112a,#0e0e1e)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(212,160,23,.2)",boxShadow:"0 0 30px rgba(212,160,23,.06),inset 0 1px 0 rgba(212,160,23,.08)"}}>
+
+        {/* التاريخ + حالة المعلقة */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#d4a017"}}>🌅 {_dayLabel}</div>
+          {_tdPending.length>0
+            ?<div className="pending-pulse" style={{fontSize:10,color:"#f39c12",background:"rgba(243,156,18,.12)",padding:"3px 9px",borderRadius:8,fontWeight:700,border:"1px solid rgba(243,156,18,.25)"}}>⏳ {_tdPending.length} بانتظارك</div>
+            :<div style={{fontSize:10,color:"#27ae60",background:"rgba(39,174,96,.1)",padding:"3px 9px",borderRadius:8,fontWeight:700,border:"1px solid rgba(39,174,96,.2)"}}>✅ لا معلقة</div>
+          }
+        </div>
+
+        {/* حجوزات اليوم + إيراد اليوم */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          <div style={{background:"rgba(212,160,23,.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(212,160,23,.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.06}}>📅</div>
+            <div style={{fontSize:30,fontWeight:900,color:"#d4a017",lineHeight:1}}>{_tdApproved.length}</div>
+            <div style={{fontSize:10,color:"#888",marginTop:5}}>حجز مقبول اليوم</div>
+          </div>
+          <div style={{background:"rgba(39,174,96,.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(39,174,96,.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.06}}>💰</div>
+            <div style={{fontSize:30,fontWeight:900,color:"#27ae60",lineHeight:1}}>{_tdRevenue}</div>
+            <div style={{fontSize:10,color:"#888",marginTop:5}}>ريال إيراد اليوم</div>
+          </div>
+        </div>
+
+        {/* شريط الامتلاء */}
+        <div style={{marginBottom:_nextBk?14:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <div style={{fontSize:11,color:"#777"}}>امتلاء اليوم</div>
+            <div style={{fontSize:12,fontWeight:800,color:_occ>=80?"#e74c3c":_occ>=50?"#d4a017":"#27ae60"}}>{_occ}%</div>
+          </div>
+          <div style={{height:7,background:"rgba(255,255,255,.05)",borderRadius:10,overflow:"hidden"}}>
+            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,#a07810,#f0c040)":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center",boxShadow:_occ>0?`0 0 8px ${_occ>=80?"rgba(231,76,60,.5)":_occ>=50?"rgba(212,160,23,.5)":"rgba(39,174,96,.5)"}`:""}}/>
+          </div>
+        </div>
+
+        {/* الحجز القادم */}
+        {_nextBk&&(
+          <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(212,160,23,.06)",borderRadius:11,padding:"10px 12px",border:"1px dashed rgba(212,160,23,.2)"}}>
+            <div style={{width:32,height:32,borderRadius:9,background:"rgba(212,160,23,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>⏰</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:10,color:"#666",marginBottom:2}}>الحجز القادم</div>
+              <div style={{fontSize:13,fontWeight:700,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                {_nextBk.customerName||_nextBk.customer_name||"عميل"} — {_nextBk.time}
+              </div>
+            </div>
+            <div style={{fontSize:11,fontWeight:800,color:"#d4a017",background:"rgba(212,160,23,.12)",padding:"4px 9px",borderRadius:8,flexShrink:0,whiteSpace:"nowrap"}}>
+              {(()=>{
+                const[h,m]=(_nextBk.time||"0:0").split(":").map(Number);
+                const diff=h*60+m-_nowMins;
+                if(diff<=0)return"الآن";
+                if(diff>=60)return`${Math.floor(diff/60)}س ${diff%60}د`;
+                return`${diff} دقيقة`;
+              })()}
+            </div>
+          </div>
+        )}
+        {!_nextBk&&(
+          <div style={{fontSize:11,color:"#444",textAlign:"center",paddingTop:_tdApproved.length>0?8:0}}>
+            {_tdApproved.length>0?"✓ انتهت جميع حجوزات اليوم":"لا توجد حجوزات مؤكدة لهذا اليوم"}
+          </div>
+        )}
       </div>
-      {tab==="notif"&&<NotifPanel salon={salon} onUpdate={updateBookingStatus}/>}
+
+      {/* ── الـ 4 مربعات ── */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
+            {[
+              {label:"الكل",value:salon.bookings.length,color:"#d4a017",filter:"all",delay:0},
+              {label:"انتظار",value:pending,color:"#f39c12",filter:"pending",delay:80},
+              {label:"مقبول",value:approvedBookings.length,color:"#27ae60",filter:"approved",delay:160},
+              {label:"مرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,color:"#e74c3c",filter:"rejected",delay:240}
+            ].map(({label,value,color,filter,delay})=>{
+              const isOpen=activeCard===filter;
+              return(
+                <div key={label} className="stat-card"
+                  onClick={()=>{setActiveCard(c=>c===filter?null:filter);if(filter==="all"||filter==="approved")refreshSalonBookings(salon.id);}}
+                  style={{background:isOpen?`${color}18`:`${color}0f`,borderRadius:isOpen?"13px 13px 0 0":13,padding:"11px 6px",height:68,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:`1.5px solid ${isOpen?`${color}55`:`${color}1a`}`,borderBottom:isOpen?`1.5px solid ${color}55`:"",textAlign:"center",animationDelay:`${delay}ms`,cursor:"pointer",transition:"all .22s ease",boxShadow:isOpen?`0 0 14px ${color}1a`:"none"}}>
+                  <div style={{fontSize:22,fontWeight:900,color,marginBottom:2,lineHeight:1}}>{value}</div>
+                  <div style={{fontSize:10,color:isOpen?color:"#666",fontWeight:600,marginBottom:3}}>{label}</div>
+                  <div style={{fontSize:9,color:isOpen?color:"#444",lineHeight:1,transition:"transform .2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▼</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* قائمة الحجوزات المنسدلة */}
+          {activeCard&&(
+            <div style={{animation:"fadeInUp .3s ease-out",marginBottom:14,border:`1.5px solid ${activeCard==="all"?"#d4a017":activeCard==="pending"?"#f39c12":activeCard==="approved"?"#27ae60":"#e74c3c"}33`,borderTop:"none",borderRadius:"0 0 14px 14px",overflow:"hidden",background:"rgba(255,255,255,.02)"}}>
+              <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings}/>
+            </div>
+          )}
+        </>
+      )}
       {tab==="messages"&&(
         <div>
-          {/* إشعارات الإدارة */}
-          {(()=>{
-            const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-            return notifs.length>0?(
-              <div style={{marginBottom:12}}>
-                <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>🔔 إشعارات الإدارة</div>
-                {notifs.slice(0,5).map(n=>(
-                  <div key={n.id} style={{...G.bItem,borderRight:"3px solid var(--p)",marginBottom:6}}>
-                    <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.icon} {n.title}</div>
-                    <div style={{fontSize:12,color:"#aaa"}}>{n.body}</div>
-                    <div style={{fontSize:10,color:"#555",marginTop:2}}>{n.time}</div>
-                  </div>
-                ))}
+          {ownerNotifs.length>0&&(
+            <div style={{marginBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>🔔 إشعارات الإدارة</div>
+                <button onClick={()=>{if(window.confirm("هل تريد مسح كل الإشعارات؟")){localStorage.setItem("dork_notifs","[]");localStorage.setItem("dork_notif_count","0");setOwnerNotifs([]);}}} style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}}>🗑 مسح الكل</button>
               </div>
-            ):null;
-          })()}
+              {ownerNotifs.slice(0,5).map(n=>(
+                <div key={n.id} style={{...G.bItem,borderRight:"3px solid var(--p)",marginBottom:6}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.icon} {n.title}</div>
+                  <div style={{fontSize:12,color:"#aaa"}}>{n.body}</div>
+                  <div style={{fontSize:10,color:"#555",marginTop:2}}>{n.time}</div>
+                </div>
+              ))}
+            </div>
+          )}
           <MessagesPanel salon={salon} toast$={toast$}/>
         </div>
       )}
       {tab==="calendar"&&<BookingCalendar salon={salon} onUpdate={updateBookingStatus}/>}
+      {tab==="reviews"&&<OwnerReviewsPanel salon={salon} reviews={reviews} setReviews={setReviews} toast$={toast$}/>}
       {tab==="stats"&&<StatsPanel salon={salon}/>}
+      {tab==="balance"&&(
+        <div style={{paddingTop:8}}>
+          <div className="balance-tab" style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(212,160,23,.3)",marginBottom:12}}>
+            <div style={{fontSize:11,color:"#888",marginBottom:8}}>رصيدك المتاح</div>
+            <div style={{fontSize:32,fontWeight:900,color:"#d4a017",marginBottom:10,transition:"all .3s ease"}}>{balance} <span style={{fontSize:14}}>ريال</span></div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div style={{background:"rgba(39,174,96,.1)",borderRadius:10,padding:"10px",border:"1px solid #27ae6055",transition:"all .3s ease",cursor:"pointer"}}>
+                <div style={{fontSize:10,color:"#888",marginBottom:3}}>المستحق</div>
+                <div style={{fontSize:16,fontWeight:700,color:"#27ae60"}}>{totalEarned} ر</div>
+              </div>
+              <div style={{background:"rgba(212,160,23,.1)",borderRadius:10,padding:"10px",border:"1px solid rgba(212,160,23,.3)",transition:"all .3s ease",cursor:"pointer"}}>
+                <div style={{fontSize:10,color:"#888",marginBottom:3}}>المدفوع</div>
+                <div style={{fontSize:16,fontWeight:700,color:"#d4a017"}}>{totalPaid} ر</div>
+              </div>
+            </div>
+            {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"10px",fontSize:11,color:"#e74c3c",marginTop:10,textAlign:"center",animation:"fadeInUp .5s ease-out .2s both"}}>⚠ يوجد مبلغ مستحق — يُرجى السداد</div>}
+          </div>
+        </div>
+      )}
       {tab==="settings"&&<OwnerSettings salon={salon} setSalons={setSalons} toast$={toast$}/>}
     </div></div>
+  );
+}
+
+// ==============================================
+//  OWNER REVIEWS PANEL - لوحة تقييمات الصالون للمالك
+// ==============================================
+function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
+  const gold="#d4a017";
+  const goldStar="#e8c04a";
+  const[replyDraft,setReplyDraft]=useState({});
+  const[saving,setSaving]=useState(null);
+
+  const salonReviews=useMemo(()=>{
+    if(!reviews||!salon)return[];
+    return (reviews||[])
+      .filter(r=>Number(r.salon_id)===Number(salon.id))
+      .sort((a,b)=>(b.booking_date||b.created_at||"").localeCompare(a.booking_date||a.created_at||""));
+  },[reviews,salon]);
+
+  const avg=salonReviews.length
+    ?Math.round(salonReviews.reduce((s,r)=>s+r.rating,0)/salonReviews.length*10)/10:0;
+
+  const saveReply=async(reviewId)=>{
+    const text=(replyDraft[reviewId]||"").trim();
+    if(!text)return;
+    setSaving(reviewId);
+    try{
+      await sb("reviews","PATCH",{owner_reply:text},`?id=eq.${reviewId}`);
+      setReviews(p=>p.map(r=>r.id===reviewId?{...r,owner_reply:text}:r));
+      setReplyDraft(p=>({...p,[reviewId]:""}));
+      toast$("✅ تم حفظ ردّك");
+    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
+    finally{setSaving(null);}
+  };
+
+  const deleteReply=async(reviewId)=>{
+    try{
+      await sb("reviews","PATCH",{owner_reply:null},`?id=eq.${reviewId}`);
+      setReviews(p=>p.map(r=>r.id===reviewId?{...r,owner_reply:null}:r));
+      toast$("تم حذف الرد");
+    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
+  };
+
+  return(
+    <div style={{paddingTop:8}}>
+      {/* ملخص */}
+      <div style={{background:"rgba(212,160,23,.07)",border:"1px solid rgba(212,160,23,.18)",borderRadius:12,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:14}}>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:28,fontWeight:900,color:goldStar,lineHeight:1}}>{avg||"—"}</div>
+          <div style={{display:"flex",gap:1,justifyContent:"center",margin:"4px 0"}}>
+            {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=Math.round(avg)?goldStar:"rgba(212,160,23,.2)"}}>★</span>)}
+          </div>
+          <div style={{fontSize:10,color:"#888"}}>{salonReviews.length} تقييم</div>
+        </div>
+        <div style={{flex:1}}>
+          {[5,4,3,2,1].map(s=>{
+            const cnt=salonReviews.filter(r=>r.rating===s).length;
+            const pct=salonReviews.length?Math.round(cnt/salonReviews.length*100):0;
+            return(
+              <div key={s} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                <span style={{fontSize:10,color:goldStar,width:8}}>{s}</span>
+                <div style={{flex:1,height:5,background:"rgba(212,160,23,.1)",borderRadius:3,overflow:"hidden"}}>
+                  <div style={{width:`${pct}%`,height:"100%",background:gold,borderRadius:3,transition:"width .4s"}}/>
+                </div>
+                <span style={{fontSize:9,color:"#666",width:24,textAlign:"left"}}>{cnt}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {salonReviews.length===0&&<div style={G.empty}>لا توجد تقييمات بعد</div>}
+
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {salonReviews.map(r=>{
+          const hasReply=r.owner_reply&&r.owner_reply.trim();
+          const draft=replyDraft[r.id]??r.owner_reply??"";
+          return(
+            <div key={r.id} style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 13px"}}>
+              {/* العميل */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <span style={{fontSize:12,color:"#c0c0d0",fontWeight:700}}>👤 {r.customer_name||"عميل"}</span>
+                <div style={{display:"flex",gap:1}}>
+                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(212,160,23,.18)"}}>★</span>)}
+                </div>
+              </div>
+              {r.comment&&<div style={{fontSize:11,color:"#a8a8bc",fontStyle:"italic",lineHeight:1.5,marginBottom:4}}>«{r.comment}»</div>}
+              <div style={{fontSize:9,color:"#444",marginBottom:8}}>📅 {r.booking_date||r.created_at?.split("T")[0]||"—"}</div>
+
+              {/* رد موجود */}
+              {hasReply&&!(replyDraft[r.id]!=null&&replyDraft[r.id]!==r.owner_reply)&&(
+                <div style={{padding:"8px 10px",background:"rgba(212,160,23,.07)",borderRight:"3px solid #d4a017",borderRadius:"0 8px 8px 0",marginBottom:6}}>
+                  <div style={{fontSize:10,color:gold,fontWeight:700,marginBottom:2}}>✂ ردّك</div>
+                  <div style={{fontSize:11,color:"#c8c8a8",lineHeight:1.5}}>{r.owner_reply}</div>
+                  <div style={{display:"flex",gap:6,marginTop:8}}>
+                    <button onClick={()=>setReplyDraft(p=>({...p,[r.id]:r.owner_reply}))} style={{fontSize:10,padding:"4px 10px",borderRadius:6,border:"1px solid var(--pa25)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit"}}>✏ تعديل</button>
+                    <button onClick={()=>deleteReply(r.id)} style={{fontSize:10,padding:"4px 10px",borderRadius:6,border:"1px solid #e74c3c55",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}}>🗑 حذف</button>
+                  </div>
+                </div>
+              )}
+
+              {/* حقل الرد */}
+              {(!hasReply||(replyDraft[r.id]!=null&&replyDraft[r.id]!==r.owner_reply))&&(
+                <div>
+                  <textarea
+                    value={draft}
+                    onChange={e=>setReplyDraft(p=>({...p,[r.id]:e.target.value}))}
+                    placeholder="اكتب ردّك على هذا التقييم..."
+                    rows={2}
+                    style={{width:"100%",boxSizing:"border-box",padding:"8px 10px",borderRadius:8,border:"1.5px solid var(--pa25)",background:"#0d0d1a",color:"#f0f0f0",fontSize:12,fontFamily:"'Cairo',sans-serif",resize:"none",outline:"none",direction:"rtl"}}
+                  />
+                  <div style={{display:"flex",gap:6,marginTop:6}}>
+                    <button
+                      onClick={()=>saveReply(r.id)}
+                      disabled={saving===r.id||!draft.trim()}
+                      style={{flex:1,padding:"8px",borderRadius:8,border:"none",background:draft.trim()?"linear-gradient(135deg,var(--p),#f0c040)":"#2a2a3a",color:draft.trim()?"#000":"#555",fontWeight:700,cursor:draft.trim()?"pointer":"not-allowed",fontFamily:"inherit",fontSize:12}}>
+                      {saving===r.id?"جاري الحفظ...":"💬 إرسال الرد"}
+                    </button>
+                    {hasReply&&<button onClick={()=>setReplyDraft(p=>{const n={...p};delete n[r.id];return n;})} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #333",background:"transparent",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:12}}>إلغاء</button>}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -3503,110 +3426,6 @@ function MessagesPanel({salon,toast$}){
 }
 
 // ==============================================
-//  ADMIN MESSAGES - رسائل الإدارة مع الصالونات
-// ==============================================
-function AdminMessages({salons,toast$}){
-  const[selId,setSelId]=useState(null);
-  const[txt,setTxt]=useState("");
-  const[sending,setSending]=useState(false);
-  const sel=selId?salons.find(s=>s.id===selId):null;
-
-  const getKey=(id)=>`dork_msgs_${id}`;
-  const getMsgs=(id)=>{try{return JSON.parse(localStorage.getItem(getKey(id))||"[]");}catch{return[];}};
-  const[msgs,setMsgs]=useState([]);
-  const bottomRef=useRef(null);
-
-  const loadMsgs=useCallback(async(id)=>{
-    try{
-      const data=await sb("messages","GET",null,`?salon_id=eq.${id}&order=created_at.asc&limit=200`);
-      if(Array.isArray(data)&&data.length>0){
-        const converted=data.map(m=>({id:m.id,from:m.from_admin?"admin":"owner",text:m.text,time:new Date(m.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})}));
-        setMsgs(converted);
-        return;
-      }
-    }catch{}
-    setMsgs(getMsgs(id));
-  },[]);
-
-  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
-
-  const openChat=async(id)=>{setSelId(id);await loadMsgs(id);};
-
-  const send=async()=>{
-    if(!txt.trim()||!selId||sending)return;
-    setSending(true);
-    const msgText=txt.trim();
-    setTxt("");
-    try{
-      await sb("messages","POST",{salon_id:selId,from_admin:true,text:msgText});
-      await loadMsgs(selId);
-      toast$&&toast$("✅ تم إرسال الرسالة");
-    }catch{
-      const m={id:Date.now(),from:"admin",text:msgText,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})};
-      const newMsgs=[...msgs,m];
-      setMsgs(newMsgs);
-      try{localStorage.setItem(getKey(selId),JSON.stringify(newMsgs));}catch{}
-      sendNotif("رسالة من الإدارة",msgText,"📩","salon",selId);
-      toast$&&toast$("✅ تم إرسال الرسالة");
-    }
-    setSending(false);
-  };
-
-  if(sel) return(
-    <div>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-        <button style={G.bb} onClick={()=>setSelId(null)}>{">"}</button>
-        <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>💬 {sel.name}</span>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",height:350}}>
-        <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10,background:"#0d0d1a",borderRadius:10,padding:10,border:"1px solid #2a2a3a"}}>
-          {msgs.length===0&&<div style={G.empty}>لا توجد رسائل</div>}
-          {msgs.map(m=>(
-            <div key={m.id} style={{display:"flex",justifyContent:m.from==="admin"?"flex-end":"flex-start"}}>
-              <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="admin"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="admin"?"var(--pa25)":"#1a1a2e",border:`1px solid ${m.from==="admin"?"var(--pa4)":"#2a2a3a"}`}}>
-                <div style={{fontSize:10,color:"#888",marginBottom:3}}>{m.from==="admin"?"الإدارة":"المالك"}</div>
-                <div style={{fontSize:13,color:"#fff"}}>{m.text}</div>
-                <div style={{fontSize:9,color:"#555",marginTop:3}}>{m.time}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          <input style={{flex:1,padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
-            placeholder="اكتب رسالة للصالون..." value={txt} onChange={e=>setTxt(e.target.value)}
-            onKeyDown={e=>e.key==="Enter"&&send()}/>
-          <button style={{...G.sub,width:"auto",padding:"0 16px",marginTop:0,opacity:sending?.5:1}} onClick={send} disabled={sending}>{sending?"...":"إرسال"}</button>
-        </div>
-      </div>
-    </div>
-  );
-
-  return(
-    <div>
-      <div style={{fontSize:12,color:"#888",marginBottom:10}}>اختر صالوناً لمراسلته:</div>
-      {salons.length===0&&<div style={G.empty}>لا توجد صالونات</div>}
-      {salons.map(s=>{
-        const msgs=getMsgs(s.id);
-        const lastMsg=msgs[msgs.length-1];
-        return(
-          <div key={s.id} style={{...G.bItem,cursor:"pointer",marginBottom:8}} onClick={()=>openChat(s.id)}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
-                {lastMsg&&<div style={{fontSize:11,color:"#888",marginTop:2}}>{lastMsg.from==="admin"?"أنت: ":""}{lastMsg.text.slice(0,40)}</div>}
-              </div>
-              <div style={{flexShrink:0}}>
-                <span style={{fontSize:12,color:"var(--p)"}}>💬 {msgs.length}</span>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ==============================================
 
 function OwnerSettings({salon,setSalons,toast$}){
   const[saving,setSaving]=useState(false);
@@ -3659,7 +3478,7 @@ function OwnerSettings({salon,setSalons,toast$}){
   return(
     <div>
       <div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
-        {[{id:"info",icon:"📋",label:"المعلومات"},{id:"hours",icon:"🕐",label:"الأوقات"},{id:"services",icon:"✂",label:"الخدمات"},{id:"barbers",icon:"💈",label:"الحلاقون"},{id:"tone",icon:"🔔",label:"النغمة"}].map(s=>(
+        {[{id:"info",icon:"📋",label:"المعلومات"},{id:"hours",icon:"🕐",label:"الأوقات"},{id:"services",icon:"✂",label:"الخدمات"},{id:"barbers",icon:"💈",label:"الحلاقون"},{id:"tone",icon:"🔔",label:"النغمة"},{id:"pin",icon:"🔐",label:"PIN"}].map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
             style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"#2a2a3a"}`,background:sec===s.id?"var(--pa12)":"#1a1a2e",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
             {s.icon} {s.label}
@@ -3792,6 +3611,47 @@ function OwnerSettings({salon,setSalons,toast$}){
         <div style={{fontSize:11,color:"#555",marginTop:8}}>اضغط للمعاينة</div>
       </div>}
 
+      {sec==="pin"&&<div style={box}>
+        <div style={hdr}>🔐 الدخول السريع (PIN)</div>
+        <div style={{fontSize:13,color:"#aaa",marginBottom:14,lineHeight:1.6}}>تغيير رمز PIN سيؤثر على جميع طرق الدخول السريع</div>
+        <button onClick={()=>setF(p=>({...p,_editPinStep:"select",_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--p)",background:"rgba(212,160,23,.1)",color:"var(--p)",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
+          ✏️ تغيير رمز PIN
+        </button>
+        {f._editPinStep&&(
+          <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
+            <div style={{background:"#13131f",borderRadius:20,padding:24,maxWidth:350,width:"100%",border:"1.5px solid var(--pa25)"}}>
+              {f._editPinStep==="select"?<>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>🔐 تغيير رمز PIN</div>
+                <div style={{fontSize:12,color:"#888",textAlign:"center",marginBottom:20}}>اختر عدد الأرقام</div>
+                <div style={{display:"flex",gap:12,marginBottom:16}}>
+                  <button onClick={()=>setF(p=>({...p,_editPinLength:4,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===4?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    4 أرقام
+                  </button>
+                  <button onClick={()=>setF(p=>({...p,_editPinLength:6,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===6?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    6 أرقام
+                  </button>
+                </div>
+              </>:f._editPinStep==="enter"?<>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أدخل PIN الجديد ({f._editPinLength} أرقام)</div>
+                <input type="password" maxLength={f._editPinLength} value={f._editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editTempPin:val}));if(val.length===f._editPinLength)setTimeout(()=>setF(p=>({...p,_editPinStep:"confirm"})),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editTempPin.length===f._editPinLength)setF(p=>({...p,_editPinStep:"confirm"}));}} />
+              </>:f._editPinStep==="confirm"?<>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أعد إدخال PIN للتأكيد</div>
+                <input type="password" maxLength={f._editPinLength} value={f._editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editPinConfirm:val}));if(val.length===f._editPinLength&&f._editTempPin!==val){setF(p=>({...p,_editPinErr:"الأرقام غير متطابقة"}));}else{setF(p=>({...p,_editPinErr:""}));}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${f._editPinErr?"#e74c3c":"var(--p)"}`,background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm){const salonIdStr=String(salon.id);localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));toast$&&toast$("✅ تم تحديث PIN بنجاح");setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));}}} />
+                {f._editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{f._editPinErr}</div>}
+                <div style={{display:"flex",gap:8,marginTop:16}}>
+                  <button onClick={()=>{if(f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm){const salonIdStr=String(salon.id);localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));toast$&&toast$("✅ تم تحديث PIN بنجاح");setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));}}} disabled={f._editPinConfirm.length!==f._editPinLength||f._editTempPin!==f._editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"var(--p)":"#2a2a3a",color:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"#000":"#555",cursor:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                    حفظ
+                  </button>
+                  <button onClick={()=>setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                    إلغاء
+                  </button>
+                </div>
+              </>:null}
+            </div>
+          </div>
+        )}
+      </div>}
+
       <button style={{...G.sub,marginTop:4,opacity:saving?0.7:1}} onClick={save} disabled={saving}>
         {saving?"⏳ جاري الحفظ...":"💾 حفظ التعديلات"}
       </button>
@@ -3892,8 +3752,8 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
           maxLength="6"
           value={value}
           onChange={handleAutofill}
-          style={{position:"absolute",left:"-9999px",width:"1px",height:"1px",opacity:0,pointerEvents:"none"}}
-          aria-hidden="true"
+          id="otp-input"
+          style={{position: 'absolute', opacity: 0.01, height: "1px", width: "1px", zIndex: -1, pointerEvents: 'none', top: "50%"}}
         />
         {/* الـ 6 صناديق المرئية */}
         {[0,1,2,3,4,5].map(i=>(
@@ -3953,15 +3813,19 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
 // ==============================================
 function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$}){
   const[tab,setTab]=useState("login");
+  const[loginMethod,setLoginMethod]=useState("phone");
   const[phone,setPhone]=useState(""); const[name,setName]=useState("");
   const[email,setEmail]=useState(""); const[pass,setPass]=useState("");
   const[err,setErr]=useState("");
+  const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
  const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
   const[otpTimer,setOtpTimer]=useState(0);
   const[otpExpired,setOtpExpired]=useState(false);
   const[sending,setSending]=useState(false);
   const[verifying,setVerifying]=useState(false);
+  const[attempts,setAttempts]=useState(0);
+  const[resendTimer,setResendTimer]=useState(0);
 
   // تسجيل دخول بالبصمة
   const loginWithBiometric=async()=>{
@@ -3976,19 +3840,25 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     }catch(e){toast$&&toast$("❌ فشل التحقق","err");}
   };
 
-  const login=async()=>{
+  const loginWithPhone=async()=>{
     if(!phone.trim()){setErr("أدخل رقم الجوال");return;}
     try{
       const rows=await sb("customers","GET",null,`?phone=eq.${encodeURIComponent(phone.trim())}`);
       if(!rows.length){setErr("لا يوجد حساب بهذا الرقم");return;}
       const c=toAppCustomer(rows[0]);
       setCustomerSession(c);setView("home");
-      // حفظ للبصمة
       localStorage.setItem("dork_biometric_id",String(c.id));
     }catch(e){setErr("خطأ: "+e.message);}
   };
 
-  // المؤقت - يعمل بشكل صحيح عندما يتم إرسال الكود فقط
+  const loginWithPin=async()=>{
+    const c=customers.find(cust=>{const savedPin=localStorage.getItem(`dork_customer_pin_${cust.id}`);return savedPin&&savedPin===pin;});
+    if(!c){setPinErr("رمز PIN غير صحيح");setPin("");return;}
+    setCustomerSession(c);setView("home");
+    localStorage.setItem("dork_biometric_id",String(c.id));
+  };
+
+  // مؤقت صلاحية الكود (5 دقائق)
   useEffect(()=>{
     if(!otpSent||otpTimer<=0)return;
     const interval=setInterval(()=>{
@@ -4004,33 +3874,49 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     return()=>clearInterval(interval);
   },[otpSent]);
 
+  // مؤقت انتظار إعادة الإرسال (دقيقتين)
+  useEffect(()=>{
+    if(resendTimer<=0)return;
+    const interval=setInterval(()=>{
+      setResendTimer(prev=>Math.max(prev-1,0));
+    },1000);
+    return()=>clearInterval(interval);
+  },[resendTimer]);
+
  const sendOtpCode=async()=>{
   if(sending)return;
   if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
   const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if(!emailRegex.test(email.trim())){setErr("بريد إلكتروني غير صحيح");return;}
-  if(otpTimer>0){setErr(`⏳ انتظر ${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")} قبل إعادة المحاولة`);return;}
+  if(resendTimer>0){setErr(`⏳ انتظر ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")} قبل إعادة المحاولة`);return;}
   try{
     setSending(true);
     setErr("");
     setOtpExpired(false);
     setOtpCode("");
     setOtpTimer(300);
+    setResendTimer(120);
     setOtpSent(true);
+    setAttempts(0);
     const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
     if(error){
       console.error("OTP Error:",error.message);
-      setOtpSent(false);
-      setOtpTimer(0);
       setOtpExpired(false);
-      if(error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit")){
-        setErr("❌ طلبات كثيرة - انتظر قليلاً ثم حاول مجدداً");
-      }else if(error.message.includes("invalid")||error.message.includes("format")){
-        setErr("❌ البريد الإلكتروني غير صحيح");
-      }else if(error.message.includes("disabled")||error.message.includes("not enabled")){
-        setErr("❌ المصادقة غير مفعّلة - تواصل مع الدعم");
+      const isRateLimit=error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit")||error.message.includes("security");
+      if(isRateLimit){
+        setOtpSent(true);
+        setResendTimer(120);
+        setErr("❌ يرجى الانتظار دقيقتين قبل المحاولة مجدداً");
       }else{
-        setErr("❌ خطأ: "+error.message.substring(0,40));
+        setOtpSent(false);
+        setOtpTimer(0);
+        if(error.message.includes("invalid")||error.message.includes("format")){
+          setErr("❌ البريد الإلكتروني غير صحيح");
+        }else if(error.message.includes("disabled")||error.message.includes("not enabled")){
+          setErr("❌ المصادقة غير مفعّلة - تواصل مع الدعم");
+        }else{
+          setErr("❌ خطأ: "+error.message.substring(0,40));
+        }
       }
       return;
     }
@@ -4040,7 +3926,17 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setOtpSent(false);
     setOtpTimer(0);
     setOtpExpired(false);
+    setResendTimer(60);
     setErr("❌ خطأ في الاتصال - تحقق من الإنترنت");
+    try{
+      const {data:{user}}=await supabase.auth.getUser();
+      if(user&&user.email===email.trim()){
+        await supabase.auth.admin.deleteUser(user.id);
+        console.log("Cleanup: Deleted pending user record");
+      }
+    }catch(cleanupErr){
+      console.error("Cleanup failed:",cleanupErr.message);
+    }
   }finally{
     setSending(false);
   }
@@ -4051,6 +3947,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     if(!name.trim()||!phone.trim()){setErr("أدخل الاسم والجوال");return;}
     if(!email.trim()){setErr("أدخل البريد الإلكتروني");return;}
     if(!otpSent){setErr("⚠️ أرسل الكود أولاً (اضغط زر الإرسال)");return;}
+    if(attempts>=5){setErr("❌ تم تجاوز الحد الأقصى للمحاولات - يرجى إعادة الإرسال");return;}
     const otpClean=String(otpCode||"").replace(/\D/g,"").slice(0,6);
     if(otpClean.length<6){setErr("❌ أدخل جميع الأرقام الستة");return;}
     if(otpExpired){setErr("❌ انتهت صلاحية الكود - اضغط على إعادة الإرسال");return;}
@@ -4059,16 +3956,21 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const {data,error}=await supabase.auth.verifyOtp({email:email.trim(),token:otpClean,type:"email"});
       if(error){
         console.error("Verify OTP Error:",error.message);
-        if(error.message.includes("timeout")||error.message.includes("expired")||error.message.includes("used")){
+        const msg=error.message.toLowerCase();
+        if(msg.includes("invalid")||msg.includes("wrong")||msg.includes("incorrect")||msg.includes("not found")){
+          setAttempts(prev=>prev+1);
+          setOtpCode("");
+          setErr("❌ الكود غير صحيح - تحقق من الكود المرسل لبريدك");
+        }else if((msg.includes("timeout")||msg.includes("expired")||msg.includes("used"))&&otpTimer<=0){
           setOtpExpired(true);
           setOtpTimer(0);
           setErr("❌ انتهت صلاحية الكود - اضغط على إعادة الإرسال");
-        }else if(error.message.includes("invalid")||error.message.includes("wrong")||error.message.includes("not found")){
-          setErr("❌ الكود غير صحيح - تحقق من الكود المرسل لبريدك");
-        }else if(error.message.includes("blocked")||error.message.includes("denied")){
+        }else if(msg.includes("blocked")||msg.includes("denied")){
           setErr("❌ البريد محظور - حاول بريد آخر");
         }else{
-          setErr("❌ خطأ: "+error.message.substring(0,50));
+          setAttempts(prev=>prev+1);
+          setOtpCode("");
+          setErr("❌ الكود غير صحيح - حاول مجدداً");
         }
         return;
       }
@@ -4101,9 +4003,19 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       </div>
       <div style={G.fc}>
         {tab==="login"?<>
-          <SL>تسجيل الدخول</SL>
-          <F label="رقم الجوال" error={err}><input style={fi(err)} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
-          <button style={G.sub} onClick={login}>دخول</button>
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            <button style={{...G.tabBtn,flex:1,...(loginMethod==="phone"?G.tabOn:{})}} onClick={()=>{setLoginMethod("phone");setErr("");setPinErr("");}}>📱 رقم الجوال</button>
+            <button style={{...G.tabBtn,flex:1,...(loginMethod==="pin"?G.tabOn:{})}} onClick={()=>{setLoginMethod("pin");setErr("");setPinErr("");}}>🔐 دخول سريع</button>
+          </div>
+          {loginMethod==="phone"?<>
+            <SL>تسجيل الدخول</SL>
+            <F label="رقم الجوال" error={err}><input style={fi(err)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+            <button style={G.sub} onClick={loginWithPhone}>دخول</button>
+          </>:<>
+            <SL>أدخل رمز PIN الخاص بك</SL>
+            <F label="رمز PIN" error={pinErr}><input style={fi(pinErr)} type="password" inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}} maxLength={6}/></F>
+            <button style={G.sub} onClick={loginWithPin}>دخول</button>
+          </>}
           <div style={{textAlign:"center",margin:"12px 0",color:"#555",fontSize:12}}>- أو -</div>
           <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #4285f4",background:"rgba(66,133,244,.1)",color:"#4285f4",cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={async()=>{
             try{
@@ -4141,29 +4053,25 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         </>:<>
           <SL>إنشاء حساب جديد</SL>
           <F label="الاسم"><input style={fi()} placeholder="اسمك الكريم" value={name} onChange={e=>setName(e.target.value)}/></F>
-          <F label="رقم الجوال"><input style={fi()} placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+          <F label="رقم الجوال"><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <F label="البريد الإلكتروني (مطلوب)" error={err}><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
-            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(otpTimer>0||sending)?.6:1,cursor:(otpTimer>0||sending)?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={otpTimer>0||sending||!email.trim()}>
-              {sending?"⏳ جاري...":otpSent?(otpTimer>0?`⏱ ${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"🔄 إعادة"):"📧 إرسال"}
+            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:sending?.6:1,cursor:sending?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending}>
+              {sending?"⏳ جاري...":otpSent?"🔄 إعادة":"📧 إرسال"}
             </button>
           </div></F>
           {otpSent&&<>
-            <F label="الكود (تحقق من بريدك)" error={otpExpired?true:undefined}>
-              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={err||otpExpired} use6Boxes={true} disabled={otpExpired||verifying}/>
-              <div style={{fontSize:11,color:otpExpired?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
+            <F label="الكود (تحقق من بريدك)">
+              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={false} use6Boxes={true} disabled={verifying||attempts>=5}/>
+              <div style={{fontSize:11,color:attempts>=5?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
                 💡 الكود مرسل إلى: <span dir="ltr" style={{display:"inline-block"}}><strong>{email}</strong></span>
-                <br/>⏱️ الصلاحية: {otpExpired?"❌ انتهت الصلاحية":otpTimer>0?`${Math.floor(otpTimer/60)}:${String(otpTimer%60).padStart(2,"0")}`:"⏳ جاهز للإرسال"}
+                {attempts>0&&attempts<5&&<><br/>⚠️ محاولات متبقية: {5-attempts}</>}
+                {attempts>=5&&<><br/>❌ تم تجاوز حد المحاولات - يرجى إعادة الإرسال</>}
               </div>
             </F>
-            <div style={{display:"flex",gap:8,fontSize:12,marginTop:12}}>
-              <button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);}}>
-                ✏️ تعديل البريد
-              </button>
-              {otpExpired&&<button style={{flex:1,padding:"8px 12px",borderRadius:9,border:"1.5px solid #e74c3c",background:"rgba(231,76,60,.1)",color:"#e74c3c",cursor:sending?"not-allowed":"pointer",fontFamily:"inherit",opacity:sending?.5:1}} disabled={sending} onClick={sendOtpCode}>
-                {sending?"⏳ جاري...":"🔄 إعادة الإرسال"}
-              </button>}
-            </div>
+            <button style={{width:"100%",padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"transparent",color:"#888",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1,marginTop:12,fontSize:12}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);setResendTimer(0);setAttempts(0);}}>
+              ✏️ تعديل البريد
+            </button>
           </>}
           <button style={{...G.sub,opacity:(verifying||!otpSent)?.6:1,cursor:(verifying||!otpSent)?"not-allowed":"pointer"}} onClick={register} disabled={!otpSent||verifying||otpExpired}>
             {verifying?"⏳ جاري التحقق...":"إنشاء الحساب"}
@@ -4173,24 +4081,40 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     </div></div>
   );
 }
-function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers}){
-  const[tab,setTab]=useState("favs");
+function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$}){
+  const[tab,setTab]=useState("settings");
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
+  const[showDeleteConfirm,setShowDeleteConfirm]=useState(false);
   const[editEmail,setEditEmail]=useState(customer?.email||"");
   const[reminderMins,setReminderMins]=useState(60);
+  const[myWaiting,setMyWaiting]=useState([]);
+  useEffect(()=>{
+    if(!customer?.phone)return;
+    sb("waiting_list","GET",null,`?phone=eq.${encodeURIComponent(customer.phone)}&select=id,salon_id,slot_date,slot_time,status,created_at&order=created_at.desc`)
+      .then(data=>{if(Array.isArray(data))setMyWaiting(data.filter(w=>w.status==="waiting"));})
+      .catch(()=>{});
+  },[customer?.phone]);
+  const[editPinStep,setEditPinStep]=useState(null);
+  const[editPinLength,setEditPinLength]=useState(4);
+  const[editTempPin,setEditTempPin]=useState("");
+  const[editPinConfirm,setEditPinConfirm]=useState("");
+  const[editPinErr,setEditPinErr]=useState("");
   if(!customer)return null;
 
   const favSalons=salons.filter(s=>favSet.has(s.id)&&s.status==="approved");
   const history=customer.history||[];
   const totalSpent=history.reduce((a,h)=>a+(h.total||0),0);
-  const badge=history.length>=10?"🏆 عميل مميز":history.length>=5?"⭐ عميل نشط":"🆕 عميل جديد";
+  const classification=getCustomerClassification(customer);
+  const badge=classification.label;
 
   // avatar بالحرف الأول
   const initials=(customer.name||"?")[0];
   const avatarColors=["#d4a017","#27ae60","#3b82f6","#8b5cf6","#e74c3c"];
   const avatarColor=avatarColors[customer.name?.charCodeAt(0)%avatarColors.length||0];
+
+  const lastSalon=history.length>0?salons.find(s=>s.id===history[history.length-1].salonId||s.id===Number(history[history.length-1].salonId)):null;
 
   const saveEdit=async()=>{
     if(!editName.trim()){return;}
@@ -4201,12 +4125,18 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
     }catch(e){alert("خطأ: "+e.message);}
   };
 
-  const deleteAccount=async()=>{
-    if(!confirm("حذف حسابك نهائياً؟ لا يمكن التراجع!")){return;}
+  const confirmDeleteAccount=async()=>{
     try{
       await sb("customers","DELETE",null,`?id=eq.${customer.id}`);
+      const {data:{user}}=await supabase.auth.getUser();
+      if(user)await supabase.auth.admin.deleteUser(user.id);
       setCustomerSession(null);setView("home");
     }catch(e){alert("خطأ: "+e.message);}
+    setShowDeleteConfirm(false);
+  };
+
+  const deleteAccount=()=>{
+    setShowDeleteConfirm(true);
   };
 
   const scheduleReminder=(h)=>{
@@ -4230,32 +4160,24 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>حسابي</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("home");}}>خروج</button></div>
 
-      {/* بروفايل العميل */}
+      {/* بروفايل العميل - Premium */}
       {!editMode?(
-        <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1px solid #2a2a3a",marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-            <div style={{width:52,height:52,borderRadius:"50%",background:avatarColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:900,color:"#000",flexShrink:0}}>{initials}</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{customer.name}</div>
-              <div style={{fontSize:12,color:"#888"}}>📞 {customer.phone}</div>
-              <div style={{fontSize:11,color:avatarColor,marginTop:2}}>{badge}</div>
-            </div>
-            <button style={{...G.pageBtn,fontSize:11}} onClick={()=>setEditMode(true)}>✏ تعديل</button>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {[{v:history.length,l:"حجز",c:"#6aadff"},{v:totalSpent+" ر",l:"إجمالي",c:"#f0c040"}].map(({v,l,c})=>(
-              <div key={l} style={{background:"#0d0d1a",borderRadius:10,padding:"10px 6px",textAlign:"center",border:`1px solid ${c}33`}}>
-                <div style={{fontSize:18,fontWeight:900,color:c}}>{v}</div>
-                <div style={{fontSize:10,color:"#888"}}>{l}</div>
-              </div>
-            ))}
+        <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
+          {/* البادج في الزاوية اليسرى */}
+          <div style={{position:"absolute",top:12,left:12,background:`${classification.color}22`,border:`1px solid ${classification.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:classification.color}}>{badge}</div>
+
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📋 الحجوزات: <span style={{color:"#f0c040"}}>{history.length} حجز</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{formatDate(customer.createdAt)}</span></div>
           </div>
         </div>
       ):(
         <div style={{background:"#13131f",borderRadius:16,padding:16,border:"1px solid var(--pa25)",marginBottom:12}}>
           <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:12}}>✏ تعديل البيانات</div>
           <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>الاسم</label><input style={inp2} value={editName} onChange={e=>setEditName(e.target.value)}/></div>
-          <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>رقم الجوال</label><input style={inp2} value={editPhone} onChange={e=>setEditPhone(e.target.value)}/></div>
+          <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>رقم الجوال</label><input style={inp2} inputMode="numeric" type="tel" value={editPhone} onChange={e=>setEditPhone(e.target.value)}/></div>
           <div style={{marginBottom:12}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>البريد الإلكتروني</label><input style={inp2} type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)}/></div>
           <div style={{display:"flex",gap:8}}>
             <button style={G.sub} onClick={saveEdit}>💾 حفظ</button>
@@ -4276,7 +4198,10 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
       {/* المفضلة */}
       {tab==="favs"&&<>
-        {favSalons.length===0?<div style={G.empty}>لم تضف صالوناً للمفضلة بعد</div>:
+        {favSalons.length===0?<div style={{...G.empty,display:"flex",flexDirection:"column",gap:16,alignItems:"center",padding:"36px 14px"}}>
+          <div>لم تضف صالوناً للمفضلة بعد</div>
+          <button style={{...G.sub,marginTop:0}} onClick={()=>setView("home")}>استعرض الصالونات الآن</button>
+        </div>:
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {favSalons.map(s=>(
               <div key={s.id} style={G.bItem}>
@@ -4298,6 +4223,30 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
       {/* الحجوزات */}
       {tab==="hist"&&<>
+        {/* قائمة انتظاري */}
+        {myWaiting.length>0&&(
+          <div style={{background:"rgba(243,156,18,.07)",borderRadius:10,padding:"10px 12px",marginBottom:12,border:"1px solid #f39c1244"}}>
+            <div style={{fontSize:12,color:"#f39c12",fontWeight:700,marginBottom:8}}>⏳ مواعيدي في قائمة الانتظار ({myWaiting.length})</div>
+            {myWaiting.map(w=>{
+              const s=salons.find(x=>String(x.id)===String(w.salon_id));
+              return(
+                <div key={w.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderTop:"1px solid #f39c1222"}}>
+                  <div>
+                    <div style={{fontSize:12,color:"#fff",fontWeight:600}}>✂ {s?.name||"صالون"}</div>
+                    <div style={{fontSize:11,color:"#f39c12"}}>⏰ {w.slot_date} - {w.slot_time}</div>
+                    <div style={{fontSize:10,color:"#888"}}>بانتظار تأكيد الصالون</div>
+                  </div>
+                  <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}}
+                    onClick={async()=>{
+                      if(!window.confirm("هل تريد إلغاء طلب الانتظار؟"))return;
+                      await sb("waiting_list","DELETE",null,"?id=eq."+w.id).catch(()=>{});
+                      setMyWaiting(p=>p.filter(x=>x.id!==w.id));
+                    }}>إلغاء</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
         {/* إعداد التذكير */}
         <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",marginBottom:10,border:"1px solid #2a2a3a"}}>
           <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:8}}>🔔 وقت التذكير بالمواعيد</div>
@@ -4327,8 +4276,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                 (b.phone===h.phone || b.name===customer.name)
               ) || s?.bookings?.find(b=>b.date===h.date&&b.time===h.time);
               const status=realBooking?.status||h.status||"pending";
-              const stColor=status==="approved"?"#27ae60":status==="rejected"?"#e74c3c":"#f39c12";
-              const stLabel=status==="approved"?"✅ مقبول":status==="rejected"?"❌ مرفوض":"⏳ بانتظار الموافقة";
+              const stColor=status==="approved"?"#27ae60":status==="rejected"?"#e74c3c":status==="cancelled"?"#888":"#f39c12";
+              const stLabel=status==="approved"?"✅ مقبول":status==="rejected"?"❌ مرفوض":status==="cancelled"?"🚫 ملغى":"⏳ بانتظار الموافقة";
               return(
                 <div key={i} style={{...G.bItem,borderRight:`3px solid ${stColor}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
@@ -4343,23 +4292,49 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       {h.rating>0&&<div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><span key={n} style={{fontSize:12,color:n<=h.rating?"#f0c040":"#333"}}>★</span>)}</div>}
                       {s&&<button style={{...G.bookBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setSelSalon(s);setView("book");}}>🔄 احجز مجدداً</button>}
                       <button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>scheduleReminder({...h,salonName:s?.name})}>🔔 ذكّرني</button>
+                      {(status==="pending"||status==="approved")&&realBooking?.id&&(<>
+                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{if(window.confirm("هل تريد تعديل موعدك؟ سيُلغى الحجز الحالي عند تأكيد الجديد.")){setRescheduleId(realBooking.id);setSelSalon(s);setView("book");}}}>✏️ تعديل</button>
+                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{
+                          if(!window.confirm("هل تريد إلغاء هذا الحجز؟"))return;
+                          try{
+                            const bookDT=new Date(`${h.date}T${h.time}`);
+                            const hoursUntil=(bookDT-new Date())/(1000*60*60);
+                            const window_h=s?.cancellationWindow||2;
+                            const lateCancel=hoursUntil>=0&&hoursUntil<window_h;
+                            await sb("bookings","PATCH",{status:"cancelled",...(lateCancel?{attendance:"no_show"}:{})},"?id=eq."+realBooking.id);
+                            sb("notifications","POST",{target_type:"all",title:"إلغاء حجز",body:`${customer?.name||""} ألغى حجزه في ${h.date} - ${h.time}${lateCancel?" (إلغاء متأخر)":""}`,icon:"🚫"}).catch(()=>{});
+                            await loadData({silent:true});
+                          }catch(e){toast$("❌ خطأ في الإلغاء","err");}
+                        }}>🚫 إلغاء</button>
+                      </>)}
                     </div>
                   </div>
                   {/* التقييم فقط بعد القبول */}
                   {status==="approved"&&<InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={async(r,comment)=>{
+                    // تحديث history العميل محلياً (لعرضه في "حجوزاتي")
                     const rev=[...history].reverse();
                     rev[i]={...rev[i],rating:r,comment};
                     const updated=[...rev].reverse();
                     setCustomers(p=>p.map(c=>c.id===customer.id?{...c,history:updated}:c));
                     try{await sb("customers","PATCH",{history:updated},`?id=eq.${customer.id}`);}catch{}
-                    // تحديث تقييم الصالون مباشرة
+                    // كتابة التقييم في جدول reviews المستقل
                     try{
-                      const salonId=h.salonId;
-                      const allRatings=updated.filter(x=>Number(x.salonId)===Number(salonId)&&x.rating>0).map(x=>x.rating);
-                      const newRating=allRatings.length?Math.round(allRatings.reduce((a,x)=>a+x,0)/allRatings.length*10)/10:r;
+                      const salonId=Number(h.salonId);
+                      const existing=(reviews||[]).find(rv=>Number(rv.salon_id)===salonId&&Number(rv.customer_id)===Number(customer.id)&&rv.booking_date===h.date);
+                      let allSalonReviews=(reviews||[]).filter(rv=>Number(rv.salon_id)===salonId);
+                      if(existing){
+                        await sb("reviews","PATCH",{rating:r,comment},`?id=eq.${existing.id}`);
+                        allSalonReviews=allSalonReviews.map(rv=>rv.id===existing.id?{...rv,rating:r,comment}:rv);
+                        setReviews(p=>p.map(rv=>rv.id===existing.id?{...rv,rating:r,comment}:rv));
+                      }else{
+                        const res=await sb("reviews","POST",{salon_id:salonId,customer_id:Number(customer.id),customer_name:customer.name,rating:r,comment,booking_date:h.date});
+                        if(res&&res[0]){allSalonReviews=[...allSalonReviews,res[0]];setReviews(p=>[...p,res[0]]);}
+                      }
+                      // حساب المتوسط من كل تقييمات الصالون (دقيق 100%)
+                      const newRating=allSalonReviews.length?Math.round(allSalonReviews.reduce((a,rv)=>a+rv.rating,0)/allSalonReviews.length*10)/10:r;
                       await sb("salons","PATCH",{rating:newRating},`?id=eq.${salonId}`);
-                      setSalons(p=>p.map(s=>s.id===Number(salonId)||s.id===salonId?{...s,rating:newRating}:s));
-                    }catch{}
+                      setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:newRating}:s));
+                    }catch(e){console.error(e);}
                   }}/>}
                 </div>
               );
@@ -4399,14 +4374,77 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       {tab==="settings"&&(
         <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid #2a2a3a"}}>
           <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:14,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>⚙ إعدادات الحساب</div>
-          <div style={{fontSize:12,color:"#888",marginBottom:16,lineHeight:1.8}}>
-            <div>👤 الاسم: <span style={{color:"#fff",fontWeight:700}}>{customer.name}</span></div>
-            <div>📞 الجوال: <span style={{color:"#fff",fontWeight:700}}>{customer.phone}</span></div>
-            <div>📋 الحجوزات: <span style={{color:"var(--p)",fontWeight:700}}>{history.length} حجز</span></div>
-          </div>
-          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>{setTab("favs");setEditMode(true);}}>✏ تعديل البيانات</button>
+          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>{setTab("settings");setEditMode(true);}}>✏ تعديل البيانات</button>
+          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>setEditPinStep("select")}>🔐 تغيير رمز PIN</button>
           <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13}} onClick={deleteAccount}>🗑 حذف الحساب نهائياً</button>
           <div style={{fontSize:10,color:"#555",marginTop:8,textAlign:"center"}}>تحذير: حذف الحساب لا يمكن التراجع عنه</div>
+        </div>
+      )}
+
+      {/* حوار تغيير PIN */}
+      {editPinStep&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
+          <div style={{background:"#13131f",borderRadius:20,padding:24,maxWidth:350,width:"100%",border:"1.5px solid var(--pa25)"}}>
+            {editPinStep==="select"?<>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>🔐 تغيير رمز PIN</div>
+              <div style={{fontSize:12,color:"#888",textAlign:"center",marginBottom:20}}>اختر عدد الأرقام</div>
+              <div style={{display:"flex",gap:12,marginBottom:16}}>
+                <button onClick={()=>{setEditPinLength(4);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===4?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                  4 أرقام
+                </button>
+                <button onClick={()=>{setEditPinLength(6);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===6?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                  6 أرقام
+                </button>
+              </div>
+            </>:editPinStep==="enter"?<>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أدخل PIN الجديد ({editPinLength} أرقام)</div>
+              <input type="password" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editTempPin.length===editPinLength)setEditPinStep("confirm");}} />
+            </>:editPinStep==="confirm"?<>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أعد إدخال PIN للتأكيد</div>
+              <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr("الأرقام غير متطابقة");}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} />
+              {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
+              <div style={{display:"flex",gap:8,marginTop:16}}>
+                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$&&toast$("✅ تم تحديث PIN بنجاح");}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"#2a2a3a",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                  حفظ
+                </button>
+                <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                  إلغاء
+                </button>
+              </div>
+            </>:null}
+          </div>
+        </div>
+      )}
+
+      {/* حذف الحساب - Dialog */}
+      {showDeleteConfirm&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"20px"}}>
+          <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:24,border:"1.5px solid #d4a017",boxShadow:"0 20px 60px rgba(212,160,23,0.2)",maxWidth:"90%",animation:"slideUp 0.3s ease"}}>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
+              <div style={{fontSize:18,fontWeight:900,color:"#fff",marginBottom:8}}>حذف الحساب نهائياً</div>
+              <div style={{fontSize:12,color:"#888",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
+            </div>
+
+            <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:20,fontSize:12,color:"#ddd",lineHeight:1.8}}>
+              <div style={{marginBottom:8,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>✗ <span>حسابك بشكل نهائي</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>✗ <span>جميع معلوماتك الشخصية</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>✗ <span>سجل حجوزاتك</span></div>
+            </div>
+
+            <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:12,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700}}>
+              ⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف</div>
+
+            <div style={{display:"flex",gap:10}}>
+              <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",transition:"all 0.2s"}} onClick={()=>setShowDeleteConfirm(false)}>
+                ↩️ إلغاء
+              </button>
+              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",border:"none",transition:"all 0.2s",boxShadow:"0 4px 12px rgba(231,76,60,0.3)"}} onClick={confirmDeleteAccount}>
+                🗑️ حذف نهائياً
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -4456,425 +4494,7 @@ function InlineStarRating({rated,comment,onRate}){
   );
 }
 
-function AdminCustomerList({customers,salons,toast$,setCustomers}){
-  const[selId,setSelId]=useState(null);
-  const[notes,setNotes]=useState({});
-  const[blocked,setBlocked]=useState({});
-  const[custSearch,setCustSearch]=useState("");
-  const sel=selId?customers.find(c=>c.id===selId):null;
-
-  const filtered=!custSearch.trim()?customers:customers.filter(c=>
-    c.name?.toLowerCase().includes(custSearch.toLowerCase())||
-    c.phone?.includes(custSearch.trim())
-  );
-
-  if(sel){
-    const history=sel.history||[];
-    const favs=sel.favs||[];
-    const totalSpent=history.reduce((a,h)=>a+(h.total||0),0);
-    const isBlocked=blocked[sel.id];
-    return(
-      <div>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-          <button style={G.bb} onClick={()=>setSelId(null)}>{">"}</button>
-          <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>👤 {sel.name}</span>
-          {isBlocked&&<span style={{fontSize:11,background:"rgba(231,76,60,.2)",color:"#e74c3c",padding:"2px 8px",borderRadius:20,fontWeight:700}}>محظور</span>}
-        </div>
-
-        {/* معلومات */}
-        <div style={{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #2a2a3a",marginBottom:10}}>
-          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:10,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>معلومات العميل</div>
-          <div style={{fontSize:13,color:"#fff",marginBottom:4}}>👤 {sel.name}</div>
-          <div style={{fontSize:12,color:"#888",marginBottom:4}}>📞 {sel.phone}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:10}}>
-            {[{v:history.length,l:"حجز",c:"#6aadff"},{v:totalSpent+" ر",l:"إجمالي",c:"#f0c040"},{v:favs.length,l:"مفضلة",c:"#e74c3c"}].map(({v,l,c})=>(
-              <div key={l} style={{background:"#0d0d1a",borderRadius:9,padding:"9px 6px",textAlign:"center",border:`1px solid ${c}33`}}>
-                <div style={{fontSize:16,fontWeight:900,color:c}}>{v}</div>
-                <div style={{fontSize:10,color:"#888"}}>{l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* نقاط الولاء */}
-        <div style={{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #27ae6033",marginBottom:10}}>
-          <div style={{fontSize:12,color:"#27ae60",fontWeight:700,marginBottom:10,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>🎁 نقاط الولاء</div>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-            <div style={{flex:1,textAlign:"center"}}>
-              <div style={{fontSize:28,fontWeight:900,color:"#27ae60"}}>{sel.loyaltyPoints||0}</div>
-              <div style={{fontSize:11,color:"#888"}}>نقطة</div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:6,flex:2}}>
-              <div style={{display:"flex",gap:6}}>
-                <button style={{flex:1,padding:"7px 0",borderRadius:8,border:"1px solid #27ae60",background:"rgba(39,174,96,.1)",color:"#27ae60",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}
-                  onClick={async()=>{
-                    const v=prompt("إضافة نقاط (أدخل رقم):");
-                    if(!v||isNaN(+v))return;
-                    const pts=(sel.loyaltyPoints||0)+(+v);
-                    try{await sb("customers","PATCH",{loyalty_points:pts},`?id=eq.${sel.id}`);setCustomers(p=>p.map(c=>c.id===sel.id?{...c,loyaltyPoints:pts}:c));toast$&&toast$("✅ تم إضافة النقاط");}catch(e){toast$&&toast$("❌ خطأ");}
-                  }}>+ إضافة</button>
-                <button style={{flex:1,padding:"7px 0",borderRadius:8,border:"1px solid #e74c3c",background:"rgba(231,76,60,.1)",color:"#e74c3c",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}
-                  onClick={async()=>{
-                    const v=prompt("خصم نقاط (أدخل رقم):");
-                    if(!v||isNaN(+v))return;
-                    const pts=Math.max(0,(sel.loyaltyPoints||0)-(+v));
-                    try{await sb("customers","PATCH",{loyalty_points:pts},`?id=eq.${sel.id}`);setCustomers(p=>p.map(c=>c.id===sel.id?{...c,loyaltyPoints:pts}:c));toast$&&toast$("✅ تم خصم النقاط");}catch(e){toast$&&toast$("❌ خطأ");}
-                  }}>- خصم</button>
-              </div>
-              <button style={{padding:"7px 0",borderRadius:8,border:`1px solid ${sel.loyaltyFrozen?"#27ae60":"#f39c12"}`,background:sel.loyaltyFrozen?"rgba(39,174,96,.1)":"rgba(243,156,18,.1)",color:sel.loyaltyFrozen?"#27ae60":"#f39c12",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}
-                onClick={async()=>{
-                  try{await sb("customers","PATCH",{loyalty_frozen:!sel.loyaltyFrozen},`?id=eq.${sel.id}`);setCustomers(p=>p.map(c=>c.id===sel.id?{...c,loyaltyFrozen:!c.loyaltyFrozen}:c));toast$&&toast$(sel.loyaltyFrozen?"✅ تم تفعيل النقاط":"🔒 تم تجميد نقاط العميل");}catch(e){toast$&&toast$("❌ خطأ");}
-                }}>{sel.loyaltyFrozen?"✅ تفعيل النقاط":"🔒 تجميد النقاط"}</button>
-            </div>
-          </div>
-        </div>
-
-        {/* سجل الحجوزات */}
-        {history.length>0&&<div style={{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #2a2a3a",marginBottom:10}}>
-          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:10,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>📋 سجل الحجوزات</div>
-          {[...history].reverse().slice(0,5).map((h,i)=>{
-            const s=salons.find(x=>x.id===h.salonId);
-            return(
-              <div key={i} style={{padding:"7px 0",borderBottom:"1px solid #1e1e2e"}}>
-                <div style={{fontSize:12,color:"#fff",fontWeight:600}}>✂ {s?.name||"صالون محذوف"}</div>
-                <div style={{fontSize:11,color:"#888"}}>📅 {h.date} - 💰 {h.total||0} ر</div>
-              </div>
-            );
-          })}
-        </div>}
-
-        {/* ملاحظة */}
-        <div style={{background:"#13131f",borderRadius:13,padding:14,border:"1px solid #2a2a3a",marginBottom:10}}>
-          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>📝 ملاحظة داخلية</div>
-          <textarea style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl",resize:"vertical",minHeight:70}}
-            placeholder="ملاحظة خاصة عن هذا العميل..." value={notes[sel.id]||""}
-            onChange={e=>setNotes(p=>({...p,[sel.id]:e.target.value}))}/>
-          <button style={{...G.sub,marginTop:6}} onClick={()=>toast$&&toast$("✅ تم حفظ الملاحظة")}>💾 حفظ الملاحظة</button>
-        </div>
-
-        {/* أزرار الإجراءات */}
-        <div style={{display:"flex",gap:8}}>
-          <button style={{flex:1,padding:"10px 0",borderRadius:9,border:`1.5px solid ${isBlocked?"#27ae60":"#f39c12"}`,background:isBlocked?"rgba(39,174,96,.12)":"rgba(243,156,18,.12)",color:isBlocked?"#27ae60":"#f39c12",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}
-            onClick={()=>{setBlocked(p=>({...p,[sel.id]:!isBlocked}));toast$&&toast$(isBlocked?"✅ تم رفع الحظر":"🚫 تم حظر العميل");}}>
-            {isBlocked?"✅ رفع الحظر":"🚫 حظر العميل"}
-          </button>
-          <button style={{...G.delBtn,flex:1,padding:"10px 0",textAlign:"center"}} onClick={async()=>{
-            const reason=prompt("سبب الحذف (اختياري):");
-            if(!confirm(`حذف العميل "${sel.name}"؟${reason?"\nالسبب: "+reason:""}`))return;
-            try{
-              await sb("customers","DELETE",null,`?id=eq.${sel.id}`);
-              setCustomers(p=>p.filter(c=>c.id!==sel.id));
-              toast$&&toast$("🗑 تم حذف العميل"+(reason?" - السبب: "+reason:""));
-              setSelId(null);
-            }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
-          }}>🗑 حذف</button>
-        </div>
-      </div>
-    );
-  }
-
-  return(
-    <div>
-      {/* بحث العملاء */}
-      <div style={{...G.searchRow,marginBottom:10}}>
-        <span style={{fontSize:14,color:"#555"}}>🔍</span>
-        <input style={G.searchInput} placeholder="ابحث بالاسم أو رقم الجوال..." value={custSearch} onChange={e=>setCustSearch(e.target.value)}/>
-        {custSearch&&<button style={G.searchClear} onClick={()=>setCustSearch("")}>✕</button>}
-      </div>
-      {filtered.length===0&&<div style={G.empty}>لا نتائج</div>}
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {filtered.map(c=>{
-          const isBlocked=blocked[c.id];
-          return(
-            <div key={c.id} style={{...G.bItem,borderRight:`3px solid ${isBlocked?"#e74c3c":"#6aadff"}`,cursor:"pointer"}} onClick={()=>setSelId(c.id)}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>👤 {c.name}</div>
-                    {isBlocked&&<span style={{fontSize:10,background:"rgba(231,76,60,.2)",color:"#e74c3c",padding:"1px 6px",borderRadius:20}}>محظور</span>}
-                  </div>
-                  <div style={{fontSize:11,color:"#888"}}>📞 {c.phone}</div>
-                </div>
-                <div style={{textAlign:"left",flexShrink:0}}>
-                  <div style={{fontSize:11,color:"#a78bfa"}}>📋 {(c.history||[]).length} حجز</div>
-                  <div style={{fontSize:11,color:"#e74c3c",marginTop:2}}>♥ {(c.favs||[]).length} مفضلة</div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function AdminFinanceTab({approved,setSalons,toast$}){
-  const[finFilter,setFinFilter]=useState("all");
-  const[finSearch,setFinSearch]=useState("");
-  const totalAll=approved.reduce((a,s)=>a+s.bookings.filter(b=>b.status==="approved").length,0);
-  const paidAll=approved.reduce((a,s)=>a+(s.totalPaid||0),0);
-  const balAll=totalAll-paidAll;
-  const filtered=approved.filter(s=>{
-    const bal=s.bookings.filter(b=>b.status==="approved").length-(s.totalPaid||0);
-    if(finFilter==="paid"&&bal!==0)return false;
-    if(finFilter==="unpaid"&&bal===0)return false;
-    if(finSearch&&!s.name.includes(finSearch))return false;
-    return true;
-  });
-  return(
-    <div>
-      <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:10}}>💰 الميزان المالي</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
-        {[{l:"إجمالي المستحق",v:totalAll+" ر",c:"var(--p)"},{l:"تم تحصيله",v:paidAll+" ر",c:"#27ae60"},{l:"المتبقي",v:balAll+" ر",c:balAll>0?"#e74c3c":"#27ae60"}].map(({l,v,c})=>(
-          <div key={l} style={{background:"#13131f",borderRadius:10,padding:"12px 8px",textAlign:"center",border:`1px solid ${c}33`}}>
-            <div style={{fontSize:18,fontWeight:900,color:c}}>{v}</div>
-            <div style={{fontSize:10,color:"#888",marginTop:3}}>{l}</div>
-          </div>
-        ))}
-      </div>
-      <input style={{width:"100%",padding:"8px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box",marginBottom:8}} placeholder="ابحث عن صالون..." value={finSearch} onChange={e=>setFinSearch(e.target.value)}/>
-      <div style={{display:"flex",gap:6,marginBottom:10}}>
-        {[["all","الكل","#888"],["unpaid","غير مسددة","#e74c3c"],["paid","مسددة","#27ae60"]].map(([k,l,c])=>(
-          <button key={k} style={{flex:1,padding:"7px",borderRadius:9,border:`1.5px solid ${finFilter===k?c:"#2a2a3a"}`,background:finFilter===k?`${c}22`:"transparent",color:finFilter===k?c:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:finFilter===k?700:400}} onClick={()=>setFinFilter(k)}>{l}</button>
-        ))}
-      </div>
-      {filtered.map(s=>{
-        const earned=s.bookings.filter(b=>b.status==="approved").length;
-        const paid=s.totalPaid||0;
-        const bal=earned-paid;
-        return(
-          <div key={s.id} style={{...G.bItem,borderRight:`3px solid ${bal>0?"#e74c3c":"#27ae60"}`,marginBottom:8}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
-              <span style={{fontSize:11,color:bal>0?"#e74c3c":"#27ae60",fontWeight:700}}>{bal>0?`متبقي ${bal} ر`:"✅ مسدد"}</span>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:bal>0?8:0}}>
-              {[{l:"المستحق",v:earned+" ر"},{l:"المسدد",v:paid+" ر"},{l:"الرصيد",v:bal+" ر"}].map(({l,v})=>(
-                <div key={l} style={{background:"#0d0d1a",borderRadius:7,padding:"6px 4px",textAlign:"center"}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"var(--p)"}}>{v}</div>
-                  <div style={{fontSize:9,color:"#888"}}>{l}</div>
-                </div>
-              ))}
-            </div>
-            {bal>0&&<button style={{...G.sub,padding:"6px",fontSize:12,marginTop:4}} onClick={async()=>{
-              if(!confirm(`تسجيل سداد ${bal} ريال من ${s.name}؟`))return;
-              const newPaid=paid+bal;
-              try{await sb("salons","PATCH",{total_paid:newPaid},`?id=eq.${s.id}`);setSalons(p=>p.map(x=>x.id===s.id?{...x,totalPaid:newPaid}:x));toast$&&toast$(`✅ تم تسجيل سداد ${s.name}`);}catch{toast$&&toast$("❌ خطأ","err");}
-            }}>✅ تسجيل السداد ({bal} ريال)</button>}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function AdminApprovedList({salons,setSalons,deleteSalon,setSelSalon,setView,toast$}){
-  const[editId,setEditId]=useState(null);
-  const[ef,setEf]=useState(null);
-  const[pinned,setPinned]=useState(()=>{try{return JSON.parse(localStorage.getItem("pinned_salons")||"[]");}catch{return[];}});
-  const[weekSalon,setWeekSalonState]=useState(()=>{try{return localStorage.getItem("week_salon")||"";}catch{return "";}});
-  const sel=editId?salons.find(s=>s.id===editId):null;
-  const DAYS=["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
-
-  const togglePin=(id)=>{
-    const newPinned=pinned.includes(id)?pinned.filter(x=>x!==id):[...pinned,id];
-    setPinned(newPinned);localStorage.setItem("pinned_salons",JSON.stringify(newPinned));
-    toast$&&toast$(pinned.includes(id)?"📌 تم إلغاء التثبيت":"📌 تم تثبيت الصالون");
-  };
-
-  const toggleFreeze=async(s)=>{
-    try{
-      await sb("salons","PATCH",{frozen:!s.frozen},`?id=eq.${s.id}`);
-      setSalons(p=>p.map(x=>x.id===s.id?{...x,frozen:!s.frozen}:x));
-      toast$&&toast$(s.frozen?"✅ تم تفعيل الصالون":"🔒 تم تجميد الصالون مؤقتاً");
-    }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
-  };
-
-  const setWeeklySalon=(id)=>{
-    const newVal=weekSalon===String(id)?"":String(id);
-    setWeekSalonState(newVal);localStorage.setItem("week_salon",newVal);
-    toast$&&toast$(newVal?"🏅 تم اختيار صالون الأسبوع":"🏅 تم إلغاء الاختيار");
-  };
-
-  const sortedSalons=[...salons].sort((a,b)=>{
-    const aw=weekSalon===String(a.id)?2:0,bw=weekSalon===String(b.id)?2:0;
-    const ap=pinned.includes(a.id)?1:0,bp=pinned.includes(b.id)?1:0;
-    return(bw+bp)-(aw+ap);
-  });
-
-  const startEdit=s=>{setEditId(s.id);setEf({name:s.name,owner:s.owner,phone:s.phone,ownerPhone:s.ownerPhone||s.phone,address:s.address,rating:s.rating||5,welcomeMsg:s.welcomeMsg||"",closedDays:s.closedDays||[],slotMin:s.slotMin||40});};
-
-  const save=async()=>{
-    try{
-      await sb("salons","PATCH",{name:ef.name,owner:ef.owner,phone:ef.phone,owner_phone:ef.ownerPhone,address:ef.address,rating:ef.rating,welcome_msg:ef.welcomeMsg,closed_days:ef.closedDays,slot_min:ef.slotMin},`?id=eq.${editId}`);
-      setSalons(p=>p.map(s=>s.id===editId?{...s,...ef,ownerPhone:ef.ownerPhone,welcomeMsg:ef.welcomeMsg,closedDays:ef.closedDays,slotMin:ef.slotMin}:s));
-      toast$&&toast$("✅ تم الحفظ");setEditId(null);setEf(null);
-    }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
-  };
-
-  if(editId&&ef&&sel) return(
-    <div>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-        <button style={G.bb} onClick={()=>{setEditId(null);setEf(null);}}>{">"}</button>
-        <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>✏ تعديل: {sel.name}</span>
-      </div>
-      <div style={{background:"#13131f",borderRadius:13,padding:16,border:"1px solid var(--pa25)",marginBottom:8}}>
-        {[["اسم الصالون","name"],["اسم المالك","owner"],["جوال الصالون","phone"],["جوال المالك","ownerPhone"],["العنوان","address"]].map(([l,k])=>(
-          <div key={k} style={{marginBottom:10}}>
-            <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:3,fontWeight:600}}>{l}</label>
-            <input style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} value={ef[k]||""} onChange={e=>setEf(f=>({...f,[k]:e.target.value}))}/>
-          </div>
-        ))}
-        <div style={{marginBottom:10}}>
-          <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:3,fontWeight:600}}>التقييم ⭐</label>
-          <input type="number" min="1" max="5" step="0.1" style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} value={ef.rating} onChange={e=>setEf(f=>({...f,rating:+e.target.value}))}/>
-        </div>
-        <div style={{marginBottom:10}}>
-          <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:3,fontWeight:600}}>💬 رسالة ترحيب</label>
-          <input style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl",boxSizing:"border-box"}} placeholder="مثال: أهلاً بك 👋" value={ef.welcomeMsg} onChange={e=>setEf(f=>({...f,welcomeMsg:e.target.value}))}/>
-        </div>
-        <div style={{marginBottom:10}}>
-          <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:6,fontWeight:600}}>📅 أيام الإغلاق</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-            {DAYS.map((d,i)=>{const closed=ef.closedDays.includes(i);return(
-              <button key={i} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${closed?"#e74c3c":"#2a2a3a"}`,background:closed?"rgba(231,76,60,.15)":"#0d0d1a",color:closed?"#e74c3c":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit"}}
-                onClick={()=>setEf(f=>({...f,closedDays:closed?f.closedDays.filter(x=>x!==i):[...f.closedDays,i]}))}>
-                {d}
-              </button>
-            );})}
-          </div>
-        </div>
-        <div style={{marginBottom:12}}>
-          <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:6,fontWeight:600}}>⏱ مدة الموعد</label>
-          <div style={{display:"flex",gap:8}}>
-            {[20,30,40,60].map(m=>(
-              <button key={m} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1.5px solid ${ef.slotMin===m?"var(--p)":"#2a2a3a"}`,background:ef.slotMin===m?"var(--pa12)":"#0d0d1a",color:ef.slotMin===m?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:ef.slotMin===m?700:400}} onClick={()=>setEf(f=>({...f,slotMin:m}))}>{m} د</button>
-            ))}
-          </div>
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          <button style={G.sub} onClick={save}>💾 حفظ</button>
-          <button style={{...G.delBtn,padding:"12px 14px",flexShrink:0}} onClick={()=>{const r=prompt("سبب الحذف:");if(confirm(`حذف؟${r?"\n"+r:""}`)){deleteSalon(editId);setEditId(null);setEf(null);}}}>🗑</button>
-        </div>
-      </div>
-    </div>
-  );
-
-  return(
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-      {sortedSalons.map(s=>{
-        const isPinned=pinned.includes(s.id);
-        const isWeek=weekSalon===String(s.id);
-        const isFrozen=s.frozen;
-        const lastBk=s.bookings.length?[...s.bookings].sort((a,b)=>b.date>a.date?1:-1)[0]:null;
-        return(
-        <div key={s.id} style={{background:"#13131f",borderRadius:14,border:`2px solid ${s.banned?"#8b0000":isWeek?"#f0c040":isPinned?"#8b5cf6":isFrozen?"#e74c3c":"#27ae60"}`,padding:12,opacity:s.banned?.5:isFrozen?.8:1,marginBottom:4}}>
-          {/* شارات الحالة */}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-              {isWeek&&<span style={{fontSize:10,color:"#f0c040",background:"rgba(240,192,64,.15)",padding:"2px 8px",borderRadius:20,fontWeight:700}}>🏅 الأسبوع</span>}
-              {isPinned&&<span style={{fontSize:10,color:"#8b5cf6",background:"rgba(139,92,246,.15)",padding:"2px 8px",borderRadius:20,fontWeight:700}}>📌 مثبّت</span>}
-              {isFrozen&&<span style={{fontSize:10,color:"#e74c3c",background:"rgba(231,76,60,.15)",padding:"2px 8px",borderRadius:20,fontWeight:700}}>🔒 مجمّد</span>}
-              {s.banned&&<span style={{fontSize:10,color:"#ff4444",background:"rgba(139,0,0,.2)",padding:"2px 8px",borderRadius:20,fontWeight:700}}>🚫 محظور</span>}
-            </div>
-            <span style={{fontSize:11,color:"#27ae60",fontWeight:700}}>✂ {s.name}</span>
-          </div>
-
-          {/* معلومات الصالون */}
-          <div style={{marginBottom:10}}>
-            <div style={{fontSize:12,color:"#aaa",marginBottom:2}}>👤 {s.owner} · 📞 {s.phone}</div>
-            <div style={{fontSize:11,color:"#666"}}>📍 {s.gov||s.region}{s.village?" - "+s.village:""}</div>
-            <div style={{display:"flex",gap:10,marginTop:4}}>
-              <span style={{fontSize:11,color:"var(--p)"}}>📅 {s.bookings.length} حجز</span>
-              <span style={{fontSize:11,color:"var(--p)"}}>⭐ {s.rating}</span>
-            </div>
-          </div>
-
-          {/* زرا صفحة وميزان ورسايل */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
-            <button style={{padding:"10px 0",borderRadius:10,border:`1.5px solid ${(s.bookings.filter(b=>b.status==="approved").length-(s.totalPaid||0))>0?"#e74c3c":"#27ae60"}`,background:(s.bookings.filter(b=>b.status==="approved").length-(s.totalPaid||0))>0?"rgba(231,76,60,.08)":"rgba(39,174,96,.08)",color:(s.bookings.filter(b=>b.status==="approved").length-(s.totalPaid||0))>0?"#e74c3c":"#27ae60",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:4}} onClick={()=>{
-              const earned=s.bookings.filter(b=>b.status==="approved").length;
-              const paid=s.totalPaid||0;
-              const bal=earned-paid;
-              alert(`💰 ميزان ${s.name}\nالمستحق: ${earned} ر\nالمسدد: ${paid} ر\nالمتبقي: ${bal} ر`);
-            }}>💰 ميزان</button>
-            <button style={{padding:"10px 0",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#aaa",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:4}} onClick={()=>{setSelSalon(s);setView("salon");}}>📋 صفحة</button>
-            <button style={{padding:"10px 0",borderRadius:10,border:"1.5px solid var(--pa25)",background:"var(--pa08)",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:4}} onClick={()=>{
-              const msg=prompt(`رسالة للصالون "${s.name}":`);
-              if(!msg)return;
-              const KEY=`dork_msgs_${s.id}`;
-              const msgs=JSON.parse(localStorage.getItem(KEY)||"[]");
-              msgs.push({id:Date.now(),from:"admin",text:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})});
-              localStorage.setItem(KEY,JSON.stringify(msgs));
-              const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-              notifs.unshift({id:Date.now(),icon:"💬",title:"رسالة من الإدارة",body:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
-              localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
-              localStorage.setItem("dork_notif_count",String(parseInt(localStorage.getItem("dork_notif_count")||"0")+1));
-              toast$&&toast$("✅ تم إرسال الرسالة");
-            }}>💬 رسايل</button>
-          </div>
-
-          {/* الميزان التفصيلي */}
-          {(()=>{
-            const earned=s.bookings.filter(b=>b.status==="approved").length;
-            const paid=s.totalPaid||0;
-            const bal=earned-paid;
-            return bal>0?(
-              <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:"rgba(231,76,60,.08)",borderRadius:8,border:"1px solid #e74c3c33",marginBottom:8}}>
-                <span style={{fontSize:11,color:"#e74c3c",fontWeight:700,flex:1}}>متبقي {bal} ريال</span>
-                <button style={{padding:"4px 14px",borderRadius:8,border:"1px solid #27ae60",background:"rgba(39,174,96,.15)",color:"#27ae60",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:700}} onClick={async()=>{
-                  if(!confirm(`تسجيل سداد ${bal} ريال من ${s.name}؟`))return;
-                  const newPaid=paid+bal;
-                  try{await sb("salons","PATCH",{total_paid:newPaid},`?id=eq.${s.id}`);setSalons(p=>p.map(x=>x.id===s.id?{...x,totalPaid:newPaid}:x));toast$&&toast$("✅ تم تسجيل السداد");}catch{toast$&&toast$("❌ خطأ","err");}
-                }}>✅ تسجيل السداد</button>
-              </div>
-            ):null;
-          })()}
-
-          {/* أزرار الإجراءات */}
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            <button style={{flex:1,padding:"7px 0",borderRadius:9,border:`1px solid ${isWeek?"#f0c040":"#333"}`,background:isWeek?"rgba(240,192,64,.15)":"transparent",color:isWeek?"#f0c040":"#666",cursor:"pointer",fontFamily:"inherit",fontSize:11}} onClick={()=>setWeeklySalon(s.id)}>🏅</button>
-            <button style={{flex:1,padding:"7px 0",borderRadius:9,border:`1px solid ${isPinned?"#8b5cf6":"#333"}`,background:isPinned?"rgba(139,92,246,.15)":"transparent",color:isPinned?"#8b5cf6":"#666",cursor:"pointer",fontFamily:"inherit",fontSize:11}} onClick={()=>togglePin(s.id)}>📌</button>
-            <button style={{flex:1,padding:"7px 0",borderRadius:9,border:`1px solid ${isFrozen?"#27ae60":"#e74c3c"}`,background:isFrozen?"rgba(39,174,96,.1)":"rgba(231,76,60,.08)",color:isFrozen?"#27ae60":"#e74c3c",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:700}} onClick={()=>toggleFreeze(s)}>{isFrozen?"🔓 رفع":"🔒 تجميد"}</button>
-            <button style={{flex:1,padding:"7px 0",borderRadius:9,border:`1px solid ${s.banned?"#27ae60":"#8b0000"}`,background:s.banned?"rgba(39,174,96,.1)":"rgba(139,0,0,.15)",color:s.banned?"#27ae60":"#ff4444",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:700}} onClick={async()=>{
-              if(!confirm(s.banned?"رفع الحظر؟":"حظر الصالون نهائياً؟"))return;
-              try{
-                await sb("salons","PATCH",{banned:!s.banned},`?id=eq.${s.id}`);
-                setSalons(p=>p.map(x=>x.id===s.id?{...x,banned:!x.banned}:x));
-                const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-                notifs.unshift({id:Date.now(),icon:s.banned?"✅":"🚫",title:s.banned?"تم رفع الحظر":"تم حظرك",body:`صالون ${s.name}: ${s.banned?"تم تفعيل حسابك":"تم حظر حسابك من قبل الإدارة"}`,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
-                localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
-                localStorage.setItem("dork_notif_count",String(parseInt(localStorage.getItem("dork_notif_count")||"0")+1));
-                toast$&&toast$(s.banned?"✅ تم رفع الحظر":"🚫 تم حظر الصالون");
-              }catch{toast$&&toast$("❌ خطأ","err");}
-            }}>{s.banned?"✅ رفع الحظر":"🚫 حظر"}</button>
-            <button style={{flex:1,padding:"7px 0",borderRadius:9,border:"1px solid var(--pa25)",background:"var(--pa08)",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:700}} onClick={()=>{
-              const msg=prompt(`رسالة للصالون "${s.name}":`);
-              if(!msg)return;
-              const KEY=`dork_msgs_${s.id}`;
-              const msgs=JSON.parse(localStorage.getItem(KEY)||"[]");
-              msgs.push({id:Date.now(),from:"admin",text:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"})});
-              localStorage.setItem(KEY,JSON.stringify(msgs));
-              const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-              notifs.unshift({id:Date.now(),icon:"💬",title:"رسالة من الإدارة",body:msg,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
-              localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
-              localStorage.setItem("dork_notif_count",String(parseInt(localStorage.getItem("dork_notif_count")||"0")+1));
-              toast$&&toast$("✅ تم إرسال الرسالة");
-            }}>💬 رسالة</button>
-            <button style={{flex:1,padding:"7px 0",borderRadius:9,border:"1px solid var(--p)",background:"var(--pa12)",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:11}} onClick={()=>startEdit(s)}>✏ تعديل</button>
-            <button style={{flex:1,padding:"7px 0",borderRadius:9,border:"1px solid #c0392b",background:"rgba(192,57,43,.1)",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit",fontSize:11}} onClick={()=>{if(confirm(`حذف ${s.name}؟`))deleteSalon(s.id);}}>🗑</button>
-          </div>
-        </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ==============================================
-//  SETTINGS VIEW
-// ==============================================
-function SettingsView({settings,setSettings,setView,toast$,adminSession,socialLinks,setSocialLinks,darkMode,setDarkMode,persistUiToSupabase}){
+function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,persistUiToSupabase}){
   const[sec,setSec]=useState("theme");
   const SECS=[
     {id:"theme",icon:"🎨",label:"الألوان"},

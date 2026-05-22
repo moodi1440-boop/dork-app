@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
 
-interface Customer { id: string; name: string; phone: string; email: string; loyalty_points: number; loyalty_frozen: boolean; }
+interface Customer { id: string; name: string; phone: string; email: string; loyalty_points: number; loyalty_frozen: boolean; admin_notes?: string; blocked?: boolean; favs?: unknown[]; }
 type Booking = { id: string; date: string; time: string; services: string[]; total: number; status: string; salonName?: string; };
 
 function StatusBadge({ status }: { status: string }) {
@@ -22,6 +22,8 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [points,   setPoints]   = useState(0);
+  const [notes,    setNotes]    = useState("");
+  const [notesSaved, setNotesSaved] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -32,6 +34,7 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
     const c = custRes.data as Customer;
     setCustomer(c);
     setPoints(c?.loyalty_points ?? 0);
+    setNotes(c?.admin_notes ?? "");
 
     type B = Record<string, unknown>;
     const phone = c?.phone ?? "";
@@ -54,6 +57,14 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
     setSaving(false);
   };
 
+  const saveNotes = async () => {
+    setSaving(true);
+    await sb.from("customers").update({ admin_notes: notes }).eq("id", customerId);
+    setSaving(false);
+    setNotesSaved(true);
+    setTimeout(() => setNotesSaved(false), 2000);
+  };
+
   if (loading) return <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center"><div className="text-gold animate-pulse">جاري التحميل...</div></div>;
   if (!customer) return null;
 
@@ -66,9 +77,26 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
         </div>
         <div className="p-5 space-y-5">
           <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-            <div className="text-xs text-gray-400 font-semibold mb-2">معلومات الحساب</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-gray-400 font-semibold">معلومات الحساب</div>
+              {customer.blocked && <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/30 text-red-400 border border-red-800/30 font-bold">🚫 محظور</span>}
+            </div>
             <div className="text-sm text-white">📞 {customer.phone}</div>
             {customer.email && <div className="text-sm text-gray-400">📧 {customer.email}</div>}
+          </div>
+
+          {/* إحصاءات العميل */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "حجز", value: bookings.length,                                                          color: "text-blue-400"   },
+              { label: "إنفاق", value: `${bookings.reduce((a, b) => a + (b.total || 0), 0)} ر`,                color: "text-gold"       },
+              { label: "مفضلة", value: ((customer.favs as unknown[]) ?? []).length,                            color: "text-red-400"    },
+            ].map((item) => (
+              <div key={item.label} className="bg-card border border-border rounded-xl p-3 text-center">
+                <div className={`text-xl font-black ${item.color}`}>{item.value}</div>
+                <div className="text-gray-500 text-xs mt-0.5">{item.label}</div>
+              </div>
+            ))}
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
             <div className="text-xs text-gray-400 font-semibold mb-3">نقاط الولاء</div>
@@ -107,6 +135,20 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
               </div>
             )}
           </div>
+          <div className="bg-card border border-border rounded-xl p-4">
+            <div className="text-xs text-gray-400 font-semibold mb-3">📝 ملاحظات داخلية (لا يراها العميل)</div>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
+              placeholder="أضف ملاحظات خاصة عن هذا العميل..."
+              className="w-full bg-[#0d0d1a] border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold resize-none mb-3" />
+            <button onClick={saveNotes} disabled={saving}
+              className="w-full py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-sm font-bold hover:bg-gold/20 transition-colors disabled:opacity-50">
+              {notesSaved ? "✅ تم الحفظ" : saving ? "جاري الحفظ..." : "💾 حفظ الملاحظات"}
+            </button>
+          </div>
+          <button onClick={() => patch({ blocked: !customer.blocked })} disabled={saving}
+            className={`w-full py-2.5 rounded-xl text-sm font-semibold border transition-colors ${customer.blocked ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20" : "bg-red-900/20 text-red-400 border-red-800/30 hover:bg-red-900/30"}`}>
+            {customer.blocked ? "✅ رفع الحظر عن العميل" : "🚫 حظر العميل"}
+          </button>
           <button onClick={async () => { if (!confirm("حذف العميل نهائياً؟")) return; await sb.from("customers").delete().eq("id", customerId); onClose(); }}
             className="w-full py-2.5 bg-red-900/20 border border-red-800/30 text-red-400 rounded-xl text-sm font-semibold hover:bg-red-900/30 transition-colors">
             🗑 حذف العميل نهائياً
@@ -160,14 +202,21 @@ export default function CustomersPage() {
                 {customers.map((c, i) => (
                   <tr key={c.id} className="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
                     <td className="px-4 py-3 text-gray-500">{i + 1}</td>
-                    <td className="px-4 py-3"><button onClick={() => setSelected(c.id)} className="font-semibold text-white hover:text-gold transition-colors">{c.name}</button></td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => setSelected(c.id)} className="font-semibold text-white hover:text-gold transition-colors">{c.name}</button>
+                        {c.blocked && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-900/30 text-red-400 border border-red-800/30 font-bold">محظور</span>}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-gray-300">{c.phone}</td>
                     <td className="px-4 py-3 text-gray-400">{c.email || "—"}</td>
                     <td className="px-4 py-3"><span className="text-gold font-bold">{c.loyalty_points ?? 0}</span><span className="text-gray-500 text-xs mr-1">نقطة</span></td>
                     <td className="px-4 py-3">
-                      {c.loyalty_frozen
-                        ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-400/10 text-red-400 border border-red-400/30">مجمّد</span>
-                        : <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-400/10 text-green-400 border border-green-400/30">نشط</span>}
+                      {c.blocked
+                        ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-900/20 text-red-400 border border-red-800/30">محظور</span>
+                        : c.loyalty_frozen
+                          ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-400/10 text-orange-400 border border-orange-400/30">مجمّد</span>
+                          : <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-400/10 text-green-400 border border-green-400/30">نشط</span>}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">

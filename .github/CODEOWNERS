@@ -1,0 +1,53 @@
+# Code Owners - مالكو الكود
+# تحديد من يجب أن يراجع التغييرات في أجزاء معينة من الكود
+
+# معلومات:
+# * مالك افتراضي للمستودع كله
+# /path/to/file @username - مالك ملف محدد
+# /path/to/dir/ @username - مالك مجلد محدد
+
+# ==================== المالكون الافتراضيون ====================
+# إذا لم يكن هناك قواعد محددة
+*   @moodi1440-boop
+
+# ==================== الواجهة والمكونات ====================
+# مكونات React والواجهة
+/src/components/        @moodi1440-boop
+/src/views/             @moodi1440-boop
+/src/styles.js          @moodi1440-boop
+
+# ==================== البيانات والـ API ====================
+# طبقة البيانات والاتصالات
+/src/api/               @moodi1440-boop
+/src/data/              @moodi1440-boop
+/src/constants.js       @moodi1440-boop
+
+# ==================== المنطق والأداة ====================
+# منطق الأعمال والدوال المساعدة
+/src/utils/             @moodi1440-boop
+/src/helpers/           @moodi1440-boop
+
+# ==================== التكوين والبناء ====================
+# ملفات البناء والتكوين
+/package.json           @moodi1440-boop
+/vite.config.js         @moodi1440-boop
+/.github/               @moodi1440-boop
+
+# ==================== التوثيق ====================
+# ملفات التوثيق
+/README.md              @moodi1440-boop
+/CONTRIBUTING.md        @moodi1440-boop
+/CHANGELOG.md           @moodi1440-boop
+/src/README.md          @moodi1440-boop
+
+# ==================== نماذج GitHub ====================
+# قوالب GitHub
+/.github/pull_request_template.md   @moodi1440-boop
+/.github/issue_template/             @moodi1440-boop
+
+# ==================== ملفات الجودة ====================
+# معايير الجودة والترميز
+/.editorconfig          @moodi1440-boop
+/.prettierrc             @moodi1440-boop
+/.eslintrc.json         @moodi1440-boop
+

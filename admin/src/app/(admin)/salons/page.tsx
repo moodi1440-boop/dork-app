@@ -20,19 +20,68 @@ const STATUSES = [
   { value: "pending", label: "تنتظر مراجعة" },
   { value: "approved", label: "موافق عليها" },
   { value: "suspended", label: "موقوفة" },
+  { value: "rejected", label: "مرفوضة" },
 ];
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     pending:   "bg-yellow-400/10 text-yellow-400 border-yellow-400/30",
     approved:  "bg-green-400/10 text-green-400 border-green-400/30",
-    suspended: "bg-red-400/10 text-red-400 border-red-400/30",
+    suspended: "bg-orange-400/10 text-orange-400 border-orange-400/30",
+    rejected:  "bg-red-600/10 text-red-500 border-red-600/30",
   };
-  const labels: Record<string, string> = { pending: "تنتظر", approved: "موافق", suspended: "موقوف" };
+  const labels: Record<string, string> = { pending: "تنتظر", approved: "موافق", suspended: "موقوف", rejected: "مرفوض" };
   return (
     <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${map[status] ?? "bg-gray-500/10 text-gray-400 border-gray-400/30"}`}>
       {labels[status] ?? status}
     </span>
+  );
+}
+
+function QuickMessageModal({ salon, onClose }: { salon: Salon; onClose: () => void }) {
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const send = async () => {
+    if (!text.trim()) return;
+    setSending(true);
+    await fetch("/api/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ salon_id: salon.id, text: text.trim(), from_admin: true }),
+    });
+    setSent(true);
+    setSending(false);
+    setTimeout(onClose, 1200);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="text-white font-bold text-sm">✉ رسالة إلى: {salon.name}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
+        </div>
+        <div className="p-5 space-y-4">
+          {sent ? (
+            <div className="text-center py-4 text-green-400 font-bold">✅ تم إرسال الرسالة</div>
+          ) : (
+            <>
+              <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} placeholder="اكتب رسالتك للصالون..."
+                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold resize-none" />
+              <div className="flex gap-3">
+                <button onClick={send} disabled={sending || !text.trim()}
+                  className="flex-1 bg-gold/10 border border-gold/30 text-gold py-2.5 rounded-xl font-bold text-sm hover:bg-gold/20 transition-colors disabled:opacity-40">
+                  {sending ? "جاري الإرسال..." : "📤 إرسال"}
+                </button>
+                <button onClick={onClose} className="px-5 py-2.5 border border-border text-gray-400 rounded-xl text-sm hover:text-white transition-colors">إلغاء</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -246,12 +295,13 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
 }
 
 export default function SalonsPage() {
-  const [salons,  setSalons]  = useState<Salon[]>([]);
-  const [status,  setStatus]  = useState("all");
-  const [search,  setSearch]  = useState("");
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<Salon | null>(null);
-  const [pinned,  setPinned]  = useState<string[]>([]);
+  const [salons,    setSalons]    = useState<Salon[]>([]);
+  const [status,    setStatus]    = useState("all");
+  const [search,    setSearch]    = useState("");
+  const [loading,   setLoading]   = useState(true);
+  const [editing,   setEditing]   = useState<Salon | null>(null);
+  const [messaging, setMessaging] = useState<Salon | null>(null);
+  const [pinned,    setPinned]    = useState<string[]>([]);
   const [weekSalon, setWeekSalon] = useState("");
 
   const load = useCallback(async () => {
@@ -345,9 +395,8 @@ export default function SalonsPage() {
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-      {editing && (
-        <SalonModal salon={editing} onClose={() => setEditing(null)} onSave={(s) => { setSalons((p) => p.map((x) => x.id === s.id ? s : x)); setEditing(null); }} />
-      )}
+      {editing   && <SalonModal salon={editing} onClose={() => setEditing(null)} onSave={(s) => { setSalons((p) => p.map((x) => x.id === s.id ? s : x)); setEditing(null); }} />}
+      {messaging && <QuickMessageModal salon={messaging} onClose={() => setMessaging(null)} />}
 
       <div className="mb-6">
         <h1 className="text-2xl font-black text-white">الصالونات</h1>
@@ -368,6 +417,16 @@ export default function SalonsPage() {
         </div>
       </div>
 
+      {!loading && status === "pending" && sorted.length > 1 && (
+        <div className="mb-4">
+          <button
+            onClick={() => { if (confirm(`قبول جميع الصالونات المعلقة (${sorted.length}) دفعة واحدة؟`)) sorted.forEach((s) => updateStatus(s.id, "approved")); }}
+            className="w-full py-3 bg-green-500/10 border border-green-500/30 text-green-400 rounded-2xl font-bold text-sm hover:bg-green-500/20 transition-colors">
+            ✅ قبول الكل ({sorted.length} صالونات)
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-16 text-gold animate-pulse">جاري التحميل...</div>
       ) : sorted.length === 0 ? (
@@ -384,7 +443,7 @@ export default function SalonsPage() {
             const balance   = earned - paid;
 
             return (
-              <div key={s.id} className={`bg-card border-2 rounded-2xl p-5 transition-all ${isBanned ? "border-red-800" : isWeek ? "border-yellow-400/50" : isPinned ? "border-purple-500/40" : isFrozen ? "border-red-500/40" : s.status === "approved" ? "border-green-500/30" : "border-border"}`}>
+              <div key={s.id} className={`bg-card border-2 rounded-2xl p-5 transition-all ${isBanned ? "border-red-800" : isWeek ? "border-yellow-400/50" : isPinned ? "border-purple-500/40" : isFrozen ? "border-red-500/40" : s.status === "approved" ? "border-green-500/30" : s.status === "rejected" ? "border-red-600/40" : s.status === "suspended" ? "border-orange-500/30" : "border-border"}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-white">{i + 1}. ✂ {s.name}</span>
@@ -401,12 +460,23 @@ export default function SalonsPage() {
                   <div>👤 {s.owner} · 📞 {s.phone}</div>
                   {s.owner_phone && s.owner_phone !== s.phone && <div>📱 {s.owner_phone}</div>}
                   {(s.gov || s.region) && <div>📍 {[s.gov, s.region].filter(Boolean).join(" - ")}</div>}
+                  {s.status === "pending" && (
+                    <div>🕐 {s.shift_enabled ? `${s.shift1_start}-${s.shift1_end} | ${s.shift2_start}-${s.shift2_end}` : `${s.work_start || "09:00"} - ${s.work_end || "22:00"}`}</div>
+                  )}
                   {balance !== 0 && (
                     <div className={`font-semibold ${balance > 0 ? "text-red-400" : "text-green-400"}`}>
                       💰 {balance > 0 ? `متبقي ${balance.toLocaleString("ar-SA")} ر.س` : "✅ الرصيد مسدد"}
                     </div>
                   )}
                 </div>
+                {s.status === "pending" && (s.services ?? []).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {(s.services ?? []).slice(0, 6).map((svc) => (
+                      <span key={svc} className="text-[11px] px-2 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/20">{svc}</span>
+                    ))}
+                    {(s.services ?? []).length > 6 && <span className="text-[11px] text-gray-500 self-center">+{(s.services ?? []).length - 6}</span>}
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-2">
                   {s.status !== "approved" && (
@@ -415,21 +485,34 @@ export default function SalonsPage() {
                       ✅ موافقة
                     </button>
                   )}
+                  {s.status === "pending" && (
+                    <button onClick={() => {
+                      const reason = window.prompt(`سبب رفض "${s.name}" (اختياري):`);
+                      if (reason !== null) updateStatus(s.id, "rejected");
+                    }}
+                      className="px-3 py-1.5 rounded-lg text-xs bg-red-600/10 text-red-500 border border-red-600/20 hover:bg-red-600/20 transition-colors font-semibold">
+                      ❌ رفض
+                    </button>
+                  )}
                   {s.status === "approved" && (
                     <button onClick={() => updateStatus(s.id, "suspended")}
-                      className="px-3 py-1.5 rounded-lg text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 hover:bg-yellow-500/20 transition-colors font-semibold">
+                      className="px-3 py-1.5 rounded-lg text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-colors font-semibold">
                       ⏸ تعليق
                     </button>
                   )}
-                  {s.status === "suspended" && (
+                  {(s.status === "suspended" || s.status === "rejected") && (
                     <button onClick={() => updateStatus(s.id, "pending")}
                       className="px-3 py-1.5 rounded-lg text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors font-semibold">
-                      🔄 مراجعة
+                      🔄 إعادة مراجعة
                     </button>
                   )}
                   <button onClick={() => setEditing(s)}
                     className="px-3 py-1.5 rounded-lg text-xs bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors font-semibold">
                     ✏ تعديل
+                  </button>
+                  <button onClick={() => setMessaging(s)}
+                    className="px-3 py-1.5 rounded-lg text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors font-semibold">
+                    ✉ مراسلة
                   </button>
                   <button onClick={() => toggleFreeze(s)}
                     className={`px-3 py-1.5 rounded-lg text-xs border font-semibold transition-colors ${isFrozen ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20" : "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"}`}>

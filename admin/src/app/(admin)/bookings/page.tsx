@@ -19,10 +19,11 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function BookingsPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [status,   setStatus]   = useState("all");
-  const [search,   setSearch]   = useState("");
-  const [loading,  setLoading]  = useState(true);
+  const [bookings,    setBookings]    = useState<Booking[]>([]);
+  const [status,      setStatus]      = useState("all");
+  const [search,      setSearch]      = useState("");
+  const [dateFilter,  setDateFilter]  = useState("");
+  const [loading,     setLoading]     = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -32,11 +33,12 @@ export default function BookingsPage() {
       ((s.bookings as B[]) ?? []).map((b) => ({ ...b, salon_id: s.id, salonName: s.name } as Booking))
     );
     if (status !== "all") all = all.filter((b) => b.status === status);
+    if (dateFilter) all = all.filter((b) => b.date === dateFilter);
     if (search) { const q = search.toLowerCase(); all = all.filter((b) => b.name?.toLowerCase().includes(q) || b.phone?.includes(q)); }
     all.sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
     setBookings(all.slice(0, 200));
     setLoading(false);
-  }, [status, search]);
+  }, [status, search, dateFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -64,6 +66,13 @@ export default function BookingsPage() {
       <div className="flex flex-wrap gap-3 mb-6">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 بحث باسم العميل أو الجوال..."
           className="flex-1 min-w-48 bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
+        <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
+          className="bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold [color-scheme:dark]" />
+        {dateFilter && (
+          <button onClick={() => setDateFilter("")} className="px-3 py-2 rounded-xl text-xs border border-border text-gray-400 hover:text-white hover:border-gold/20 transition-all">
+            ✕ إلغاء الفلتر
+          </button>
+        )}
         <div className="flex gap-2 flex-wrap">
           {STATUSES.map((s) => (
             <button key={s.value} onClick={() => setStatus(s.value)}
