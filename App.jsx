@@ -622,6 +622,81 @@ export default function App(){
     return()=>clearTimeout(t);
   },[]);
 
+  // -- تسجيل Service Worker و Firebase Messaging للإشعارات في الخلفية --
+  useEffect(()=>{
+    if(typeof window==="undefined"||!("serviceWorker" in navigator))return;
+
+    (async()=>{
+      try{
+        // تسجيل Service Worker
+        const reg=await navigator.serviceWorker.register("/service-worker.js",{scope:"/"});
+        console.log("✅ Service Worker registered:",reg.scope);
+
+        // تحميل Firebase SDK
+        await new Promise((res,rej)=>{
+          if(window.firebase)res();
+          else{
+            const s=document.createElement("script");
+            s.src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js";
+            s.onload=()=>{
+              const s2=document.createElement("script");
+              s2.src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js";
+              s2.onload=res;
+              s2.onerror=rej;
+              document.head.appendChild(s2);
+            };
+            s.onerror=rej;
+            document.head.appendChild(s);
+          }
+        });
+
+        const fb=window.firebase;
+        if(!fb.apps.length){
+          fb.initializeApp({
+            apiKey:"AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",
+            projectId:"dork-app",
+            messagingSenderId:"659823227621",
+            appId:"1:659823227621:web:befaaa1b5063"
+          });
+        }
+
+        // تهيئة Firebase Messaging
+        const msg=fb.messaging();
+        const vapidKey=import.meta.env.VITE_FIREBASE_VAPID_KEY||"BPJC3oMO-HdxJa1WG7LjB1cP3k9qXMUTCIS2bKsAaWxbmK3uR0YQFiQRXHAWzwOJ64KlCXZ4X0YHmlYpQgVbla0";
+
+        // الحصول على الرمز وتسجيله
+        try{
+          const token=await msg.getToken({vapidKey});
+          if(token){
+            console.log("✅ FCM Token obtained:",token.substring(0,20)+"...");
+            // حفظ الرمز محلياً
+            localStorage.setItem("fcm_token",token);
+            // يمكن إرسال الرمز إلى الخادم هنا
+            try{
+              await sb("fcm_tokens","POST",{token,browser:navigator.userAgent.substring(0,100)});
+            }catch(e){
+              console.log("FCM token saved locally but server registration failed:",e.message);
+            }
+          }
+        }catch(e){
+          console.log("Could not get FCM token:",e.message);
+        }
+
+        // استقبال الرسائل عند فتح التطبيق
+        msg.onMessage((payload)=>{
+          console.log("📬 Message received in foreground:",payload);
+          const{notification,data}=payload;
+          if(notification){
+            sendNotif(notification.title||"إشعار",notification.body||"","🔔","all",data?.booking_id);
+          }
+        });
+
+      }catch(e){
+        console.log("FCM setup error (app continues):",e.message);
+      }
+    })();
+  },[]);
+
   // -- تسجيل الدخول المستمر --
   const[ownerSession,setOwnerSession]=useState(()=>{try{const v=localStorage.getItem("dork_owner");return v?+v:null;}catch{return null;}});
   const[customerSession,setCustomerSession]=useState(()=>{try{const v=localStorage.getItem("dork_customer");return v?JSON.parse(v):null;}catch{return null;}});
