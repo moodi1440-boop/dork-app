@@ -56,12 +56,12 @@ async function initializeFirebaseNotifications() {
     for (const registration of registrations) {
       await registration.unregister();
     }
-    await navigator.serviceWorker.register("/firebase-cloud-messaging-sw.js", { scope: "/" });
+    const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
     await loadFirebaseSDK();
     initializeFirebaseApp();
     const messaging = window.firebase.messaging();
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BPJC3oMO-HdxJa1WG7LjB1cP3k9qXMUTCIS2bKsAaWxbmK3uR0YQFiQRXHAWzwOJ64KlCXZ4X0YHmlYpQgVbla0";
-    const token = await messaging.getToken({ vapidKey });
+    const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: swReg });
     if (token) {
       localStorage.setItem("fcm_token", token);
       try {
