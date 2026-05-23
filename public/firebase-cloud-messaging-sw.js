@@ -77,3 +77,4 @@ self.addEventListener('notificationclick', (event) => {
 self.addEventListener('notificationclose', (event) => {
   console.log('Notification closed:', event.notification.tag);
 });
+// Force Vercel redeploy
