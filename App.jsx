@@ -50,100 +50,65 @@ async function sb(table, method, body, query = "") {
 
 // ========== Firebase Cloud Messaging ==========
 async function initializeFirebaseNotifications() {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
-    console.log("❌ Service Worker not supported");
-    return;
-  }
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
   try {
-    console.log("🔧 Cleaning up old Service Worker registrations...");
     const registrations = await navigator.serviceWorker.getRegistrations();
     for (const registration of registrations) {
       await registration.unregister();
-      console.log("✅ Old Service Worker unregistered");
     }
-    console.log("📝 Registering new Service Worker...");
     await navigator.serviceWorker.register("/firebase-cloud-messaging-sw.js", { scope: "/" });
-    console.log("✅ Service Worker registered successfully");
-    console.log("📥 Loading Firebase SDK...");
     await loadFirebaseSDK();
-    console.log("🔧 Initializing Firebase App...");
-    const firebaseApp = initializeFirebaseApp();
+    initializeFirebaseApp();
     const messaging = window.firebase.messaging();
-    console.log("🔄 Requesting FCM Token...");
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BPJC3oMO-HdxJa1WG7LjB1cP3k9qXMUTCIS2bKsAaWxbmK3uR0YQFiQRXHAWzwOJ64KlCXZ4X0YHmlYpQgVbla0";
     const token = await messaging.getToken({ vapidKey });
     if (token) {
-      console.log("✅ FCM Token obtained:", token.substring(0, 30) + "...");
       localStorage.setItem("fcm_token", token);
       try {
-        console.log("📤 Registering token with server...");
         await sb("fcm_tokens", "POST", { token });
-        console.log("✅ Token registered with server");
       } catch (error) {
-        console.warn("⚠️ Failed to register token with server:", error.message);
+        console.warn("Token saved locally:", error.message);
       }
-    } else {
-      console.warn("❌ Failed to get FCM Token");
     }
     messaging.onMessage((payload) => {
-      console.log("📬 Foreground message received:", payload);
-      const notification = payload.notification;
-      if (notification) {
-        console.log("🔔 Displaying notification:", notification.title);
-        sendNotif(notification.title || "إشعار جديد", notification.body || "", "🔔", "all", payload.data?.booking_id);
+      if (payload.notification) {
+        sendNotif(payload.notification.title, payload.notification.body, "🔔", "all", payload.data?.booking_id);
       }
     });
-    console.log("✅ Firebase Notifications initialized");
   } catch (error) {
-    console.error("❌ Error initializing Firebase:", error.message);
-    if (error.stack) console.error("Stack:", error.stack);
+    console.error("FCM Error:", error.message);
   }
 }
 
 function loadFirebaseSDK() {
   return new Promise((resolve, reject) => {
     if (window.firebase) {
-      console.log("✅ Firebase already loaded");
       resolve();
       return;
     }
     const script1 = document.createElement("script");
     script1.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js";
     script1.onload = () => {
-      console.log("✅ Firebase App SDK loaded");
       const script2 = document.createElement("script");
       script2.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js";
-      script2.onload = () => {
-        console.log("✅ Firebase Messaging SDK loaded");
-        resolve();
-      };
-      script2.onerror = (error) => {
-        console.error("❌ Failed to load Messaging SDK:", error);
-        reject(error);
-      };
+      script2.onload = () => resolve();
+      script2.onerror = reject;
       document.head.appendChild(script2);
     };
-    script1.onerror = (error) => {
-      console.error("❌ Failed to load App SDK:", error);
-      reject(error);
-    };
+    script1.onerror = reject;
     document.head.appendChild(script1);
   });
 }
 
 function initializeFirebaseApp() {
   const firebase = window.firebase;
-  if (firebase.apps.length > 0) {
-    console.log("✅ Firebase App already initialized");
-    return firebase.apps[0];
-  }
+  if (firebase.apps.length > 0) return;
   firebase.initializeApp({
     apiKey: "AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",
     projectId: "dork-app",
     messagingSenderId: "659823227621",
     appId: "1:659823227621:web:befaaa1b5063"
   });
-  return firebase.apps[0];
 }
 
 // تحويل بيانات Supabase > شكل التطبيق
