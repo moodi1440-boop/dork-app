@@ -1,5 +1,5 @@
-// Service Worker للتعامل مع FCM notifications
-const CACHE_NAME = 'dork-app-v1';
+// Service Worker for FCM push notifications - handles background & terminated state
+const CACHE_NAME = 'dork-app-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
@@ -9,72 +9,67 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// معالجة الإشعارات الواردة من FCM
 self.addEventListener('push', (event) => {
-  if (!event.data) {
-    console.log('Push notification received but no data');
-    return;
-  }
+  if (!event.data) return;
+
+  let title = 'إشعار جديد';
+  let options = {
+    body: '',
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
+    tag: 'notification-' + Date.now(),
+    requireInteraction: true,
+    vibrate: [200, 100, 200, 100, 200],
+    data: {},
+  };
 
   try {
-    const data = event.data.json();
-    const { notification, data: messageData } = data;
+    const payload = event.data.json();
 
-    if (!notification) {
-      console.log('No notification data in push event');
-      return;
+    if (payload.notification) {
+      title = payload.notification.title || title;
+      options.body = payload.notification.body || '';
     }
 
-    const title = notification.title || 'إشعار جديد';
-    const options = {
-      body: notification.body || '',
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      tag: messageData?.booking_id || 'notification',
-      requireInteraction: false,
-      vibrate: [200, 100, 200],
-      sound: 'default',
-      data: messageData || {},
-    };
+    if (payload.data) {
+      options.data = payload.data;
+      options.tag = payload.data.type + '-' + (payload.data.booking_id || Date.now());
+    }
 
-    event.waitUntil(
-      self.registration.showNotification(title, options)
-    );
-  } catch (error) {
-    console.error('Error handling push notification:', error);
-  }
-});
-
-// معالجة الضغط على الإشعار
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
-  const data = event.notification.data;
-  const booking_id = data?.booking_id;
-
-  let targetUrl = '/';
-  if (booking_id) {
-    targetUrl = `/bookings/${booking_id}`;
+    if (payload.webpush && payload.webpush.notification) {
+      const webNotif = payload.webpush.notification;
+      title = webNotif.title || title;
+      options.body = webNotif.body || options.body;
+    }
+  } catch (e) {
+    try {
+      const text = event.data.text();
+      options.body = text;
+    } catch (_) {}
   }
 
   event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const urlToOpen = new URL('/', self.location.origin).href;
+
+  event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // تحقق من وجود نافذة مفتوحة
       for (const client of clientList) {
-        if (client.url === targetUrl && 'focus' in client) {
+        if ('focus' in client) {
           return client.focus();
         }
       }
-      // افتح نافذة جديدة إذا لم تكن هناك نافذة
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
+      return clients.openWindow(urlToOpen);
     })
   );
 });
 
-// معالجة إغلاق الإشعار
 self.addEventListener('notificationclose', (event) => {
-  console.log('Notification closed:', event.notification.tag);
+  // no-op
 });
-// Force Vercel redeploy

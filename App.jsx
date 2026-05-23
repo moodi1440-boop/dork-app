@@ -1202,7 +1202,7 @@ export default function App(){
       const newBooking=inserted[0]||{};
       if(newBooking&&newBooking.id){
         supabase.functions.invoke('send-fcm-notification',{
-          body:{record:newBooking},
+          body:{record:newBooking,type:"new_booking"},
         }).then(({data,error})=>{
           if(error){
             console.error('❌ خطأ في إرسال الإشعار:',error);
@@ -1270,6 +1270,17 @@ export default function App(){
           }catch{}
           setCustomers(p=>p.map(x=>x.id===c.id?{...x,history:hist}:x));
         }
+      }
+      if(status==="approved"||status==="rejected"){
+        const bookingRecord={...bk,id:bid,salon_id:sid,status};
+        supabase.functions.invoke('send-fcm-notification',{
+          body:{record:bookingRecord,type:status==="approved"?"booking_approved":"booking_rejected"},
+        }).then(({data,error})=>{
+          if(error)console.error('❌ خطأ في إرسال الإشعار:',error);
+          else console.log('✅ تم إرسال إشعار تحديث الحجز:',data);
+        }).catch((err)=>{
+          console.error('⚠️ فشل الاتصال بخدمة الإشعارات:',err);
+        });
       }
       toast$(status==="approved"?"✅ تم قبول الحجز":"تم تحديث حالة الحجز");
       await loadData();

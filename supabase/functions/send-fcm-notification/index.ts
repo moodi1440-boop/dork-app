@@ -38,31 +38,48 @@ async function sendFCMNotification(
               title,
               body,
             },
+            data,
             webpush: {
+              headers: {
+                Urgency: "high",
+              },
               fcmOptions: {
                 link: "/",
               },
               notification: {
                 title,
                 body,
-                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E",
-                badge: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E",
-                tag: "booking-notification",
-                requireInteraction: false,
-                vibrate: [200, 100, 200],
+                icon: "/favicon.ico",
+                badge: "/favicon.ico",
+                tag: data.type || "booking-notification",
+                requireInteraction: true,
+                vibrate: [200, 100, 200, 100, 200],
+                actions: [
+                  { action: "open", title: "فتح التطبيق" },
+                ],
               },
               data,
             },
             android: {
+              priority: "HIGH",
               notification: {
                 title,
                 body,
                 sound: "default",
-                clickAction: "/",
+                channelId: "booking_notifications",
+                clickAction: "FLUTTER_NOTIFICATION_CLICK",
+                defaultSound: true,
+                defaultVibrateTimings: true,
+                notificationPriority: "PRIORITY_HIGH",
+                visibility: "PUBLIC",
               },
               data,
             },
             apns: {
+              headers: {
+                "apns-priority": "10",
+                "apns-push-type": "alert",
+              },
               payload: {
                 aps: {
                   alert: {
@@ -71,10 +88,12 @@ async function sendFCMNotification(
                   },
                   sound: "default",
                   badge: 1,
+                  "content-available": 1,
+                  "mutable-content": 1,
                 },
               },
               fcmOptions: {
-                analyticsLabel: "booking_notification",
+                analyticsLabel: data.type || "booking_notification",
               },
             },
           },
@@ -99,6 +118,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     const body = await req.json() as any;
     const booking = body?.record;
+    const eventType = body?.type || "new_booking";
 
     if (!booking) {
       return new Response(
@@ -132,31 +152,66 @@ Deno.serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    const notifications: NotificationPayload[] = [
-      {
+    const notifications: NotificationPayload[] = [];
+
+    if (eventType === "new_booking") {
+      notifications.push({
         target_type: "salon",
         target_id: booking.salon_id,
         title: `✂️ حجز جديد في ${salon.name}`,
-        body: `عميل: ${booking.customer_name}\nالساعة: ${booking.time}`,
+        body: `عميل: ${booking.customer_name} | الساعة: ${booking.time} | التاريخ: ${booking.date}`,
         icon: "✂️",
-      },
-      {
+      });
+      notifications.push({
         target_type: "admin",
         target_id: 0,
         title: "📊 حجز جديد",
         body: `${booking.customer_name} → ${salon.name}`,
         icon: "📊",
-      },
-    ];
-
-    if (booking.customer_id) {
-      notifications.push({
-        target_type: "customer",
-        target_id: booking.customer_id,
-        title: "تم تأكيد حجزك ✓",
-        body: `في ${salon.name}\nالتاريخ: ${booking.date}\nالساعة: ${booking.time}`,
-        icon: "✓",
       });
+      if (booking.customer_id) {
+        notifications.push({
+          target_type: "customer",
+          target_id: booking.customer_id,
+          title: "📋 تم استلام حجزك",
+          body: `في ${salon.name} | التاريخ: ${booking.date} | الساعة: ${booking.time}`,
+          icon: "📋",
+        });
+      }
+    } else if (eventType === "booking_approved") {
+      if (booking.customer_id) {
+        notifications.push({
+          target_type: "customer",
+          target_id: booking.customer_id,
+          title: "✅ تم قبول حجزك!",
+          body: `تم تأكيد حجزك في ${salon.name} | التاريخ: ${booking.date} | الساعة: ${booking.time}`,
+          icon: "✅",
+        });
+      }
+      notifications.push({
+        target_type: "salon",
+        target_id: booking.salon_id,
+        title: "✅ تم تأكيد الحجز",
+        body: `تم قبول حجز ${booking.customer_name} | الساعة: ${booking.time}`,
+        icon: "✅",
+      });
+    } else if (eventType === "booking_rejected") {
+      if (booking.customer_id) {
+        notifications.push({
+          target_type: "customer",
+          target_id: booking.customer_id,
+          title: "❌ تم رفض حجزك",
+          body: `للأسف تم رفض حجزك في ${salon.name} | التاريخ: ${booking.date}`,
+          icon: "❌",
+        });
+      }
+    }
+
+    if (notifications.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, message: "No notifications to send" }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
     }
 
     const { data: savedNotifications, error: insertError } = await supabase
@@ -165,23 +220,26 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .select();
 
     if (insertError) {
-      return new Response(
-        JSON.stringify({ success: false, error: insertError.message }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      console.error("Notification insert error:", insertError.message);
     }
 
-    // Send actual FCM notifications
     const sentCount = { success: 0, failed: 0 };
-    const logEntries = [];
+    const logEntries: any[] = [];
 
     for (const notification of notifications) {
-      const { data: tokens } = await supabase
+      const tokenQuery = supabase
         .from("fcm_tokens")
         .select("id, device_token")
-        .eq("user_type", notification.target_type)
-        .eq("user_id", notification.target_id)
         .eq("is_active", true);
+
+      if (notification.target_type === "admin") {
+        tokenQuery.eq("user_type", "admin");
+      } else {
+        tokenQuery.eq("user_type", notification.target_type);
+        tokenQuery.eq("user_id", notification.target_id);
+      }
+
+      const { data: tokens } = await tokenQuery;
 
       if (tokens && tokens.length > 0) {
         for (const tokenRecord of tokens) {
@@ -198,12 +256,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
             {
               booking_id: String(booking.id),
               salon_id: String(booking.salon_id),
-              type: "booking_notification",
+              customer_id: String(booking.customer_id || ""),
+              type: eventType,
+              timestamp: new Date().toISOString(),
             }
           );
 
           logEntries.push({
-            notification_id: notifRecord?.id,
+            notification_id: notifRecord?.id || null,
             fcm_token_id: tokenRecord.id,
             user_type: notification.target_type,
             user_id: notification.target_id,
@@ -216,6 +276,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
             sentCount.failed++;
           }
         }
+      } else {
+        console.warn(`No active tokens for ${notification.target_type}:${notification.target_id}`);
       }
     }
 
@@ -223,13 +285,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
       await supabase
         .from("notification_logs")
         .insert(logEntries)
-        .catch((error) => console.error("Log insert error:", error));
+        .catch((error: any) => console.error("Log insert error:", error));
     }
 
     return new Response(
       JSON.stringify({
         success: true,
         message: "Notifications processed",
+        event_type: eventType,
         booking_id: booking.id,
         salon_name: salon.name,
         notifications_created: savedNotifications?.length || 0,
