@@ -111,6 +111,7 @@ function initializeFirebaseApp() {
   });
 }
 
+
 // تحويل بيانات Supabase > شكل التطبيق
 function toAppSalon(row) {
   return {
