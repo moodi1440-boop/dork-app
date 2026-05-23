@@ -65,9 +65,32 @@ async function initializeFirebaseNotifications() {
     if (token) {
       localStorage.setItem("fcm_token", token);
       try {
-        await sb("fcm_tokens", "POST", { token });
+        // الحصول على بيانات المستخدم الحالي
+        let userType = null;
+        let userId = null;
+
+        if (ownerSession) {
+          userType = "salon";
+          userId = ownerSession;
+        } else if (customerSession?.id) {
+          userType = "customer";
+          userId = customerSession.id;
+        }
+
+        // إرسال الرمز مع بيانات المستخدم
+        if (userType && userId) {
+          await sb("fcm_tokens", "POST", {
+            user_type: userType,
+            user_id: userId,
+            device_token: token,
+            is_active: true
+          });
+        } else {
+          // إذا لم يكن هناك مستخدم، احفظ محلياً فقط
+          console.log("User not logged in, token saved locally");
+        }
       } catch (error) {
-        console.warn("Token saved locally:", error.message);
+        console.warn("Token registration:", error.message);
       }
     }
     messaging.onMessage((payload) => {
