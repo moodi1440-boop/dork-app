@@ -48,6 +48,104 @@ async function sb(table, method, body, query = "") {
   return text ? JSON.parse(text) : [];
 }
 
+// ========== Firebase Cloud Messaging ==========
+async function initializeFirebaseNotifications() {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+    console.log("❌ Service Worker not supported");
+    return;
+  }
+  try {
+    console.log("🔧 Cleaning up old Service Worker registrations...");
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const registration of registrations) {
+      await registration.unregister();
+      console.log("✅ Old Service Worker unregistered");
+    }
+    console.log("📝 Registering new Service Worker...");
+    await navigator.serviceWorker.register("/firebase-cloud-messaging-sw.js", { scope: "/" });
+    console.log("✅ Service Worker registered successfully");
+    console.log("📥 Loading Firebase SDK...");
+    await loadFirebaseSDK();
+    console.log("🔧 Initializing Firebase App...");
+    const firebaseApp = initializeFirebaseApp();
+    const messaging = window.firebase.messaging();
+    console.log("🔄 Requesting FCM Token...");
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BPJC3oMO-HdxJa1WG7LjB1cP3k9qXMUTCIS2bKsAaWxbmK3uR0YQFiQRXHAWzwOJ64KlCXZ4X0YHmlYpQgVbla0";
+    const token = await messaging.getToken({ vapidKey });
+    if (token) {
+      console.log("✅ FCM Token obtained:", token.substring(0, 30) + "...");
+      localStorage.setItem("fcm_token", token);
+      try {
+        console.log("📤 Registering token with server...");
+        await sb("fcm_tokens", "POST", { token });
+        console.log("✅ Token registered with server");
+      } catch (error) {
+        console.warn("⚠️ Failed to register token with server:", error.message);
+      }
+    } else {
+      console.warn("❌ Failed to get FCM Token");
+    }
+    messaging.onMessage((payload) => {
+      console.log("📬 Foreground message received:", payload);
+      const notification = payload.notification;
+      if (notification) {
+        console.log("🔔 Displaying notification:", notification.title);
+        sendNotif(notification.title || "إشعار جديد", notification.body || "", "🔔", "all", payload.data?.booking_id);
+      }
+    });
+    console.log("✅ Firebase Notifications initialized");
+  } catch (error) {
+    console.error("❌ Error initializing Firebase:", error.message);
+    if (error.stack) console.error("Stack:", error.stack);
+  }
+}
+
+function loadFirebaseSDK() {
+  return new Promise((resolve, reject) => {
+    if (window.firebase) {
+      console.log("✅ Firebase already loaded");
+      resolve();
+      return;
+    }
+    const script1 = document.createElement("script");
+    script1.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js";
+    script1.onload = () => {
+      console.log("✅ Firebase App SDK loaded");
+      const script2 = document.createElement("script");
+      script2.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js";
+      script2.onload = () => {
+        console.log("✅ Firebase Messaging SDK loaded");
+        resolve();
+      };
+      script2.onerror = (error) => {
+        console.error("❌ Failed to load Messaging SDK:", error);
+        reject(error);
+      };
+      document.head.appendChild(script2);
+    };
+    script1.onerror = (error) => {
+      console.error("❌ Failed to load App SDK:", error);
+      reject(error);
+    };
+    document.head.appendChild(script1);
+  });
+}
+
+function initializeFirebaseApp() {
+  const firebase = window.firebase;
+  if (firebase.apps.length > 0) {
+    console.log("✅ Firebase App already initialized");
+    return firebase.apps[0];
+  }
+  firebase.initializeApp({
+    apiKey: "AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",
+    projectId: "dork-app",
+    messagingSenderId: "659823227621",
+    appId: "1:659823227621:web:befaaa1b5063"
+  });
+  return firebase.apps[0];
+}
+
 // تحويل بيانات Supabase > شكل التطبيق
 function toAppSalon(row) {
   return {
@@ -622,11 +720,9 @@ export default function App(){
     return()=>clearTimeout(t);
   },[]);
 
-  useEffect(()=>{
-    console.log("🚀 FCM useEffect started!");
-    if(typeof window==="undefined"||!("serviceWorker" in navigator)){console.log("❌ FCM: SW not supported");return;}
-    (async()=>{try{console.log("🔧 FCM: Clearing old Service Worker registrations...");if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();for(const reg of regs){await reg.unregister();console.log("✅ FCM: Cleared old registration");}}console.log("🔧 FCM: Starting initialization...");await navigator.serviceWorker.register("/firebase-cloud-messaging-sw.js");console.log("✅ FCM: Service Worker registered");const l=(r)=>new Promise((y,n)=>{if(window.firebase){console.log("✅ FCM: Firebase SDK already loaded");y();}else{console.log("📥 FCM: Loading Firebase SDK from",r);const s=document.createElement("script");s.src=r;s.onload=()=>{console.log("✅ FCM: App SDK loaded, loading Messaging SDK...");const s2=document.createElement("script");s2.src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js";s2.onload=()=>{console.log("✅ FCM: Messaging SDK loaded");y();};s2.onerror=(e)=>{console.error("❌ FCM: Failed to load Messaging SDK:",e);n(e);};document.head.appendChild(s2)};s.onerror=(e)=>{console.error("❌ FCM: Failed to load App SDK:",e);n(e);};document.head.appendChild(s)}});await l("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");const fb=window.firebase;if(!fb.apps.length){console.log("🔧 FCM: Initializing Firebase App...");fb.initializeApp({apiKey:"AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",projectId:"dork-app",messagingSenderId:"659823227621",appId:"1:659823227621:web:befaaa1b5063"});console.log("✅ FCM: Firebase App initialized");}const msg=fb.messaging();const vk=import.meta.env.VITE_FIREBASE_VAPID_KEY||"BPJC3oMO-HdxJa1WG7LjB1cP3k9qXMUTCIS2bKsAaWxbmK3uR0YQFiQRXHAWzwOJ64KlCXZ4X0YHmlYpQgVbla0";console.log("🔑 FCM: VAPID Key loaded:",vk.substring(0,20)+"...");console.log("🔄 FCM: Requesting FCM token...");const t=await msg.getToken({vapidKey:vk});if(t){console.log("✅ FCM: Token obtained:",t.substring(0,30)+"...");localStorage.setItem("fcm_token",t);try{console.log("📤 FCM: Registering token with server...");const r=await sb("fcm_tokens","POST",{token:t});console.log("✅ FCM: Token registered with server:",r);}catch(e){console.error("⚠️ FCM: Server registration failed (token still valid locally):",e.message);}}else{console.warn("❌ FCM: Failed to get token");}msg.onMessage((p)=>{console.log("📬 FCM: Foreground message received:",p);if(p.notification){console.log("🔔 FCM: Showing notification:",p.notification.title);sendNotif(p.notification.title||"إشعار",p.notification.body||"","🔔","all",p.data?.booking_id);}});}catch(e){console.error("❌ FCM: Critical error in setup:",e.message,e);if(e.stack)console.error("Stack trace:",e.stack);}})();
-  },[]);
+  useEffect(() => {
+    initializeFirebaseNotifications();
+  }, []);
 
   // -- تسجيل الدخول المستمر --
   const[ownerSession,setOwnerSession]=useState(()=>{try{const v=localStorage.getItem("dork_owner");return v?+v:null;}catch{return null;}});
