@@ -65,19 +65,15 @@ async function initializeFirebaseNotifications() {
     if (token) {
       localStorage.setItem("fcm_token", token);
       try {
-        // الحصول على بيانات المستخدم الحالي
         let userType = null;
         let userId = null;
+        try {
+          const ow = localStorage.getItem("dork_owner");
+          const cu = localStorage.getItem("dork_customer");
+          if (ow) { userType = "salon"; userId = +ow; }
+          else if (cu) { const cp = JSON.parse(cu); userType = "customer"; userId = cp.id; }
+        } catch {}
 
-        if (ownerSession) {
-          userType = "salon";
-          userId = ownerSession;
-        } else if (customerSession?.id) {
-          userType = "customer";
-          userId = customerSession.id;
-        }
-
-        // إرسال الرمز مع بيانات المستخدم
         if (userType && userId) {
           await sb("fcm_tokens", "POST", {
             user_type: userType,
@@ -86,7 +82,6 @@ async function initializeFirebaseNotifications() {
             is_active: true
           });
         } else {
-          // إذا لم يكن هناك مستخدم، احفظ محلياً فقط
           console.log("User not logged in, token saved locally");
         }
       } catch (error) {
@@ -101,6 +96,19 @@ async function initializeFirebaseNotifications() {
   } catch (error) {
     console.error("FCM Error:", error.message);
   }
+}
+
+async function registerFcmTokenForUser(userType, userId) {
+  try {
+    const token = localStorage.getItem("fcm_token");
+    if (!token || !userType || !userId) return;
+    await sb("fcm_tokens", "POST", {
+      user_type: userType,
+      user_id: userId,
+      device_token: token,
+      is_active: true
+    });
+  } catch {}
 }
 
 function loadFirebaseSDK() {
@@ -1148,7 +1156,7 @@ export default function App(){
   );
 
   // العميل لما يسجل دخول يروح للصفحة الرئيسية مباشرة
-  const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");};
+  const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");registerFcmTokenForUser("customer",c.id);};
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
   const toggleFav=async(salonId)=>{
@@ -3121,14 +3129,14 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
     if(!s){setErr("لا يوجد صالون بهذا الرقم");return;}
     if(s.banned){setErr("🚫 تم حظر هذا الصالون من قبل الإدارة — تواصل مع الدعم");return;}
     if(s.frozen){setErr("🔒 الصالون مجمّد مؤقتاً — تواصل مع الإدارة");return;}
-    setOwnerSession(s.id); setView("ownerDash");
+    setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
   };
   const loginWithPin=()=>{
     const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
     if(!s){setPinErr("رمز PIN غير صحيح");setPin("");return;}
     if(s.banned){setPinErr("🚫 تم حظر هذا الصالون");return;}
     if(s.frozen){setPinErr("🔒 الصالون مجمّد مؤقتاً");return;}
-    setOwnerSession(s.id); setView("ownerDash");
+    setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
   };
   return(
     <div style={G.page}><div style={G.fp}>
