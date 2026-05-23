@@ -4,8 +4,10 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   root: '.',
+  publicDir: 'public',
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 600,
+    copyPublicDir: true,
   },
 })
