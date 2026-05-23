@@ -1176,6 +1176,19 @@ export default function App(){
         setRescheduleId(null);
       }
       const newBooking=inserted[0]||{};
+      if(newBooking&&newBooking.id){
+        supabase.functions.invoke('send-fcm-notification',{
+          body:{record:newBooking},
+        }).then(({data,error})=>{
+          if(error){
+            console.error('❌ خطأ في إرسال الإشعار:',error);
+          }else{
+            console.log('✅ تم إرسال الإشعار بنجاح:',data);
+          }
+        }).catch((err)=>{
+          console.error('⚠️ فشل الاتصال بخدمة الإشعارات:',err);
+        });
+      }
       if(customerSession){
         const c=customers.find(x=>x.id===customerSession.id);
         if(c){
