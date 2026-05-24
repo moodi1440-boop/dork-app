@@ -111,6 +111,42 @@ async function registerFcmTokenForUser(userType, userId) {
   } catch {}
 }
 
+// ==================== SESSION MANAGEMENT ====================
+async function createUserSession(userType, userId) {
+  try {
+    const sessionToken = `${userType}-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem("dork_session_token", sessionToken);
+    localStorage.setItem("dork_session_type", userType);
+    localStorage.setItem("dork_session_id", String(userId));
+
+    // Store in Supabase for validation
+    await sb("user_sessions", "POST", {
+      user_type: userType,
+      user_id: userId,
+      session_token: sessionToken,
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    }).catch(() => {}); // Fail silently if table doesn't exist yet
+
+    return sessionToken;
+  } catch (error) {
+    console.error("Failed to create session:", error);
+    return null;
+  }
+}
+
+function getSessionToken() {
+  return localStorage.getItem("dork_session_token");
+}
+
+function setRLSSessionHeader(headers = {}) {
+  const token = getSessionToken();
+  if (token) {
+    // This will be set via Supabase config in actual requests
+    return { ...headers, "X-Session-Token": token };
+  }
+  return headers;
+}
+
 function loadFirebaseSDK() {
   return new Promise((resolve, reject) => {
     if (window.firebase) {
@@ -1171,7 +1207,7 @@ export default function App(){
   );
 
   // العميل لما يسجل دخول يروح للصفحة الرئيسية مباشرة
-  const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");registerFcmTokenForUser("customer",c.id);};
+  const handleCustomerLogin=(c)=>{createUserSession("customer",c.id);setCustomerSession(c);setView("home");registerFcmTokenForUser("customer",c.id);};
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
   const toggleFav=async(salonId)=>{
@@ -3144,14 +3180,14 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
     if(!s){setErr("لا يوجد صالون بهذا الرقم");return;}
     if(s.banned){setErr("🚫 تم حظر هذا الصالون من قبل الإدارة — تواصل مع الدعم");return;}
     if(s.frozen){setErr("🔒 الصالون مجمّد مؤقتاً — تواصل مع الإدارة");return;}
-    setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
+    createUserSession("salon",s.id);setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
   };
   const loginWithPin=()=>{
     const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
     if(!s){setPinErr("رمز PIN غير صحيح");setPin("");return;}
     if(s.banned){setPinErr("🚫 تم حظر هذا الصالون");return;}
     if(s.frozen){setPinErr("🔒 الصالون مجمّد مؤقتاً");return;}
-    setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
+    createUserSession("salon",s.id);setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
   };
   return(
     <div style={G.page}><div style={G.fp}>
