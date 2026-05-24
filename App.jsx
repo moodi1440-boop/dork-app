@@ -983,58 +983,69 @@ export default function App(){
     }catch{}
   },[]);
 
+  // ==================== REALTIME SUBSCRIPTIONS: محسّنة للأمان والأداء ====================
+
+  // حجوزات العميل الحالي فقط
   useEffect(()=>{
-    let loadTimeout;
-    // حجوزات — لحظي في كل الاتجاهات (عميل ↔ صالون)
-    const bookingChannel=supabase.channel('realtime-bookings')
-      .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
-        clearTimeout(loadTimeout);
-        loadTimeout=setTimeout(()=>pollBookings(),500);
+    if(!customerSession?.id)return;
+    let bookingTimeout;
+    const bookingChannel=supabase.channel(`bookings-customer-${customerSession.id}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'bookings',filter:`customer_id=eq.${customerSession.id}`},(payload)=>{
+        clearTimeout(bookingTimeout);
+        bookingTimeout=setTimeout(()=>{
+          const b=payload.new;
+          if(b?.id)setSalons(prev=>prev.map(s=>({...s,bookings:(s.bookings||[]).map(x=>x.id===b.id?{...x,...b}:x)})));
+        },2000);
       })
       .subscribe();
+    return()=>{clearTimeout(bookingTimeout);supabase.removeChannel(bookingChannel);};
+  },[customerSession?.id]);
 
-    // إشعارات الإدارة
-    const notifChannel=supabase.channel('realtime-notifications')
+  // تقييمات الصالون الحالي فقط
+  useEffect(()=>{
+    if(!ownerSession)return;
+    let reviewTimeout;
+    const reviewChannel=supabase.channel(`reviews-salon-${ownerSession}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'reviews',filter:`salon_id=eq.${ownerSession}`},(payload)=>{
+        clearTimeout(reviewTimeout);
+        reviewTimeout=setTimeout(()=>{
+          const r=payload.new;
+          if(r?.id)setReviews(prev=>prev.find(x=>x.id===r.id)?prev.map(x=>x.id===r.id?{...x,...r}:x):[r,...prev]);
+        },2000);
+      })
+      .subscribe();
+    return()=>{clearTimeout(reviewTimeout);supabase.removeChannel(reviewChannel);};
+  },[ownerSession]);
+
+  // إشعارات مخصصة للمستخدم الحالي فقط
+  useEffect(()=>{
+    const notifChannel=supabase.channel('notifications-targeted')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},(payload)=>{
         const n=payload.new;
         if(!n)return;
-        if(n.target_type==="customer")return;
+        const isForMe=n.target_type==='all'||(n.target_type==='salon'&&ownerSession===n.target_id)||(n.target_type==='customer'&&customerSession?.id===n.target_id)||(n.target_type==='admin');
+        if(!isForMe)return;
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
-        try{
-          const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-          notifs.unshift({id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔔",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
-          localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
-        }catch{}
-        if("Notification" in window&&Notification.permission==="granted"){
-          try{new Notification(`${n.icon||"🔔"} ${n.title}`,{body:n.body||"",dir:"rtl",lang:"ar"});}catch{}
-        }
+        try{const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");notifs.unshift({id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔔",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));}catch{}
+        if("Notification" in window&&Notification.permission==="granted"){try{new Notification(`${n.icon||"🔔"} ${n.title}`,{body:n.body||"",dir:"rtl",lang:"ar"});}catch{}}
       })
       .subscribe();
+    return()=>supabase.removeChannel(notifChannel);
+  },[ownerSession,customerSession?.id]);
 
-    // إعدادات التطبيق
+  // إعدادات التطبيق بـ debounce طويل
+  useEffect(()=>{
+    let settingsTimeout;
+    loadAppSettings({silent:true});
     const settingsChannel=supabase.channel('realtime-app-settings')
       .on('postgres_changes',{event:'*',schema:'public',table:'app_settings'},()=>{
-        loadAppSettings({silent:true});
+        clearTimeout(settingsTimeout);
+        settingsTimeout=setTimeout(()=>loadAppSettings({silent:true}),3000);
       })
       .subscribe();
-
-    // تقييمات — لحظي في كل الاتجاهات (عميل ↔ صالون)
-    const reviewsChannel=supabase.channel('realtime-reviews')
-      .on('postgres_changes',{event:'*',schema:'public',table:'reviews'},()=>{
-        clearTimeout(loadTimeout);
-        loadTimeout=setTimeout(()=>pollReviews(),500);
-      })
-      .subscribe();
-
-    return()=>{
-      clearTimeout(loadTimeout);
-      supabase.removeChannel(bookingChannel);
-      supabase.removeChannel(notifChannel);
-      supabase.removeChannel(settingsChannel);
-      supabase.removeChannel(reviewsChannel);
-    };
-  },[loadAppSettings,pollBookings,pollReviews]);
+    return()=>{clearTimeout(settingsTimeout);supabase.removeChannel(settingsChannel);};
+  },[loadAppSettings]);
 
   useEffect(()=>{
     if(!customerSession?.id)return;
