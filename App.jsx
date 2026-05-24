@@ -984,10 +984,12 @@ export default function App(){
   },[]);
 
   useEffect(()=>{
+    let loadTimeout;
     // حجوزات — لحظي في كل الاتجاهات (عميل ↔ صالون)
     const bookingChannel=supabase.channel('realtime-bookings')
       .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
-        pollBookings();
+        clearTimeout(loadTimeout);
+        loadTimeout=setTimeout(()=>pollBookings(),500);
       })
       .subscribe();
 
@@ -1020,11 +1022,13 @@ export default function App(){
     // تقييمات — لحظي في كل الاتجاهات (عميل ↔ صالون)
     const reviewsChannel=supabase.channel('realtime-reviews')
       .on('postgres_changes',{event:'*',schema:'public',table:'reviews'},()=>{
-        pollReviews();
+        clearTimeout(loadTimeout);
+        loadTimeout=setTimeout(()=>pollReviews(),500);
       })
       .subscribe();
 
     return()=>{
+      clearTimeout(loadTimeout);
       supabase.removeChannel(bookingChannel);
       supabase.removeChannel(notifChannel);
       supabase.removeChannel(settingsChannel);
