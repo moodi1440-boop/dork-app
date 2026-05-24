@@ -923,12 +923,12 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
       const [salonRows, bookingRows, custRows] = await Promise.all([
-        sb("salons","GET",null,"?select=*&order=id.desc"),
-        sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance&order=created_at.desc"),
-        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,created_at"),
+        sb("salons","GET",null,"?select=*&status=eq.approved&order=id.desc"),
+        sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000"),
+        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,created_at&limit=500"),
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
-      const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc").catch(()=>[]);
+      const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=5000").catch(()=>[]);
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
         salon.bookings = bookingRows
@@ -992,10 +992,10 @@ export default function App(){
 
   /* Supabase Realtime - تحديثات لحظية في كل الاتجاهات */
 
-  // جلب مخصص للحجوزات فقط (بدون إعادة تحميل كامل)
+  // جلب مخصص للحجوزات فقط (بدون إعادة تحميل كامل) مع limit لتقليل البيانات
   const pollBookings=useCallback(async()=>{
     try{
-      const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance&order=created_at.desc");
+      const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000");
       setSalons(prev=>prev.map(salon=>({
         ...salon,
         bookings:rows
@@ -1011,10 +1011,10 @@ export default function App(){
     }catch{}
   },[]);
 
-  // جلب مخصص للتقييمات فقط
+  // جلب مخصص للتقييمات فقط مع limit لتقليل البيانات
   const pollReviews=useCallback(async()=>{
     try{
-      const rows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc");
+      const rows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=5000");
       setReviews(rows||[]);
     }catch{}
   },[]);
