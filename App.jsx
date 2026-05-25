@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
+import {
+  realtimeManager,
+  deltaFetchSalonBookings,
+  deltaFetchCustomerBookings,
+  deltaFetchSalonReviews,
+  clearAllSyncData
+} from "./utils/realtimeSync";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1207,7 +1214,73 @@ export default function App(){
   );
 
   // العميل لما يسجل دخول يروح للصفحة الرئيسية مباشرة
-  const handleCustomerLogin=(c)=>{createUserSession("customer",c.id);setCustomerSession(c);setView("home");registerFcmTokenForUser("customer",c.id);};
+  const handleCustomerLogin=async(c)=>{
+    try {
+      // 1️⃣ إنشاء جلسة
+      await createUserSession("customer",c.id);
+
+      // 2️⃣ تسجيل FCM Token
+      await registerFcmTokenForUser("customer",c.id);
+
+      // 3️⃣ Delta Sync: جلب الحجوزات المتغيرة
+      const { data: deltaBookings, syncTime } =
+        await deltaFetchCustomerBookings(c.id, sb);
+
+      // دمج مع البيانات الموجودة
+      if (deltaBookings && deltaBookings.length > 0) {
+        console.log(`✅ تم جلب ${deltaBookings.length} حجز متغير للعميل`);
+      }
+
+      // 4️⃣ الاشتراك في Realtime
+      realtimeManager.subscribeCustomerBookings(c.id, (payload) => {
+        // تأكد أن التحديث أتى بعد Delta Sync
+        if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
+          console.log("🔄 تحديث حجز جديد عبر Realtime:", payload);
+        }
+      });
+
+      // 5️⃣ الاشتراك في الإشعارات الشخصية
+      realtimeManager.subscribeNotifications(c.id, "customer", (payload) => {
+        console.log("🔔 إشعار جديد:", payload.new.message);
+      });
+
+      // 6️⃣ تحديث الـ state
+      setCustomerSession(c);
+      setView("home");
+    } catch (error) {
+      console.error("❌ خطأ في تسجيل الدخول:", error);
+      toast$("❌ خطأ في تسجيل الدخول", "err");
+    }
+  };
+
+  // دالة تسجيل الخروج النظيف
+  const handleLogout = async () => {
+    try {
+      // 1️⃣ إلغاء جميع الاشتراكات
+      realtimeManager.unsubscribeAll();
+      console.log("✅ تم إلغاء جميع الاشتراكات");
+
+      // 2️⃣ مسح بيانات الـ Sync
+      clearAllSyncData();
+      console.log("✅ تم مسح بيانات الـ Sync");
+
+      // 3️⃣ مسح حالات الـ Session
+      localStorage.removeItem("dork_session_token");
+      localStorage.removeItem("dork_session_type");
+      localStorage.removeItem("dork_session_id");
+
+      // 4️⃣ مسح حالات المستخدم
+      setCustomerSession(null);
+      setOwnerSession(null);
+      setView("home");
+
+      console.log("✅ تم تسجيل الخروج بنظافة");
+      toast$("✅ تم تسجيل الخروج", "success");
+    } catch (error) {
+      console.error("❌ خطأ في تسجيل الخروج:", error);
+    }
+  };
+
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
   const toggleFav=async(salonId)=>{
@@ -1420,6 +1493,7 @@ export default function App(){
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
     socialLinks,setSocialLinks:updateSocial,
     handleCustomerLogin,
+    handleLogout,
     darkMode,setDarkMode,
     compareSalons,setCompareSalons,
     handlePullRefresh,pullRefreshing,
@@ -3175,19 +3249,94 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
   const[tab,setTab]=useState("phone");
   const[phone,setPhone]=useState(""); const[err,setErr]=useState("");
   const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
-  const loginWithPhone=()=>{
+  const loginWithPhone=async()=>{
     const s=salons.find(x=>x.ownerPhone===phone.trim()||x.phone===phone.trim());
     if(!s){setErr("لا يوجد صالون بهذا الرقم");return;}
     if(s.banned){setErr("🚫 تم حظر هذا الصالون من قبل الإدارة — تواصل مع الدعم");return;}
     if(s.frozen){setErr("🔒 الصالون مجمّد مؤقتاً — تواصل مع الإدارة");return;}
-    createUserSession("salon",s.id);setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
+
+    try {
+      // 1️⃣ إنشاء جلسة
+      await createUserSession("salon", s.id);
+
+      // 2️⃣ تسجيل FCM Token
+      await registerFcmTokenForUser("salon", s.id);
+
+      // 3️⃣ Delta Sync: جلب الحجوزات المتغيرة
+      const { data: deltaBookings, syncTime } =
+        await deltaFetchSalonBookings(s.id, sb);
+
+      console.log(`✅ تم جلب ${deltaBookings.length} حجز متغير للصالون`);
+
+      // 4️⃣ الاشتراك في Realtime للحجوزات
+      realtimeManager.subscribeSalonBookings(s.id, (payload) => {
+        // تأكد أن التحديث أتى بعد Delta Sync
+        if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
+          console.log("🔄 حجز جديد/محدث عبر Realtime:", payload);
+        }
+      });
+
+      // 5️⃣ الاشتراك في Realtime للتقييمات
+      realtimeManager.subscribeSalonReviews(s.id, (payload) => {
+        console.log("⭐ تقييم جديد عبر Realtime:", payload);
+      });
+
+      // 6️⃣ الاشتراك في الإشعارات الشخصية
+      realtimeManager.subscribeNotifications(s.id, "salon", (payload) => {
+        console.log("🔔 إشعار جديد للصالون:", payload.new.message);
+      });
+
+      // 7️⃣ تحديث الـ state والـ view
+      setOwnerSession(s.id);
+      setView("ownerDash");
+    } catch (error) {
+      console.error("❌ خطأ في تسجيل الدخول:", error);
+      setErr("❌ خطأ في تسجيل الدخول");
+    }
   };
-  const loginWithPin=()=>{
+  const loginWithPin=async()=>{
     const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
     if(!s){setPinErr("رمز PIN غير صحيح");setPin("");return;}
     if(s.banned){setPinErr("🚫 تم حظر هذا الصالون");return;}
     if(s.frozen){setPinErr("🔒 الصالون مجمّد مؤقتاً");return;}
-    createUserSession("salon",s.id);setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
+
+    try {
+      // 1️⃣ إنشاء جلسة
+      await createUserSession("salon", s.id);
+
+      // 2️⃣ تسجيل FCM Token
+      await registerFcmTokenForUser("salon", s.id);
+
+      // 3️⃣ Delta Sync: جلب الحجوزات المتغيرة
+      const { data: deltaBookings, syncTime } =
+        await deltaFetchSalonBookings(s.id, sb);
+
+      console.log(`✅ تم جلب ${deltaBookings.length} حجز متغير للصالون`);
+
+      // 4️⃣ الاشتراك في Realtime للحجوزات
+      realtimeManager.subscribeSalonBookings(s.id, (payload) => {
+        if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
+          console.log("🔄 حجز جديد/محدث عبر Realtime:", payload);
+        }
+      });
+
+      // 5️⃣ الاشتراك في Realtime للتقييمات
+      realtimeManager.subscribeSalonReviews(s.id, (payload) => {
+        console.log("⭐ تقييم جديد عبر Realtime:", payload);
+      });
+
+      // 6️⃣ الاشتراك في الإشعارات الشخصية
+      realtimeManager.subscribeNotifications(s.id, "salon", (payload) => {
+        console.log("🔔 إشعار جديد للصالون:", payload.new.message);
+      });
+
+      // 7️⃣ تحديث الـ state والـ view
+      setOwnerSession(s.id);
+      setView("ownerDash");
+    } catch (error) {
+      console.error("❌ خطأ في تسجيل الدخول:", error);
+      setPinErr("❌ خطأ في تسجيل الدخول");
+    }
   };
   return(
     <div style={G.page}><div style={G.fp}>
