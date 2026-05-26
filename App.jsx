@@ -1367,7 +1367,6 @@ export default function App(){
     govList,villageList,centerList2,
     showFavs,setShowFavs,
     displaySalons,
-    salons,
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
     socialLinks,setSocialLinks:updateSocial,
     handleCustomerLogin,
