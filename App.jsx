@@ -3684,18 +3684,22 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
 //  BOOKING CALENDAR - تقويم مرئي للحجوزات
 // ==============================================
 function BookingCalendar({salon,onUpdate}){
-  const[selDate,setSelDate]=useState(todayStr());
+  const[expandedDate,setExpandedDate]=useState(todayStr());
   const today=new Date();
   const[viewMonth,setViewMonth]=useState(today.getMonth());
   const[viewYear,setViewYear]=useState(today.getFullYear());
 
   const daysInMonth=new Date(viewYear,viewMonth+1,0).getDate();
   const firstDay=new Date(viewYear,viewMonth,1).getDay();
+  const bks=salon?.bookings||[];
   const bookingsForDate=(d)=>{
     const dateStr=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    return salon.bookings.filter(b=>b.date===dateStr);
+    return bks.filter(b=>b.date===dateStr);
   };
-  const selBks=salon.bookings.filter(b=>b.date===selDate);
+  const selBks=bks.filter(b=>b.date===expandedDate);
+  const toggleDate=(dateStr)=>{
+    setExpandedDate(expandedDate===dateStr?null:dateStr);
+  };
 
   return(
     <div style={{paddingTop:4}}>
@@ -3715,13 +3719,13 @@ function BookingCalendar({salon,onUpdate}){
         {Array.from({length:daysInMonth},(_,i)=>{
           const d=i+1;
           const dateStr=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-          const bks=bookingsForDate(d);
+          const dayBks=bookingsForDate(d);
           const isToday=dateStr===todayStr();
-          const isSel=dateStr===selDate;
-          const hasBks=bks.length>0;
+          const isExp=dateStr===expandedDate;
+          const hasBks=dayBks.length>0;
           return(
-            <button key={d} onClick={()=>setSelDate(dateStr)}
-              style={{position:"relative",padding:"6px 0",borderRadius:8,border:`1.5px solid ${isSel?"var(--p)":isToday?"var(--pd)":"#2a2a3a"}`,background:isSel?"var(--pa12)":isToday?"var(--pa05)":"transparent",color:isSel?"var(--p)":isToday?"var(--pl)":"#aaa",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:isSel||isToday?700:400,textAlign:"center"}}>
+            <button key={d} onClick={()=>toggleDate(dateStr)}
+              style={{position:"relative",padding:"6px 0",borderRadius:8,border:`1.5px solid ${isExp?"var(--p)":isToday?"var(--pd)":"#2a2a3a"}`,background:isExp?"var(--pa12)":isToday?"var(--pa05)":"transparent",color:isExp?"var(--p)":isToday?"var(--pl)":"#aaa",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:isExp||isToday?700:400,textAlign:"center"}}>
               {d}
               {hasBks&&<div style={{position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:"var(--p)"}}/>}
             </button>
@@ -3729,25 +3733,29 @@ function BookingCalendar({salon,onUpdate}){
         })}
       </div>
       {/* bookings for selected date */}
-      <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>📅 {selDate} - {selBks.length} حجز</div>
-      {selBks.length===0
-        ?<div style={G.empty}>لا توجد حجوزات في هذا اليوم</div>
-        :selBks.map(b=>(
-          <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)"}`,marginBottom:8}}>
-            <div style={{display:"flex",justifyContent:"space-between"}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>🕐 {b.time} - {b.name}</div>
-                <div style={{fontSize:11,color:"#aaa"}}>{Array.isArray(b.services)?b.services.join(" + "):""} - {b.total||0} ر</div>
+      {expandedDate&&(
+        <>
+          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>📋 {expandedDate} • {selBks.length} حجز</div>
+          {selBks.length===0
+            ?<div style={G.empty}>لا توجد حجوزات في هذا اليوم</div>
+            :selBks.map(b=>{const[localAtt,setLocalAtt]=useState({});return(
+              <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name}</div>
+                    <div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div>
+                    <div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div>
+                    <div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div>
+                  </div>
+                  <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
+                </div>
+                {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
+                {b.status==="approved"&&(()=>{const att=localAtt[b.id]||b.attendance;return(<div style={{display:"flex",gap:6,marginTop:6,alignItems:"center"}}><span style={{fontSize:10,color:"#666"}}>الحضور:</span>{att?(<span style={{fontSize:11,fontWeight:700,color:att==="attended"?"#27ae60":"#e74c3c"}}>{att==="attended"?"✅ حضر":"❌ لم يحضر"}</span>):(<><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"attended"},"?id=eq."+b.id);setLocalAtt(p=>({...p,[b.id]:"attended"}));}catch{}}}>✅ حضر</button><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"no_show"},"?id=eq."+b.id);setLocalAtt(p=>({...p,[b.id]:"no_show"}));}catch{}}}>❌ لم يحضر</button></>)}</div>);})()}
               </div>
-              <span style={{fontSize:10,color:b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)"}}>{b.status==="approved"?"✅":b.status==="rejected"?"❌":"⏳"}</span>
-            </div>
-            {b.status==="pending"&&<div style={{display:"flex",gap:6,marginTop:6}}>
-              <button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button>
-              <button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button>
-            </div>}
-          </div>
-        ))
-      }
+            )})
+          }
+        </>
+      )}
     </div>
   );
 }
