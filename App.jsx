@@ -1060,6 +1060,9 @@ export default function App(){
     return()=>{clearTimeout(reviewTimeout);supabase.removeChannel(reviewChannel);};
   },[ownerSession]);
 
+  // 🔔 Notification deduplication cache (عميل + صالون)
+  const notificationCache=useRef(new Set());
+
   // إشعارات مخصصة للمستخدم الحالي فقط
   useEffect(()=>{
     const notifChannel=supabase.channel('notifications-targeted')
@@ -1068,13 +1071,38 @@ export default function App(){
         if(!n)return;
         const isForMe=n.target_type==='all'||(n.target_type==='salon'&&ownerSession===n.target_id)||(n.target_type==='customer'&&customerSession?.id===n.target_id)||(n.target_type==='admin');
         if(!isForMe)return;
+
+        // 🔒 منع التكرار: تتبع الإشعار بـ ID
+        if(notificationCache.current.has(n.id)){
+          console.log(`⚠️ تكرار إشعار مكتشف (ID: ${n.id}) - تم التجاهل`);
+          return;
+        }
+        notificationCache.current.add(n.id);
+
+        // تحديث العداد
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
+
+        // تخزين في localStorage
         try{const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");notifs.unshift({id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔔",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));}catch{}
+
+        // عرض إشعار مرئي واحد فقط
         if("Notification" in window&&Notification.permission==="granted"){try{new Notification(`${n.icon||"🔔"} ${n.title}`,{body:n.body||"",dir:"rtl",lang:"ar"});}catch{}}
+
+        // 🔊 عرض Toast أيضاً للعميل
+        if(toast$){
+          toast$(`${n.icon||"🔔"} ${n.title}`, "info");
+        }
+
+        // 🔊 تشغيل صوت تنبيه
+        try{playTone("bell",0.55);}catch{}
       })
       .subscribe();
-    return()=>supabase.removeChannel(notifChannel);
+    return()=>{
+      supabase.removeChannel(notifChannel);
+      notificationCache.current.clear(); // تنظيف الـ cache عند unmount
+      console.log("🧹 تم تنظيف notification cache");
+    };
   },[ownerSession,customerSession?.id]);
 
   // إعدادات التطبيق بـ debounce طويل
@@ -1240,9 +1268,8 @@ export default function App(){
       });
 
       // 5️⃣ الاشتراك في الإشعارات الشخصية
-      realtimeManager.subscribeNotifications(c.id, "customer", (payload) => {
-        console.log("🔔 إشعار جديد:", payload.new.message);
-      });
+      // 🔔 الإشعارات تُعالج بالفعل عبر الـ global notifChannel (line 1065)
+      // فلا حاجة لاشتراك إضافي في realtimeManager (يسبب تكرار)
 
       // 6️⃣ تحديث الـ state
       setCustomerSession(c);
@@ -3249,6 +3276,18 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
   const[tab,setTab]=useState("phone");
   const[phone,setPhone]=useState(""); const[err,setErr]=useState("");
   const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
+
+  // 🔔 Cache لتتبع الإشعارات المعروضة (لمنع التكرار)
+  const subscriberCache=useRef(new Set());
+
+  // 🧹 Cleanup: تنظيف الـ cache عند Unmount (عند تغيير الـ view أو logout)
+  useEffect(()=>{
+    return ()=>{
+      subscriberCache.current.clear();
+      console.log("🧹 تم تنظيف cache الإشعارات على Logout/Unmount");
+    };
+  },[]);
+
   const loginWithPhone=async()=>{
     const s=salons.find(x=>x.ownerPhone===phone.trim()||x.phone===phone.trim());
     if(!s){setErr("لا يوجد صالون بهذا الرقم");return;}
@@ -3268,31 +3307,58 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
 
       console.log(`✅ تم جلب ${deltaBookings.length} حجز متغير للصالون`);
 
-      // 4️⃣ الاشتراك في Realtime للحجوزات
+      // 4️⃣ الاشتراك في Realtime للحجوزات + Notifications + Sound
       realtimeManager.subscribeSalonBookings(s.id, (payload) => {
         if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
-          console.log("🔄 حجز جديد/محدث عبر Realtime:", payload);
+          const { eventType, new: newData, old: oldData } = payload;
+          console.log(`🔄 حدث Realtime [${eventType}]:`, payload);
 
-          // تحديث الـ state مع الحجز الجديد/المحدث
-          setSalons(prev => prev.map(salon => {
-            if (salon.id !== s.id) return salon;
+          // ✅ INSERT: حجز جديد — عرض إشعار مرئي + صوتي
+          if (eventType === "INSERT") {
+            // منع التكرار: تتبع البوكينج بـ ID
+            if (!subscriberCache.current.has(newData.id)) {
+              subscriberCache.current.add(newData.id);
 
-            // معالجة العملية: INSERT أو UPDATE أو DELETE
-            if (payload.eventType === "DELETE") {
-              return { ...salon, bookings: salon.bookings.filter(b => b.id !== payload.old.id) };
+              // 🔔 عرض إشعار مرئي فوراً
+              if (toast$) {
+                const customerName = newData.customer_name || "عميل جديد";
+                const time = newData.time || "وقت غير محدد";
+                toast$(`🔔 حجز جديد من ${customerName} في الساعة ${time}`, "success");
+              }
+
+              // 🔊 تشغيل الصوت (مثل صفحة العميل)
+              try {
+                playTone("bell", 0.55);
+              } catch (err) {
+                console.warn("⚠️ خطأ في تشغيل الصوت:", err);
+              }
             }
 
-            const existingIdx = salon.bookings.findIndex(b => b.id === payload.new.id);
-            if (existingIdx >= 0) {
-              // UPDATE: تحديث الحجز الموجود
-              const newBookings = [...salon.bookings];
-              newBookings[existingIdx] = payload.new;
-              return { ...salon, bookings: newBookings };
-            } else {
-              // INSERT: إضافة حجز جديد
-              return { ...salon, bookings: [...salon.bookings, payload.new] };
-            }
-          }));
+            // تحديث الـ state
+            setSalons(prev => prev.map(salon => {
+              if (salon.id !== s.id) return salon;
+              return { ...salon, bookings: [...salon.bookings, newData] };
+            }));
+          }
+
+          // ✅ UPDATE: تحديث الحجز (صامت — بدون toast)
+          else if (eventType === "UPDATE") {
+            setSalons(prev => prev.map(salon => {
+              if (salon.id !== s.id) return salon;
+              const bookings = [...salon.bookings];
+              const idx = bookings.findIndex(b => b.id === newData.id);
+              if (idx >= 0) bookings[idx] = newData;
+              return { ...salon, bookings };
+            }));
+          }
+
+          // ✅ DELETE: حذف الحجز (صامت — بدون toast)
+          else if (eventType === "DELETE") {
+            setSalons(prev => prev.map(salon => {
+              if (salon.id !== s.id) return salon;
+              return { ...salon, bookings: salon.bookings.filter(b => b.id !== oldData.id) };
+            }));
+          }
         }
       });
 
@@ -3341,31 +3407,58 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
 
       console.log(`✅ تم جلب ${deltaBookings.length} حجز متغير للصالون`);
 
-      // 4️⃣ الاشتراك في Realtime للحجوزات
+      // 4️⃣ الاشتراك في Realtime للحجوزات + Notifications + Sound
       realtimeManager.subscribeSalonBookings(s.id, (payload) => {
         if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
-          console.log("🔄 حجز جديد/محدث عبر Realtime:", payload);
+          const { eventType, new: newData, old: oldData } = payload;
+          console.log(`🔄 حدث Realtime [${eventType}]:`, payload);
 
-          // تحديث الـ state مع الحجز الجديد/المحدث
-          setSalons(prev => prev.map(salon => {
-            if (salon.id !== s.id) return salon;
+          // ✅ INSERT: حجز جديد — عرض إشعار مرئي + صوتي
+          if (eventType === "INSERT") {
+            // منع التكرار: تتبع البوكينج بـ ID
+            if (!subscriberCache.current.has(newData.id)) {
+              subscriberCache.current.add(newData.id);
 
-            // معالجة العملية: INSERT أو UPDATE أو DELETE
-            if (payload.eventType === "DELETE") {
-              return { ...salon, bookings: salon.bookings.filter(b => b.id !== payload.old.id) };
+              // 🔔 عرض إشعار مرئي فوراً
+              if (toast$) {
+                const customerName = newData.customer_name || "عميل جديد";
+                const time = newData.time || "وقت غير محدد";
+                toast$(`🔔 حجز جديد من ${customerName} في الساعة ${time}`, "success");
+              }
+
+              // 🔊 تشغيل الصوت (مثل صفحة العميل)
+              try {
+                playTone("bell", 0.55);
+              } catch (err) {
+                console.warn("⚠️ خطأ في تشغيل الصوت:", err);
+              }
             }
 
-            const existingIdx = salon.bookings.findIndex(b => b.id === payload.new.id);
-            if (existingIdx >= 0) {
-              // UPDATE: تحديث الحجز الموجود
-              const newBookings = [...salon.bookings];
-              newBookings[existingIdx] = payload.new;
-              return { ...salon, bookings: newBookings };
-            } else {
-              // INSERT: إضافة حجز جديد
-              return { ...salon, bookings: [...salon.bookings, payload.new] };
-            }
-          }));
+            // تحديث الـ state
+            setSalons(prev => prev.map(salon => {
+              if (salon.id !== s.id) return salon;
+              return { ...salon, bookings: [...salon.bookings, newData] };
+            }));
+          }
+
+          // ✅ UPDATE: تحديث الحجز (صامت — بدون toast)
+          else if (eventType === "UPDATE") {
+            setSalons(prev => prev.map(salon => {
+              if (salon.id !== s.id) return salon;
+              const bookings = [...salon.bookings];
+              const idx = bookings.findIndex(b => b.id === newData.id);
+              if (idx >= 0) bookings[idx] = newData;
+              return { ...salon, bookings };
+            }));
+          }
+
+          // ✅ DELETE: حذف الحجز (صامت — بدون toast)
+          else if (eventType === "DELETE") {
+            setSalons(prev => prev.map(salon => {
+              if (salon.id !== s.id) return salon;
+              return { ...salon, bookings: salon.bookings.filter(b => b.id !== oldData.id) };
+            }));
+          }
         }
       });
 
