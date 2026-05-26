@@ -3333,9 +3333,8 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
 
       // 4️⃣ الاشتراك في Realtime للحجوزات + Notifications + Sound
       realtimeManager.subscribeSalonBookings(s.id, (payload) => {
-        if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
-          const { type, new: newData, old: oldData } = payload;
-          console.log(`🔄 حدث Realtime [${type}]:`, payload);
+        const { type, new: newData, old: oldData } = payload;
+        console.log(`🔄 حدث Realtime [${type}]:`, payload);
 
           // ✅ INSERT: حجز جديد — عرض إشعار مرئي + صوتي
           if (type === "INSERT") {
@@ -3383,7 +3382,6 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
               return { ...salon, bookings: salon.bookings.filter(b => b.id !== oldData.id) };
             }));
           }
-        }
       });
 
       // 5️⃣ الاشتراك في Realtime للتقييمات
@@ -3433,9 +3431,8 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
 
       // 4️⃣ الاشتراك في Realtime للحجوزات + Notifications + Sound
       realtimeManager.subscribeSalonBookings(s.id, (payload) => {
-        if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
-          const { type, new: newData, old: oldData } = payload;
-          console.log(`🔄 حدث Realtime [${type}]:`, payload);
+        const { type, new: newData, old: oldData } = payload;
+        console.log(`🔄 حدث Realtime [${type}]:`, payload);
 
           // ✅ INSERT: حجز جديد — عرض إشعار مرئي + صوتي
           if (type === "INSERT") {
@@ -3483,7 +3480,6 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
               return { ...salon, bookings: salon.bookings.filter(b => b.id !== oldData.id) };
             }));
           }
-        }
       });
 
       // 5️⃣ الاشتراك في Realtime للتقييمات
