@@ -7,6 +7,7 @@ import {
   deltaFetchSalonReviews,
   clearAllSyncData
 } from "./utils/realtimeSync";
+import { networkMonitor } from "./utils/networkInterceptor";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -762,6 +763,13 @@ export default function App(){
 
   useEffect(() => {
     initializeFirebaseNotifications();
+  }, []);
+
+  // 🔍 تهيئة Network Interceptor للكشف عن تسريب البيانات
+  useEffect(() => {
+    networkMonitor.init();
+    window.networkMonitor = networkMonitor;
+    console.log('%c✅ Network Interceptor Ready - Check console for logs', 'color: #51cf66; font-weight: bold; font-size: 12px');
   }, []);
 
   // -- تسجيل الدخول المستمر --
