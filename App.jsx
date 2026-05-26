@@ -2196,46 +2196,55 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[selectedDate,setSelectedDate]=useState(getTodayDateInRiyadh());
   const[m,setM]=useState(new Date().getMonth());
   const[y,setY]=useState(new Date().getFullYear());
-  const[barberTab,setBarberTab]=useState("day"); // day | month | year
+  const[barberTab,setBarberTab]=useState("day");
   const[selectedBarber,setSelectedBarber]=useState(null);
+  const[dayStats,setDayStats]=useState({});
+  const[monthStats,setMonthStats]=useState({});
+  const[yearStats,setYearStats]=useState({});
+  const[loadingStats,setLoadingStats]=useState(false);
 
-  // حجوزات اليوم المختار
   const todayBks=salon.bookings.filter(b=>b.date===selectedDate);
   const todayApproved=todayBks.filter(b=>b.status==="approved");
   const todayPending=todayBks.filter(b=>b.status==="pending");
   const todayRejected=todayBks.filter(b=>b.status==="rejected");
 
-  // حجوزات الشهر
-  const monthBks=salon.bookings.filter(b=>{
-    if(!b.date)return false;
-    const d=new Date(b.date);
-    return d.getMonth()===m&&d.getFullYear()===y;
-  });
+  const loadBarberStats=useCallback(async()=>{
+    if(!salon.barbers?.length)return;
+    setLoadingStats(true);
+    try{
+      const mm=String(m+1).padStart(2,"0");
+      const dim=new Date(y,m+1,0).getDate();
+      const startM=`${y}-${mm}-01`;
+      const endM=`${y}-${mm}-${String(dim).padStart(2,"0")}`;
+      const[dayR,monthR,yearR]=await Promise.all([
+        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=eq.${selectedDate}&limit=100`),
+        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${startM}&date=lte.${endM}&limit=100`),
+        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${y}-01-01&date=lte.${y}-12-31&limit=100`)
+      ]);
+      const grp=(rows)=>{const s={};if(Array.isArray(rows))for(const r of rows){const bid=r.barber_id||"any";if(!s[bid])s[bid]={count:0,revenue:0};s[bid].count++;s[bid].revenue+=(r.total||0);}return s;};
+      setDayStats(grp(dayR));
+      setMonthStats(grp(monthR));
+      setYearStats(grp(yearR));
+    }catch(e){console.warn("barber stats error:",e);}
+    setLoadingStats(false);
+  },[salon.id,salon.barbers?.length,selectedDate,m,y]);
 
-  // دالة لحساب إحصائيات الحلاق
+  useEffect(()=>{loadBarberStats();},[loadBarberStats]);
+
+  const loadStatsRef=useRef(loadBarberStats);
+  loadStatsRef.current=loadBarberStats;
+  useEffect(()=>{
+    const channel=supabase.channel(`barber-stats-${salon.id}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'bookings',filter:`salon_id=eq.${salon.id}`},()=>{loadStatsRef.current();})
+      .subscribe();
+    return()=>{supabase.removeChannel(channel);};
+  },[salon.id]);
+
   const getBarberStats=(barberId)=>{
-    const filterByBarber=(bks)=>bks.filter(b=>b.barber_id===barberId||b.barberId===barberId);
-
-    // اليوم
-    const dayBks=filterByBarber(todayBks).filter(b=>b.status==="approved");
-    const dayRevenue=dayBks.reduce((a,b)=>a+(b.total||0),0);
-    const dayCount=dayBks.length;
-
-    // الشهر
-    const monthBarberBks=filterByBarber(monthBks).filter(b=>b.status==="approved");
-    const monthRevenue=monthBarberBks.reduce((a,b)=>a+(b.total||0),0);
-    const monthCount=monthBarberBks.length;
-
-    // السنة
-    const yearBks=salon.bookings.filter(b=>{
-      if(!b.date)return false;
-      const d=new Date(b.date);
-      return d.getFullYear()===y&&(b.barber_id===barberId||b.barberId===barberId)&&b.status==="approved";
-    });
-    const yearRevenue=yearBks.reduce((a,b)=>a+(b.total||0),0);
-    const yearCount=yearBks.length;
-
-    return{dayCount,dayRevenue,monthCount,monthRevenue,yearCount,yearRevenue};
+    const day=dayStats[barberId]||{count:0,revenue:0};
+    const month=monthStats[barberId]||{count:0,revenue:0};
+    const year=yearStats[barberId]||{count:0,revenue:0};
+    return{dayCount:day.count,dayRevenue:day.revenue,monthCount:month.count,monthRevenue:month.revenue,yearCount:year.count,yearRevenue:year.revenue};
   };
 
   return(
@@ -2255,7 +2264,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
           ))}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
-          {Array.from({length:new Date(y,m,0).getDate()},(_, i)=>{
+          {Array.from({length:new Date(y,m+1,0).getDate()},(_, i)=>{
             const day=i+1;
             const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
             const cnt=salon.bookings.filter(b=>b.date===dateStr).length;
@@ -2319,7 +2328,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
             <button onClick={()=>setBarberTab("year")} style={{flex:1,padding:"6px 0",borderRadius:8,border:`1.5px solid ${barberTab==="year"?"#d4a017":"#2a2a3a"}`,background:barberTab==="year"?"#d4a01722":"transparent",color:barberTab==="year"?"#d4a017":"#888",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>📊 السنة</button>
           </div>
 
-          {/* قائمة الحلاقين */}
+          {loadingStats&&<div style={{textAlign:"center",padding:"8px",color:"#888",fontSize:11}}>جاري التحميل...</div>}
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {salon.barbers.map(barber=>{
               const stats=getBarberStats(barber.id);
