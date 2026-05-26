@@ -1099,7 +1099,7 @@ export default function App(){
 
         // تشغيل الصوت
         try {
-          playTone("bell", 0.6);
+          playTone("bell", 1.0);
         } catch (err) {
           console.warn("⚠️ Tone failed:", err);
         }
@@ -1154,7 +1154,7 @@ export default function App(){
         }
 
         // 🔊 تشغيل صوت تنبيه
-        try{playTone("bell",0.55);}catch{}
+        try{playTone("bell",1.0);}catch{}
       })
       .subscribe();
     return()=>{
@@ -1207,7 +1207,7 @@ export default function App(){
       if(was==="pending"&&now==="approved"){
         sendNotif("دورك - تأكيد الحجز",`✅ تم قبول حجزك في ${salon?.name||"الصالون"} — يُرجى الحضور في الموعد`,"✅","customer",customerSession?.id);
         toast$(`✅ تم قبول حجزك في ${salon?.name||""}`);
-        try{playTone("bell",0.55);}catch{}
+        try{playTone("bell",1.0);}catch{}
       }else if(was==="pending"&&now==="rejected"){
         sendNotif("دورك - تحديث الحجز",`تم رفض حجزك في ${salon?.name||"الصالون"}`,"❌","customer",customerSession?.id);
         toast$(`تم رفض حجزك في ${salon?.name||""}`,"warn");
