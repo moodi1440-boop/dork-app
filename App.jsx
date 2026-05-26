@@ -936,6 +936,12 @@ export default function App(){
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
       const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=5000").catch(()=>[]);
+
+      // DEBUG: تحقق من البيانات
+      console.log("🔍 DEBUG - Salon Rows:", salonRows?.length || 0, salonRows);
+      console.log("🔍 DEBUG - Booking Rows:", bookingRows?.length || 0);
+      console.log("🔍 DEBUG - Customer Rows:", custRows?.length || 0);
+
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
         salon.bookings = bookingRows
@@ -1465,7 +1471,8 @@ export default function App(){
   const customer=getCustomer();
   const favSet=new Set(customerFavs());
 
-  const approvedSalons=salons.filter(s=>s.status==="approved");
+  // جميع الصالونات المُرجعة من الاستعلام هي already approved بسبب &status=eq.approved
+  const approvedSalons=salons;
   const parseLatLng=url=>{ if(!url)return null; const m=url.match(/[?&q=]*(-?\d+\.?\d*),(-?\d+\.?\d*)/); return m?{lat:+m[1],lng:+m[2]}:null; };
   const distance=(a,b)=>{ if(!a||!b)return Infinity; const dx=a.lat-b.lat,dy=a.lng-b.lng; return Math.sqrt(dx*dx+dy*dy)*111; };
   const minPrice=s=>{ const v=Object.values(s.prices||{}); return v.length?Math.min(...v):0; };
@@ -1537,6 +1544,24 @@ export default function App(){
       {dbError&&<div style={{background:"#3a1a1a",color:"#e74c3c",padding:"12px 20px",borderRadius:10,fontSize:12,maxWidth:320,textAlign:"center",margin:"0 16px"}}>❌ خطأ في الاتصال بقاعدة البيانات:<br/><br/>{dbError}<br/><br/><small style={{color:"#aaa"}}>تحقق من الـ anon key في الكود</small></div>}
     </div>
   );
+
+  // رسالة تصحيح إذا كانت الصالونات فارغة
+  if(!loading && salons.length === 0) {
+    return(
+      <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#09112e 0%,#0d1535 45%,#111d42 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:20}}>
+        <style>{CSS}</style>
+        <div style={{fontSize:48}}>⚠️</div>
+        <div style={{color:"#e74c3c",fontSize:16,fontWeight:700,textAlign:"center"}}>لم يتم العثور على أي صالونات</div>
+        <div style={{color:"#aaa",fontSize:12,textAlign:"center",maxWidth:300}}>
+          • تحقق من اتصالك بالإنترنت<br/>
+          • انتظر لحظة وحاول مجدداً<br/>
+          • إذا استمرت المشكلة، تواصل معنا
+        </div>
+        <button onClick={() => loadData()} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:8,padding:"10px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer",marginTop:10}}>🔄 حاول مجدداً</button>
+        <div style={{color:"#666",fontSize:10,marginTop:20}}>DEBUG: salons.length = {salons.length}</div>
+      </div>
+    );
+  }
 
   return(
     <div style={G.app}>
