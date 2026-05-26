@@ -5,7 +5,7 @@
  * ✅ آمن من Race Conditions
  */
 
-import { supabase } from "../api/supabase";
+import { supabase } from "../../api/supabase";
 
 // ============================================
 // REALTIME MANAGER
