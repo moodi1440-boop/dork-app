@@ -396,7 +396,7 @@ function playTone(id, vol=0.7){
       o.type=type; o.frequency.value=freq;
       gn.gain.setValueAtTime(v,ctx.currentTime+start);
       gn.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
-      o.connect(gn); gn.connect(ctx.destination);
+      o.connect(gn); gn.connect(g);  // ← تصل بـ master gain بدلاً من destination
       o.start(ctx.currentTime+start); o.stop(ctx.currentTime+start+dur);
     };
     const plays={
