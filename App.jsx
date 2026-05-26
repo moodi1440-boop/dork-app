@@ -1205,11 +1205,9 @@ export default function App(){
       const sidStr=key.split("-")[0];
       const salon=salons.find(x=>String(x.id)===sidStr);
       if(was==="pending"&&now==="approved"){
-        sendNotif("دورك - تأكيد الحجز",`✅ تم قبول حجزك في ${salon?.name||"الصالون"} — يُرجى الحضور في الموعد`,"✅","customer",customerSession?.id);
         toast$(`✅ تم قبول حجزك في ${salon?.name||""}`);
         try{playTone("bell",1.0);}catch{}
       }else if(was==="pending"&&now==="rejected"){
-        sendNotif("دورك - تحديث الحجز",`تم رفض حجزك في ${salon?.name||"الصالون"}`,"❌","customer",customerSession?.id);
         toast$(`تم رفض حجزك في ${salon?.name||""}`,"warn");
       }
     }
