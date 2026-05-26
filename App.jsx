@@ -1079,8 +1079,31 @@ export default function App(){
         const name=b.customer_name||"عميل جديد";
         const time=b.time||"";
         const msg=`🔔 حجز جديد من ${name}${time?` الساعة ${time}`:""}`;
-        toast$(msg,"ok");
-        try{playTone("bell",0.55);}catch{}
+
+        // عرض Browser Notification (مثل popup الالغاء)
+        try {
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("حجز جديد", {
+              body: msg,
+              icon: "/favicon.ico",
+              dir: "rtl",
+              tag: "salon-booking-" + ownerSession
+            });
+          }
+        } catch (err) {
+          console.warn("⚠️ Notification failed:", err);
+        }
+
+        // Toast كـ fallback
+        toast$(msg, "ok");
+
+        // تشغيل الصوت
+        try {
+          playTone("bell", 0.6);
+        } catch (err) {
+          console.warn("⚠️ Tone failed:", err);
+        }
+
         setSalons(prev=>prev.map(s=>{
           if(s.id!==ownerSession)return s;
           return{...s,bookings:[...s.bookings,{id:b.id,salonId:b.salon_id,name:b.customer_name||"",phone:b.customer_phone||"",services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),barberId:b.barber_id||"any",barberName:b.barber_name||"",date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",attendance:b.attendance||null}]};
@@ -1090,8 +1113,14 @@ export default function App(){
     return()=>{supabase.removeChannel(ch);salonBookingCache.current.clear();};
   },[ownerSession]);
 
-  // 🔔 Notification deduplication cache (عميل + صالون)
+  // 🔔 Notification deduplication cache - لا نمسحها لتجنب التكرار
   const notificationCache=useRef(new Set());
+
+  // محو الـ cache كل ساعة فقط (لا عند unmount)
+  useEffect(()=>{
+    const interval=setInterval(()=>notificationCache.current.clear(),3600000);
+    return()=>clearInterval(interval);
+  },[]);
 
   // إشعارات مخصصة للمستخدم الحالي فقط
   useEffect(()=>{
@@ -1130,8 +1159,7 @@ export default function App(){
       .subscribe();
     return()=>{
       supabase.removeChannel(notifChannel);
-      notificationCache.current.clear(); // تنظيف الـ cache عند unmount
-      console.log("🧹 تم تنظيف notification cache");
+      // لا نمسح cache هنا لتجنب تكرار الإشعارات عند remount
     };
   },[ownerSession,customerSession?.id]);
 
