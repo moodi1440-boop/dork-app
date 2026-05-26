@@ -2506,7 +2506,7 @@ function StatsPanel({salon}){
     </div>
   );
 }
-function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved"}){
+function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved",todayDate}){
   const[showWaiting,setShowWaiting]=useState(false);
   const[showAddForm,setShowAddForm]=useState(false);
   const[filter,setFilter]=useState(defaultFilter);
@@ -2603,7 +2603,8 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
     }
   };
 
-  const allBks=[...salon.bookings].sort((a,b)=>{
+  // عرض حجوزات اليوم فقط (بناءً على todayDate)
+  const allBks=[...(todayDate?salon.bookings.filter(b=>b.date===todayDate):salon.bookings)].sort((a,b)=>{
     const order={pending:0,approved:1,rejected:2};
     const so=(order[a.status]??1)-(order[b.status]??1);
     if(so!==0)return so;
@@ -3611,6 +3612,13 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
   if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>لوحة الصالون</h2></div><div style={G.empty}>الصالون غير موجود</div></div></div>;
 
+  // حسابات اليوم بتوقيت السعودية (يجب قبل pending و approvedBookings)
+  const _td=getTodayDateInRiyadh();
+  const _tdBks=salon.bookings.filter(b=>b.date===_td);
+  const _tdApproved=_tdBks.filter(b=>b.status==="approved");
+  const _tdPending=_tdBks.filter(b=>b.status==="pending");
+  const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
+
   // شاشة القسم — تظهر لمرة واحدة فقط
   if(!oathDone) return(
     <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0d0d1a,#1a1228)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>
@@ -3643,23 +3651,18 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
     </div>
   );
 
-  const pending=salon.bookings.filter(b=>b.status==="pending").length;
+  const pending=_tdPending.length;
   const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
   const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
 
-  const approvedBookings=salon.bookings.filter(b=>b.status==="approved");
+  const approvedBookings=_tdApproved;
   const totalEarned=approvedBookings.length;
   const totalPaid=salon.totalPaid||0;
   const balance=totalEarned-totalPaid;
 
   const[showBalanceModal,setShowBalanceModal]=useState(false);
 
-  // ── حسابات ملخص اليوم (بتوقيت السعودية AST/GMT+3) ──
-  const _td=getTodayDateInRiyadh();
-  const _tdBks=salon.bookings.filter(b=>b.date===_td);
-  const _tdApproved=_tdBks.filter(b=>b.status==="approved");
-  const _tdPending=_tdBks.filter(b=>b.status==="pending");
-  const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
+  // حسابات إضافية لملخص اليوم
   const _now=new Date();
   const _nowMins=_now.getHours()*60+_now.getMinutes();
   const _nextBk=_tdApproved
@@ -3817,13 +3820,13 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         )}
       </div>
 
-      {/* ── الـ 4 مربعات ── */}
+      {/* ── الـ 4 مربعات (لليوم الحالي فقط) ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
-              {label:"الكل",value:salon.bookings.length,color:"#d4a017",filter:"all",delay:0},
-              {label:"انتظار",value:pending,color:"#f39c12",filter:"pending",delay:80},
-              {label:"مقبول",value:approvedBookings.length,color:"#27ae60",filter:"approved",delay:160},
-              {label:"مرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,color:"#e74c3c",filter:"rejected",delay:240}
+              {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:0},
+              {label:"انتظار",value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
+              {label:"مرفوض",value:_tdBks.filter(b=>b.status==="rejected").length,color:"#e74c3c",filter:"rejected",delay:160},
+              {label:"الكل",value:_tdBks.length,color:"#d4a017",filter:"all",delay:240}
             ].map(({label,value,color,filter,delay})=>{
               const isOpen=activeCard===filter;
               return(
@@ -3841,7 +3844,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           {/* قائمة الحجوزات المنسدلة */}
           {activeCard&&(
             <div style={{animation:"fadeInUp .3s ease-out",marginBottom:14,border:`1.5px solid ${activeCard==="all"?"#d4a017":activeCard==="pending"?"#f39c12":activeCard==="approved"?"#27ae60":"#e74c3c"}33`,borderTop:"none",borderRadius:"0 0 14px 14px",overflow:"hidden",background:"rgba(255,255,255,.02)"}}>
-              <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings}/>
+              <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings} todayDate={_td}/>
             </div>
           )}
         </>
