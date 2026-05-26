@@ -2421,9 +2421,6 @@ function TermsView({onAccept}){
 }
 
 function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
-  const[selectedDate,setSelectedDate]=useState(getTodayDateInRiyadh());
-  const[m,setM]=useState(new Date().getMonth());
-  const[y,setY]=useState(new Date().getFullYear());
   const[barberTab,setBarberTab]=useState("day");
   const[selectedBarber,setSelectedBarber]=useState(null);
   const[dayStats,setDayStats]=useState({});
@@ -2431,10 +2428,8 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[yearStats,setYearStats]=useState({});
   const[loadingStats,setLoadingStats]=useState(false);
 
-  const todayBks=salon.bookings.filter(b=>b.date===selectedDate);
-  const todayApproved=todayBks.filter(b=>b.status==="approved");
-  const todayPending=todayBks.filter(b=>b.status==="pending");
-  const todayRejected=todayBks.filter(b=>b.status==="rejected");
+  const m=new Date().getMonth();
+  const y=new Date().getFullYear();
 
   const loadBarberStats=useCallback(async()=>{
     if(!salon.barbers?.length)return;
@@ -2444,8 +2439,9 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       const dim=new Date(y,m+1,0).getDate();
       const startM=`${y}-${mm}-01`;
       const endM=`${y}-${mm}-${String(dim).padStart(2,"0")}`;
+      const today=getTodayDateInRiyadh();
       const[dayR,monthR,yearR]=await Promise.all([
-        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=eq.${selectedDate}&limit=100`),
+        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=eq.${today}&limit=100`),
         sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${startM}&date=lte.${endM}&limit=100`),
         sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${y}-01-01&date=lte.${y}-12-31&limit=100`)
       ]);
@@ -2455,7 +2451,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       setYearStats(grp(yearR));
     }catch(e){console.warn("barber stats error:",e);}
     setLoadingStats(false);
-  },[salon.id,salon.barbers?.length,selectedDate,m,y]);
+  },[salon.id,salon.barbers?.length,m,y]);
 
   useEffect(()=>{loadBarberStats();},[loadBarberStats]);
 
@@ -2477,73 +2473,6 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
   return(
     <div style={{paddingTop:4}}>
-      {/* التقويم */}
-      <div style={{background:"#13131f",borderRadius:14,padding:"12px",border:"1px solid #2a2a3a",marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#d4a017"}}>📅 {MONTHS_AR[m]} {y}</div>
-          <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>{const d=new Date(y,m-1,1);setM(d.getMonth());setY(d.getFullYear());}} style={{width:28,height:28,background:"transparent",border:"1px solid #2a2a3a",borderRadius:6,color:"#888",cursor:"pointer",fontSize:14}}>‹</button>
-            <button onClick={()=>{const d=new Date(y,m+1,1);setM(d.getMonth());setY(d.getFullYear());}} style={{width:28,height:28,background:"transparent",border:"1px solid #2a2a3a",borderRadius:6,color:"#888",cursor:"pointer",fontSize:14}}>›</button>
-          </div>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:8}}>
-          {["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"].map(day=>(
-            <div key={day} style={{textAlign:"center",fontSize:9,color:"#666",fontWeight:700}}>{day.slice(0,2)}</div>
-          ))}
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
-          {Array.from({length:new Date(y,m+1,0).getDate()},(_, i)=>{
-            const day=i+1;
-            const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-            const cnt=salon.bookings.filter(b=>b.date===dateStr).length;
-            const isSelected=dateStr===selectedDate;
-            return(
-              <button key={day} onClick={()=>setSelectedDate(dateStr)} style={{padding:"6px 0",borderRadius:8,border:`1.5px solid ${isSelected?"#d4a017":"#2a2a3a"}`,background:isSelected?"#d4a01722":"transparent",color:isSelected?"#d4a017":"#fff",fontSize:11,fontWeight:isSelected?700:500,cursor:"pointer",fontFamily:"inherit"}}>
-                <div>{day}</div>
-                {cnt>0&&<div style={{fontSize:7,color:isSelected?"#d4a017":"#888"}}>{cnt}</div>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* إحصائيات اليوم المختار */}
-      {selectedDate&&(
-        <div style={{marginBottom:12}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#d4a017",marginBottom:8}}>📊 {selectedDate}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
-            <div style={{background:"#27ae6022",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #27ae6044"}}>
-              <div style={{fontSize:18,fontWeight:900,color:"#27ae60"}}>{todayApproved.length}</div>
-              <div style={{fontSize:9,color:"#888"}}>مقبول</div>
-            </div>
-            <div style={{background:"#f39c1222",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #f39c1244"}}>
-              <div style={{fontSize:18,fontWeight:900,color:"#f39c12"}}>{todayPending.length}</div>
-              <div style={{fontSize:9,color:"#888"}}>انتظار</div>
-            </div>
-            <div style={{background:"#e74c3c22",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #e74c3c44"}}>
-              <div style={{fontSize:18,fontWeight:900,color:"#e74c3c"}}>{todayRejected.length}</div>
-              <div style={{fontSize:9,color:"#888"}}>مرفوض</div>
-            </div>
-            <div style={{background:"#d4a01722",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #d4a01744"}}>
-              <div style={{fontSize:18,fontWeight:900,color:"#d4a017"}}>{todayBks.length}</div>
-              <div style={{fontSize:9,color:"#888"}}>الكل</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* قائمة الحجوزات لليوم المختار */}
-      {selectedDate&&(
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#d4a017",marginBottom:8}}>📋 الحجوزات - {selectedDate}</div>
-          {todayBks.length===0?
-            <div style={{textAlign:"center",padding:"20px",color:"#888",fontSize:12}}>لا توجد حجوزات لهذا اليوم</div>
-          :
-            <NotifPanel salon={{...salon,bookings:todayBks}} onUpdate={onUpdate} customers={customers} refreshSalonBookings={refreshSalonBookings} defaultFilter="approved" todayDate={selectedDate}/>
-          }
-        </div>
-      )}
-
       {/* قسم أداء الحلاقين */}
       {salon.barbers&&salon.barbers.length>0&&(
         <div style={{background:"#13131f",borderRadius:14,padding:"12px",border:"1px solid #2a2a3a",marginBottom:12}}>
