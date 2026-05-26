@@ -3685,6 +3685,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
 // ==============================================
 function BookingCalendar({salon,onUpdate}){
   const[expandedDate,setExpandedDate]=useState(todayStr());
+  const[localAttendance,setLocalAttendance]=useState({});
   const today=new Date();
   const[viewMonth,setViewMonth]=useState(today.getMonth());
   const[viewYear,setViewYear]=useState(today.getFullYear());
@@ -3738,7 +3739,7 @@ function BookingCalendar({salon,onUpdate}){
           <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>📋 {expandedDate} • {selBks.length} حجز</div>
           {selBks.length===0
             ?<div style={G.empty}>لا توجد حجوزات في هذا اليوم</div>
-            :selBks.map(b=>{const[localAtt,setLocalAtt]=useState({});return(
+            :selBks.map(b=>(
               <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
                   <div style={{flex:1}}>
@@ -3750,9 +3751,9 @@ function BookingCalendar({salon,onUpdate}){
                   <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
                 </div>
                 {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
-                {b.status==="approved"&&(()=>{const att=localAtt[b.id]||b.attendance;return(<div style={{display:"flex",gap:6,marginTop:6,alignItems:"center"}}><span style={{fontSize:10,color:"#666"}}>الحضور:</span>{att?(<span style={{fontSize:11,fontWeight:700,color:att==="attended"?"#27ae60":"#e74c3c"}}>{att==="attended"?"✅ حضر":"❌ لم يحضر"}</span>):(<><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"attended"},"?id=eq."+b.id);setLocalAtt(p=>({...p,[b.id]:"attended"}));}catch{}}}>✅ حضر</button><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"no_show"},"?id=eq."+b.id);setLocalAtt(p=>({...p,[b.id]:"no_show"}));}catch{}}}>❌ لم يحضر</button></>)}</div>);})()}
+                {b.status==="approved"&&(()=>{const att=localAttendance[b.id]||b.attendance;return(<div style={{display:"flex",gap:6,marginTop:6,alignItems:"center"}}><span style={{fontSize:10,color:"#666"}}>الحضور:</span>{att?(<span style={{fontSize:11,fontWeight:700,color:att==="attended"?"#27ae60":"#e74c3c"}}>{att==="attended"?"✅ حضر":"❌ لم يحضر"}</span>):(<><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"attended"},"?id=eq."+b.id);setLocalAttendance(p=>({...p,[b.id]:"attended"}));}catch{}}}>✅ حضر</button><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"no_show"},"?id=eq."+b.id);setLocalAttendance(p=>({...p,[b.id]:"no_show"}));}catch{}}}>❌ لم يحضر</button></>)}</div>);})()}
               </div>
-            )})
+            ))
           }
         </>
       )}
