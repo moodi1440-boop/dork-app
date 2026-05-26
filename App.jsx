@@ -986,7 +986,7 @@ export default function App(){
     }
   },[loadData,loadAppSettings]);
 
-  useEffect(()=>{ loadData(); loadAppSettings(); }, [loadData,loadAppSettings]);
+  useEffect(()=>{ loadData(); }, [loadData]);
 
   // تحديث البيانات لما يرجع المستخدم للتطبيق من الخلفية
   useEffect(()=>{
