@@ -3683,9 +3683,11 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
 //  BOOKING CALENDAR - تقويم مرئي للحجوزات
 // ==============================================
 function BookingCalendar({salon,onUpdate}){
-  const[expandedDate,setExpandedDate]=useState(todayStr());
-  const[localAttendance,setLocalAttendance]=useState({});
   const today=new Date();
+  const todayDateStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+
+  const[expandedDate,setExpandedDate]=useState(todayDateStr);
+  const[localAttendance,setLocalAttendance]=useState({});
   const[viewMonth,setViewMonth]=useState(today.getMonth());
   const[viewYear,setViewYear]=useState(today.getFullYear());
 
@@ -3720,7 +3722,7 @@ function BookingCalendar({salon,onUpdate}){
           const d=i+1;
           const dateStr=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
           const dayBks=bookingsForDate(d);
-          const isToday=dateStr===todayStr();
+          const isToday=dateStr===todayDateStr;
           const isExp=dateStr===expandedDate;
           const hasBks=dayBks.length>0;
           return(
