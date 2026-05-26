@@ -3334,11 +3334,11 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
       // 4️⃣ الاشتراك في Realtime للحجوزات + Notifications + Sound
       realtimeManager.subscribeSalonBookings(s.id, (payload) => {
         if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
-          const { eventType, new: newData, old: oldData } = payload;
-          console.log(`🔄 حدث Realtime [${eventType}]:`, payload);
+          const { type, new: newData, old: oldData } = payload;
+          console.log(`🔄 حدث Realtime [${type}]:`, payload);
 
           // ✅ INSERT: حجز جديد — عرض إشعار مرئي + صوتي
-          if (eventType === "INSERT") {
+          if (type === "INSERT") {
             // منع التكرار: تتبع البوكينج بـ ID
             if (!subscriberCache.current.has(newData.id)) {
               subscriberCache.current.add(newData.id);
@@ -3366,7 +3366,7 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
           }
 
           // ✅ UPDATE: تحديث الحجز (صامت — بدون toast)
-          else if (eventType === "UPDATE") {
+          else if (type === "UPDATE") {
             setSalons(prev => prev.map(salon => {
               if (salon.id !== s.id) return salon;
               const bookings = [...salon.bookings];
@@ -3377,7 +3377,7 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
           }
 
           // ✅ DELETE: حذف الحجز (صامت — بدون toast)
-          else if (eventType === "DELETE") {
+          else if (type === "DELETE") {
             setSalons(prev => prev.map(salon => {
               if (salon.id !== s.id) return salon;
               return { ...salon, bookings: salon.bookings.filter(b => b.id !== oldData.id) };
@@ -3392,7 +3392,7 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
         // تحديث التقييمات في الـ state
         setReviews(prev => prev.map(review => {
           if (review.id !== payload.new.id) return review;
-          return payload.eventType === "DELETE" ? null : payload.new;
+          return payload.type === "DELETE" ? null : payload.new;
         }).filter(Boolean));
       });
 
@@ -3434,11 +3434,11 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
       // 4️⃣ الاشتراك في Realtime للحجوزات + Notifications + Sound
       realtimeManager.subscribeSalonBookings(s.id, (payload) => {
         if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
-          const { eventType, new: newData, old: oldData } = payload;
-          console.log(`🔄 حدث Realtime [${eventType}]:`, payload);
+          const { type, new: newData, old: oldData } = payload;
+          console.log(`🔄 حدث Realtime [${type}]:`, payload);
 
           // ✅ INSERT: حجز جديد — عرض إشعار مرئي + صوتي
-          if (eventType === "INSERT") {
+          if (type === "INSERT") {
             // منع التكرار: تتبع البوكينج بـ ID
             if (!subscriberCache.current.has(newData.id)) {
               subscriberCache.current.add(newData.id);
@@ -3466,7 +3466,7 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
           }
 
           // ✅ UPDATE: تحديث الحجز (صامت — بدون toast)
-          else if (eventType === "UPDATE") {
+          else if (type === "UPDATE") {
             setSalons(prev => prev.map(salon => {
               if (salon.id !== s.id) return salon;
               const bookings = [...salon.bookings];
@@ -3477,7 +3477,7 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
           }
 
           // ✅ DELETE: حذف الحجز (صامت — بدون toast)
-          else if (eventType === "DELETE") {
+          else if (type === "DELETE") {
             setSalons(prev => prev.map(salon => {
               if (salon.id !== s.id) return salon;
               return { ...salon, bookings: salon.bookings.filter(b => b.id !== oldData.id) };
@@ -3492,7 +3492,7 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
         // تحديث التقييمات في الـ state
         setReviews(prev => prev.map(review => {
           if (review.id !== payload.new.id) return review;
-          return payload.eventType === "DELETE" ? null : payload.new;
+          return payload.type === "DELETE" ? null : payload.new;
         }).filter(Boolean));
       });
 
