@@ -3245,7 +3245,7 @@ function ShareBtn({salon}){
 // ==============================================
 //  OWNER LOGIN + DASHBOARD
 // ==============================================
-function OwnerLogin({salons,setOwnerSession,setView,toast$}){
+function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,setReviews}){
   const[tab,setTab]=useState("phone");
   const[phone,setPhone]=useState(""); const[err,setErr]=useState("");
   const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
@@ -3270,20 +3270,48 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
 
       // 4️⃣ الاشتراك في Realtime للحجوزات
       realtimeManager.subscribeSalonBookings(s.id, (payload) => {
-        // تأكد أن التحديث أتى بعد Delta Sync
         if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
           console.log("🔄 حجز جديد/محدث عبر Realtime:", payload);
+
+          // تحديث الـ state مع الحجز الجديد/المحدث
+          setSalons(prev => prev.map(salon => {
+            if (salon.id !== s.id) return salon;
+
+            // معالجة العملية: INSERT أو UPDATE أو DELETE
+            if (payload.eventType === "DELETE") {
+              return { ...salon, bookings: salon.bookings.filter(b => b.id !== payload.old.id) };
+            }
+
+            const existingIdx = salon.bookings.findIndex(b => b.id === payload.new.id);
+            if (existingIdx >= 0) {
+              // UPDATE: تحديث الحجز الموجود
+              const newBookings = [...salon.bookings];
+              newBookings[existingIdx] = payload.new;
+              return { ...salon, bookings: newBookings };
+            } else {
+              // INSERT: إضافة حجز جديد
+              return { ...salon, bookings: [...salon.bookings, payload.new] };
+            }
+          }));
         }
       });
 
       // 5️⃣ الاشتراك في Realtime للتقييمات
       realtimeManager.subscribeSalonReviews(s.id, (payload) => {
         console.log("⭐ تقييم جديد عبر Realtime:", payload);
+        // تحديث التقييمات في الـ state
+        setReviews(prev => prev.map(review => {
+          if (review.id !== payload.new.id) return review;
+          return payload.eventType === "DELETE" ? null : payload.new;
+        }).filter(Boolean));
       });
 
       // 6️⃣ الاشتراك في الإشعارات الشخصية
       realtimeManager.subscribeNotifications(s.id, "salon", (payload) => {
         console.log("🔔 إشعار جديد للصالون:", payload.new.message);
+        if (toast$) {
+          toast$(`🔔 ${payload.new.message}`, "info");
+        }
       });
 
       // 7️⃣ تحديث الـ state والـ view
@@ -3317,17 +3345,46 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
       realtimeManager.subscribeSalonBookings(s.id, (payload) => {
         if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
           console.log("🔄 حجز جديد/محدث عبر Realtime:", payload);
+
+          // تحديث الـ state مع الحجز الجديد/المحدث
+          setSalons(prev => prev.map(salon => {
+            if (salon.id !== s.id) return salon;
+
+            // معالجة العملية: INSERT أو UPDATE أو DELETE
+            if (payload.eventType === "DELETE") {
+              return { ...salon, bookings: salon.bookings.filter(b => b.id !== payload.old.id) };
+            }
+
+            const existingIdx = salon.bookings.findIndex(b => b.id === payload.new.id);
+            if (existingIdx >= 0) {
+              // UPDATE: تحديث الحجز الموجود
+              const newBookings = [...salon.bookings];
+              newBookings[existingIdx] = payload.new;
+              return { ...salon, bookings: newBookings };
+            } else {
+              // INSERT: إضافة حجز جديد
+              return { ...salon, bookings: [...salon.bookings, payload.new] };
+            }
+          }));
         }
       });
 
       // 5️⃣ الاشتراك في Realtime للتقييمات
       realtimeManager.subscribeSalonReviews(s.id, (payload) => {
         console.log("⭐ تقييم جديد عبر Realtime:", payload);
+        // تحديث التقييمات في الـ state
+        setReviews(prev => prev.map(review => {
+          if (review.id !== payload.new.id) return review;
+          return payload.eventType === "DELETE" ? null : payload.new;
+        }).filter(Boolean));
       });
 
       // 6️⃣ الاشتراك في الإشعارات الشخصية
       realtimeManager.subscribeNotifications(s.id, "salon", (payload) => {
         console.log("🔔 إشعار جديد للصالون:", payload.new.message);
+        if (toast$) {
+          toast$(`🔔 ${payload.new.message}`, "info");
+        }
       });
 
       // 7️⃣ تحديث الـ state والـ view
