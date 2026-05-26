@@ -4105,14 +4105,22 @@ function BookingCalendar({salon,onUpdate}){
       {selBks.length===0
         ?<div style={G.empty}>لا توجد حجوزات في هذا اليوم</div>
         :selBks.map(b=>(
-          <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)"}`,marginBottom:8}}>
-            <div style={{display:"flex",justifyContent:"space-between"}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>🕐 {b.time} - {b.name}</div>
-                <div style={{fontSize:11,color:"#aaa"}}>{Array.isArray(b.services)?b.services.join(" + "):""} - {b.total||0} ر</div>
+          <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)"}`,marginBottom:8,padding:"12px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{b.name}</div>
+                  {b.barberName&&<span style={{fontSize:11,color:"#888"}}>({b.barberName})</span>}
+                </div>
+                <div style={{fontSize:11,color:"#aaa",marginBottom:2}}>📱 {b.phone}</div>
               </div>
-              <span style={{fontSize:10,color:b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)"}}>{b.status==="approved"?"✅":b.status==="rejected"?"❌":"⏳"}</span>
+              <span style={{fontSize:10,fontWeight:700,color:b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--p)"}}>{b.status==="approved"?"✅":b.status==="rejected"?"❌":"⏳"}</span>
             </div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#aaa",marginBottom:6,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>
+              <div>{Array.isArray(b.services)?b.services.join(" + "):""}</div>
+              <div style={{color:"var(--p)",fontWeight:700}}>{b.total||0} ر</div>
+            </div>
+            <div style={{fontSize:10,color:"#888",marginBottom:4}}>🕐 {b.time} • {b.date}</div>
             {b.status==="pending"&&<div style={{display:"flex",gap:6,marginTop:6}}>
               <button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button>
               <button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button>
