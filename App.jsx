@@ -4063,11 +4063,13 @@ function BookingCalendar({salon,onUpdate}){
 
   const daysInMonth=new Date(viewYear,viewMonth+1,0).getDate();
   const firstDay=new Date(viewYear,viewMonth,1).getDay();
+
+  const bks=salon?.bookings||[];
   const bookingsForDate=(d)=>{
     const dateStr=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    return salon.bookings.filter(b=>b.date===dateStr);
+    return bks.filter(b=>b.date===dateStr);
   };
-  const selBks=salon.bookings.filter(b=>b.date===selDate);
+  const selBks=bks.filter(b=>b.date===selDate);
 
   return(
     <div style={{paddingTop:4}}>
