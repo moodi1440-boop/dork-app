@@ -1066,6 +1066,30 @@ export default function App(){
     return()=>{clearTimeout(reviewTimeout);supabase.removeChannel(reviewChannel);};
   },[ownerSession]);
 
+  // 🔔 حجوزات الصالون الحالي — إشعار + صوت عند حجز جديد
+  const salonBookingCache=useRef(new Set());
+  useEffect(()=>{
+    if(!ownerSession)return;
+    salonBookingCache.current.clear();
+    const ch=supabase.channel(`salon-bookings-notify-${ownerSession}`)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'bookings',filter:`salon_id=eq.${ownerSession}`},(payload)=>{
+        const b=payload.new;
+        if(!b||salonBookingCache.current.has(b.id))return;
+        salonBookingCache.current.add(b.id);
+        const name=b.customer_name||"عميل جديد";
+        const time=b.time||"";
+        const msg=`🔔 حجز جديد من ${name}${time?` الساعة ${time}`:""}`;
+        toast$(msg,"ok");
+        try{playTone("bell",0.55);}catch{}
+        setSalons(prev=>prev.map(s=>{
+          if(s.id!==ownerSession)return s;
+          return{...s,bookings:[...s.bookings,{id:b.id,salonId:b.salon_id,name:b.customer_name||"",phone:b.customer_phone||"",services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),barberId:b.barber_id||"any",barberName:b.barber_name||"",date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",attendance:b.attendance||null}]};
+        }));
+      })
+      .subscribe();
+    return()=>{supabase.removeChannel(ch);salonBookingCache.current.clear();};
+  },[ownerSession]);
+
   // 🔔 Notification deduplication cache (عميل + صالون)
   const notificationCache=useRef(new Set());
 
