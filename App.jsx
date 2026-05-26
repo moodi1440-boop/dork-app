@@ -4100,28 +4100,8 @@ function BookingCalendar({salon,onUpdate}){
           );
         })}
       </div>
-      {/* إحصائيات اليوم المختار */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:12}}>
-        <div style={{background:"#27ae6022",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #27ae6044"}}>
-          <div style={{fontSize:18,fontWeight:900,color:"#27ae60"}}>{selBks.filter(b=>b.status==="approved").length}</div>
-          <div style={{fontSize:9,color:"#888"}}>مقبول</div>
-        </div>
-        <div style={{background:"#f39c1222",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #f39c1244"}}>
-          <div style={{fontSize:18,fontWeight:900,color:"#f39c12"}}>{selBks.filter(b=>b.status==="pending").length}</div>
-          <div style={{fontSize:9,color:"#888"}}>انتظار</div>
-        </div>
-        <div style={{background:"#e74c3c22",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #e74c3c44"}}>
-          <div style={{fontSize:18,fontWeight:900,color:"#e74c3c"}}>{selBks.filter(b=>b.status==="rejected").length}</div>
-          <div style={{fontSize:9,color:"#888"}}>مرفوض</div>
-        </div>
-        <div style={{background:"#d4a01722",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #d4a01744"}}>
-          <div style={{fontSize:18,fontWeight:900,color:"#d4a017"}}>{selBks.length}</div>
-          <div style={{fontSize:9,color:"#888"}}>الكل</div>
-        </div>
-      </div>
-
       {/* bookings for selected date */}
-      <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>📋 الحجوزات - {selDate}</div>
+      <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>📋 {selDate}</div>
       {selBks.length===0
         ?<div style={G.empty}>لا توجد حجوزات في هذا اليوم</div>
         :selBks.map(b=>(
