@@ -3343,17 +3343,26 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
               subscriberCache.current.add(newData.id);
 
               // 🔔 عرض إشعار مرئي فوراً
+              const customerName = newData.customer_name || "عميل جديد";
+              const time = newData.time || "وقت غير محدد";
+              const message = `🔔 حجز جديد من ${customerName} في الساعة ${time}`;
+
               if (toast$) {
-                const customerName = newData.customer_name || "عميل جديد";
-                const time = newData.time || "وقت غير محدد";
-                toast$(`🔔 حجز جديد من ${customerName} في الساعة ${time}`, "success");
+                toast$(message, "success");
+              } else {
+                // Fallback: إذا لم تكن toast$ موجودة
+                if ("Notification" in window && Notification.permission === "granted") {
+                  new Notification("حجز جديد", { body: message, icon: "🔔" });
+                } else {
+                  alert(message);
+                }
               }
 
-              // 🔊 تشغيل الصوت (مثل صفحة العميل)
+              // 🔊 تشغيل الصوت
               try {
                 playTone("bell", 0.55);
               } catch (err) {
-                console.warn("⚠️ خطأ في تشغيل الصوت:", err);
+                console.warn("⚠️ خطأ في الصوت:", err);
               }
             }
 
@@ -3441,17 +3450,26 @@ function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,set
               subscriberCache.current.add(newData.id);
 
               // 🔔 عرض إشعار مرئي فوراً
+              const customerName = newData.customer_name || "عميل جديد";
+              const time = newData.time || "وقت غير محدد";
+              const message = `🔔 حجز جديد من ${customerName} في الساعة ${time}`;
+
               if (toast$) {
-                const customerName = newData.customer_name || "عميل جديد";
-                const time = newData.time || "وقت غير محدد";
-                toast$(`🔔 حجز جديد من ${customerName} في الساعة ${time}`, "success");
+                toast$(message, "success");
+              } else {
+                // Fallback: إذا لم تكن toast$ موجودة
+                if ("Notification" in window && Notification.permission === "granted") {
+                  new Notification("حجز جديد", { body: message, icon: "🔔" });
+                } else {
+                  alert(message);
+                }
               }
 
-              // 🔊 تشغيل الصوت (مثل صفحة العميل)
+              // 🔊 تشغيل الصوت
               try {
                 playTone("bell", 0.55);
               } catch (err) {
-                console.warn("⚠️ خطأ في تشغيل الصوت:", err);
+                console.warn("⚠️ خطأ في الصوت:", err);
               }
             }
 
