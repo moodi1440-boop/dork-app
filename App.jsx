@@ -35,6 +35,10 @@ const SUPABASE_ANON   = "sb_publishable_3tbZHK51ohv9AITf-Mt5Ww_MGZ1DMQs";
 // Supabase JS client for Realtime subscriptions
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
+// Helper function: الحصول على تاريخ اليوم بتوقيت السعودية (AST/GMT+3)
+const getTodayDateInRiyadh = () =>
+  new Date().toLocaleString("en-CA", { timeZone: "Asia/Riyadh" }).split(' ')[0];
+
 async function sb(table, method, body, query = "") {
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
   const res = await fetch(url, {
@@ -2507,7 +2511,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   const[showAddForm,setShowAddForm]=useState(false);
   const[filter,setFilter]=useState(defaultFilter);
   const[localAtt,setLocalAtt]=useState({});
-  const[mForm,setMForm]=useState({name:"",phone:"",date:new Date().toISOString().slice(0,10),slot:""});
+  const[mForm,setMForm]=useState({name:"",phone:"",date:getTodayDateInRiyadh(),slot:""});
   const KEY=`dork_waiting_${salon.id}`;
   const[waitingList,setWaitingList]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
 
@@ -2610,14 +2614,6 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
 
   return(
     <div style={{paddingTop:4}}>
-      {/* فلتر الحجوزات - مقبول / مرفوض / انتظار */}
-      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[["approved","✅ مقبول",counts.approved],["rejected","❌ مرفوض",counts.rejected],["pending","⏳ انتظار",counts.pending]].map(([val,label,count])=>(
-          <button key={val} onClick={()=>setFilter(val)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${filter===val?"var(--p)":"#2a2a3a"}`,background:filter===val?"var(--pa25)":"transparent",color:filter===val?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:filter===val?700:400}}>
-            {label}{count>0&&<span style={{background:filter===val?"var(--p)":"#333",color:filter===val?"#000":"#aaa",borderRadius:10,padding:"1px 6px",fontSize:10,marginRight:3}}>{count}</span>}
-          </button>
-        ))}
-      </div>
 
       {/* قسم الانتظار - يظهر فقط عند فلتر "انتظار" */}
       {filter==="pending"&&(()=>{
@@ -2637,7 +2633,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
                 <input value={mForm.name} onChange={e=>setMForm(p=>({...p,name:e.target.value}))} style={{...inp2,direction:"rtl"}} placeholder="الاسم"/>
                 <input value={mForm.phone} onChange={e=>setMForm(p=>({...p,phone:e.target.value}))} style={{...inp2,direction:"ltr"}} placeholder="الجوال"/>
               </div>
-              <input type="date" value={mForm.date} min={new Date().toISOString().slice(0,10)} onChange={e=>setMForm(p=>({...p,date:e.target.value,slot:""}))} style={{...inp2,marginBottom:8}}/>
+              <input type="date" value={mForm.date} min={getTodayDateInRiyadh()} onChange={e=>setMForm(p=>({...p,date:e.target.value,slot:""}))} style={{...inp2,marginBottom:8}}/>
               <div style={{fontSize:11,color:"#888",marginBottom:6}}>اختر وقتاً (اختياري)</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
                 {allSlots.map(sl=>{const sel=mForm.slot===sl;return(
@@ -2652,7 +2648,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
                 const n=mForm.name.trim();const p=mForm.phone.trim();
                 if(!n||!p){alert("أدخل الاسم والجوال");return;}
                 addToWaiting(n,p,mForm.date,mForm.slot);
-                setMForm({name:"",phone:"",date:new Date().toISOString().slice(0,10),slot:""});
+                setMForm({name:"",phone:"",date:getTodayDateInRiyadh(),slot:""});
                 setShowAddForm(false);
               }} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#f39c12,#e67e22)",color:"#fff",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
                 ➕ إضافة للانتظار
@@ -3658,8 +3654,8 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
   const[showBalanceModal,setShowBalanceModal]=useState(false);
 
-  // ── حسابات ملخص اليوم ──
-  const _td=new Date().toISOString().slice(0,10);
+  // ── حسابات ملخص اليوم (بتوقيت السعودية AST/GMT+3) ──
+  const _td=getTodayDateInRiyadh();
   const _tdBks=salon.bookings.filter(b=>b.date===_td);
   const _tdApproved=_tdBks.filter(b=>b.status==="approved");
   const _tdPending=_tdBks.filter(b=>b.status==="pending");
@@ -3765,14 +3761,8 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {/* ── بطاقة ملخص اليوم ── */}
       <div className="today-card" style={{background:"linear-gradient(145deg,#16112a,#0e0e1e)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(212,160,23,.2)",boxShadow:"0 0 30px rgba(212,160,23,.06),inset 0 1px 0 rgba(212,160,23,.08)"}}>
 
-        {/* التاريخ + حالة المعلقة */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#d4a017"}}>🌅 {_dayLabel}</div>
-          {_tdPending.length>0
-            ?<div className="pending-pulse" style={{fontSize:10,color:"#f39c12",background:"rgba(243,156,18,.12)",padding:"3px 9px",borderRadius:8,fontWeight:700,border:"1px solid rgba(243,156,18,.25)"}}>⏳ {_tdPending.length} بانتظارك</div>
-            :<div style={{fontSize:10,color:"#27ae60",background:"rgba(39,174,96,.1)",padding:"3px 9px",borderRadius:8,fontWeight:700,border:"1px solid rgba(39,174,96,.2)"}}>✅ لا معلقة</div>
-          }
-        </div>
+        {/* التاريخ */}
+        <div style={{fontSize:13,fontWeight:700,color:"#d4a017",marginBottom:14}}>🌅 {_dayLabel}</div>
 
         {/* حجوزات اليوم + إيراد اليوم */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
