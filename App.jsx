@@ -183,7 +183,7 @@ function toAppSalon(row) {
     password: row.password || "",
     oathDone: row.oath_done || false,
     cancellationWindow: row.cancellation_window || 2,
-    created_at: row.created_at,
+    createdAt: row.created_at,
     bookings: [],
   };
 }
@@ -3445,7 +3445,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <div style={{fontSize:14,color:"#fff",fontWeight:700}}>⭐ التقييم: <span style={{color:"#f0c040"}}>{(salon.rating||0).toFixed(1)}</span></div>
         <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{salon.phone||"غير متوفر"}</span></div>
         <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📍 الموقع: <span style={{color:"#f0c040"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{salon.created_at?new Date(salon.created_at).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
       </div>
 
       {salon.status!=="approved"&&(
