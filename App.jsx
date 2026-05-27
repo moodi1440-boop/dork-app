@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
-import {
-  realtimeManager,
-  deltaFetchSalonBookings,
-  deltaFetchCustomerBookings,
-  deltaFetchSalonReviews,
-  clearAllSyncData
-} from "./src/utils/realtimeSync";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -120,42 +113,6 @@ async function registerFcmTokenForUser(userType, userId) {
       is_active: true
     });
   } catch {}
-}
-
-// ==================== SESSION MANAGEMENT ====================
-async function createUserSession(userType, userId) {
-  try {
-    const sessionToken = `${userType}-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem("dork_session_token", sessionToken);
-    localStorage.setItem("dork_session_type", userType);
-    localStorage.setItem("dork_session_id", String(userId));
-
-    // Store in Supabase for validation
-    await sb("user_sessions", "POST", {
-      user_type: userType,
-      user_id: userId,
-      session_token: sessionToken,
-      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    }).catch(() => {}); // Fail silently if table doesn't exist yet
-
-    return sessionToken;
-  } catch (error) {
-    console.error("Failed to create session:", error);
-    return null;
-  }
-}
-
-function getSessionToken() {
-  return localStorage.getItem("dork_session_token");
-}
-
-function setRLSSessionHeader(headers = {}) {
-  const token = getSessionToken();
-  if (token) {
-    // This will be set via Supabase config in actual requests
-    return { ...headers, "X-Session-Token": token };
-  }
-  return headers;
 }
 
 function loadFirebaseSDK() {
@@ -400,26 +357,26 @@ function playTone(id, vol=0.7){
       o.type=type; o.frequency.value=freq;
       gn.gain.setValueAtTime(v,ctx.currentTime+start);
       gn.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
-      o.connect(gn); gn.connect(g);  // ← تصل بـ master gain بدلاً من destination
+      o.connect(gn); gn.connect(ctx.destination);
       o.start(ctx.currentTime+start); o.stop(ctx.currentTime+start+dur);
     };
     const plays={
-      scissors:   ()=>{ beep(1200,0,.05,"square",.6*vol); beep(900,0.08,.05,"square",.6*vol); beep(1200,0.16,.05,"square",.6*vol); beep(900,0.24,.05,"square",.6*vol); },
-      razor:      ()=>{ [0,.06,.12,.18,.24].forEach(t=>beep(80+Math.random()*40,t,.07,"sawtooth",.7*vol)); },
-      bell:       ()=>{ beep(880,0,.6,"sine",.8*vol); beep(1100,.15,.5,"sine",.6*vol); beep(1320,.3,.8,"sine",.5*vol); },
-      cash:       ()=>{ beep(1800,0,.04,"square",.7*vol); beep(2400,.05,.04,"square",.6*vol); beep(1200,.12,.3,"triangle",.5*vol); },
-      welcome:    ()=>{ [523,659,784,1047].forEach((f,i)=>beep(f,i*.12,.25,"sine",.7*vol)); },
-      chime3:     ()=>{ [[880,.0],[1100,.18],[1320,.36],[1100,.54],[880,.72]].forEach(([f,t])=>beep(f,t,.25,"sine",.7*vol)); },
-      alert:      ()=>{ [0,.1,.2].forEach(t=>beep(1400,t,.08,"square",.8*vol)); },
-      classic:    ()=>{ [[440,0],[554,.15],[659,.3],[880,.5]].forEach(([f,t])=>beep(f,t,.3,"triangle",.7*vol)); },
-      barberpole: ()=>{ [440,550,660,770,880,770,660,550].forEach((f,i)=>beep(f,i*.1,.15,"sine",.6*vol)); },
-      clippers:   ()=>{ [0,.04,.08,.12,.16,.20,.24,.28].forEach(t=>beep(150+Math.random()*50,t,.05,"sawtooth",.5*vol)); },
-      towel:      ()=>{ beep(300,0,.2,"sine",.4*vol); beep(400,.2,.3,"sine",.5*vol); beep(500,.4,.4,"sine",.6*vol); },
-      mirror:     ()=>{ [[1047,0],[1319,.1],[1568,.2],[2093,.35]].forEach(([f,t])=>beep(f,t,.2,"sine",.7*vol)); },
-      spray:      ()=>{ [0,.05,.1,.15,.2,.25,.3].forEach(t=>beep(2000+Math.random()*500,t,.04,"square",.3*vol)); },
-      magazine:   ()=>{ beep(440,0,.1,"triangle",.5*vol); beep(330,.15,.1,"triangle",.5*vol); beep(440,.3,.3,"triangle",.6*vol); },
-      fanfare:    ()=>{ [[523,0],[659,.1],[784,.2],[1047,.3],[784,.5],[1047,.65]].forEach(([f,t])=>beep(f,t,.2,"square",.6*vol)); },
-      vip:        ()=>{ [[1047,0],[880,.15],[659,.3],[784,.45],[1047,.6],[1319,.8]].forEach(([f,t])=>beep(f,t,.25,"sine",.7*vol)); },
+      scissors:   ()=>{ beep(1200,0,.05,"square",.6); beep(900,0.08,.05,"square",.6); beep(1200,0.16,.05,"square",.6); beep(900,0.24,.05,"square",.6); },
+      razor:      ()=>{ [0,.06,.12,.18,.24].forEach(t=>beep(80+Math.random()*40,t,.07,"sawtooth",.7)); },
+      bell:       ()=>{ beep(880,0,.6,"sine",.8); beep(1100,.15,.5,"sine",.6); beep(1320,.3,.8,"sine",.5); },
+      cash:       ()=>{ beep(1800,0,.04,"square",.7); beep(2400,.05,.04,"square",.6); beep(1200,.12,.3,"triangle",.5); },
+      welcome:    ()=>{ [523,659,784,1047].forEach((f,i)=>beep(f,i*.12,.25,"sine",.7)); },
+      chime3:     ()=>{ [[880,.0],[1100,.18],[1320,.36],[1100,.54],[880,.72]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
+      alert:      ()=>{ [0,.1,.2].forEach(t=>beep(1400,t,.08,"square",.8)); },
+      classic:    ()=>{ [[440,0],[554,.15],[659,.3],[880,.5]].forEach(([f,t])=>beep(f,t,.3,"triangle",.7)); },
+      barberpole: ()=>{ [440,550,660,770,880,770,660,550].forEach((f,i)=>beep(f,i*.1,.15,"sine",.6)); },
+      clippers:   ()=>{ [0,.04,.08,.12,.16,.20,.24,.28].forEach(t=>beep(150+Math.random()*50,t,.05,"sawtooth",.5)); },
+      towel:      ()=>{ beep(300,0,.2,"sine",.4); beep(400,.2,.3,"sine",.5); beep(500,.4,.4,"sine",.6); },
+      mirror:     ()=>{ [[1047,0],[1319,.1],[1568,.2],[2093,.35]].forEach(([f,t])=>beep(f,t,.2,"sine",.7)); },
+      spray:      ()=>{ [0,.05,.1,.15,.2,.25,.3].forEach(t=>beep(2000+Math.random()*500,t,.04,"square",.3)); },
+      magazine:   ()=>{ beep(440,0,.1,"triangle",.5); beep(330,.15,.1,"triangle",.5); beep(440,.3,.3,"triangle",.6); },
+      fanfare:    ()=>{ [[523,0],[659,.1],[784,.2],[1047,.3],[784,.5],[1047,.65]].forEach(([f,t])=>beep(f,t,.2,"square",.6)); },
+      vip:        ()=>{ [[1047,0],[880,.15],[659,.3],[784,.45],[1047,.6],[1319,.8]].forEach(([f,t])=>beep(f,t,.25,"sine",.7)); },
     };
     plays[id]?.();
   }catch(e){}
@@ -934,18 +891,12 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
       const [salonRows, bookingRows, custRows] = await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,oath_done,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
+        sb("salons","GET",null,"?select=id,name,city,address,rating,barber_count,avg_rating,image_url,phone,status,created_at,latitude,longitude&status=eq.approved&order=created_at.desc&limit=500"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000"),
         sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,created_at&limit=500"),
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
       const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=5000").catch(()=>[]);
-
-      // DEBUG: تحقق من البيانات
-      console.log("🔍 DEBUG - Salon Rows:", salonRows?.length || 0, salonRows);
-      console.log("🔍 DEBUG - Booking Rows:", bookingRows?.length || 0);
-      console.log("🔍 DEBUG - Customer Rows:", custRows?.length || 0);
-
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
         salon.bookings = bookingRows
@@ -988,7 +939,7 @@ export default function App(){
     }
   },[loadData,loadAppSettings]);
 
-  useEffect(()=>{ loadData(); }, [loadData]);
+  useEffect(()=>{ loadData(); loadAppSettings(); }, [loadData,loadAppSettings]);
 
   // تحديث البيانات لما يرجع المستخدم للتطبيق من الخلفية
   useEffect(()=>{
@@ -1009,7 +960,7 @@ export default function App(){
 
   /* Supabase Realtime - تحديثات لحظية في كل الاتجاهات */
 
-  // جلب مخصص للحجوزات فقط (بدون إعادة تحميل كامل) مع limit لتقليل البيانات
+  // جلب مخصص للحجوزات فقط (بدون إعادة تحميل كامل)
   const pollBookings=useCallback(async()=>{
     try{
       const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000");
@@ -1028,7 +979,7 @@ export default function App(){
     }catch{}
   },[]);
 
-  // جلب مخصص للتقييمات فقط مع limit لتقليل البيانات
+  // جلب مخصص للتقييمات فقط
   const pollReviews=useCallback(async()=>{
     try{
       const rows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=5000");
@@ -1036,149 +987,54 @@ export default function App(){
     }catch{}
   },[]);
 
-  // ==================== REALTIME SUBSCRIPTIONS: محسّنة للأمان والأداء ====================
-
-  // حجوزات العميل الحالي فقط
   useEffect(()=>{
-    if(!customerSession?.id)return;
-    let bookingTimeout;
-    const bookingChannel=supabase.channel(`bookings-customer-${customerSession.id}`)
-      .on('postgres_changes',{event:'*',schema:'public',table:'bookings',filter:`customer_id=eq.${customerSession.id}`},(payload)=>{
-        clearTimeout(bookingTimeout);
-        bookingTimeout=setTimeout(()=>{
-          const b=payload.new;
-          if(b?.id)setSalons(prev=>prev.map(s=>({...s,bookings:(s.bookings||[]).map(x=>x.id===b.id?{...x,...b}:x)})));
-        },2000);
+    // حجوزات — لحظي في كل الاتجاهات (عميل ↔ صالون)
+    const bookingChannel=supabase.channel('realtime-bookings')
+      .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
+        pollBookings();
       })
       .subscribe();
-    return()=>{clearTimeout(bookingTimeout);supabase.removeChannel(bookingChannel);};
-  },[customerSession?.id]);
 
-  // تقييمات الصالون الحالي فقط
-  useEffect(()=>{
-    if(!ownerSession)return;
-    let reviewTimeout;
-    const reviewChannel=supabase.channel(`reviews-salon-${ownerSession}`)
-      .on('postgres_changes',{event:'*',schema:'public',table:'reviews',filter:`salon_id=eq.${ownerSession}`},(payload)=>{
-        clearTimeout(reviewTimeout);
-        reviewTimeout=setTimeout(()=>{
-          const r=payload.new;
-          if(r?.id)setReviews(prev=>prev.find(x=>x.id===r.id)?prev.map(x=>x.id===r.id?{...x,...r}:x):[r,...prev]);
-        },2000);
-      })
-      .subscribe();
-    return()=>{clearTimeout(reviewTimeout);supabase.removeChannel(reviewChannel);};
-  },[ownerSession]);
-
-  // 🔔 حجوزات الصالون الحالي — إشعار + صوت عند حجز جديد
-  const salonBookingCache=useRef(new Set());
-  useEffect(()=>{
-    if(!ownerSession)return;
-    salonBookingCache.current.clear();
-    const ch=supabase.channel(`salon-bookings-notify-${ownerSession}`)
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'bookings',filter:`salon_id=eq.${ownerSession}`},(payload)=>{
-        const b=payload.new;
-        if(!b||salonBookingCache.current.has(b.id))return;
-        salonBookingCache.current.add(b.id);
-        const name=b.customer_name||"عميل جديد";
-        const time=b.time||"";
-        const msg=`🔔 حجز جديد من ${name}${time?` الساعة ${time}`:""}`;
-
-        // عرض Browser Notification (مثل popup الالغاء)
-        try {
-          if ("Notification" in window && Notification.permission === "granted") {
-            new Notification("حجز جديد", {
-              body: msg,
-              icon: "/favicon.ico",
-              dir: "rtl",
-              tag: "salon-booking-" + ownerSession
-            });
-          }
-        } catch (err) {
-          console.warn("⚠️ Notification failed:", err);
-        }
-
-        // Toast كـ fallback
-        toast$(msg, "ok");
-
-        // تشغيل الصوت
-        try {
-          playTone("bell", 1.0);
-        } catch (err) {
-          console.warn("⚠️ Tone failed:", err);
-        }
-
-        setSalons(prev=>prev.map(s=>{
-          if(s.id!==ownerSession)return s;
-          return{...s,bookings:[...s.bookings,{id:b.id,salonId:b.salon_id,name:b.customer_name||"",phone:b.customer_phone||"",services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),barberId:b.barber_id||"any",barberName:b.barber_name||"",date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",attendance:b.attendance||null}]};
-        }));
-      })
-      .subscribe();
-    return()=>{supabase.removeChannel(ch);salonBookingCache.current.clear();};
-  },[ownerSession]);
-
-  // 🔔 Notification deduplication cache - لا نمسحها لتجنب التكرار
-  const notificationCache=useRef(new Set());
-
-  // محو الـ cache كل ساعة فقط (لا عند unmount)
-  useEffect(()=>{
-    const interval=setInterval(()=>notificationCache.current.clear(),3600000);
-    return()=>clearInterval(interval);
-  },[]);
-
-  // إشعارات مخصصة للمستخدم الحالي فقط
-  useEffect(()=>{
-    const notifChannel=supabase.channel('notifications-targeted')
+    // إشعارات الإدارة
+    const notifChannel=supabase.channel('realtime-notifications')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},(payload)=>{
         const n=payload.new;
         if(!n)return;
-        const isForMe=n.target_type==='all'||(n.target_type==='salon'&&ownerSession===n.target_id)||(n.target_type==='customer'&&customerSession?.id===n.target_id)||(n.target_type==='admin');
-        if(!isForMe)return;
-
-        // 🔒 منع التكرار: تتبع الإشعار بـ ID
-        if(notificationCache.current.has(n.id)){
-          console.log(`⚠️ تكرار إشعار مكتشف (ID: ${n.id}) - تم التجاهل`);
-          return;
-        }
-        notificationCache.current.add(n.id);
-
-        // تحديث العداد
+        if(n.target_type==="customer")return;
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
-
-        // تخزين في localStorage
-        try{const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");notifs.unshift({id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔔",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));}catch{}
-
-        // عرض إشعار مرئي واحد فقط
-        if("Notification" in window&&Notification.permission==="granted"){try{new Notification(`${n.icon||"🔔"} ${n.title}`,{body:n.body||"",dir:"rtl",lang:"ar"});}catch{}}
-
-        // 🔊 عرض Toast أيضاً للعميل
-        if(toast$){
-          toast$(`${n.icon||"🔔"} ${n.title}`, "info");
+        try{
+          const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+          notifs.unshift({id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔔",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false});
+          localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
+        }catch{}
+        if("Notification" in window&&Notification.permission==="granted"){
+          try{new Notification(`${n.icon||"🔔"} ${n.title}`,{body:n.body||"",dir:"rtl",lang:"ar"});}catch{}
         }
-
-        // 🔊 تشغيل صوت تنبيه
-        try{playTone("bell",1.0);}catch{}
       })
       .subscribe();
-    return()=>{
-      supabase.removeChannel(notifChannel);
-      // لا نمسح cache هنا لتجنب تكرار الإشعارات عند remount
-    };
-  },[ownerSession,customerSession?.id]);
 
-  // إعدادات التطبيق بـ debounce طويل
-  useEffect(()=>{
-    let settingsTimeout;
-    loadAppSettings({silent:true});
+    // إعدادات التطبيق
     const settingsChannel=supabase.channel('realtime-app-settings')
       .on('postgres_changes',{event:'*',schema:'public',table:'app_settings'},()=>{
-        clearTimeout(settingsTimeout);
-        settingsTimeout=setTimeout(()=>loadAppSettings({silent:true}),3000);
+        loadAppSettings({silent:true});
       })
       .subscribe();
-    return()=>{clearTimeout(settingsTimeout);supabase.removeChannel(settingsChannel);};
-  },[loadAppSettings]);
+
+    // تقييمات — لحظي في كل الاتجاهات (عميل ↔ صالون)
+    const reviewsChannel=supabase.channel('realtime-reviews')
+      .on('postgres_changes',{event:'*',schema:'public',table:'reviews'},()=>{
+        pollReviews();
+      })
+      .subscribe();
+
+    return()=>{
+      supabase.removeChannel(bookingChannel);
+      supabase.removeChannel(notifChannel);
+      supabase.removeChannel(settingsChannel);
+      supabase.removeChannel(reviewsChannel);
+    };
+  },[loadAppSettings,pollBookings,pollReviews]);
 
   useEffect(()=>{
     if(!customerSession?.id)return;
@@ -1210,7 +1066,7 @@ export default function App(){
       const salon=salons.find(x=>String(x.id)===sidStr);
       if(was==="pending"&&now==="approved"){
         toast$(`✅ تم قبول حجزك في ${salon?.name||""}`);
-        try{playTone("bell",1.0);}catch{}
+        try{playTone("bell",0.55);}catch{}
       }else if(was==="pending"&&now==="rejected"){
         toast$(`تم رفض حجزك في ${salon?.name||""}`,"warn");
       }
@@ -1302,72 +1158,7 @@ export default function App(){
   );
 
   // العميل لما يسجل دخول يروح للصفحة الرئيسية مباشرة
-  const handleCustomerLogin=async(c)=>{
-    try {
-      // 1️⃣ إنشاء جلسة
-      await createUserSession("customer",c.id);
-
-      // 2️⃣ تسجيل FCM Token
-      await registerFcmTokenForUser("customer",c.id);
-
-      // 3️⃣ Delta Sync: جلب الحجوزات المتغيرة
-      const { data: deltaBookings, syncTime } =
-        await deltaFetchCustomerBookings(c.id, sb);
-
-      // دمج مع البيانات الموجودة
-      if (deltaBookings && deltaBookings.length > 0) {
-        console.log(`✅ تم جلب ${deltaBookings.length} حجز متغير للعميل`);
-      }
-
-      // 4️⃣ الاشتراك في Realtime
-      realtimeManager.subscribeCustomerBookings(c.id, (payload) => {
-        // تأكد أن التحديث أتى بعد Delta Sync
-        if (syncTime && new Date(payload.new.updated_at) >= new Date(syncTime)) {
-          console.log("🔄 تحديث حجز جديد عبر Realtime:", payload);
-        }
-      });
-
-      // 5️⃣ الاشتراك في الإشعارات الشخصية
-      // 🔔 الإشعارات تُعالج بالفعل عبر الـ global notifChannel (line 1065)
-      // فلا حاجة لاشتراك إضافي في realtimeManager (يسبب تكرار)
-
-      // 6️⃣ تحديث الـ state
-      setCustomerSession(c);
-      setView("home");
-    } catch (error) {
-      console.error("❌ خطأ في تسجيل الدخول:", error);
-      toast$("❌ خطأ في تسجيل الدخول", "err");
-    }
-  };
-
-  // دالة تسجيل الخروج النظيف
-  const handleLogout = async () => {
-    try {
-      // 1️⃣ إلغاء جميع الاشتراكات
-      realtimeManager.unsubscribeAll();
-      console.log("✅ تم إلغاء جميع الاشتراكات");
-
-      // 2️⃣ مسح بيانات الـ Sync
-      clearAllSyncData();
-      console.log("✅ تم مسح بيانات الـ Sync");
-
-      // 3️⃣ مسح حالات الـ Session
-      localStorage.removeItem("dork_session_token");
-      localStorage.removeItem("dork_session_type");
-      localStorage.removeItem("dork_session_id");
-
-      // 4️⃣ مسح حالات المستخدم
-      setCustomerSession(null);
-      setOwnerSession(null);
-      setView("home");
-
-      console.log("✅ تم تسجيل الخروج بنظافة");
-      toast$("✅ تم تسجيل الخروج", "success");
-    } catch (error) {
-      console.error("❌ خطأ في تسجيل الخروج:", error);
-    }
-  };
-
+  const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");registerFcmTokenForUser("customer",c.id);};
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
   const toggleFav=async(salonId)=>{
@@ -1525,8 +1316,7 @@ export default function App(){
   const customer=getCustomer();
   const favSet=new Set(customerFavs());
 
-  // جميع الصالونات المُرجعة من الاستعلام هي already approved بسبب &status=eq.approved
-  const approvedSalons=salons;
+  const approvedSalons=salons.filter(s=>s.status==="approved");
   const parseLatLng=url=>{ if(!url)return null; const m=url.match(/[?&q=]*(-?\d+\.?\d*),(-?\d+\.?\d*)/); return m?{lat:+m[1],lng:+m[2]}:null; };
   const distance=(a,b)=>{ if(!a||!b)return Infinity; const dx=a.lat-b.lat,dy=a.lng-b.lng; return Math.sqrt(dx*dx+dy*dy)*111; };
   const minPrice=s=>{ const v=Object.values(s.prices||{}); return v.length?Math.min(...v):0; };
@@ -1580,7 +1370,6 @@ export default function App(){
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
     socialLinks,setSocialLinks:updateSocial,
     handleCustomerLogin,
-    handleLogout,
     darkMode,setDarkMode,
     compareSalons,setCompareSalons,
     handlePullRefresh,pullRefreshing,
@@ -1598,24 +1387,6 @@ export default function App(){
       {dbError&&<div style={{background:"#3a1a1a",color:"#e74c3c",padding:"12px 20px",borderRadius:10,fontSize:12,maxWidth:320,textAlign:"center",margin:"0 16px"}}>❌ خطأ في الاتصال بقاعدة البيانات:<br/><br/>{dbError}<br/><br/><small style={{color:"#aaa"}}>تحقق من الـ anon key في الكود</small></div>}
     </div>
   );
-
-  // رسالة تصحيح إذا كانت الصالونات فارغة
-  if(!loading && salons.length === 0) {
-    return(
-      <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#09112e 0%,#0d1535 45%,#111d42 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:20}}>
-        <style>{CSS}</style>
-        <div style={{fontSize:48}}>⚠️</div>
-        <div style={{color:"#e74c3c",fontSize:16,fontWeight:700,textAlign:"center"}}>لم يتم العثور على أي صالونات</div>
-        <div style={{color:"#aaa",fontSize:12,textAlign:"center",maxWidth:300}}>
-          • تحقق من اتصالك بالإنترنت<br/>
-          • انتظر لحظة وحاول مجدداً<br/>
-          • إذا استمرت المشكلة، تواصل معنا
-        </div>
-        <button onClick={() => loadData()} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:8,padding:"10px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer",marginTop:10}}>🔄 حاول مجدداً</button>
-        <div style={{color:"#666",fontSize:10,marginTop:20}}>DEBUG: salons.length = {salons.length}</div>
-      </div>
-    );
-  }
 
   return(
     <div style={G.app}>
@@ -2421,6 +2192,9 @@ function TermsView({onAccept}){
 }
 
 function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
+  const[selectedDate,setSelectedDate]=useState(getTodayDateInRiyadh());
+  const[m,setM]=useState(new Date().getMonth());
+  const[y,setY]=useState(new Date().getFullYear());
   const[barberTab,setBarberTab]=useState("day");
   const[selectedBarber,setSelectedBarber]=useState(null);
   const[dayStats,setDayStats]=useState({});
@@ -2428,8 +2202,10 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[yearStats,setYearStats]=useState({});
   const[loadingStats,setLoadingStats]=useState(false);
 
-  const m=new Date().getMonth();
-  const y=new Date().getFullYear();
+  const todayBks=salon.bookings.filter(b=>b.date===selectedDate);
+  const todayApproved=todayBks.filter(b=>b.status==="approved");
+  const todayPending=todayBks.filter(b=>b.status==="pending");
+  const todayRejected=todayBks.filter(b=>b.status==="rejected");
 
   const loadBarberStats=useCallback(async()=>{
     if(!salon.barbers?.length)return;
@@ -2439,9 +2215,8 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       const dim=new Date(y,m+1,0).getDate();
       const startM=`${y}-${mm}-01`;
       const endM=`${y}-${mm}-${String(dim).padStart(2,"0")}`;
-      const today=getTodayDateInRiyadh();
       const[dayR,monthR,yearR]=await Promise.all([
-        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=eq.${today}&limit=100`),
+        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=eq.${selectedDate}&limit=100`),
         sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${startM}&date=lte.${endM}&limit=100`),
         sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${y}-01-01&date=lte.${y}-12-31&limit=100`)
       ]);
@@ -2451,7 +2226,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       setYearStats(grp(yearR));
     }catch(e){console.warn("barber stats error:",e);}
     setLoadingStats(false);
-  },[salon.id,salon.barbers?.length,m,y]);
+  },[salon.id,salon.barbers?.length,selectedDate,m,y]);
 
   useEffect(()=>{loadBarberStats();},[loadBarberStats]);
 
@@ -2473,6 +2248,73 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
   return(
     <div style={{paddingTop:4}}>
+      {/* التقويم */}
+      <div style={{background:"#13131f",borderRadius:14,padding:"12px",border:"1px solid #2a2a3a",marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#d4a017"}}>📅 {MONTHS_AR[m]} {y}</div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={()=>{const d=new Date(y,m-1,1);setM(d.getMonth());setY(d.getFullYear());}} style={{width:28,height:28,background:"transparent",border:"1px solid #2a2a3a",borderRadius:6,color:"#888",cursor:"pointer",fontSize:14}}>‹</button>
+            <button onClick={()=>{const d=new Date(y,m+1,1);setM(d.getMonth());setY(d.getFullYear());}} style={{width:28,height:28,background:"transparent",border:"1px solid #2a2a3a",borderRadius:6,color:"#888",cursor:"pointer",fontSize:14}}>›</button>
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:8}}>
+          {["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"].map(day=>(
+            <div key={day} style={{textAlign:"center",fontSize:9,color:"#666",fontWeight:700}}>{day.slice(0,2)}</div>
+          ))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
+          {Array.from({length:new Date(y,m+1,0).getDate()},(_, i)=>{
+            const day=i+1;
+            const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+            const cnt=salon.bookings.filter(b=>b.date===dateStr).length;
+            const isSelected=dateStr===selectedDate;
+            return(
+              <button key={day} onClick={()=>setSelectedDate(dateStr)} style={{padding:"6px 0",borderRadius:8,border:`1.5px solid ${isSelected?"#d4a017":"#2a2a3a"}`,background:isSelected?"#d4a01722":"transparent",color:isSelected?"#d4a017":"#fff",fontSize:11,fontWeight:isSelected?700:500,cursor:"pointer",fontFamily:"inherit"}}>
+                <div>{day}</div>
+                {cnt>0&&<div style={{fontSize:7,color:isSelected?"#d4a017":"#888"}}>{cnt}</div>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* إحصائيات اليوم المختار */}
+      {selectedDate&&(
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#d4a017",marginBottom:8}}>📊 {selectedDate}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
+            <div style={{background:"#27ae6022",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #27ae6044"}}>
+              <div style={{fontSize:18,fontWeight:900,color:"#27ae60"}}>{todayApproved.length}</div>
+              <div style={{fontSize:9,color:"#888"}}>مقبول</div>
+            </div>
+            <div style={{background:"#f39c1222",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #f39c1244"}}>
+              <div style={{fontSize:18,fontWeight:900,color:"#f39c12"}}>{todayPending.length}</div>
+              <div style={{fontSize:9,color:"#888"}}>انتظار</div>
+            </div>
+            <div style={{background:"#e74c3c22",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #e74c3c44"}}>
+              <div style={{fontSize:18,fontWeight:900,color:"#e74c3c"}}>{todayRejected.length}</div>
+              <div style={{fontSize:9,color:"#888"}}>مرفوض</div>
+            </div>
+            <div style={{background:"#d4a01722",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #d4a01744"}}>
+              <div style={{fontSize:18,fontWeight:900,color:"#d4a017"}}>{todayBks.length}</div>
+              <div style={{fontSize:9,color:"#888"}}>الكل</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* قائمة الحجوزات لليوم المختار */}
+      {selectedDate&&(
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#d4a017",marginBottom:8}}>📋 الحجوزات - {selectedDate}</div>
+          {todayBks.length===0?
+            <div style={{textAlign:"center",padding:"20px",color:"#888",fontSize:12}}>لا توجد حجوزات لهذا اليوم</div>
+          :
+            <NotifPanel salon={{...salon,bookings:todayBks}} onUpdate={onUpdate} customers={customers} refreshSalonBookings={refreshSalonBookings} defaultFilter="approved" todayDate={selectedDate}/>
+          }
+        </div>
+      )}
+
       {/* قسم أداء الحلاقين */}
       {salon.barbers&&salon.barbers.length>0&&(
         <div style={{background:"#13131f",borderRadius:14,padding:"12px",border:"1px solid #2a2a3a",marginBottom:12}}>
@@ -2535,7 +2377,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
     </div>
   );
 }
-function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved",todayDate}){
+function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved"}){
   const[showWaiting,setShowWaiting]=useState(false);
   const[showAddForm,setShowAddForm]=useState(false);
   const[filter,setFilter]=useState(defaultFilter);
@@ -2632,8 +2474,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
     }
   };
 
-  // عرض حجوزات اليوم فقط (بناءً على todayDate)
-  const allBks=[...(todayDate?salon.bookings.filter(b=>b.date===todayDate):salon.bookings)].sort((a,b)=>{
+  const allBks=[...salon.bookings].sort((a,b)=>{
     const order={pending:0,approved:1,rejected:2};
     const so=(order[a.status]??1)-(order[b.status]??1);
     if(so!==0)return so;
@@ -3372,235 +3213,23 @@ function ShareBtn({salon}){
 // ==============================================
 //  OWNER LOGIN + DASHBOARD
 // ==============================================
-function OwnerLogin({salons,setSalons,setOwnerSession,setView,toast$,reviews,setReviews}){
+function OwnerLogin({salons,setOwnerSession,setView,toast$}){
   const[tab,setTab]=useState("phone");
   const[phone,setPhone]=useState(""); const[err,setErr]=useState("");
   const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
-
-  // 🔔 Cache لتتبع الإشعارات المعروضة (لمنع التكرار)
-  const subscriberCache=useRef(new Set());
-
-  // 🧹 Cleanup: تنظيف الـ cache عند Unmount (عند تغيير الـ view أو logout)
-  useEffect(()=>{
-    return ()=>{
-      subscriberCache.current.clear();
-      console.log("🧹 تم تنظيف cache الإشعارات على Logout/Unmount");
-    };
-  },[]);
-
-  const loginWithPhone=async()=>{
+  const loginWithPhone=()=>{
     const s=salons.find(x=>x.ownerPhone===phone.trim()||x.phone===phone.trim());
     if(!s){setErr("لا يوجد صالون بهذا الرقم");return;}
     if(s.banned){setErr("🚫 تم حظر هذا الصالون من قبل الإدارة — تواصل مع الدعم");return;}
     if(s.frozen){setErr("🔒 الصالون مجمّد مؤقتاً — تواصل مع الإدارة");return;}
-
-    try {
-      // 1️⃣ إنشاء جلسة
-      await createUserSession("salon", s.id);
-
-      // 2️⃣ تسجيل FCM Token
-      await registerFcmTokenForUser("salon", s.id);
-
-      // 3️⃣ Delta Sync: جلب الحجوزات المتغيرة
-      const { data: deltaBookings, syncTime } =
-        await deltaFetchSalonBookings(s.id, sb);
-
-      console.log(`✅ تم جلب ${deltaBookings.length} حجز متغير للصالون`);
-
-      // 4️⃣ الاشتراك في Realtime للحجوزات + Notifications + Sound
-      realtimeManager.subscribeSalonBookings(s.id, (payload) => {
-        const { type, new: newData, old: oldData } = payload;
-        console.log(`🔄 حدث Realtime [${type}]:`, payload);
-
-          // ✅ INSERT: حجز جديد — عرض إشعار مرئي + صوتي
-          if (type === "INSERT") {
-            // منع التكرار: تتبع البوكينج بـ ID
-            if (!subscriberCache.current.has(newData.id)) {
-              subscriberCache.current.add(newData.id);
-
-              // 🔔 عرض إشعار مرئي فوراً
-              const customerName = newData.customer_name || "عميل جديد";
-              const time = newData.time || "وقت غير محدد";
-              const message = `🔔 حجز جديد من ${customerName} في الساعة ${time}`;
-
-              if (toast$) {
-                toast$(message, "success");
-              } else {
-                // Fallback: إذا لم تكن toast$ موجودة
-                if ("Notification" in window && Notification.permission === "granted") {
-                  new Notification("حجز جديد", { body: message, icon: "🔔" });
-                } else {
-                  alert(message);
-                }
-              }
-
-              // 🔊 تشغيل الصوت
-              try {
-                playTone("bell", 0.55);
-              } catch (err) {
-                console.warn("⚠️ خطأ في الصوت:", err);
-              }
-            }
-
-            // تحديث الـ state
-            setSalons(prev => prev.map(salon => {
-              if (salon.id !== s.id) return salon;
-              return { ...salon, bookings: [...salon.bookings, newData] };
-            }));
-          }
-
-          // ✅ UPDATE: تحديث الحجز (صامت — بدون toast)
-          else if (type === "UPDATE") {
-            setSalons(prev => prev.map(salon => {
-              if (salon.id !== s.id) return salon;
-              const bookings = [...salon.bookings];
-              const idx = bookings.findIndex(b => b.id === newData.id);
-              if (idx >= 0) bookings[idx] = newData;
-              return { ...salon, bookings };
-            }));
-          }
-
-          // ✅ DELETE: حذف الحجز (صامت — بدون toast)
-          else if (type === "DELETE") {
-            setSalons(prev => prev.map(salon => {
-              if (salon.id !== s.id) return salon;
-              return { ...salon, bookings: salon.bookings.filter(b => b.id !== oldData.id) };
-            }));
-          }
-      });
-
-      // 5️⃣ الاشتراك في Realtime للتقييمات
-      realtimeManager.subscribeSalonReviews(s.id, (payload) => {
-        console.log("⭐ تقييم جديد عبر Realtime:", payload);
-        // تحديث التقييمات في الـ state
-        setReviews(prev => prev.map(review => {
-          if (review.id !== payload.new.id) return review;
-          return payload.type === "DELETE" ? null : payload.new;
-        }).filter(Boolean));
-      });
-
-      // 6️⃣ الاشتراك في الإشعارات الشخصية
-      realtimeManager.subscribeNotifications(s.id, "salon", (payload) => {
-        console.log("🔔 إشعار جديد للصالون:", payload.new.message);
-        if (toast$) {
-          toast$(`🔔 ${payload.new.message}`, "info");
-        }
-      });
-
-      // 7️⃣ تحديث الـ state والـ view
-      setOwnerSession(s.id);
-      setView("ownerDash");
-    } catch (error) {
-      console.error("❌ خطأ في تسجيل الدخول:", error);
-      setErr("❌ خطأ في تسجيل الدخول");
-    }
+    setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
   };
-  const loginWithPin=async()=>{
+  const loginWithPin=()=>{
     const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
     if(!s){setPinErr("رمز PIN غير صحيح");setPin("");return;}
     if(s.banned){setPinErr("🚫 تم حظر هذا الصالون");return;}
     if(s.frozen){setPinErr("🔒 الصالون مجمّد مؤقتاً");return;}
-
-    try {
-      // 1️⃣ إنشاء جلسة
-      await createUserSession("salon", s.id);
-
-      // 2️⃣ تسجيل FCM Token
-      await registerFcmTokenForUser("salon", s.id);
-
-      // 3️⃣ Delta Sync: جلب الحجوزات المتغيرة
-      const { data: deltaBookings, syncTime } =
-        await deltaFetchSalonBookings(s.id, sb);
-
-      console.log(`✅ تم جلب ${deltaBookings.length} حجز متغير للصالون`);
-
-      // 4️⃣ الاشتراك في Realtime للحجوزات + Notifications + Sound
-      realtimeManager.subscribeSalonBookings(s.id, (payload) => {
-        const { type, new: newData, old: oldData } = payload;
-        console.log(`🔄 حدث Realtime [${type}]:`, payload);
-
-          // ✅ INSERT: حجز جديد — عرض إشعار مرئي + صوتي
-          if (type === "INSERT") {
-            // منع التكرار: تتبع البوكينج بـ ID
-            if (!subscriberCache.current.has(newData.id)) {
-              subscriberCache.current.add(newData.id);
-
-              // 🔔 عرض إشعار مرئي فوراً
-              const customerName = newData.customer_name || "عميل جديد";
-              const time = newData.time || "وقت غير محدد";
-              const message = `🔔 حجز جديد من ${customerName} في الساعة ${time}`;
-
-              if (toast$) {
-                toast$(message, "success");
-              } else {
-                // Fallback: إذا لم تكن toast$ موجودة
-                if ("Notification" in window && Notification.permission === "granted") {
-                  new Notification("حجز جديد", { body: message, icon: "🔔" });
-                } else {
-                  alert(message);
-                }
-              }
-
-              // 🔊 تشغيل الصوت
-              try {
-                playTone("bell", 0.55);
-              } catch (err) {
-                console.warn("⚠️ خطأ في الصوت:", err);
-              }
-            }
-
-            // تحديث الـ state
-            setSalons(prev => prev.map(salon => {
-              if (salon.id !== s.id) return salon;
-              return { ...salon, bookings: [...salon.bookings, newData] };
-            }));
-          }
-
-          // ✅ UPDATE: تحديث الحجز (صامت — بدون toast)
-          else if (type === "UPDATE") {
-            setSalons(prev => prev.map(salon => {
-              if (salon.id !== s.id) return salon;
-              const bookings = [...salon.bookings];
-              const idx = bookings.findIndex(b => b.id === newData.id);
-              if (idx >= 0) bookings[idx] = newData;
-              return { ...salon, bookings };
-            }));
-          }
-
-          // ✅ DELETE: حذف الحجز (صامت — بدون toast)
-          else if (type === "DELETE") {
-            setSalons(prev => prev.map(salon => {
-              if (salon.id !== s.id) return salon;
-              return { ...salon, bookings: salon.bookings.filter(b => b.id !== oldData.id) };
-            }));
-          }
-      });
-
-      // 5️⃣ الاشتراك في Realtime للتقييمات
-      realtimeManager.subscribeSalonReviews(s.id, (payload) => {
-        console.log("⭐ تقييم جديد عبر Realtime:", payload);
-        // تحديث التقييمات في الـ state
-        setReviews(prev => prev.map(review => {
-          if (review.id !== payload.new.id) return review;
-          return payload.type === "DELETE" ? null : payload.new;
-        }).filter(Boolean));
-      });
-
-      // 6️⃣ الاشتراك في الإشعارات الشخصية
-      realtimeManager.subscribeNotifications(s.id, "salon", (payload) => {
-        console.log("🔔 إشعار جديد للصالون:", payload.new.message);
-        if (toast$) {
-          toast$(`🔔 ${payload.new.message}`, "info");
-        }
-      });
-
-      // 7️⃣ تحديث الـ state والـ view
-      setOwnerSession(s.id);
-      setView("ownerDash");
-    } catch (error) {
-      console.error("❌ خطأ في تسجيل الدخول:", error);
-      setPinErr("❌ خطأ في تسجيل الدخول");
-    }
+    setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
   };
   return(
     <div style={G.page}><div style={G.fp}>
@@ -3641,13 +3270,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
   if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>لوحة الصالون</h2></div><div style={G.empty}>الصالون غير موجود</div></div></div>;
 
-  // حسابات اليوم بتوقيت السعودية (يجب قبل pending و approvedBookings)
-  const _td=getTodayDateInRiyadh();
-  const _tdBks=salon.bookings.filter(b=>b.date===_td);
-  const _tdApproved=_tdBks.filter(b=>b.status==="approved");
-  const _tdPending=_tdBks.filter(b=>b.status==="pending");
-  const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
-
   // شاشة القسم — تظهر لمرة واحدة فقط
   if(!oathDone) return(
     <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0d0d1a,#1a1228)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>
@@ -3680,18 +3302,23 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
     </div>
   );
 
-  const pending=_tdPending.length;
+  const pending=salon.bookings.filter(b=>b.status==="pending").length;
   const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
   const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
 
-  const approvedBookings=_tdApproved;
+  const approvedBookings=salon.bookings.filter(b=>b.status==="approved");
   const totalEarned=approvedBookings.length;
   const totalPaid=salon.totalPaid||0;
   const balance=totalEarned-totalPaid;
 
   const[showBalanceModal,setShowBalanceModal]=useState(false);
 
-  // حسابات إضافية لملخص اليوم
+  // ── حسابات ملخص اليوم (بتوقيت السعودية AST/GMT+3) ──
+  const _td=getTodayDateInRiyadh();
+  const _tdBks=salon.bookings.filter(b=>b.date===_td);
+  const _tdApproved=_tdBks.filter(b=>b.status==="approved");
+  const _tdPending=_tdBks.filter(b=>b.status==="pending");
+  const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
   const _now=new Date();
   const _nowMins=_now.getHours()*60+_now.getMinutes();
   const _nextBk=_tdApproved
@@ -3849,13 +3476,13 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         )}
       </div>
 
-      {/* ── الـ 4 مربعات (لليوم الحالي فقط) ── */}
+      {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
-              {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:0},
-              {label:"انتظار",value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
-              {label:"مرفوض",value:_tdBks.filter(b=>b.status==="rejected").length,color:"#e74c3c",filter:"rejected",delay:160},
-              {label:"الكل",value:_tdBks.length,color:"#d4a017",filter:"all",delay:240}
+              {label:"الكل",value:salon.bookings.length,color:"#d4a017",filter:"all",delay:0},
+              {label:"انتظار",value:pending,color:"#f39c12",filter:"pending",delay:80},
+              {label:"مقبول",value:approvedBookings.length,color:"#27ae60",filter:"approved",delay:160},
+              {label:"مرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,color:"#e74c3c",filter:"rejected",delay:240}
             ].map(({label,value,color,filter,delay})=>{
               const isOpen=activeCard===filter;
               return(
@@ -3873,7 +3500,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           {/* قائمة الحجوزات المنسدلة */}
           {activeCard&&(
             <div style={{animation:"fadeInUp .3s ease-out",marginBottom:14,border:`1.5px solid ${activeCard==="all"?"#d4a017":activeCard==="pending"?"#f39c12":activeCard==="approved"?"#27ae60":"#e74c3c"}33`,borderTop:"none",borderRadius:"0 0 14px 14px",overflow:"hidden",background:"rgba(255,255,255,.02)"}}>
-              <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings} todayDate={_td}/>
+              <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings}/>
             </div>
           )}
         </>
@@ -4056,20 +3683,28 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
 //  BOOKING CALENDAR - تقويم مرئي للحجوزات
 // ==============================================
 function BookingCalendar({salon,onUpdate}){
-  const[selDate,setSelDate]=useState(todayStr());
   const today=new Date();
+  const todayDateStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+
+  const[expandedDate,setExpandedDate]=useState(null);
+  const[localAttendance,setLocalAttendance]=useState({});
   const[viewMonth,setViewMonth]=useState(today.getMonth());
   const[viewYear,setViewYear]=useState(today.getFullYear());
 
   const daysInMonth=new Date(viewYear,viewMonth+1,0).getDate();
   const firstDay=new Date(viewYear,viewMonth,1).getDay();
-
   const bks=salon?.bookings||[];
-  const bookingsForDate=(d)=>{
+
+  const bookingsForDate=useCallback((d)=>{
     const dateStr=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
     return bks.filter(b=>b.date===dateStr);
-  };
-  const selBks=bks.filter(b=>b.date===selDate);
+  },[viewYear,viewMonth,bks]);
+
+  const selBks=useMemo(()=>expandedDate?bks.filter(b=>b.date===expandedDate):[],[expandedDate,bks]);
+
+  const toggleDate=useCallback((dateStr)=>{
+    setExpandedDate(prev=>prev===dateStr?null:dateStr);
+  },[]);
 
   return(
     <div style={{paddingTop:4}}>
@@ -4089,13 +3724,13 @@ function BookingCalendar({salon,onUpdate}){
         {Array.from({length:daysInMonth},(_,i)=>{
           const d=i+1;
           const dateStr=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-          const bks=bookingsForDate(d);
-          const isToday=dateStr===todayStr();
-          const isSel=dateStr===selDate;
-          const hasBks=bks.length>0;
+          const dayBks=bookingsForDate(d);
+          const isToday=dateStr===todayDateStr;
+          const isExp=dateStr===expandedDate;
+          const hasBks=dayBks.length>0;
           return(
-            <button key={d} onClick={()=>setSelDate(dateStr)}
-              style={{position:"relative",padding:"6px 0",borderRadius:8,border:`1.5px solid ${isSel?"var(--p)":isToday?"var(--pd)":"#2a2a3a"}`,background:isSel?"var(--pa12)":isToday?"var(--pa05)":"transparent",color:isSel?"var(--p)":isToday?"var(--pl)":"#aaa",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:isSel||isToday?700:400,textAlign:"center"}}>
+            <button key={d} onClick={()=>toggleDate(dateStr)}
+              style={{position:"relative",padding:"6px 0",borderRadius:8,border:`1.5px solid ${isExp?"var(--p)":isToday?"var(--pd)":"#2a2a3a"}`,background:isExp?"var(--pa12)":isToday?"var(--pa05)":"transparent",color:isExp?"var(--p)":isToday?"var(--pl)":"#aaa",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:isExp||isToday?700:400,textAlign:"center"}}>
               {d}
               {hasBks&&<div style={{position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:"var(--p)"}}/>}
             </button>
@@ -4103,26 +3738,42 @@ function BookingCalendar({salon,onUpdate}){
         })}
       </div>
       {/* bookings for selected date */}
-      <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>📋 {selDate}</div>
-      {selBks.length===0
-        ?<div style={G.empty}>لا توجد حجوزات في هذا اليوم</div>
-        :selBks.map(b=>{const[localAtt,setLocalAtt]=useState({});return(
-          <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
-            <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name}</div>
-                <div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div>
-                <div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div>
-                <div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div>
+      {expandedDate&&(
+        <>
+          <div style={{fontSize:12,color:"var(--p)",fontWeight:700,marginBottom:8}}>📋 {expandedDate} • {selBks.length} حجز</div>
+          {selBks.length===0
+            ?<div style={G.empty}>لا توجد حجوزات في هذا اليوم</div>
+            :selBks.map(b=>(
+              <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name}</div>
+                    <div style={{fontSize:11,color:"#aaa"}}>📞 {b.phone}</div>
+                    <div style={{fontSize:11,color:"#aaa"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div>
+                    <div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div>
+                  </div>
+                  <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
+                </div>
+                {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
+                {b.status==="approved"&&!localAttendance[b.id]&&!b.attendance&&(
+                  <div style={{display:"flex",gap:6,marginTop:6}}>
+                    <button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"attended"},"?id=eq."+b.id);setLocalAttendance(p=>({...p,[b.id]:"attended"}));}catch{}}}>✅ حضر</button>
+                    <button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"no_show"},"?id=eq."+b.id);setLocalAttendance(p=>({...p,[b.id]:"no_show"}));}catch{}}}>❌ لم يحضر</button>
+                  </div>
+                )}
+                {b.status==="approved"&&(localAttendance[b.id]||b.attendance)&&(
+                  <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center"}}>
+                    <span style={{fontSize:10,color:"#666"}}>الحضور:</span>
+                    <span style={{fontSize:11,fontWeight:700,color:(localAttendance[b.id]||b.attendance)==="attended"?"#27ae60":"#e74c3c"}}>
+                      {(localAttendance[b.id]||b.attendance)==="attended"?"✅ حضر":"❌ لم يحضر"}
+                    </span>
+                  </div>
+                )}
               </div>
-              <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
-            </div>
-            {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
-            {b.status==="approved"&&(()=>{const att=localAtt[b.id]||b.attendance;return(<div style={{display:"flex",gap:6,marginTop:6,alignItems:"center"}}><span style={{fontSize:10,color:"#666"}}>الحضور:</span>{att?(<span style={{fontSize:11,fontWeight:700,color:att==="attended"?"#27ae60":"#e74c3c"}}>{att==="attended"?"✅ حضر":"❌ لم يحضر"}</span>):(<><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"attended"},"?id=eq."+b.id);setLocalAtt(p=>({...p,[b.id]:"attended"}));}catch{}}}>✅ حضر</button><button style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{try{await sb("bookings","PATCH",{attendance:"no_show"},"?id=eq."+b.id);setLocalAtt(p=>({...p,[b.id]:"no_show"}));}catch{}}}>❌ لم يحضر</button></>)}</div>);})()}
-          </div>
-        );})
-
-      }
+            ))
+          }
+        </>
+      )}
     </div>
   );
 }
