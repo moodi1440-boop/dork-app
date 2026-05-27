@@ -895,7 +895,17 @@ export default function App(){
         sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000"),
         sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,created_at&limit=500"),
       ]);
-      // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
+
+      if (!Array.isArray(salonRows)) {
+        throw new Error(`salonRows is not an array: ${typeof salonRows}`);
+      }
+      if (!Array.isArray(bookingRows)) {
+        throw new Error(`bookingRows is not an array: ${typeof bookingRows}`);
+      }
+      if (!Array.isArray(custRows)) {
+        throw new Error(`custRows is not an array: ${typeof custRows}`);
+      }
+
       const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=5000").catch(()=>[]);
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
@@ -922,7 +932,7 @@ export default function App(){
       setReviews(reviewRows||[]);
       setDbError(null);
     } catch(e) {
-      console.error(e);
+      console.error("❌ loadData Error:", e);
       setDbError(e.message);
     } finally {
       if(!silent)setLoading(false);
