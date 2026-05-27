@@ -3482,20 +3482,15 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <>
 
       {/* ── بادج الصالون المحسّن (ثابت في لوحتي فقط) ── */}
-      <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.1),rgba(212,160,23,.04))",border:"1px solid rgba(212,160,23,.22)",borderRadius:14,padding:"12px 14px",marginBottom:10}}>
-        <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8}}>
-          <div style={{width:44,height:44,borderRadius:12,background:"linear-gradient(135deg,#d4a017,#f0c040)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:"0 4px 12px rgba(212,160,23,.35)"}}>✂</div>
-          <div style={{flex:1}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
-              <div style={{fontSize:14,fontWeight:800,color:"#fff",letterSpacing:.3}}>{salon.name}</div>
-              <div style={{fontSize:11,fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,.18)",padding:"3px 8px",borderRadius:8,border:"1px solid rgba(212,160,23,.33)"}}>⭐ {(salon.rating||0).toFixed(1)}</div>
-            </div>
-            <div style={{display:"flex",gap:12,fontSize:10,color:"#aaa",marginBottom:4}}>
-              <div style={{fontWeight:700,color:"#d4a017"}}>📞 {salon.phone||"غير متوفر"}</div>
-            </div>
-            <div style={{fontSize:10,color:"#999"}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
-          </div>
+      <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.1),rgba(212,160,23,.04))",border:"1px solid rgba(212,160,23,.22)",borderRadius:14,padding:"14px",marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+          <div style={{fontSize:16,fontWeight:900,color:"#fff",letterSpacing:.3,flex:1}}>{salon.name}</div>
+          <div style={{fontSize:13,fontWeight:800,color:"#d4a017",background:"rgba(212,160,23,.18)",padding:"4px 10px",borderRadius:8,border:"1px solid rgba(212,160,23,.33)",whiteSpace:"nowrap"}}>⭐ {(salon.rating||0).toFixed(1)}</div>
         </div>
+        <div style={{display:"flex",gap:16,fontSize:12,marginBottom:4}}>
+          <div style={{fontWeight:800,color:"#d4a017"}}>📞 {salon.phone||"غير متوفر"}</div>
+        </div>
+        <div style={{fontSize:12,fontWeight:700,color:"#bbb"}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
       </div>
 
       {salon.status!=="approved"&&(
