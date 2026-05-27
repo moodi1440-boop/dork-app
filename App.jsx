@@ -3441,12 +3441,14 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <>
 
       {/* ── بادج الصالون المحسّن (ثابت في لوحتي فقط) ── */}
-      <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.15),rgba(212,160,23,.06))",border:"1.5px solid rgba(212,160,23,.35)",borderRadius:14,padding:"14px",marginBottom:10}}>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>✂ الاسم: <span style={{color:"#f0c040"}}>{salon.name}</span> {salon.status==="approved"&&<span style={{color:"#f0c040"}}>نشط</span>}</div>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>⭐ التقييم: <span style={{color:"#f0c040"}}>{(salon.rating||0).toFixed(1)}</span></div>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{salon.phone||"غير متوفر"}</span></div>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📍 الموقع: <span style={{color:"#f0c040"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
+      <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>✂ الاسم: <span style={{color:"#f0c040"}}>{salon.name}</span> {salon.status==="approved"&&<span style={{color:"#f0c040"}}>نشط</span>}</div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>⭐ التقييم: <span style={{color:"#f0c040"}}>{(salon.rating||0).toFixed(1)}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{salon.phone||"غير متوفر"}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📍 الموقع: <span style={{color:"#f0c040"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
+        </div>
       </div>
 
       {salon.status!=="approved"&&(
