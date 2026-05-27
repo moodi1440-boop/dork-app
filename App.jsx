@@ -2211,6 +2211,9 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[monthStats,setMonthStats]=useState({});
   const[yearStats,setYearStats]=useState({});
   const[loadingStats,setLoadingStats]=useState(false);
+  const[showDayPicker,setShowDayPicker]=useState(false);
+  const[showMonthPicker,setShowMonthPicker]=useState(false);
+  const[showYearPicker,setShowYearPicker]=useState(false);
 
   const todayBks=salon.bookings.filter(b=>b.date===selectedDate);
   const todayApproved=todayBks.filter(b=>b.status==="approved");
@@ -2258,33 +2261,72 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
   return(
     <div style={{paddingTop:4}}>
-      {/* التقويم */}
-      <div style={{background:"#13131f",borderRadius:14,padding:"12px",border:"1px solid #2a2a3a",marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#d4a017"}}>📅 {MONTHS_AR[m]} {y}</div>
-          <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>{const d=new Date(y,m-1,1);setM(d.getMonth());setY(d.getFullYear());}} style={{width:28,height:28,background:"transparent",border:"1px solid #2a2a3a",borderRadius:6,color:"#888",cursor:"pointer",fontSize:14}}>‹</button>
-            <button onClick={()=>{const d=new Date(y,m+1,1);setM(d.getMonth());setY(d.getFullYear());}} style={{width:28,height:28,background:"transparent",border:"1px solid #2a2a3a",borderRadius:6,color:"#888",cursor:"pointer",fontSize:14}}>›</button>
-          </div>
+      {/* فلترة اليوم/الشهر/السنة */}
+      <div style={{display:"flex",gap:6,marginBottom:12}}>
+        {/* اليوم */}
+        <div style={{flex:1,position:"relative"}}>
+          <button onClick={()=>setShowDayPicker(!showDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            {String(selectedDate.split("-")[2]).padStart(2,"0")} 📅
+          </button>
+          {showDayPicker&&(
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4}}>
+                {Array.from({length:31},(_, i)=>{
+                  const day=i+1;
+                  const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+                  const isSel=selectedDate===dateStr;
+                  return(
+                    <button key={day} onClick={()=>{setSelectedDate(dateStr);setShowDayPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"#d4a017":"#0d0d1a",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:8}}>
-          {["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"].map(day=>(
-            <div key={day} style={{textAlign:"center",fontSize:9,color:"#666",fontWeight:700}}>{day.slice(0,2)}</div>
-          ))}
+
+        {/* الشهر */}
+        <div style={{flex:1,position:"relative"}}>
+          <button onClick={()=>setShowMonthPicker(!showMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            {MONTHS_AR[m]} 📆
+          </button>
+          {showMonthPicker&&(
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
+                {MONTHS_AR.map((month,idx)=>{
+                  const isSel=m===idx;
+                  return(
+                    <button key={idx} onClick={()=>{setM(idx);setShowMonthPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"#0d0d1a",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                      {month}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
-          {Array.from({length:new Date(y,m+1,0).getDate()},(_, i)=>{
-            const day=i+1;
-            const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-            const cnt=salon.bookings.filter(b=>b.date===dateStr).length;
-            const isSelected=dateStr===selectedDate;
-            return(
-              <button key={day} onClick={()=>setSelectedDate(dateStr)} style={{padding:"6px 0",borderRadius:8,border:`1.5px solid ${isSelected?"#d4a017":"#2a2a3a"}`,background:isSelected?"#d4a01722":"transparent",color:isSelected?"#d4a017":"#fff",fontSize:11,fontWeight:isSelected?700:500,cursor:"pointer",fontFamily:"inherit"}}>
-                <div>{day}</div>
-                {cnt>0&&<div style={{fontSize:7,color:isSelected?"#d4a017":"#888"}}>{cnt}</div>}
-              </button>
-            );
-          })}
+
+        {/* السنة */}
+        <div style={{flex:1,position:"relative"}}>
+          <button onClick={()=>setShowYearPicker(!showYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            {y} 📊
+          </button>
+          {showYearPicker&&(
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
+                {Array.from({length:10},(_, i)=>{
+                  const year=new Date().getFullYear()-5+i;
+                  const isSel=y===year;
+                  return(
+                    <button key={year} onClick={()=>{setY(year);setShowYearPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"#0d0d1a",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                      {year}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
