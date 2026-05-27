@@ -3486,10 +3486,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
             <div style={{fontSize:18,fontWeight:900,color:"#fff",letterSpacing:.3,flex:1}}>{salon.name}</div>
-            {salon.status==="approved"&&<span style={{fontSize:11,fontWeight:800,color:"#f39c12",background:"rgba(243,156,18,.2)",padding:"5px 10px",borderRadius:8,border:"1.5px solid rgba(243,156,18,.5)"}}>نشط</span>}
+            {salon.status==="approved"&&<span style={{fontSize:11,fontWeight:800,color:"#d4a017",background:"rgba(212,160,23,.2)",padding:"5px 10px",borderRadius:8,border:"1.5px solid rgba(212,160,23,.5)"}}>نشط</span>}
             {salon.status!=="approved"&&<span style={{fontSize:11,fontWeight:800,color:"#e74c3c",background:"rgba(231,76,60,.2)",padding:"5px 10px",borderRadius:8,border:"1.5px solid rgba(231,76,60,.5)"}}>{salon.status==="rejected"?"محظور":"موقوف"}</span>}
           </div>
-          <div style={{fontSize:13,fontWeight:800,color:"#d4a017",background:"rgba(212,160,23,.25)",padding:"5px 12px",borderRadius:8,border:"1.5px solid rgba(212,160,23,.5)",whiteSpace:"nowrap"}}>⭐ {(salon.rating||0).toFixed(1)}</div>
+          <div style={{fontSize:14,fontWeight:900,color:"#d4a017",background:"rgba(212,160,23,.25)",padding:"5px 12px",borderRadius:8,border:"1.5px solid rgba(212,160,23,.5)",whiteSpace:"nowrap"}}>⭐ {(salon.rating||0).toFixed(1)}</div>
         </div>
         <div style={{display:"flex",gap:16,fontSize:12,marginBottom:4}}>
           <div style={{fontWeight:800,color:"#d4a017"}}>📞 {salon.phone||"غير متوفر"}</div>
