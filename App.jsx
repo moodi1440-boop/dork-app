@@ -2290,7 +2290,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
               {MONTHS_AR.map((month,idx)=>{
                 const isSel=m===idx;
                 return(
-                  <button key={idx} onClick={()=>{setM(idx);setShowMonthPicker(false);}} style={{width:"100%",padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:isSel?700:600,cursor:"pointer",fontFamily:"inherit",marginBottom:4,textAlign:"center"}}>
+                  <button key={idx} onClick={()=>{setM(idx);const d=parseInt(selectedDate.split("-")[2]);const newDate=`${y}-${String(idx+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;setSelectedDate(newDate);setShowMonthPicker(false);}} style={{width:"100%",padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:isSel?700:600,cursor:"pointer",fontFamily:"inherit",marginBottom:4,textAlign:"center"}}>
                     {month}
                   </button>
                 );
@@ -2310,7 +2310,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                 const year=new Date().getFullYear()-5+i;
                 const isSel=y===year;
                 return(
-                  <button key={year} onClick={()=>{setY(year);setShowYearPicker(false);}} style={{width:"100%",padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:isSel?700:600,cursor:"pointer",fontFamily:"inherit",marginBottom:4,textAlign:"center"}}>
+                  <button key={year} onClick={()=>{setY(year);const d=parseInt(selectedDate.split("-")[2]);const mo=parseInt(selectedDate.split("-")[1]);const newDate=`${year}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;setSelectedDate(newDate);setShowYearPicker(false);}} style={{width:"100%",padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:isSel?700:600,cursor:"pointer",fontFamily:"inherit",marginBottom:4,textAlign:"center"}}>
                     {year}
                   </button>
                 );
