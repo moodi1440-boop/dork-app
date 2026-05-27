@@ -3339,12 +3339,11 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
     </div>
   );
 
-  const pending=salon.bookings.filter(b=>b.status==="pending").length;
   const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
   const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
 
-  const approvedBookings=salon.bookings.filter(b=>b.status==="approved");
-  const totalEarned=approvedBookings.length;
+  const _tdRejected=_tdBks.filter(b=>b.status==="rejected");
+  const totalEarned=_tdApproved.length;
   const totalPaid=salon.totalPaid||0;
   const balance=totalEarned-totalPaid;
 
@@ -3516,10 +3515,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
-              {label:"الكل",value:salon.bookings.length,color:"#d4a017",filter:"all",delay:0},
-              {label:"انتظار",value:pending,color:"#f39c12",filter:"pending",delay:80},
-              {label:"مقبول",value:approvedBookings.length,color:"#27ae60",filter:"approved",delay:160},
-              {label:"مرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,color:"#e74c3c",filter:"rejected",delay:240}
+              {label:"الكل",value:_tdBks.length,color:"#d4a017",filter:"all",delay:0},
+              {label:"انتظار",value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
+              {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:160},
+              {label:"مرفوض",value:_tdRejected.length,color:"#e74c3c",filter:"rejected",delay:240}
             ].map(({label,value,color,filter,delay})=>{
               const isOpen=activeCard===filter;
               return(
