@@ -183,6 +183,7 @@ function toAppSalon(row) {
     password: row.password || "",
     oathDone: row.oath_done || false,
     cancellationWindow: row.cancellation_window || 2,
+    createdAt: row.created_at,
     bookings: [],
   };
 }
@@ -897,6 +898,7 @@ export default function App(){
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
       const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=5000").catch(()=>[]);
+      console.log("🔍 salonRows sample:", salonRows[0]); // للتحقق من البيانات
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
         salon.bookings = bookingRows
@@ -2195,11 +2197,9 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[selectedDate,setSelectedDate]=useState(getTodayDateInRiyadh());
   const[m,setM]=useState(new Date().getMonth());
   const[y,setY]=useState(new Date().getFullYear());
-  const[statsMode,setStatsMode]=useState("day");
   const[barberD,setBarberD]=useState(parseInt(getTodayDateInRiyadh().split("-")[2]));
   const[barberM,setBarberM]=useState(new Date().getMonth());
   const[barberY,setBarberY]=useState(new Date().getFullYear());
-  const[barberStatsMode,setBarberStatsMode]=useState("day");
   const[selectedBarber,setSelectedBarber]=useState(null);
   const[dayStats,setDayStats]=useState({});
   const[monthStats,setMonthStats]=useState({});
@@ -2212,21 +2212,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[showBarberMonthPicker,setShowBarberMonthPicker]=useState(false);
   const[showBarberYearPicker,setShowBarberYearPicker]=useState(false);
 
-  const getFilteredBookings=()=>{
-    if(statsMode==="day"){
-      return salon.bookings.filter(b=>b.date===selectedDate);
-    }else if(statsMode==="month"){
-      const mm=String(m+1).padStart(2,"0");
-      const startM=`${y}-${mm}-01`;
-      const endM=`${y}-${mm}-${String(new Date(y,m+1,0).getDate()).padStart(2,"0")}`;
-      return salon.bookings.filter(b=>b.date>=startM&&b.date<=endM);
-    }else{
-      const startY=`${y}-01-01`;
-      const endY=`${y}-12-31`;
-      return salon.bookings.filter(b=>b.date>=startY&&b.date<=endY);
-    }
-  };
-  const todayBks=getFilteredBookings();
+  const todayBks=salon.bookings.filter(b=>b.date===selectedDate);
   const todayApproved=todayBks.filter(b=>b.status==="approved");
   const todayPending=todayBks.filter(b=>b.status==="pending");
   const todayRejected=todayBks.filter(b=>b.status==="rejected");
@@ -2273,66 +2259,33 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
   return(
     <div style={{paddingTop:4}}>
-      {/* منتقيات اليوم/الشهر/السنة */}
-      <div style={{display:"flex",gap:8,marginBottom:12}}>
-        {/* اليوم */}
-        <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>{setStatsMode("day");setShowDayPicker(!showDayPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${statsMode==="day"?"#d4a017":"#2a2a3a"}`,background:statsMode==="day"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-            {String(parseInt(selectedDate.split("-")[2])).padStart(2,"0")} 📅
-          </button>
-          {showDayPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:250,overflowY:"auto",zIndex:10,marginTop:4}}>
-              {Array.from({length:31},(_, i)=>{
-                const day=i+1;
-                const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-                const isSel=selectedDate===dateStr;
-                return(
-                  <button key={day} onClick={()=>{setSelectedDate(dateStr);setShowDayPicker(false);}} style={{width:"100%",padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:isSel?700:600,cursor:"pointer",fontFamily:"inherit",marginBottom:4,textAlign:"center"}}>
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+      {/* التقويم */}
+      <div style={{background:"#13131f",borderRadius:14,padding:"12px",border:"1px solid #2a2a3a",marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#d4a017"}}>📅 {MONTHS_AR[m]} {y}</div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={()=>{const d=new Date(y,m-1,1);setM(d.getMonth());setY(d.getFullYear());}} style={{width:28,height:28,background:"transparent",border:"1px solid #2a2a3a",borderRadius:6,color:"#888",cursor:"pointer",fontSize:14}}>‹</button>
+            <button onClick={()=>{const d=new Date(y,m+1,1);setM(d.getMonth());setY(d.getFullYear());}} style={{width:28,height:28,background:"transparent",border:"1px solid #2a2a3a",borderRadius:6,color:"#888",cursor:"pointer",fontSize:14}}>›</button>
+          </div>
         </div>
-
-        {/* الشهر */}
-        <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>{setStatsMode("month");setShowMonthPicker(!showMonthPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${statsMode==="month"?"#d4a017":"#2a2a3a"}`,background:statsMode==="month"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-            {MONTHS_AR[m]} 📆
-          </button>
-          {showMonthPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:250,overflowY:"auto",zIndex:10,marginTop:4}}>
-              {MONTHS_AR.map((month,idx)=>{
-                const isSel=m===idx;
-                return(
-                  <button key={idx} onClick={()=>{setM(idx);const d=parseInt(selectedDate.split("-")[2]);const newDate=`${y}-${String(idx+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;setSelectedDate(newDate);setShowMonthPicker(false);}} style={{width:"100%",padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:isSel?700:600,cursor:"pointer",fontFamily:"inherit",marginBottom:4,textAlign:"center"}}>
-                    {month}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:8}}>
+          {["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"].map(day=>(
+            <div key={day} style={{textAlign:"center",fontSize:9,color:"#666",fontWeight:700}}>{day.slice(0,2)}</div>
+          ))}
         </div>
-
-        {/* السنة */}
-        <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>{setStatsMode("year");setShowYearPicker(!showYearPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${statsMode==="year"?"#d4a017":"#2a2a3a"}`,background:statsMode==="year"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-            {y} 📊
-          </button>
-          {showYearPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:250,overflowY:"auto",zIndex:10,marginTop:4}}>
-              {Array.from({length:10},(_, i)=>{
-                const year=new Date().getFullYear()-5+i;
-                const isSel=y===year;
-                return(
-                  <button key={year} onClick={()=>{setY(year);const d=parseInt(selectedDate.split("-")[2]);const mo=parseInt(selectedDate.split("-")[1]);const newDate=`${year}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;setSelectedDate(newDate);setShowYearPicker(false);}} style={{width:"100%",padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:isSel?700:600,cursor:"pointer",fontFamily:"inherit",marginBottom:4,textAlign:"center"}}>
-                    {year}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
+          {Array.from({length:new Date(y,m+1,0).getDate()},(_, i)=>{
+            const day=i+1;
+            const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+            const cnt=salon.bookings.filter(b=>b.date===dateStr).length;
+            const isSelected=dateStr===selectedDate;
+            return(
+              <button key={day} onClick={()=>setSelectedDate(dateStr)} style={{padding:"6px 0",borderRadius:8,border:`1.5px solid ${isSelected?"#d4a017":"#2a2a3a"}`,background:isSelected?"#d4a01722":"transparent",color:isSelected?"#d4a017":"#fff",fontSize:11,fontWeight:isSelected?700:500,cursor:"pointer",fontFamily:"inherit"}}>
+                <div>{day}</div>
+                {cnt>0&&<div style={{fontSize:7,color:isSelected?"#d4a017":"#888"}}>{cnt}</div>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -2368,62 +2321,68 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
           <div style={{fontSize:13,fontWeight:700,color:"#d4a017",marginBottom:10}}>👨‍💼 أداء الحلاقين</div>
 
           {/* منتقيات اليوم/الشهر/السنة للحلاقين */}
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <div style={{display:"flex",gap:6,marginBottom:10}}>
             {/* اليوم */}
             <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>{setBarberStatsMode("day");setShowBarberDayPicker(!showBarberDayPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${barberStatsMode==="day"?"#d4a017":"#2a2a3a"}`,background:barberStatsMode==="day"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              <button onClick={()=>setShowBarberDayPicker(!showBarberDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                 {String(barberD).padStart(2,"0")} 📅
               </button>
               {showBarberDayPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:250,overflowY:"auto",zIndex:10,marginTop:4}}>
-                  {Array.from({length:31},(_, i)=>{
-                    const day=i+1;
-                    const isSel=barberD===day;
-                    return(
-                      <button key={day} onClick={()=>{setBarberD(day);setShowBarberDayPicker(false);}} style={{width:"100%",padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:isSel?700:600,cursor:"pointer",fontFamily:"inherit",marginBottom:4,textAlign:"center"}}>
-                        {day}
-                      </button>
-                    );
-                  })}
+                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4}}>
+                    {Array.from({length:31},(_, i)=>{
+                      const day=i+1;
+                      const isSel=barberD===day;
+                      return(
+                        <button key={day} onClick={()=>{setBarberD(day);setShowBarberDayPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"#d4a017":"#0d0d1a",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
 
             {/* الشهر */}
             <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>{setBarberStatsMode("month");setShowBarberMonthPicker(!showBarberMonthPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${barberStatsMode==="month"?"#d4a017":"#2a2a3a"}`,background:barberStatsMode==="month"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              <button onClick={()=>setShowBarberMonthPicker(!showBarberMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                 {MONTHS_AR[barberM]} 📆
               </button>
               {showBarberMonthPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:250,overflowY:"auto",zIndex:10,marginTop:4}}>
-                  {MONTHS_AR.map((month,idx)=>{
-                    const isSel=barberM===idx;
-                    return(
-                      <button key={idx} onClick={()=>{setBarberM(idx);setShowBarberMonthPicker(false);}} style={{width:"100%",padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:isSel?700:600,cursor:"pointer",fontFamily:"inherit",marginBottom:4,textAlign:"center"}}>
-                        {month}
-                      </button>
-                    );
-                  })}
+                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
+                    {MONTHS_AR.map((month,idx)=>{
+                      const isSel=barberM===idx;
+                      return(
+                        <button key={idx} onClick={()=>{setBarberM(idx);setShowBarberMonthPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"#0d0d1a",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                          {month}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
 
             {/* السنة */}
             <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>{setBarberStatsMode("year");setShowBarberYearPicker(!showBarberYearPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${barberStatsMode==="year"?"#d4a017":"#2a2a3a"}`,background:barberStatsMode==="year"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              <button onClick={()=>setShowBarberYearPicker(!showBarberYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                 {barberY} 📊
               </button>
               {showBarberYearPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:250,overflowY:"auto",zIndex:10,marginTop:4}}>
-                  {Array.from({length:10},(_, i)=>{
-                    const year=new Date().getFullYear()-5+i;
-                    const isSel=barberY===year;
-                    return(
-                      <button key={year} onClick={()=>{setBarberY(year);setShowBarberYearPicker(false);}} style={{width:"100%",padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:isSel?700:600,cursor:"pointer",fontFamily:"inherit",marginBottom:4,textAlign:"center"}}>
-                        {year}
-                      </button>
-                    );
-                  })}
+                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #2a2a3a",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
+                    {Array.from({length:10},(_, i)=>{
+                      const year=new Date().getFullYear()-5+i;
+                      const isSel=barberY===year;
+                      return(
+                        <button key={year} onClick={()=>{setBarberY(year);setShowBarberYearPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"#0d0d1a",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                          {year}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -2433,7 +2392,6 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {salon.barbers.map(barber=>{
               const stats=getBarberStats(barber.id);
-              const displayStats=barberStatsMode==="day"?{count:stats.dayCount,revenue:stats.dayRevenue}:barberStatsMode==="month"?{count:stats.monthCount,revenue:stats.monthRevenue}:{count:stats.yearCount,revenue:stats.yearRevenue};
               return(
                 <div key={barber.id} style={{background:"#0d0d1a",borderRadius:10,padding:"10px 12px",border:"1px solid #2a2a3a",transition:"all .2s"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -2441,11 +2399,11 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                       <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#d4a017,#f0c040)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>✂</div>
                       <div style={{flex:1}}>
                         <div style={{fontSize:12,fontWeight:700,color:"#fff"}}>{barber.name||barber.barber_name||"بدون اسم"}</div>
-                        <div style={{fontSize:10,color:"#888"}}>{displayStats.count} حجز</div>
+                        <div style={{fontSize:10,color:"#888"}}>{stats.dayCount} حجز</div>
                       </div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:13,fontWeight:900,color:"#d4a017"}}>{displayStats.revenue}</div>
+                      <div style={{fontSize:13,fontWeight:900,color:"#d4a017"}}>{stats.dayRevenue}</div>
                       <div style={{fontSize:9,color:"#888"}}>ريال</div>
                     </div>
                   </div>
@@ -3383,22 +3341,23 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
     </div>
   );
 
+  const pending=salon.bookings.filter(b=>b.status==="pending").length;
+  const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
+  const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
+
+  const approvedBookings=salon.bookings.filter(b=>b.status==="approved");
+  const totalEarned=approvedBookings.length;
+  const totalPaid=salon.totalPaid||0;
+  const balance=totalEarned-totalPaid;
+
+  const[showBalanceModal,setShowBalanceModal]=useState(false);
+
   // ── حسابات ملخص اليوم (بتوقيت السعودية AST/GMT+3) ──
   const _td=getTodayDateInRiyadh();
   const _tdBks=salon.bookings.filter(b=>b.date===_td);
   const _tdApproved=_tdBks.filter(b=>b.status==="approved");
   const _tdPending=_tdBks.filter(b=>b.status==="pending");
-  const _tdRejected=_tdBks.filter(b=>b.status==="rejected");
   const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
-
-  const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
-  const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
-
-  const totalEarned=_tdApproved.length;
-  const totalPaid=salon.totalPaid||0;
-  const balance=totalEarned-totalPaid;
-
-  const[showBalanceModal,setShowBalanceModal]=useState(false);
   const _now=new Date();
   const _nowMins=_now.getHours()*60+_now.getMinutes();
   const _nextBk=_tdApproved
@@ -3482,12 +3441,14 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <>
 
       {/* ── بادج الصالون المحسّن (ثابت في لوحتي فقط) ── */}
-      <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.15),rgba(212,160,23,.06))",border:"1.5px solid rgba(212,160,23,.35)",borderRadius:14,padding:"14px",marginBottom:10}}>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>✂ الاسم: <span style={{color:"#f0c040"}}>{salon.name}</span> {salon.status==="approved"&&<span style={{color:"#f0c040"}}>نشط</span>}</div>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>⭐ التقييم: <span style={{color:"#f0c040"}}>{(salon.rating||0).toFixed(1)}</span></div>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{salon.phone||"غير متوفر"}</span></div>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📍 الموقع: <span style={{color:"#f0c040"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
-        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{salon.created_at?new Date(salon.created_at).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
+      <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>✂ الاسم: <span style={{color:"#f0c040"}}>{salon.name}</span> {salon.status==="approved"&&<span style={{color:"#f0c040"}}>نشط</span>}</div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>⭐ التقييم: <span style={{color:"#f0c040"}}>{(salon.rating||0).toFixed(1)}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{salon.phone||"غير متوفر"}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📍 الموقع: <span style={{color:"#f0c040"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
+        </div>
       </div>
 
       {salon.status!=="approved"&&(
@@ -3558,10 +3519,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
-              {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:0},
-              {label:"انتظار",value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
-              {label:"مرفوض",value:_tdRejected.length,color:"#e74c3c",filter:"rejected",delay:160},
-              {label:"الكل",value:_tdBks.length,color:"#d4a017",filter:"all",delay:240}
+              {label:"الكل",value:salon.bookings.length,color:"#d4a017",filter:"all",delay:0},
+              {label:"انتظار",value:pending,color:"#f39c12",filter:"pending",delay:80},
+              {label:"مقبول",value:approvedBookings.length,color:"#27ae60",filter:"approved",delay:160},
+              {label:"مرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,color:"#e74c3c",filter:"rejected",delay:240}
             ].map(({label,value,color,filter,delay})=>{
               const isOpen=activeCard===filter;
               return(
