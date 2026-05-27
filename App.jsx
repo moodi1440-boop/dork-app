@@ -3439,13 +3439,12 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <>
 
       {/* ── بادج الصالون المحسّن (ثابت في لوحتي فقط) ── */}
-      <div style={{display:"flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,rgba(212,160,23,.1),rgba(212,160,23,.04))",border:"1px solid rgba(212,160,23,.22)",borderRadius:14,padding:"11px 14px",marginBottom:10}}>
-        <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#d4a017,#f0c040)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:"0 4px 12px rgba(212,160,23,.35)"}}>✂</div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:15,fontWeight:800,color:"#fff",letterSpacing:.3}}>{salon.name}</div>
-          <div style={{fontSize:11,color:"#999",marginTop:1}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
-        </div>
-        <span style={{fontSize:11,fontWeight:700,color:statusColor,background:`${statusColor}18`,padding:"4px 10px",borderRadius:10,border:`1px solid ${statusColor}33`}}>{statusLabel}</span>
+      <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.15),rgba(212,160,23,.06))",border:"1.5px solid rgba(212,160,23,.35)",borderRadius:14,padding:"14px",marginBottom:10}}>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>✂ الاسم: <span style={{color:"#f0c040"}}>{salon.name}</span> {salon.status==="approved"&&<span style={{color:"#f0c040"}}>نشط</span>}</div>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>⭐ التقييم: <span style={{color:"#f0c040"}}>{(salon.rating||0).toFixed(1)}</span></div>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{salon.phone||"غير متوفر"}</span></div>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📍 الموقع: <span style={{color:"#f0c040"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{salon.created_at?new Date(salon.created_at).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
       </div>
 
       {salon.status!=="approved"&&(
