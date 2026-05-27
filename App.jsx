@@ -3483,16 +3483,11 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
       {/* ── بادج الصالون المحسّن (ثابت في لوحتي فقط) ── */}
       <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.15),rgba(212,160,23,.06))",border:"1.5px solid rgba(212,160,23,.35)",borderRadius:14,padding:"14px",marginBottom:10}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-            <div style={{fontSize:16,fontWeight:900,color:"#fff",letterSpacing:.3}}>{salon.name}</div>
-            {salon.status==="approved"&&<span style={{fontSize:11,fontWeight:800,color:"#d4a017",background:"rgba(212,160,23,.2)",padding:"4px 8px",borderRadius:6,border:"1px solid rgba(212,160,23,.4)"}}>نشط</span>}
-          </div>
-          <div style={{fontSize:13,fontWeight:900,color:"#d4a017"}}>⭐ {(salon.rating||0).toFixed(1)}</div>
-        </div>
-        <div style={{fontSize:12,fontWeight:700,color:"#d4a017",marginBottom:6}}>📞 {salon.phone||"غير متوفر"}</div>
-        <div style={{fontSize:12,fontWeight:700,color:"#d4a017",marginBottom:6}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
-        <div style={{fontSize:12,fontWeight:700,color:"#d4a017"}}>📅 {salon.created_at?new Date(salon.created_at).toLocaleDateString("ar-SA"):"غير متوفر"}</div>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>✂ الاسم: <span style={{color:"#f0c040"}}>{salon.name}</span> {salon.status==="approved"&&<span style={{color:"#f0c040"}}>نشط</span>}</div>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>⭐ التقييم: <span style={{color:"#f0c040"}}>{(salon.rating||0).toFixed(1)}</span></div>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{salon.phone||"غير متوفر"}</span></div>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📍 الموقع: <span style={{color:"#f0c040"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
+        <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{salon.created_at?new Date(salon.created_at).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
       </div>
 
       {salon.status!=="approved"&&(
