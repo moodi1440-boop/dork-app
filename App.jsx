@@ -183,6 +183,7 @@ function toAppSalon(row) {
     password: row.password || "",
     oathDone: row.oath_done || false,
     cancellationWindow: row.cancellation_window || 2,
+    created_at: row.created_at,
     bookings: [],
   };
 }
