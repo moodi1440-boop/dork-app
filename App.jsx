@@ -3515,10 +3515,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
-              {label:"الكل",value:_tdBks.length,color:"#d4a017",filter:"all",delay:0},
+              {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:0},
               {label:"انتظار",value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
-              {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:160},
-              {label:"مرفوض",value:_tdRejected.length,color:"#e74c3c",filter:"rejected",delay:240}
+              {label:"مرفوض",value:_tdRejected.length,color:"#e74c3c",filter:"rejected",delay:160},
+              {label:"الكل",value:_tdBks.length,color:"#d4a017",filter:"all",delay:240}
             ].map(({label,value,color,filter,delay})=>{
               const isOpen=activeCard===filter;
               return(
