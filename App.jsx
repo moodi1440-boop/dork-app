@@ -2195,9 +2195,11 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[selectedDate,setSelectedDate]=useState(getTodayDateInRiyadh());
   const[m,setM]=useState(new Date().getMonth());
   const[y,setY]=useState(new Date().getFullYear());
+  const[statsMode,setStatsMode]=useState("day");
   const[barberD,setBarberD]=useState(parseInt(getTodayDateInRiyadh().split("-")[2]));
   const[barberM,setBarberM]=useState(new Date().getMonth());
   const[barberY,setBarberY]=useState(new Date().getFullYear());
+  const[barberStatsMode,setBarberStatsMode]=useState("day");
   const[selectedBarber,setSelectedBarber]=useState(null);
   const[dayStats,setDayStats]=useState({});
   const[monthStats,setMonthStats]=useState({});
@@ -2210,7 +2212,21 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[showBarberMonthPicker,setShowBarberMonthPicker]=useState(false);
   const[showBarberYearPicker,setShowBarberYearPicker]=useState(false);
 
-  const todayBks=salon.bookings.filter(b=>b.date===selectedDate);
+  const getFilteredBookings=()=>{
+    if(statsMode==="day"){
+      return salon.bookings.filter(b=>b.date===selectedDate);
+    }else if(statsMode==="month"){
+      const mm=String(m+1).padStart(2,"0");
+      const startM=`${y}-${mm}-01`;
+      const endM=`${y}-${mm}-${String(new Date(y,m+1,0).getDate()).padStart(2,"0")}`;
+      return salon.bookings.filter(b=>b.date>=startM&&b.date<=endM);
+    }else{
+      const startY=`${y}-01-01`;
+      const endY=`${y}-12-31`;
+      return salon.bookings.filter(b=>b.date>=startY&&b.date<=endY);
+    }
+  };
+  const todayBks=getFilteredBookings();
   const todayApproved=todayBks.filter(b=>b.status==="approved");
   const todayPending=todayBks.filter(b=>b.status==="pending");
   const todayRejected=todayBks.filter(b=>b.status==="rejected");
@@ -2261,7 +2277,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       <div style={{display:"flex",gap:8,marginBottom:12}}>
         {/* اليوم */}
         <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>setShowDayPicker(!showDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          <button onClick={()=>{setStatsMode("day");setShowDayPicker(!showDayPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${statsMode==="day"?"#d4a017":"#2a2a3a"}`,background:statsMode==="day"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
             {String(parseInt(selectedDate.split("-")[2])).padStart(2,"0")} 📅
           </button>
           {showDayPicker&&(
@@ -2282,7 +2298,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
         {/* الشهر */}
         <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>setShowMonthPicker(!showMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          <button onClick={()=>{setStatsMode("month");setShowMonthPicker(!showMonthPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${statsMode==="month"?"#d4a017":"#2a2a3a"}`,background:statsMode==="month"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
             {MONTHS_AR[m]} 📆
           </button>
           {showMonthPicker&&(
@@ -2301,7 +2317,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
         {/* السنة */}
         <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>setShowYearPicker(!showYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          <button onClick={()=>{setStatsMode("year");setShowYearPicker(!showYearPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${statsMode==="year"?"#d4a017":"#2a2a3a"}`,background:statsMode==="year"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
             {y} 📊
           </button>
           {showYearPicker&&(
@@ -2355,7 +2371,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {/* اليوم */}
             <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberDayPicker(!showBarberDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              <button onClick={()=>{setBarberStatsMode("day");setShowBarberDayPicker(!showBarberDayPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${barberStatsMode==="day"?"#d4a017":"#2a2a3a"}`,background:barberStatsMode==="day"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                 {String(barberD).padStart(2,"0")} 📅
               </button>
               {showBarberDayPicker&&(
@@ -2375,7 +2391,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
             {/* الشهر */}
             <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberMonthPicker(!showBarberMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              <button onClick={()=>{setBarberStatsMode("month");setShowBarberMonthPicker(!showBarberMonthPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${barberStatsMode==="month"?"#d4a017":"#2a2a3a"}`,background:barberStatsMode==="month"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                 {MONTHS_AR[barberM]} 📆
               </button>
               {showBarberMonthPicker&&(
@@ -2394,7 +2410,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
             {/* السنة */}
             <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberYearPicker(!showBarberYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #2a2a3a",background:"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              <button onClick={()=>{setBarberStatsMode("year");setShowBarberYearPicker(!showBarberYearPicker);}} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${barberStatsMode==="year"?"#d4a017":"#2a2a3a"}`,background:barberStatsMode==="year"?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                 {barberY} 📊
               </button>
               {showBarberYearPicker&&(
@@ -2417,6 +2433,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {salon.barbers.map(barber=>{
               const stats=getBarberStats(barber.id);
+              const displayStats=barberStatsMode==="day"?{count:stats.dayCount,revenue:stats.dayRevenue}:barberStatsMode==="month"?{count:stats.monthCount,revenue:stats.monthRevenue}:{count:stats.yearCount,revenue:stats.yearRevenue};
               return(
                 <div key={barber.id} style={{background:"#0d0d1a",borderRadius:10,padding:"10px 12px",border:"1px solid #2a2a3a",transition:"all .2s"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -2424,11 +2441,11 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                       <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#d4a017,#f0c040)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>✂</div>
                       <div style={{flex:1}}>
                         <div style={{fontSize:12,fontWeight:700,color:"#fff"}}>{barber.name||barber.barber_name||"بدون اسم"}</div>
-                        <div style={{fontSize:10,color:"#888"}}>{stats.dayCount} حجز</div>
+                        <div style={{fontSize:10,color:"#888"}}>{displayStats.count} حجز</div>
                       </div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:13,fontWeight:900,color:"#d4a017"}}>{stats.dayRevenue}</div>
+                      <div style={{fontSize:13,fontWeight:900,color:"#d4a017"}}>{displayStats.revenue}</div>
                       <div style={{fontSize:9,color:"#888"}}>ريال</div>
                     </div>
                   </div>
