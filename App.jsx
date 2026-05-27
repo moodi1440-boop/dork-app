@@ -3488,11 +3488,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           <div style={{flex:1}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
               <div style={{fontSize:14,fontWeight:800,color:"#fff",letterSpacing:.3}}>{salon.name}</div>
-              <span style={{fontSize:10,fontWeight:700,color:statusColor,background:`${statusColor}18`,padding:"3px 8px",borderRadius:8,border:`1px solid ${statusColor}33`}}>{statusLabel}</span>
+              <div style={{fontSize:11,fontWeight:700,color:"#d4a017",background:"rgba(212,160,23,.18)",padding:"3px 8px",borderRadius:8,border:"1px solid rgba(212,160,23,.33)"}}>⭐ {(salon.rating||0).toFixed(1)}</div>
             </div>
             <div style={{display:"flex",gap:12,fontSize:10,color:"#aaa",marginBottom:4}}>
-              <div>⭐ {(salon.rating||0).toFixed(1)}</div>
-              <div>📞 {salon.phone||"غير متوفر"}</div>
+              <div style={{fontWeight:700,color:"#d4a017"}}>📞 {salon.phone||"غير متوفر"}</div>
             </div>
             <div style={{fontSize:10,color:"#999"}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
           </div>
