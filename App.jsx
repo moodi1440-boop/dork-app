@@ -2259,33 +2259,71 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
   return(
     <div style={{paddingTop:4}}>
-      {/* التقويم */}
-      <div style={{background:"#13131f",borderRadius:14,padding:"12px",border:"1px solid #2a2a3a",marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#d4a017"}}>📅 {MONTHS_AR[m]} {y}</div>
-          <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>{const d=new Date(y,m-1,1);setM(d.getMonth());setY(d.getFullYear());}} style={{width:28,height:28,background:"transparent",border:"1px solid #2a2a3a",borderRadius:6,color:"#888",cursor:"pointer",fontSize:14}}>‹</button>
-            <button onClick={()=>{const d=new Date(y,m+1,1);setM(d.getMonth());setY(d.getFullYear());}} style={{width:28,height:28,background:"transparent",border:"1px solid #2a2a3a",borderRadius:6,color:"#888",cursor:"pointer",fontSize:14}}>›</button>
-          </div>
+      {/* منتقيات اليوم/الشهر/السنة */}
+      <div style={{display:"flex",gap:6,marginBottom:12}}>
+        {/* Day Picker */}
+        <div style={{flex:1,position:"relative"}}>
+          <button onClick={()=>setShowDayPicker(!showDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showDayPicker?"#d4a017":"#2a2a3a"}`,background:showDayPicker?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            {String(parseInt(selectedDate.split("-")[2])).padStart(2,"0")} 📅
+          </button>
+          {showDayPicker&&(
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {Array.from({length:31},(_, i)=>{
+                  const day=i+1;
+                  const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+                  const isSel=selectedDate===dateStr;
+                  return(
+                    <button key={day} onClick={()=>{setSelectedDate(dateStr);setShowDayPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:8}}>
-          {["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"].map(day=>(
-            <div key={day} style={{textAlign:"center",fontSize:9,color:"#666",fontWeight:700}}>{day.slice(0,2)}</div>
-          ))}
+
+        {/* Month Picker */}
+        <div style={{flex:1,position:"relative"}}>
+          <button onClick={()=>setShowMonthPicker(!showMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showMonthPicker?"#d4a017":"#2a2a3a"}`,background:showMonthPicker?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            {MONTHS_AR[m]} 📅
+          </button>
+          {showMonthPicker&&(
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {MONTHS_AR.map((month,idx)=>{
+                  const isSel=m===idx;
+                  return(
+                    <button key={idx} onClick={()=>{setM(idx);const newDate=`${y}-${String(idx+1).padStart(2,"0")}-01`;setSelectedDate(newDate);setShowMonthPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                      {month}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
-          {Array.from({length:new Date(y,m+1,0).getDate()},(_, i)=>{
-            const day=i+1;
-            const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-            const cnt=salon.bookings.filter(b=>b.date===dateStr).length;
-            const isSelected=dateStr===selectedDate;
-            return(
-              <button key={day} onClick={()=>setSelectedDate(dateStr)} style={{padding:"6px 0",borderRadius:8,border:`1.5px solid ${isSelected?"#d4a017":"#2a2a3a"}`,background:isSelected?"#d4a01722":"transparent",color:isSelected?"#d4a017":"#fff",fontSize:11,fontWeight:isSelected?700:500,cursor:"pointer",fontFamily:"inherit"}}>
-                <div>{day}</div>
-                {cnt>0&&<div style={{fontSize:7,color:isSelected?"#d4a017":"#888"}}>{cnt}</div>}
-              </button>
-            );
-          })}
+
+        {/* Year Picker */}
+        <div style={{flex:1,position:"relative"}}>
+          <button onClick={()=>setShowYearPicker(!showYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showYearPicker?"#d4a017":"#2a2a3a"}`,background:showYearPicker?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            {y} 📅
+          </button>
+          {showYearPicker&&(
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {Array.from({length:10},(_, i)=>y-5+i).map(yr=>{
+                  const isSel=y===yr;
+                  return(
+                    <button key={yr} onClick={()=>{setY(yr);const newDate=`${yr}-${String(m+1).padStart(2,"0")}-01`;setSelectedDate(newDate);setShowYearPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"#2a2a3a"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                      {yr}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -3524,10 +3562,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
-              {label:"الكل",value:salon.bookings.length,color:"#d4a017",filter:"all",delay:0},
-              {label:"انتظار",value:pending,color:"#f39c12",filter:"pending",delay:80},
-              {label:"مقبول",value:approvedBookings.length,color:"#27ae60",filter:"approved",delay:160},
-              {label:"مرفوض",value:salon.bookings.filter(b=>b.status==="rejected").length,color:"#e74c3c",filter:"rejected",delay:240}
+              {label:"الكل",value:_tdBks.length,color:"#d4a017",filter:"all",delay:0},
+              {label:"انتظار",value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
+              {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:160},
+              {label:"مرفوض",value:_tdRejected.length,color:"#e74c3c",filter:"rejected",delay:240}
             ].map(({label,value,color,filter,delay})=>{
               const isOpen=activeCard===filter;
               return(
@@ -3551,24 +3589,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         </>
       )}
       {tab==="messages"&&(
-        <div>
-          {ownerNotifs.length>0&&(
-            <div style={{marginBottom:12}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div style={{fontSize:12,color:"var(--p)",fontWeight:700}}>🔔 إشعارات الإدارة</div>
-                <button onClick={()=>{if(window.confirm("هل تريد مسح كل الإشعارات؟")){localStorage.setItem("dork_notifs","[]");localStorage.setItem("dork_notif_count","0");setOwnerNotifs([]);}}} style={{fontSize:10,padding:"3px 10px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}}>🗑 مسح الكل</button>
-              </div>
-              {ownerNotifs.slice(0,5).map(n=>(
-                <div key={n.id} style={{...G.bItem,borderRight:"3px solid var(--p)",marginBottom:6}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.icon} {n.title}</div>
-                  <div style={{fontSize:12,color:"#aaa"}}>{n.body}</div>
-                  <div style={{fontSize:10,color:"#555",marginTop:2}}>{n.time}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          <MessagesPanel salon={salon} toast$={toast$}/>
-        </div>
+        <MessagesPanel salon={salon} toast$={toast$}/>
       )}
       {tab==="calendar"&&<BookingCalendar salon={salon} onUpdate={updateBookingStatus}/>}
       {tab==="reviews"&&<OwnerReviewsPanel salon={salon} reviews={reviews} setReviews={setReviews} toast$={toast$}/>}
