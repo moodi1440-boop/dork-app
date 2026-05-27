@@ -3482,19 +3482,17 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <>
 
       {/* ── بادج الصالون المحسّن (ثابت في لوحتي فقط) ── */}
-      <div style={{background:salon.status==="approved"?"linear-gradient(135deg,rgba(212,160,23,.15),rgba(212,160,23,.06))":"linear-gradient(135deg,rgba(212,160,23,.08),rgba(212,160,23,.02))",border:`1.5px solid ${salon.status==="approved"?"rgba(212,160,23,.35)":"rgba(212,160,23,.15)"}`,borderRadius:14,padding:"14px",marginBottom:10}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+      <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.15),rgba(212,160,23,.06))",border:"1.5px solid rgba(212,160,23,.35)",borderRadius:14,padding:"14px",marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-            <div style={{fontSize:18,fontWeight:900,color:"#fff",letterSpacing:.3,flex:1}}>{salon.name}</div>
-            {salon.status==="approved"&&<span style={{fontSize:11,fontWeight:800,color:"#d4a017",background:"rgba(212,160,23,.2)",padding:"5px 10px",borderRadius:8,border:"1.5px solid rgba(212,160,23,.5)"}}>نشط</span>}
-            {salon.status!=="approved"&&<span style={{fontSize:11,fontWeight:800,color:"#e74c3c",background:"rgba(231,76,60,.2)",padding:"5px 10px",borderRadius:8,border:"1.5px solid rgba(231,76,60,.5)"}}>{salon.status==="rejected"?"محظور":"موقوف"}</span>}
+            <div style={{fontSize:16,fontWeight:900,color:"#fff",letterSpacing:.3}}>{salon.name}</div>
+            {salon.status==="approved"&&<span style={{fontSize:11,fontWeight:800,color:"#d4a017",background:"rgba(212,160,23,.2)",padding:"4px 8px",borderRadius:6,border:"1px solid rgba(212,160,23,.4)"}}>نشط</span>}
           </div>
-          <div style={{fontSize:14,fontWeight:900,color:"#d4a017",background:"rgba(212,160,23,.25)",padding:"5px 12px",borderRadius:8,border:"1.5px solid rgba(212,160,23,.5)",whiteSpace:"nowrap"}}>⭐ {(salon.rating||0).toFixed(1)}</div>
+          <div style={{fontSize:13,fontWeight:900,color:"#d4a017"}}>⭐ {(salon.rating||0).toFixed(1)}</div>
         </div>
-        <div style={{display:"flex",gap:16,fontSize:12,marginBottom:4}}>
-          <div style={{fontWeight:800,color:"#d4a017"}}>📞 {salon.phone||"غير متوفر"}</div>
-        </div>
-        <div style={{fontSize:12,fontWeight:700,color:"#bbb"}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
+        <div style={{fontSize:12,fontWeight:700,color:"#d4a017",marginBottom:6}}>📞 {salon.phone||"غير متوفر"}</div>
+        <div style={{fontSize:12,fontWeight:700,color:"#d4a017",marginBottom:6}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
+        <div style={{fontSize:12,fontWeight:700,color:"#d4a017"}}>📅 {salon.created_at?new Date(salon.created_at).toLocaleDateString("ar-SA"):"غير متوفر"}</div>
       </div>
 
       {salon.status!=="approved"&&(
