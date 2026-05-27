@@ -3339,22 +3339,22 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
     </div>
   );
 
-  const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
-  const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
-
-  const _tdRejected=_tdBks.filter(b=>b.status==="rejected");
-  const totalEarned=_tdApproved.length;
-  const totalPaid=salon.totalPaid||0;
-  const balance=totalEarned-totalPaid;
-
-  const[showBalanceModal,setShowBalanceModal]=useState(false);
-
   // ── حسابات ملخص اليوم (بتوقيت السعودية AST/GMT+3) ──
   const _td=getTodayDateInRiyadh();
   const _tdBks=salon.bookings.filter(b=>b.date===_td);
   const _tdApproved=_tdBks.filter(b=>b.status==="approved");
   const _tdPending=_tdBks.filter(b=>b.status==="pending");
+  const _tdRejected=_tdBks.filter(b=>b.status==="rejected");
   const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
+
+  const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
+  const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
+
+  const totalEarned=_tdApproved.length;
+  const totalPaid=salon.totalPaid||0;
+  const balance=totalEarned-totalPaid;
+
+  const[showBalanceModal,setShowBalanceModal]=useState(false);
   const _now=new Date();
   const _nowMins=_now.getHours()*60+_now.getMinutes();
   const _nextBk=_tdApproved
