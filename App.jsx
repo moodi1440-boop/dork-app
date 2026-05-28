@@ -1948,11 +1948,11 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           </span>
         </div>
 
-        {/* Rating on Right */}
-        <div style={{border:"1.5px solid rgba(212,160,23,.4)",borderRadius:10,padding:"6px 10px",minWidth:"65px",textAlign:"center",flex:"0 0 auto"}}>
+        {/* Rating on Right - Clickable */}
+        <button onClick={onViewReviews} style={{border:"1.5px solid rgba(212,160,23,.4)",borderRadius:10,padding:"6px 10px",minWidth:"65px",textAlign:"center",flex:"0 0 auto",background:"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
           <div style={{fontSize:16,fontWeight:900,color:"#d4a017"}}>⭐ {displayRating}</div>
           <div style={{fontSize:8,color:"#aaa"}}>({reviewCount})</div>
-        </div>
+        </button>
       </div>
 
       {/* Location Row */}
