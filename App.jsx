@@ -897,7 +897,7 @@ export default function App(){
         sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,created_at&limit=500"),
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
-      const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=5000").catch(()=>[]);
+      const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
       console.log("🔍 salonRows sample:", salonRows[0]); // للتحقق من البيانات
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
@@ -4342,7 +4342,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const loginWithPhone=async()=>{
     if(!phone.trim()){setErr("أدخل رقم الجوال");return;}
     try{
-      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,created_at&phone=eq.${encodeURIComponent(phone.trim())}`);
+      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,created_at&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(!rows.length){setErr("لا يوجد حساب بهذا الرقم");return;}
       const c=toAppCustomer(rows[0]);
       setCustomerSession(c);setView("home");
@@ -4473,7 +4473,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         }
         return;
       }
-      const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,created_at&phone=eq.${encodeURIComponent(phone.trim())}`);
+      const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,created_at&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(exists.length){setErr("❌ هذا الرقم مسجل بالفعل");return;}
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[]},"");
       const nc=toAppCustomer(rows[0]);
@@ -4591,7 +4591,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[myWaiting,setMyWaiting]=useState([]);
   useEffect(()=>{
     if(!customer?.phone)return;
-    sb("waiting_list","GET",null,`?phone=eq.${encodeURIComponent(customer.phone)}&select=id,salon_id,slot_date,slot_time,status,created_at&order=created_at.desc`)
+    sb("waiting_list","GET",null,`?phone=eq.${encodeURIComponent(customer.phone)}&select=id,salon_id,slot_date,slot_time,status,created_at&order=created_at.desc&limit=50`)
       .then(data=>{if(Array.isArray(data))setMyWaiting(data.filter(w=>w.status==="waiting"));})
       .catch(()=>{});
   },[customer?.phone]);
