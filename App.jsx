@@ -1755,24 +1755,22 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
             <span style={{fontSize:20,fontWeight:700,color:"var(--p)",letterSpacing:1}}>احجز</span>
             <span style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:3,textShadow:"0 4px 20px rgba(212,160,23,0.4)",fontFamily:"'Playfair Display', 'Courier New', serif"}}>DORK</span>
           </div>
-          <div style={{fontSize:11,color:"#888",letterSpacing:2,marginBottom:8,fontWeight:600}}>✂ حجوزات فاخرة ✂</div>
-          <p style={{color:"#777",fontSize:12,marginTop:2}}>أفضل صالونات الحلاقة في مدينتك</p>
         </div>
 
-        {/* حجز سريع */}
+        {/* حجز سريع - تصميم أنيق */}
         {lastSalon&&customer&&(
-          <div style={{background:"var(--pa08)",border:"1px solid var(--pa25)",borderRadius:10,padding:"8px 12px",marginBottom:8,display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:16}}>⚡</span>
-            <div style={{flex:1,fontSize:12,color:"#ccc"}}>آخر زيارة: <strong style={{color:"var(--p)"}}>{lastSalon.name}</strong></div>
-            <button style={{...G.bookBtn,padding:"5px 12px",fontSize:11}} onClick={()=>{setSelSalon(lastSalon);setView("book");}}>احجز سريع</button>
+          <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.05))",border:"1.5px solid #d4a017",borderRadius:14,padding:"12px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 12px rgba(212,160,23,.1)"}}>
+            <span style={{fontSize:24}}>⚡</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,color:"#999",marginBottom:3}}>آخر زيارة</div>
+              <div style={{fontSize:14,fontWeight:700,color:"#d4a017"}}>{lastSalon.name}</div>
+            </div>
+            <button style={{background:"#d4a017",color:"#000",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all 0.2s"}} onClick={()=>{setSelSalon(lastSalon);setView("book");}}>احجز الآن</button>
           </div>
         )}
 
-        {/* وضع الاستعجال */}
+        {/* فلاتر */}
         <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
-          <button style={{...G.sortChip,...(urgentMode?{...G.sortChipOn,background:"rgba(231,76,60,.2)",border:"1.5px solid #e74c3c",color:"#e74c3c"}:{})}} onClick={()=>setUrgentMode(u=>!u)}>
-            🔥 {urgentMode?"مفتوح الآن":"مفتوح الآن؟"}
-          </button>
           <button style={{...G.sortChip,...(compareSalons.length>0?G.sortChipOn:{})}} onClick={()=>compareSalons.length===2?setView("compare"):toast$&&toast$("اختر صالونين للمقارنة من القائمة")}>
             ⚖ مقارنة {compareSalons.length>0&&`(${compareSalons.length}/2)`}
           </button>
