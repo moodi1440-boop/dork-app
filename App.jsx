@@ -710,7 +710,7 @@ export default function App(){
   const[view,setView]=useState("home");
   const[selSalon,setSelSalon]=useState(null);
   const[toast,setToast]=useState(null);
-  const[splash,setSplash]=useState(true); // Splash Screen
+  const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
   const[darkMode,setDarkMode]=useState(()=>{try{return localStorage.getItem("dork_dark")!=="0";}catch{return true;}});
   const[compareSalons,setCompareSalons]=useState([]); // مقارنة صالونين
   const[pullRefreshing,setPullRefreshing]=useState(false); // Pull to refresh
@@ -1515,9 +1515,10 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         <button style={G.roleBtn} onClick={()=>setView("settings")}>⚙</button>
         <button style={{...G.roleBtn,background:"var(--pa12)",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>🏠</button>
       </div>
-      {/* RIGHT: شعار دورك — نص */}
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-        <div style={{fontSize:32,fontWeight:900,color:"#d4a017",letterSpacing:1}}>دورك</div>
+      {/* RIGHT: شعار احجز DORK — نص */}
+      <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
+        <span style={{fontSize:19,fontWeight:900,color:"#d4a017",letterSpacing:0.5}}>احجز</span>
+        <span style={{fontSize:32,fontWeight:900,color:"#d4a017",letterSpacing:1}}>DORK</span>
       </div>
     </div>
   );
