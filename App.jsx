@@ -1766,6 +1766,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         )}
 
         {/* فلاتر */}
+        <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
           <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
             <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
             <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/>
