@@ -1749,33 +1749,57 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       {/* Pull to refresh */}
       {pullRefreshing&&<div style={{position:"fixed",top:64,left:"50%",transform:"translateX(-50%)",zIndex:100,background:"var(--p)",color:"#000",padding:"4px 16px",borderRadius:20,fontSize:12,fontWeight:700}}>⟳ جاري التحديث...</div>}
 
-      <div style={{background:"linear-gradient(160deg,#12122a,#1a1a3a)",borderBottom:"1px solid #2a2a3a",padding:"14px 14px 0"}}>
-        <div style={{textAlign:"center",paddingBottom:10}}>
-        </div>
+      {/* Hidden filters select for region */}
+      <select style={{display:"none"}} onChange={e=>{setFRegion(e.target.value);setFGov("");setFCenter("");setFVillage("");}}>
+        <option value="">كل المناطق</option>
+        {allLoc.map(r=><option key={r.region} value={r.region}>{r.region}</option>)}
+      </select>
 
-        {/* فلاتر */}
-        <div style={{display:"flex",flexDirection:"column",gap:6,paddingBottom:14}}>
-          <LocFilter icon="🗺" label="المنطقة" value={fRegion} onChange={v=>{setFRegion(v);setFGov("");setFCenter("");setFVillage("");}} options={allLoc.map(r=>r.region)} all="كل المناطق"/>
-          {fRegion&&<LocFilter icon="🏛" label="المحافظة" value={fGov} onChange={v=>{setFGov(v);setFCenter("");setFVillage("");}} options={govList.map(g=>g.name||g)} all="كل المحافظات"/>}
-          {fGov&&centerList2.length>0&&<LocFilter icon="🏘" label="المركز" value={fCenter} onChange={v=>{setFCenter(v);setFVillage("");}} options={centerList2} all="كل المراكز"/>}
-          {fCenter&&(()=>{const villages=[...new Set(approvedSalons.filter(s=>s.center===fCenter&&s.village).map(s=>s.village))];return villages.length>0?<LocFilter icon="📍" label="الحي/القرية" value={fVillage} onChange={setFVillage} options={villages} all="كل الأحياء"/>:null;})()}
-        </div>
+      <div style={{padding:"10px 14px 0",display:"flex",gap:8,overflowX:"auto",scrollbarWidth:"none",alignItems:"center"}}>
+        {/* البحث - عدسة صغيرة */}
+        <button style={{minWidth:50,width:50,height:50,borderRadius:"50%",background:"rgba(212,160,23,.15)",border:"1.5px solid #d4a017",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20,transition:"all 0.2s"}} onClick={()=>{const inp=document.querySelector('input[placeholder="ابحث..."]');if(inp){inp.scrollIntoView({behavior:'smooth'});inp.focus();}}} title="بحث">
+          🔍
+        </button>
+
+        {/* المنطقة */}
+        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:fRegion?"rgba(212,160,23,.3)":"rgba(255,255,255,.05)",border:`1.5px solid ${fRegion?"#d4a017":"#2a2a3a"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"#fff",transition:"all 0.2s"}} onClick={()=>{const sel=document.querySelector('select');if(sel)sel.click();}} title="المنطقة">
+          {fRegion?fRegion.substring(0,3):"المنطقة"}
+        </button>
+
+        {/* احجز سريع */}
+        {lastSalon&&customer&&(
+          <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:"linear-gradient(135deg,#d4a017,#f0c040)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:24,transition:"all 0.2s",boxShadow:"0 4px 12px rgba(212,160,23,.3)"}} onClick={()=>{setSelSalon(lastSalon);setView("book");}} title="احجز سريع">
+            ⚡
+          </button>
+        )}
+
+        {/* الفلاتر الأخرى */}
+        {[
+          ["nearest","📍","أقرب"],
+          ["ratingHigh","⭐","أعلى"],
+          ["ratingLow","☆","أقل"],
+          ["default","💰","أغلى"],
+          ["priceLow","🪙","أرخص"],
+        ].map(([k,ic,l])=>(
+          <button key={k} style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:sortBy===k?"rgba(212,160,23,.3)":"rgba(255,255,255,.05)",border:`1.5px solid ${sortBy===k?"#d4a017":"#2a2a3a"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s",flexDirection:"column",gap:2}} onClick={()=>{if(k==="nearest"&&!userLoc){detectUserLoc();return;}setSortBy(k);}} title={l}>
+            <span>{ic}</span>
+            <span style={{fontSize:9,color:"#999"}}>{l}</span>
+          </button>
+        ))}
+
+        {/* تحديث */}
+        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:"rgba(255,255,255,.05)",border:"1.5px solid #2a2a3a",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s"}} onClick={handlePullRefresh} title="تحديث">
+          ⟳
+        </button>
       </div>
 
-      <div style={{padding:"10px 14px 0",display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none"}}>
-        {[
-          ["default","الافتراضي","🔄"],
-          ["ratingHigh","الأعلى تقييماً","⭐"],
-          ["ratingLow","الأقل تقييماً","☆"],
-          ["priceLow","الأرخص","💰"],
-          ["nearest","الأقرب","📍"],
-        ].map(([k,l,ic])=>(
-          <button key={k} style={{...G.sortChip,...(sortBy===k?G.sortChipOn:{})}} onClick={()=>{
-            if(k==="nearest"&&!userLoc){detectUserLoc();return;}
-            setSortBy(k);
-          }}>{ic} {l}</button>
-        ))}
-        <button style={G.sortChip} onClick={handlePullRefresh}>⟳ تحديث</button>
+      {/* البحث المختفي */}
+      <div style={{padding:"10px 14px",display:"none"}}>
+        <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
+          <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
+          <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/>
+          {search&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0}} onClick={()=>setSearch("")}>✕</button>}
+        </div>
       </div>
 
       <div style={{padding:"10px 14px 80px"}}>
