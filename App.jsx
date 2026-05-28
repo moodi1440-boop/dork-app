@@ -705,7 +705,7 @@ export default function App(){
       return [];
     }catch{return[];}
   });
-  const[loading,setLoading]=useState(true);
+  const[loading,setLoading]=useState(false); // تحميل سريع - البيانات تُحمّل في الخلفية
   const[dbError,setDbError]=useState(null);
   const[view,setView]=useState("home");
   const[selSalon,setSelSalon]=useState(null);
