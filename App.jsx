@@ -1753,26 +1753,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         <div style={{textAlign:"center",paddingBottom:10}}>
         </div>
 
-        {/* حجز سريع - تصميم أنيق */}
-        {lastSalon&&customer&&(
-          <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.15),rgba(212,160,23,.08))",border:"1.5px solid #d4a017",borderRadius:16,padding:"14px 18px",marginBottom:14,display:"flex",alignItems:"center",gap:14,boxShadow:"0 6px 20px rgba(212,160,23,.12)"}}>
-            <span style={{fontSize:28}}>⚡</span>
-            <div style={{flex:1}}>
-              <div style={{fontSize:12,color:"#bbb",marginBottom:4,fontWeight:600,letterSpacing:0.5}}>آخر زيارة</div>
-              <div style={{fontSize:16,fontWeight:800,color:"#f0c040",letterSpacing:0.3}}>{lastSalon.name}</div>
-            </div>
-            <button style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:800,cursor:"pointer",transition:"all 0.2s",boxShadow:"0 2px 8px rgba(212,160,23,.3)"}} onClick={()=>{setSelSalon(lastSalon);setView("book");}}>احجز الآن</button>
-          </div>
-        )}
-
         {/* فلاتر */}
-        <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
-          <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
-            <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
-            <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/>
-            {search&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0}} onClick={()=>setSearch("")}>✕</button>}
-          </div>
-        </div>
         <div style={{display:"flex",flexDirection:"column",gap:6,paddingBottom:14}}>
           <LocFilter icon="🗺" label="المنطقة" value={fRegion} onChange={v=>{setFRegion(v);setFGov("");setFCenter("");setFVillage("");}} options={allLoc.map(r=>r.region)} all="كل المناطق"/>
           {fRegion&&<LocFilter icon="🏛" label="المحافظة" value={fGov} onChange={v=>{setFGov(v);setFCenter("");setFVillage("");}} options={govList.map(g=>g.name||g)} all="كل المحافظات"/>}
@@ -1823,6 +1804,18 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           </div>
         }
       </div>
+
+      {/* Floating Button: احجز سريع - اليمين */}
+      {lastSalon&&customer&&(
+        <button style={{position:"fixed",right:20,bottom:100,width:60,height:60,borderRadius:"50%",background:"linear-gradient(135deg,#d4a017,#f0c040)",border:"none",boxShadow:"0 6px 20px rgba(212,160,23,.4)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:90,transition:"all 0.3s"}} onClick={()=>{setSelSalon(lastSalon);setView("book");}} title="احجز سريع">
+          <span style={{fontSize:28}}>⚡</span>
+        </button>
+      )}
+
+      {/* Floating Button: البحث - اليسار */}
+      <button style={{position:"fixed",left:20,bottom:100,width:60,height:60,borderRadius:"50%",background:"rgba(212,160,23,.2)",border:"1.5px solid #d4a017",boxShadow:"0 6px 20px rgba(212,160,23,.2)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:90,transition:"all 0.3s"}} onClick={()=>{const input=document.querySelector('input[placeholder="ابحث..."]');if(input)input.focus();}} title="بحث">
+        <span style={{fontSize:24}}>🔍</span>
+      </button>
     </div>
   );
 }
