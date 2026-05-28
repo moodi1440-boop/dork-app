@@ -1751,33 +1751,21 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
       <div style={{background:"linear-gradient(160deg,#12122a,#1a1a3a)",borderBottom:"1px solid #2a2a3a",padding:"14px 14px 0"}}>
         <div style={{textAlign:"center",paddingBottom:10}}>
-          <div style={{display:"flex",alignItems:"baseline",justifyContent:"center",gap:6,marginBottom:8}}>
-            <span style={{fontSize:20,fontWeight:700,color:"var(--p)",letterSpacing:1}}>احجز</span>
-            <span style={{fontSize:56,fontWeight:900,color:"#fff",letterSpacing:3,textShadow:"0 4px 20px rgba(212,160,23,0.4)",fontFamily:"'Playfair Display', 'Courier New', serif"}}>DORK</span>
-          </div>
         </div>
 
         {/* حجز سريع - تصميم أنيق */}
         {lastSalon&&customer&&(
-          <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.05))",border:"1.5px solid #d4a017",borderRadius:14,padding:"12px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 12px rgba(212,160,23,.1)"}}>
-            <span style={{fontSize:24}}>⚡</span>
+          <div style={{background:"linear-gradient(135deg,rgba(212,160,23,.15),rgba(212,160,23,.08))",border:"1.5px solid #d4a017",borderRadius:16,padding:"14px 18px",marginBottom:14,display:"flex",alignItems:"center",gap:14,boxShadow:"0 6px 20px rgba(212,160,23,.12)"}}>
+            <span style={{fontSize:28}}>⚡</span>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,color:"#999",marginBottom:3}}>آخر زيارة</div>
-              <div style={{fontSize:14,fontWeight:700,color:"#d4a017"}}>{lastSalon.name}</div>
+              <div style={{fontSize:12,color:"#bbb",marginBottom:4,fontWeight:600,letterSpacing:0.5}}>آخر زيارة</div>
+              <div style={{fontSize:16,fontWeight:800,color:"#f0c040",letterSpacing:0.3}}>{lastSalon.name}</div>
             </div>
-            <button style={{background:"#d4a017",color:"#000",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all 0.2s"}} onClick={()=>{setSelSalon(lastSalon);setView("book");}}>احجز الآن</button>
+            <button style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:800,cursor:"pointer",transition:"all 0.2s",boxShadow:"0 2px 8px rgba(212,160,23,.3)"}} onClick={()=>{setSelSalon(lastSalon);setView("book");}}>احجز الآن</button>
           </div>
         )}
 
         {/* فلاتر */}
-        <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
-          <button style={{...G.sortChip,...(compareSalons.length>0?G.sortChipOn:{})}} onClick={()=>compareSalons.length===2?setView("compare"):toast$&&toast$("اختر صالونين للمقارنة من القائمة")}>
-            ⚖ مقارنة {compareSalons.length>0&&`(${compareSalons.length}/2)`}
-          </button>
-          {compareSalons.length>0&&<button style={{...G.sortChip,color:"#e74c3c",border:"1px solid #e74c3c"}} onClick={()=>setCompareSalons([])}>✕</button>}
-        </div>
-
-        <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
           <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
             <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
             <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/>
