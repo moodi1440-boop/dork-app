@@ -1670,6 +1670,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 // ==============================================
 function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing}){
   const[urgentMode,setUrgentMode]=useState(false);
+  const[showSearch,setShowSearch]=useState(false);
 
   const getRealRating=(salonId)=>{
     const id=Number(salonId);
@@ -1757,7 +1758,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
       <div style={{padding:"10px 14px 0",display:"flex",gap:8,overflowX:"auto",scrollbarWidth:"none",alignItems:"center"}}>
         {/* البحث - عدسة صغيرة */}
-        <button style={{minWidth:50,width:50,height:50,borderRadius:"50%",background:"rgba(212,160,23,.15)",border:"1.5px solid #d4a017",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20,transition:"all 0.2s"}} onClick={()=>{const inp=document.querySelector('input[placeholder="ابحث..."]');if(inp){inp.scrollIntoView({behavior:'smooth'});inp.focus();}}} title="بحث">
+        <button style={{minWidth:50,width:50,height:50,borderRadius:"50%",background:showSearch?"rgba(212,160,23,.3)":"rgba(212,160,23,.15)",border:"1.5px solid #d4a017",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20,transition:"all 0.2s"}} onClick={()=>{setShowSearch(!showSearch);setTimeout(()=>{const inp=document.querySelector('input[placeholder="ابحث..."]');if(inp)inp.focus();},50);}} title="بحث">
           🔍
         </button>
 
@@ -1793,14 +1794,17 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         </button>
       </div>
 
-      {/* البحث المختفي */}
-      <div style={{padding:"10px 14px",display:"none"}}>
+      {/* البحث */}
+      {showSearch&&(
+      <div style={{padding:"10px 14px",background:"rgba(0,0,0,.4)",borderBottom:"1px solid rgba(212,160,23,.1)",animation:"slideDown 0.2s ease-out"}}>
         <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
           <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
-          <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/>
+          <input autoFocus style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)} onBlur={()=>{if(!search)setShowSearch(false);}}/>
           {search&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0}} onClick={()=>setSearch("")}>✕</button>}
         </div>
       </div>
+      )}
+      <style>{`@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       <div style={{padding:"10px 14px 80px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -1837,7 +1841,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       )}
 
       {/* Floating Button: البحث - اليسار */}
-      <button style={{position:"fixed",left:20,bottom:100,width:60,height:60,borderRadius:"50%",background:"rgba(212,160,23,.2)",border:"1.5px solid #d4a017",boxShadow:"0 6px 20px rgba(212,160,23,.2)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:90,transition:"all 0.3s"}} onClick={()=>{const input=document.querySelector('input[placeholder="ابحث..."]');if(input)input.focus();}} title="بحث">
+      <button style={{position:"fixed",left:20,bottom:100,width:60,height:60,borderRadius:"50%",background:showSearch?"rgba(212,160,23,.3)":"rgba(212,160,23,.2)",border:"1.5px solid #d4a017",boxShadow:"0 6px 20px rgba(212,160,23,.2)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:90,transition:"all 0.3s"}} onClick={()=>{setShowSearch(!showSearch);setTimeout(()=>{const input=document.querySelector('input[placeholder="ابحث..."]');if(input)input.focus();},50);}} title="بحث">
         <span style={{fontSize:24}}>🔍</span>
       </button>
     </div>
