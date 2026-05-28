@@ -1808,7 +1808,6 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
             setSortBy(k);
           }}>{ic} {l}</button>
         ))}
-        <button style={G.sortChip} onClick={handlePullRefresh}>⟳ تحديث</button>
       </div>
 
       <div style={{padding:"10px 14px 80px"}}>
