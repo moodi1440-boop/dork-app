@@ -1758,12 +1758,12 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
       <div style={{padding:"10px 14px 0",display:"flex",gap:8,overflowX:"auto",scrollbarWidth:"none",alignItems:"center"}}>
         {/* البحث - عدسة صغيرة */}
-        <button style={{minWidth:50,width:50,height:50,borderRadius:"50%",background:showSearch?"rgba(212,160,23,.3)":"rgba(212,160,23,.15)",border:"1.5px solid #d4a017",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20,transition:"all 0.2s"}} onClick={()=>{setShowSearch(!showSearch);setTimeout(()=>{const inp=document.querySelector('input[placeholder="ابحث..."]');if(inp)inp.focus();},50);}} title="بحث">
+        <button style={{minWidth:50,width:50,height:50,borderRadius:"50%",background:showSearch?"rgba(212,160,23,.3)":"rgba(212,160,23,.15)",border:"1.5px solid #d4a017",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20,transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setShowSearch(!showSearch);setTimeout(()=>{const inp=document.querySelector('input[placeholder="ابحث..."]');if(inp)inp.focus();},50);}} title="بحث">
           🔍
         </button>
 
         {/* المنطقة */}
-        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:fRegion?"rgba(212,160,23,.3)":"rgba(255,255,255,.05)",border:`1.5px solid ${fRegion?"#d4a017":"#2a2a3a"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"#fff",transition:"all 0.2s"}} onClick={()=>{const sel=document.querySelector('select');if(sel)sel.click();}} title="المنطقة">
+        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:fRegion?"rgba(212,160,23,.3)":"rgba(255,255,255,.05)",border:`1.5px solid ${fRegion?"#d4a017":"#2a2a3a"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"#fff",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{const sel=document.querySelector('select');if(sel)sel.click();}} title="المنطقة">
           {fRegion?fRegion.substring(0,3):"المنطقة"}
         </button>
 
@@ -1787,20 +1787,15 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
             <span style={{fontSize:9,color:"#999"}}>{l}</span>
           </button>
         ))}
-
-        {/* تحديث */}
-        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:"rgba(255,255,255,.05)",border:"1.5px solid #2a2a3a",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s"}} onClick={handlePullRefresh} title="تحديث">
-          ⟳
-        </button>
       </div>
 
       {/* البحث */}
       {showSearch&&(
       <div style={{padding:"10px 14px",background:"rgba(0,0,0,.4)",borderBottom:"1px solid rgba(212,160,23,.1)",animation:"slideDown 0.2s ease-out"}}>
-        <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
+        <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"8px 12px",gap:6,cursor:"text"}}>
           <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
-          <input autoFocus style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)} onBlur={()=>{if(!search)setShowSearch(false);}}/>
-          {search&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0}} onClick={()=>setSearch("")}>✕</button>}
+          <input autoFocus style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl",WebkitAppearance:"none",appearance:"none"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)} onBlur={()=>{if(!search)setShowSearch(false);}}/>
+          {search&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0,WebkitAppearance:"none",appearance:"none"}} onClick={()=>setSearch("")}>✕</button>}
         </div>
       </div>
       )}
