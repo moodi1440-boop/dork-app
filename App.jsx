@@ -984,7 +984,7 @@ export default function App(){
   // جلب مخصص للتقييمات فقط
   const pollReviews=useCallback(async()=>{
     try{
-      const rows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=5000");
+      const rows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20");
       setReviews(rows||[]);
     }catch{}
   },[]);
@@ -2465,7 +2465,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
 
   const loadWaiting=useCallback(async()=>{
     try{
-      const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&select=id,name,phone,created_at,slot_date,slot_time,status&order=created_at.asc`);
+      const data=await sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&select=id,name,phone,created_at,slot_date,slot_time,status&order=created_at.asc&limit=50`);
       if(Array.isArray(data)){
         const now=new Date();
         const expired=data.filter(w=>{
@@ -3050,7 +3050,7 @@ function NotifsView({setView}){
 
   // تحميل الإشعارات من Supabase عند فتح الصفحة
   useEffect(()=>{
-    sb("notifications","GET",null,"?order=created_at.desc&limit=50").then(data=>{
+    sb("notifications","GET",null,"?select=id,title,body,icon,created_at&order=created_at.desc&limit=50").then(data=>{
       if(!Array.isArray(data)||!data.length)return;
       const converted=data.map(n=>({
         id:n.id||Date.now(),
@@ -4533,7 +4533,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               provider.setCustomParameters({prompt:"select_account"});
               const result=await fb.auth().signInWithPopup(provider);
               const gUser={name:result.user.displayName||"مستخدم",email:result.user.email||"",googleUid:result.user.uid};
-              const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,created_at&google_uid=eq.${gUser.googleUid}`);
+              const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,created_at&google_uid=eq.${gUser.googleUid}&limit=1`);
               if(rows.length){
                 const c=toAppCustomer(rows[0]);
                 setCustomerSession(c);setView("home");
