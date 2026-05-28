@@ -86,7 +86,6 @@ async function initializeFirebaseNotifications() {
             is_active: true
           });
         } else {
-          console.log("User not logged in, token saved locally");
         }
       } catch (error) {
         console.warn("Token registration:", error.message);
@@ -898,7 +897,6 @@ export default function App(){
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
       const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
-      console.log("🔍 salonRows sample:", salonRows[0]); // للتحقق من البيانات
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
         salon.bookings = bookingRows
@@ -4431,7 +4429,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const {data:{user}}=await supabase.auth.getUser();
       if(user&&user.email===email.trim()){
         await supabase.auth.admin.deleteUser(user.id);
-        console.log("Cleanup: Deleted pending user record");
       }
     }catch(cleanupErr){
       console.error("Cleanup failed:",cleanupErr.message);
