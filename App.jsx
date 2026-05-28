@@ -1754,6 +1754,13 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       {/* Region Select Dropdown - Multi-level */}
       {showRegionSelect&&(
       <div style={{padding:"10px 14px",background:"rgba(0,0,0,.4)",borderBottom:"1px solid rgba(212,160,23,.1)"}}>
+        <div style={{fontSize:11,color:"#d4a017",marginBottom:8,fontWeight:700}}>
+          {fRegion && `${fRegion}`}
+          {fGov && ` - ${fGov}`}
+          {fCenter && ` - ${fCenter}`}
+          {fVillage && ` - ${fVillage}`}
+          {!fRegion && "كل المناطق"}
+        </div>
         {!fRegion?(
           <select autoFocus style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} onChange={e=>{setFRegion(e.target.value);}}>
             <option value="">كل المناطق</option>
@@ -1781,13 +1788,13 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
       <div style={{padding:"10px 14px 0",display:"flex",gap:8,overflowX:"auto",scrollbarWidth:"none",alignItems:"center"}}>
         {/* البحث - عدسة صغيرة */}
-        <button style={{minWidth:50,width:50,height:50,borderRadius:"50%",background:showSearch?"rgba(212,160,23,.3)":"rgba(212,160,23,.15)",border:"1.5px solid #d4a017",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20,transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setShowSearch(!showSearch);setTimeout(()=>{const inp=document.querySelector('input[placeholder="ابحث..."]');if(inp)inp.focus();},50);}} title="بحث">
+        <button style={{minWidth:50,width:50,height:50,borderRadius:"50%",background:showSearch?"rgba(212,160,23,.3)":"rgba(212,160,23,.15)",border:"1.5px solid #d4a017",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20,transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setShowSearch(!showSearch);setShowRegionSelect(false);setTimeout(()=>{const inp=document.querySelector('input[placeholder="ابحث..."]');if(inp)inp.focus();},50);}} title="بحث">
           🔍
         </button>
 
         {/* المنطقة */}
-        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:fRegion?"rgba(212,160,23,.3)":"rgba(255,255,255,.05)",border:`1.5px solid ${fRegion?"#d4a017":"#2a2a3a"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"#fff",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setShowRegionSelect(!showRegionSelect);}} title="المنطقة">
-          {fRegion?fRegion.substring(0,3):"المنطقة"}
+        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:showRegionSelect?"rgba(212,160,23,.3)":"rgba(255,255,255,.05)",border:`1.5px solid ${showRegionSelect?"#d4a017":"#2a2a3a"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"#fff",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setShowRegionSelect(!showRegionSelect);setShowSearch(false);}} title="المنطقة">
+          {fVillage?fVillage.substring(0,3):fCenter?fCenter.substring(0,3):fGov?fGov.substring(0,3):fRegion?fRegion.substring(0,3):"المنطقة"}
         </button>
 
         {/* احجز سريع */}
