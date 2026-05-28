@@ -1781,10 +1781,10 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         </div>
 
         <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
-          <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"6px 10px",gap:6}}>
+          <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid #2a2a3a",padding:"8px 12px",gap:6,cursor:"text"}}>
             <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
-            <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/>
-            {search&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0}} onClick={()=>setSearch("")}>✕</button>}
+            <input style={{flex:1,background:"transparent",border:"none",color:"#f0f0f0",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl",WebkitAppearance:"none",appearance:"none"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            {search&&<button style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:11,padding:0,WebkitAppearance:"none",appearance:"none"}} onClick={()=>setSearch("")}>✕</button>}
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:6,paddingBottom:14}}>
@@ -1841,10 +1841,10 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 }
 function LocFilter({icon,label,value,onChange,options,all}){
   return(
-    <div style={G.fRow}>
+    <div style={{...G.fRow,cursor:"pointer"}}>
       <span style={{fontSize:13,flexShrink:0}}>{icon}</span>
       <span style={{fontSize:11,color:"var(--p)",flexShrink:0,minWidth:50}}>{label}</span>
-      <select style={G.fSel} value={value} onChange={e=>onChange(e.target.value)}>
+      <select style={{...G.fSel,cursor:"pointer",WebkitAppearance:"none",appearance:"none",paddingRight:12}} value={value} onChange={e=>onChange(e.target.value)}>
         <option value="">{all}</option>
         {options.map(o=><option key={o} value={o}>{o}</option>)}
       </select>
