@@ -1671,6 +1671,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing}){
   const[urgentMode,setUrgentMode]=useState(false);
   const[showSearch,setShowSearch]=useState(false);
+  const regionSelectRef=useRef(null);
 
   const getRealRating=(salonId)=>{
     const id=Number(salonId);
@@ -1751,7 +1752,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       {pullRefreshing&&<div style={{position:"fixed",top:64,left:"50%",transform:"translateX(-50%)",zIndex:100,background:"var(--p)",color:"#000",padding:"4px 16px",borderRadius:20,fontSize:12,fontWeight:700}}>⟳ جاري التحديث...</div>}
 
       {/* Hidden filters select for region */}
-      <select style={{display:"none"}} onChange={e=>{setFRegion(e.target.value);setFGov("");setFCenter("");setFVillage("");}}>
+      <select ref={regionSelectRef} style={{display:"none"}} onChange={e=>{setFRegion(e.target.value);setFGov("");setFCenter("");setFVillage("");}}>
         <option value="">كل المناطق</option>
         {allLoc.map(r=><option key={r.region} value={r.region}>{r.region}</option>)}
       </select>
@@ -1763,7 +1764,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         </button>
 
         {/* المنطقة */}
-        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:fRegion?"rgba(212,160,23,.3)":"rgba(255,255,255,.05)",border:`1.5px solid ${fRegion?"#d4a017":"#2a2a3a"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"#fff",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{const sel=document.querySelector('select');if(sel)sel.click();}} title="المنطقة">
+        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:fRegion?"rgba(212,160,23,.3)":"rgba(255,255,255,.05)",border:`1.5px solid ${fRegion?"#d4a017":"#2a2a3a"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"#fff",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{regionSelectRef.current?.click();}} title="المنطقة">
           {fRegion?fRegion.substring(0,3):"المنطقة"}
         </button>
 
@@ -1828,17 +1829,6 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         }
       </div>
 
-      {/* Floating Button: احجز سريع - اليمين */}
-      {lastSalon&&customer&&(
-        <button style={{position:"fixed",right:20,bottom:100,width:60,height:60,borderRadius:"50%",background:"linear-gradient(135deg,#d4a017,#f0c040)",border:"none",boxShadow:"0 6px 20px rgba(212,160,23,.4)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:90,transition:"all 0.3s"}} onClick={()=>{setSelSalon(lastSalon);setView("book");}} title="احجز سريع">
-          <span style={{fontSize:28}}>⚡</span>
-        </button>
-      )}
-
-      {/* Floating Button: البحث - اليسار */}
-      <button style={{position:"fixed",left:20,bottom:100,width:60,height:60,borderRadius:"50%",background:showSearch?"rgba(212,160,23,.3)":"rgba(212,160,23,.2)",border:"1.5px solid #d4a017",boxShadow:"0 6px 20px rgba(212,160,23,.2)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:90,transition:"all 0.3s"}} onClick={()=>{setShowSearch(!showSearch);setTimeout(()=>{const input=document.querySelector('input[placeholder="ابحث..."]');if(input)input.focus();},50);}} title="بحث">
-        <span style={{fontSize:24}}>🔍</span>
-      </button>
     </div>
   );
 }
@@ -2000,6 +1990,9 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
         </button>
         <button onClick={onCompare} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           ⚖
+        </button>
+        <button onClick={onViewReviews} title="التقييمات" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#d4a017",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+          💬
         </button>
         <button onClick={onBook} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",flex:1,fontFamily:"'Cairo',sans-serif"}}>
           احجز الان
