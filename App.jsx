@@ -1404,7 +1404,6 @@ export default function App(){
   if(loading)return(
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#09112e 0%,#0d1535 45%,#111d42 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>
       <style>{CSS}</style>
-      <DorkLogoSvg size={72}/>
       <div style={{color:"#d4a017",fontSize:14,fontWeight:700,letterSpacing:1}}>جارٍ تحميل البيانات...</div>
       <div style={{width:36,height:36,border:"3px solid rgba(212,160,23,.15)",borderTop:"3px solid #d4a017",borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
       <style dangerouslySetInnerHTML={{__html:"@keyframes spin{to{transform:rotate(360deg)}}"}} />
