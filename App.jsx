@@ -1762,19 +1762,19 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           {!fRegion && "كل المناطق"}
         </div>
         {!fRegion?(
-          <select autoFocus style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} onChange={e=>{setFRegion(e.target.value);}}>
+          <select autoFocus style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} onChange={e=>{setFRegion(e.target.value);setFGov("");setFCenter("");setFVillage("");}}>
             <option value="">كل المناطق</option>
             {allLoc.map(r=><option key={r.region} value={r.region}>{r.region}</option>)}
           </select>
         ):!fGov?(
-          <select autoFocus style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} onChange={e=>{setFGov(e.target.value);}}>
+          <select autoFocus style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} onChange={e=>{setFGov(e.target.value);setFCenter("");setFVillage("");}}>
             <option value="">كل المحافظات</option>
-            {govList.map(g=><option key={g.name||g} value={g.name||g}>{g.name||g}</option>)}
+            {govList&&govList.map(g=><option key={g.name||g} value={g.name||g}>{g.name||g}</option>)}
           </select>
         ):!fCenter&&centerList2.length>0?(
-          <select autoFocus style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} onChange={e=>{setFCenter(e.target.value);}}>
+          <select autoFocus style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} onChange={e=>{setFCenter(e.target.value);setFVillage("");}}>
             <option value="">كل المراكز</option>
-            {centerList2.map(c=><option key={c} value={c}>{c}</option>)}
+            {centerList2&&centerList2.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
         ):(
           <select autoFocus style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} onChange={e=>{setFVillage(e.target.value);setShowRegionSelect(false);}}>
