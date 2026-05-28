@@ -1169,9 +1169,9 @@ export default function App(){
   // Splash Screen
   if(splash) return(
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#09112e 0%,#0d1535 45%,#111d42 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",gap:0}}>
-      {/* Full brand logo as image */}
+      {/* Full brand logo as text */}
       <div style={{animation:"splashPulse 1.4s ease-in-out infinite",marginBottom:28}}>
-        <img src="/logo.png" alt="DORK" style={{width:260,height:"auto",display:"block",filter:"drop-shadow(0 4px 32px rgba(212,160,23,.5))",borderRadius:16}}/>
+        <div style={{fontSize:72,fontWeight:900,color:"#d4a017",filter:"drop-shadow(0 4px 32px rgba(212,160,23,.5))",letterSpacing:2}}>دورك</div>
       </div>
       {/* Loading spinner */}
       <div style={{width:36,height:36,border:"3px solid rgba(212,160,23,.15)",borderTop:"3px solid #d4a017",borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
@@ -1516,9 +1516,9 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         <button style={G.roleBtn} onClick={()=>setView("settings")}>⚙</button>
         <button style={{...G.roleBtn,background:"var(--pa12)",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>🏠</button>
       </div>
-      {/* RIGHT: شعار دورك — أيقونة فوق + DORK تحت */}
+      {/* RIGHT: شعار دورك — نص */}
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-        <img src="/Logo-gold.svg" alt="DORK" style={{height:52,width:"auto",display:"block"}}/>
+        <div style={{fontSize:32,fontWeight:900,color:"#d4a017",letterSpacing:1}}>دورك</div>
       </div>
     </div>
   );
