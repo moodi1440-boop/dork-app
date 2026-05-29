@@ -1527,6 +1527,11 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const[editEmail,setEditEmail]=useState("");
   const[locMode,setLocMode]=useState("gps");
   const[locUrl,setLocUrl]=useState("");
+  const[editPinStep,setEditPinStep]=useState(null);
+  const[editPinLength,setEditPinLength]=useState(4);
+  const[editTempPin,setEditTempPin]=useState("");
+  const[editPinConfirm,setEditPinConfirm]=useState("");
+  const[editPinErr,setEditPinErr]=useState("");
   const[showDel,setShowDel]=useState(false);
   const toggle=(s)=>setExp(e=>e===s?null:s);
   if(!customer)return null;
@@ -1606,11 +1611,12 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
             <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"#888",marginBottom:4}}>الاسم</label><input style={inp} value={editName} onChange={e=>setEditName(e.target.value)}/></div>
             <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"#888",marginBottom:4}}>رقم الجوال</label><input style={inp} inputMode="numeric" value={editPhone} onChange={e=>setEditPhone(e.target.value)}/></div>
             <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"#888",marginBottom:4}}>البريد الإلكتروني</label><input style={inp} type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)}/></div>
-            <div style={{marginBottom:12}}>
-              <label style={{display:"block",fontSize:10,color:"#888",marginBottom:6}}>موقعي 📍</label>
+            {/* موقعي */}
+            <div style={{marginBottom:12,background:"rgba(212,160,23,.06)",borderRadius:10,padding:10,border:"1px solid rgba(212,160,23,.2)"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"var(--p)",marginBottom:8}}>📍 موقعي</div>
               <div style={{display:"flex",gap:6,marginBottom:10}}>
-                <button onClick={()=>setLocMode("url")} style={{flex:1,padding:"8px 4px",borderRadius:8,border:`1.5px solid ${locMode==="url"?"var(--p)":"#2a2a3a"}`,background:locMode==="url"?"var(--pa08)":"transparent",color:locMode==="url"?"var(--p)":"#888",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>🔗 رابط</button>
-                <button onClick={()=>setLocMode("gps")} style={{flex:1,padding:"8px 4px",borderRadius:8,border:`1.5px solid ${locMode==="gps"?"var(--p)":"#2a2a3a"}`,background:locMode==="gps"?"var(--pa08)":"transparent",color:locMode==="gps"?"var(--p)":"#888",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>📡 تلقائي</button>
+                <button onClick={()=>setLocMode("url")} style={{...G.locTab,...(locMode==="url"?G.locTabOn:{})}}>🔗 رابط</button>
+                <button onClick={()=>setLocMode("gps")} style={{...G.locTab,...(locMode==="gps"?G.locTabOn:{})}}>📡 تلقائي</button>
               </div>
               {locMode==="url"?(
                 <>
@@ -1619,11 +1625,24 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
                 </>
               ):(
                 customer?.locationLat?(
-                  <><div style={{fontSize:11,color:"#27ae60",marginBottom:8}}>✅ موقع محفوظ</div><BtnRow><Btn primary label="🔄 تحديث" onClick={saveLocation}/><Btn danger label="🗑 حذف" onClick={clearLocation}/></BtnRow></>
+                  <>
+                    <div style={{fontSize:11,color:"#27ae60",marginBottom:8}}>✅ موقع محفوظ — الصالونات الأقرب تظهر تلقائياً</div>
+                    <div style={{display:"flex",gap:8}}>
+                      <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={saveLocation}>🔄 تحديث الموقع</button>
+                      <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={clearLocation}>🗑 حذف الموقع</button>
+                    </div>
+                  </>
                 ):(
-                  <Btn primary label="📍 تحديد موقعي تلقائياً" onClick={saveLocation}/>
+                  <>
+                    <div style={{fontSize:11,color:"#888",marginBottom:8}}>لا يوجد موقع محفوظ</div>
+                    <button style={{...G.detectBtn}} onClick={saveLocation}>📡 تحديد موقعي تلقائياً</button>
+                  </>
                 )
               )}
+            </div>
+            {/* PIN */}
+            <div style={{marginBottom:12,background:"rgba(212,160,23,.06)",borderRadius:10,padding:10,border:"1px solid rgba(212,160,23,.2)"}}>
+              <button style={{width:"100%",padding:"9px",borderRadius:8,border:"1.5px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setEditPinStep("select")}>🔐 تغيير رمز PIN</button>
             </div>
             <BtnRow><Btn primary label="حفظ" onClick={saveEdit}/><Btn label="إلغاء" onClick={()=>setExp(null)}/></BtnRow>
           </Panel>
@@ -1720,6 +1739,33 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         )}
         <div style={{height:40}}/>
       </div>
+      {/* حوار تغيير PIN */}
+      {editPinStep&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:20}}>
+          <div style={{background:"#13131f",borderRadius:20,padding:24,maxWidth:350,width:"100%",border:"1.5px solid var(--pa25)"}}>
+            {editPinStep==="select"?<>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>🔐 تغيير رمز PIN</div>
+              <div style={{fontSize:12,color:"#888",textAlign:"center",marginBottom:20}}>اختر عدد الأرقام</div>
+              <div style={{display:"flex",gap:12,marginBottom:16}}>
+                <button onClick={()=>{setEditPinLength(4);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===4?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>4 أرقام</button>
+                <button onClick={()=>{setEditPinLength(6);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===6?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>6 أرقام</button>
+              </div>
+              <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);}} style={{width:"100%",padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>إلغاء</button>
+            </>:editPinStep==="enter"?<>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أدخل PIN الجديد ({editPinLength} أرقام)</div>
+              <input type="password" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr",boxSizing:"border-box"}} placeholder="•••••" autoFocus/>
+            </>:editPinStep==="confirm"?<>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أعد إدخال PIN للتأكيد</div>
+              <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr("الأرقام غير متطابقة");}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"#0d0d1a",color:"#f0f0f0",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr",boxSizing:"border-box"}} placeholder="•••••" autoFocus/>
+              {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
+              <div style={{display:"flex",gap:8,marginTop:16}}>
+                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const k=String(customer.id);localStorage.setItem(`dork_customer_pin_${k}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${k}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$("✅ تم تحديث PIN بنجاح");}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"#2a2a3a",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>حفظ</button>
+                <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>إلغاء</button>
+              </div>
+            </>:null}
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -3618,6 +3664,9 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
   };
   return(
     <div style={G.page}><div style={G.fp}>
+      <div style={{paddingTop:20,marginBottom:16}}>
+        <button onClick={()=>setView("entry")} style={{background:"transparent",border:"none",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,fontSize:14,fontWeight:700,padding:0,WebkitAppearance:"none",appearance:"none"}}>{"<"} رجوع</button>
+      </div>
       <div style={{...G.tabRow,marginBottom:16}}>
         <button style={{...G.tabBtn,flex:1,...(tab==="phone"?G.tabOn:{})}} onClick={()=>{setTab("phone");setErr("");setPinErr("");}}>📱 رقم الجوال</button>
         <button style={{...G.tabBtn,flex:1,...(tab==="pin"?G.tabOn:{})}} onClick={()=>{setTab("pin");setErr("");setPinErr("");}}>🔐 الدخول السريع</button>
@@ -4793,6 +4842,9 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 
   return(
     <div style={G.page}><div style={G.fp}>
+      <div style={{paddingTop:20,marginBottom:16}}>
+        <button onClick={()=>setView("entry")} style={{background:"transparent",border:"none",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,fontSize:14,fontWeight:700,padding:0,WebkitAppearance:"none",appearance:"none"}}>{"<"} رجوع</button>
+      </div>
 
       {/* دخول بالبصمة */}
       {localStorage.getItem("dork_biometric_id")&&(
