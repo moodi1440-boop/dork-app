@@ -714,7 +714,7 @@ export default function App(){
   });
   const[loading,setLoading]=useState(false); // تحميل سريع - البيانات تُحمّل في الخلفية
   const[dbError,setDbError]=useState(null);
-  const[view,setView]=useState("home");
+  const[view,setView]=useState(()=>{try{const o=localStorage.getItem("dork_owner");const c=localStorage.getItem("dork_customer");if(o)return"ownerDash";if(c)return"home";return"entry";}catch{return"entry";}});
   const[selSalon,setSelSalon]=useState(null);
   const[toast,setToast]=useState(null);
   const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
@@ -1422,8 +1422,9 @@ export default function App(){
       {/* بانر خطأ الاتصال - يظهر فقط عند الخطأ */}
       {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"#3a1a1a",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>❌ خطأ في الاتصال بقاعدة البيانات — تحقق من الاتصال</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
-      <TopBar {...sharedProps}/>
-      <div style={{paddingTop:64}}>
+      {view!=="entry"&&<TopBar {...sharedProps}/>}
+      <div style={{paddingTop:view==="entry"?0:64}}>
+        {view==="entry"&&     <EntryView setView={setView}/>}
         {view==="home"&&      <HomeView {...sharedProps}/>}
         {view==="register"&&  <RegisterView {...sharedProps}/>}
         {view==="book"&&selSalon&&<BookView salon={selSalon} {...sharedProps}/>}
@@ -1507,6 +1508,21 @@ function DorkLogoSvg({size=40}){
   );
 }
 
+// ==============================================
+// ==============================================
+//  ENTRY VIEW — شاشة اختيار عميل / صالون
+// ==============================================
+function EntryView({setView}){
+  return(
+    <div style={{minHeight:"100vh",background:"#0b1220",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 32px",gap:36}}>
+      <img src="/logo.png" alt="DORK" style={{width:"68%",maxWidth:260,objectFit:"contain"}}/>
+      <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:14}}>
+        <button onClick={()=>setView("ownerLogin")} style={{width:"100%",padding:"15px 0",borderRadius:14,border:"2px solid #d4a017",background:"transparent",color:"#d4a017",fontSize:16,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>✂️ دخول كصالون</button>
+        <button onClick={()=>setView("custLogin")} style={{width:"100%",padding:"15px 0",borderRadius:14,border:"2px solid #d4a017",background:"rgba(212,160,23,.12)",color:"#d4a017",fontSize:16,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>👤 دخول كعميل</button>
+      </div>
+    </div>
+  );
+}
 // ==============================================
 //  TOP BAR - 3 role buttons on the LEFT
 // ==============================================
@@ -3520,7 +3536,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           );
         })}
         <button
-          onClick={()=>{if(window.confirm("هل أنت متأكد من الخروج؟")){setOwnerSession(null);setView("home");}}}
+          onClick={()=>{if(window.confirm("هل أنت متأكد من الخروج؟")){setOwnerSession(null);setView("entry");}}}
           style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:"rgba(231,76,60,.07)",border:"1px solid rgba(231,76,60,.2)",borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
           <span style={{fontSize:18}}>🚪</span>
           <span style={{fontSize:8,color:"#e74c3c",fontWeight:600,whiteSpace:"nowrap"}}>خروج</span>
@@ -4714,7 +4730,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       await sb("customers","DELETE",null,`?id=eq.${customer.id}`);
       const {data:{user}}=await supabase.auth.getUser();
       if(user)await supabase.auth.admin.deleteUser(user.id);
-      setCustomerSession(null);setView("home");
+      setCustomerSession(null);setView("entry");
     }catch(e){alert("خطأ: "+e.message);}
     setShowDeleteConfirm(false);
   };
@@ -4742,7 +4758,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>حسابي</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("home");}}>خروج</button></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>حسابي</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button></div>
 
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
       {showLocPrompt&&!customer?.locationLat&&(
