@@ -5363,31 +5363,24 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
       {/* حذف الحساب - Dialog */}
       {showDeleteConfirm&&(
-        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"20px"}}>
-          <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:24,border:"1.5px solid #d4a017",boxShadow:"0 20px 60px rgba(212,160,23,0.2)",maxWidth:"90%",animation:"slideUp 0.3s ease"}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowDeleteConfirm(false)}>
+          <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #d4a017",borderBottom:"none",boxShadow:"0 -8px 32px rgba(212,160,23,0.15)"}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
-              <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
-              <div style={{fontSize:18,fontWeight:900,color:"#fff",marginBottom:8}}>حذف الحساب نهائياً</div>
+              <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
+              <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:6}}>حذف الحساب نهائياً</div>
               <div style={{fontSize:12,color:"#888",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
             </div>
-
-            <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:20,fontSize:12,color:"#ddd",lineHeight:1.8}}>
-              <div style={{marginBottom:8,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>✗ <span>حسابك بشكل نهائي</span></div>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>✗ <span>جميع معلوماتك الشخصية</span></div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>✗ <span>سجل حجوزاتك</span></div>
+            <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"#ddd",lineHeight:1.8}}>
+              <div style={{marginBottom:6,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
+              <div>✗ حسابك بشكل نهائي</div>
+              <div>✗ جميع معلوماتك الشخصية</div>
+              <div>✗ سجل حجوزاتك</div>
             </div>
-
-            <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:12,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700}}>
+            <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:10,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700}}>
               ⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف</div>
-
             <div style={{display:"flex",gap:10}}>
-              <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",transition:"all 0.2s"}} onClick={()=>setShowDeleteConfirm(false)}>
-                ↩️ إلغاء
-              </button>
-              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",border:"none",transition:"all 0.2s",boxShadow:"0 4px 12px rgba(231,76,60,0.3)"}} onClick={confirmDeleteAccount}>
-                🗑️ حذف نهائياً
-              </button>
+              <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowDeleteConfirm(false)}>↩️ إلغاء</button>
+              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={confirmDeleteAccount}>🗑️ حذف نهائياً</button>
             </div>
           </div>
         </div>
