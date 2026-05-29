@@ -1614,30 +1614,13 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
             {/* موقعي */}
             <div style={{marginBottom:12,background:"rgba(212,160,23,.06)",borderRadius:10,padding:10,border:"1px solid rgba(212,160,23,.2)"}}>
               <div style={{fontSize:11,fontWeight:700,color:"var(--p)",marginBottom:8}}>📍 موقعي</div>
-              <div style={{display:"flex",gap:6,marginBottom:10}}>
-                <button onClick={()=>setLocMode("url")} style={{...G.locTab,...(locMode==="url"?G.locTabOn:{})}}>🔗 رابط</button>
-                <button onClick={()=>setLocMode("gps")} style={{...G.locTab,...(locMode==="gps"?G.locTabOn:{})}}>📡 تلقائي</button>
-              </div>
-              {locMode==="url"?(
-                <>
-                  <input style={inp} placeholder="https://maps.google.com/..." value={locUrl} onChange={e=>setLocUrl(e.target.value)} dir="ltr"/>
-                  <div style={{fontSize:10,color:"#555",marginTop:3,textAlign:"right"}}>افتح Google Maps ← الموقع ← شارك ← انسخ</div>
-                </>
+              {customer?.locationLat?(
+                <div style={{display:"flex",gap:8}}>
+                  <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={saveLocation}>🔄 تحديث الموقع</button>
+                  <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={clearLocation}>🗑 حذف الموقع</button>
+                </div>
               ):(
-                customer?.locationLat?(
-                  <>
-                    <div style={{fontSize:11,color:"#27ae60",marginBottom:8}}>✅ موقع محفوظ — الصالونات الأقرب تظهر تلقائياً</div>
-                    <div style={{display:"flex",gap:8}}>
-                      <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={saveLocation}>🔄 تحديث الموقع</button>
-                      <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={clearLocation}>🗑 حذف الموقع</button>
-                    </div>
-                  </>
-                ):(
-                  <>
-                    <div style={{fontSize:11,color:"#888",marginBottom:8}}>لا يوجد موقع محفوظ</div>
-                    <button style={{...G.detectBtn}} onClick={saveLocation}>📡 تحديد موقعي تلقائياً</button>
-                  </>
-                )
+                <button style={{...G.detectBtn}} onClick={saveLocation}>📡 تحديد موقعي تلقائياً</button>
               )}
             </div>
             {/* PIN */}
@@ -3689,6 +3672,7 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
           ✂ سجّل صالونك الآن
         </button>
       </div>
+      <button onClick={()=>setView("entry")} style={{width:"100%",marginTop:4,marginBottom:16,padding:"14px 0",borderRadius:12,border:"1.5px solid var(--pa25)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:15,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>رجوع</button>
     </div></div>
   );
 }
@@ -4934,6 +4918,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           </button>
         </>}
       </div>
+      <button onClick={()=>setView("entry")} style={{width:"100%",marginTop:20,padding:"14px 0",borderRadius:12,border:"1.5px solid var(--pa25)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:15,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>رجوع</button>
     </div></div>
   );
 }
