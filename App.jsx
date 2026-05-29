@@ -387,6 +387,7 @@ function playTone(id, vol=0.7){
 // ==============================================
 //  PUSH NOTIFICATIONS
 // ==============================================
+let _dkCustTab="settings";
 function getCustomerClassification(customer){
   const history=(customer?.history||[]);
   const total=history.filter(h=>h.status!=="rejected").length;
@@ -1600,8 +1601,10 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <div style={{height:12}}/>
         {/* التنقل */}
         <SecHead label="تنقل سريع"/>
-        <Row icon="📅" label="حجوزاتي" onClick={()=>{onClose();setView("custDash");}}/>
-        <Row icon="❤️" label="المفضلة" onClick={()=>{onClose();setView("custDash");}}/>
+        <Row icon="🔔" label="الإشعارات" onClick={()=>{_dkCustTab="notif";onClose();setView("custDash");}}/>
+        <Row icon="📅" label="حجوزاتي" onClick={()=>{_dkCustTab="hist";onClose();setView("custDash");}}/>
+        <Row icon="❤️" label="المفضلة" onClick={()=>{_dkCustTab="favs";onClose();setView("custDash");}}/>
+        <Row icon="⏰" label="التذكيرات" onClick={()=>{_dkCustTab="hist";onClose();setView("custDash");}}/>
         {/* حسابي */}
         <div style={{height:8}}/>
         <SecHead label="حسابي"/>
@@ -1707,17 +1710,31 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <button onClick={()=>{if(window.confirm("هل أنت متأكد من الخروج؟")){setCustomerSession(null);setView("entry");onClose();}}} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid #181828",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
           🚪 تسجيل الخروج
         </button>
-        {!showDel?(
-          <button onClick={()=>setShowDel(true)} style={{width:"100%",padding:"12px 20px",background:"transparent",border:"none",borderTop:"1px solid #181828",color:"#666",fontSize:12,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
-            ⚠️ حذف الحساب نهائياً
-          </button>
-        ):(
-          <div style={{padding:"14px 16px",borderTop:"1px solid #181828",background:"rgba(231,76,60,.07)"}}>
-            <div style={{fontSize:12,color:"#e74c3c",marginBottom:10,fontWeight:700}}>⚠️ لا يمكن التراجع — هل أنت متأكد؟</div>
-            <BtnRow>
-              <Btn danger label="تأكيد الحذف" onClick={async()=>{try{await sb("customers","DELETE",null,`?id=eq.${customer.id}`);setCustomerSession(null);setView("entry");onClose();}catch(e){toast$("❌ "+e.message,"err");}setShowDel(false);}}/>
-              <Btn label="إلغاء" onClick={()=>setShowDel(false)}/>
-            </BtnRow>
+        <button onClick={()=>setShowDel(true)} style={{width:"100%",padding:"14px 20px",background:"linear-gradient(135deg,rgba(231,76,60,.15),rgba(231,76,60,.08))",border:"none",borderTop:"1px solid #181828",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"center",WebkitAppearance:"none",appearance:"none"}}>
+          🗑 حذف الحساب نهائياً
+        </button>
+        {showDel&&(
+          <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1300,padding:20}}>
+            <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:24,border:"1.5px solid #d4a017",boxShadow:"0 20px 60px rgba(212,160,23,0.2)",maxWidth:"90%",width:"100%"}}>
+              <div style={{textAlign:"center",marginBottom:20}}>
+                <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
+                <div style={{fontSize:18,fontWeight:900,color:"#fff",marginBottom:8}}>حذف الحساب نهائياً</div>
+                <div style={{fontSize:12,color:"#888",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
+              </div>
+              <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:20,fontSize:12,color:"#ddd",lineHeight:1.8}}>
+                <div style={{marginBottom:8,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
+                <div>✗ حسابك بشكل نهائي</div>
+                <div>✗ جميع معلوماتك الشخصية</div>
+                <div>✗ سجل حجوزاتك</div>
+              </div>
+              <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:12,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700}}>
+                ⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف
+              </div>
+              <div style={{display:"flex",gap:10}}>
+                <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowDel(false)}>↩️ إلغاء</button>
+                <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={async()=>{try{await sb("customers","DELETE",null,`?id=eq.${customer.id}`);setCustomerSession(null);setView("entry");onClose();}catch(e){toast$("❌ "+e.message,"err");}setShowDel(false);}}>🗑️ حذف نهائياً</button>
+              </div>
+            </div>
           </div>
         )}
         <div style={{height:40}}/>
@@ -3647,9 +3664,6 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
   };
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={{paddingTop:20,marginBottom:16}}>
-        <button onClick={()=>setView("entry")} style={{background:"transparent",border:"none",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,fontSize:14,fontWeight:700,padding:0,WebkitAppearance:"none",appearance:"none"}}>{"<"} رجوع</button>
-      </div>
       <div style={{...G.tabRow,marginBottom:16}}>
         <button style={{...G.tabBtn,flex:1,...(tab==="phone"?G.tabOn:{})}} onClick={()=>{setTab("phone");setErr("");setPinErr("");}}>📱 رقم الجوال</button>
         <button style={{...G.tabBtn,flex:1,...(tab==="pin"?G.tabOn:{})}} onClick={()=>{setTab("pin");setErr("");setPinErr("");}}>🔐 الدخول السريع</button>
@@ -4826,9 +4840,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={{paddingTop:20,marginBottom:16}}>
-        <button onClick={()=>setView("entry")} style={{background:"transparent",border:"none",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,fontSize:14,fontWeight:700,padding:0,WebkitAppearance:"none",appearance:"none"}}>{"<"} رجوع</button>
-      </div>
 
       {/* دخول بالبصمة */}
       {localStorage.getItem("dork_biometric_id")&&(
@@ -4923,7 +4934,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   );
 }
 function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$}){
-  const[tab,setTab]=useState("settings");
+  const[tab,setTab]=useState(()=>{const t=_dkCustTab;_dkCustTab="settings";return t;});
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
@@ -5082,9 +5093,6 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
       {/* تبويبات */}
       <div style={{...G.tabRow,flexWrap:"nowrap"}}>
-        <button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{localStorage.setItem("dork_notif_count","0");setTab("notif");}}>
-          🔔 {(()=>{const n=parseInt(localStorage.getItem("dork_notif_count")||"0");return n>0?<span style={G.notifDot}>{n}</span>:null;})()}
-        </button>
         <button style={{...G.tabBtn,...(tab==="favs"?G.tabOn:{})}} onClick={()=>setTab("favs")}>♥ المفضلة {favSalons.length>0&&<span style={G.notifDot}>{favSalons.length}</span>}</button>
         <button style={{...G.tabBtn,...(tab==="hist"?G.tabOn:{})}} onClick={()=>setTab("hist")}>📋 حجوزاتي</button>
         <button style={{...G.tabBtn,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙ الحساب</button>
