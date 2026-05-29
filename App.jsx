@@ -3647,6 +3647,9 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
   };
   return(
     <div style={G.page}><div style={G.fp}>
+      <div style={{paddingTop:20,marginBottom:16}}>
+        <button onClick={()=>setView("entry")} style={{background:"transparent",border:"none",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,fontSize:14,fontWeight:700,padding:0,WebkitAppearance:"none",appearance:"none"}}>{"<"} رجوع</button>
+      </div>
       <div style={{...G.tabRow,marginBottom:16}}>
         <button style={{...G.tabBtn,flex:1,...(tab==="phone"?G.tabOn:{})}} onClick={()=>{setTab("phone");setErr("");setPinErr("");}}>📱 رقم الجوال</button>
         <button style={{...G.tabBtn,flex:1,...(tab==="pin"?G.tabOn:{})}} onClick={()=>{setTab("pin");setErr("");setPinErr("");}}>🔐 الدخول السريع</button>
@@ -4823,6 +4826,9 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 
   return(
     <div style={G.page}><div style={G.fp}>
+      <div style={{paddingTop:20,marginBottom:16}}>
+        <button onClick={()=>setView("entry")} style={{background:"transparent",border:"none",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,fontSize:14,fontWeight:700,padding:0,WebkitAppearance:"none",appearance:"none"}}>{"<"} رجوع</button>
+      </div>
 
       {/* دخول بالبصمة */}
       {localStorage.getItem("dork_biometric_id")&&(
