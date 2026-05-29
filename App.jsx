@@ -388,6 +388,7 @@ function playTone(id, vol=0.7){
 //  PUSH NOTIFICATIONS
 // ==============================================
 let _dkCustTab="settings";
+let _dkCustMode="full";
 function getCustomerClassification(customer){
   const history=(customer?.history||[]);
   const total=history.filter(h=>h.status!=="rejected").length;
@@ -1534,6 +1535,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const[editPinConfirm,setEditPinConfirm]=useState("");
   const[editPinErr,setEditPinErr]=useState("");
   const[showDel,setShowDel]=useState(false);
+  const[showLogout,setShowLogout]=useState(false);
   const toggle=(s)=>setExp(e=>e===s?null:s);
   if(!customer)return null;
   const cl=getCustomerClassification(customer);
@@ -1601,10 +1603,10 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <div style={{height:12}}/>
         {/* التنقل */}
         <SecHead label="تنقل سريع"/>
-        <Row icon="🔔" label="الإشعارات" onClick={()=>{_dkCustTab="notif";onClose();setView("custDash");}}/>
-        <Row icon="📅" label="حجوزاتي" onClick={()=>{_dkCustTab="hist";onClose();setView("custDash");}}/>
-        <Row icon="❤️" label="المفضلة" onClick={()=>{_dkCustTab="favs";onClose();setView("custDash");}}/>
-        <Row icon="⏰" label="التذكيرات" onClick={()=>{_dkCustTab="hist";onClose();setView("custDash");}}/>
+        <Row icon="🔔" label="الإشعارات" onClick={()=>{_dkCustMode="section";_dkCustTab="notif";onClose();setView("custDash");}}/>
+        <Row icon="📅" label="حجوزاتي" onClick={()=>{_dkCustMode="section";_dkCustTab="hist";onClose();setView("custDash");}}/>
+        <Row icon="❤️" label="المفضلة" onClick={()=>{_dkCustMode="section";_dkCustTab="favs";onClose();setView("custDash");}}/>
+        <Row icon="⏰" label="التذكيرات" onClick={()=>{_dkCustMode="section";_dkCustTab="remind";onClose();setView("custDash");}}/>
         {/* حسابي */}
         <div style={{height:8}}/>
         <SecHead label="حسابي"/>
@@ -1707,32 +1709,47 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <Row icon="❓" label="أسئلة شائعة" onClick={()=>{onClose();setView("settings");}}/>
         {/* الخروج والحذف */}
         <div style={{height:16}}/>
-        <button onClick={()=>{if(window.confirm("هل أنت متأكد من الخروج؟")){setCustomerSession(null);setView("entry");onClose();}}} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid #181828",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
+        <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid #181828",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
           🚪 تسجيل الخروج
         </button>
         <button onClick={()=>setShowDel(true)} style={{width:"100%",padding:"14px 20px",background:"linear-gradient(135deg,rgba(231,76,60,.15),rgba(231,76,60,.08))",border:"none",borderTop:"1px solid #181828",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"center",WebkitAppearance:"none",appearance:"none"}}>
           🗑 حذف الحساب نهائياً
         </button>
-        {showDel&&(
-          <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1300,padding:20}}>
-            <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:24,border:"1.5px solid #d4a017",boxShadow:"0 20px 60px rgba(212,160,23,0.2)",maxWidth:"90%",width:"100%"}}>
+        {showLogout&&(
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowLogout(false)}>
+            <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #2a2a3a",borderBottom:"none"}} onClick={e=>e.stopPropagation()}>
               <div style={{textAlign:"center",marginBottom:20}}>
-                <div style={{fontSize:40,marginBottom:12}}>⚠️</div>
-                <div style={{fontSize:18,fontWeight:900,color:"#fff",marginBottom:8}}>حذف الحساب نهائياً</div>
+                <div style={{fontSize:36,marginBottom:10}}>🚪</div>
+                <div style={{fontSize:16,fontWeight:700,color:"#fff",marginBottom:6}}>تسجيل الخروج</div>
+                <div style={{fontSize:12,color:"#888"}}>هل أنت متأكد من رغبتك في الخروج؟</div>
+              </div>
+              <div style={{display:"flex",gap:10}}>
+                <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowLogout(false)}>إلغاء</button>
+                <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setCustomerSession(null);setView("entry");onClose();}}>خروج</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showDel&&(
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowDel(false)}>
+            <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #d4a017",borderBottom:"none",boxShadow:"0 -8px 32px rgba(212,160,23,0.15)"}} onClick={e=>e.stopPropagation()}>
+              <div style={{textAlign:"center",marginBottom:20}}>
+                <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
+                <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:6}}>حذف الحساب نهائياً</div>
                 <div style={{fontSize:12,color:"#888",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
               </div>
-              <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:20,fontSize:12,color:"#ddd",lineHeight:1.8}}>
-                <div style={{marginBottom:8,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
+              <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"#ddd",lineHeight:1.8}}>
+                <div style={{marginBottom:6,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
                 <div>✗ حسابك بشكل نهائي</div>
                 <div>✗ جميع معلوماتك الشخصية</div>
                 <div>✗ سجل حجوزاتك</div>
               </div>
-              <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:12,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700}}>
+              <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:10,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700}}>
                 ⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف
               </div>
               <div style={{display:"flex",gap:10}}>
-                <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowDel(false)}>↩️ إلغاء</button>
-                <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"12px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={async()=>{try{await sb("customers","DELETE",null,`?id=eq.${customer.id}`);setCustomerSession(null);setView("entry");onClose();}catch(e){toast$("❌ "+e.message,"err");}setShowDel(false);}}>🗑️ حذف نهائياً</button>
+                <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowDel(false)}>↩️ إلغاء</button>
+                <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={async()=>{try{await sb("customers","DELETE",null,`?id=eq.${customer.id}`);setCustomerSession(null);setView("entry");onClose();}catch(e){toast$("❌ "+e.message,"err");}setShowDel(false);}}>🗑️ حذف نهائياً</button>
               </div>
             </div>
           </div>
@@ -4935,6 +4952,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 }
 function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$}){
   const[tab,setTab]=useState(()=>{const t=_dkCustTab;_dkCustTab="settings";return t;});
+  const[sectionMode]=useState(()=>{const m=_dkCustMode==="section";_dkCustMode="full";return m;});
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
@@ -5034,12 +5052,14 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   const inp2={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
 
+  const sectionTitle=tab==="notif"?"الإشعارات":tab==="hist"?"حجوزاتي":tab==="favs"?"المفضلة":tab==="remind"?"التذكيرات":"حسابي";
+
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>حسابي</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:"حسابي"}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button>}</div>
 
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
-      {showLocPrompt&&!customer?.locationLat&&(
+      {!sectionMode&&showLocPrompt&&!customer?.locationLat&&(
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,padding:20}}>
           <div style={{background:"#13131f",borderRadius:20,padding:24,maxWidth:340,width:"100%",border:"1.5px solid rgba(212,160,23,.3)",textAlign:"center"}}>
             <div style={{fontSize:40,marginBottom:12}}>📍</div>
@@ -5054,7 +5074,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       )}
 
       {/* بروفايل العميل - Premium */}
-      {!editMode?(
+      {!sectionMode&&!editMode?(
         <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
           {/* البادج في الزاوية اليسرى */}
           <div style={{position:"absolute",top:12,left:12,background:`${classification.color}22`,border:`1px solid ${classification.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:classification.color}}>{badge}</div>
@@ -5092,11 +5112,11 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       )}
 
       {/* تبويبات */}
-      <div style={{...G.tabRow,flexWrap:"nowrap"}}>
+      {!sectionMode&&<div style={{...G.tabRow,flexWrap:"nowrap"}}>
         <button style={{...G.tabBtn,...(tab==="favs"?G.tabOn:{})}} onClick={()=>setTab("favs")}>♥ المفضلة {favSalons.length>0&&<span style={G.notifDot}>{favSalons.length}</span>}</button>
         <button style={{...G.tabBtn,...(tab==="hist"?G.tabOn:{})}} onClick={()=>setTab("hist")}>📋 حجوزاتي</button>
         <button style={{...G.tabBtn,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙ الحساب</button>
-      </div>
+      </div>}
 
       {/* المفضلة */}
       {tab==="favs"&&<>
@@ -5149,25 +5169,6 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             })}
           </div>
         )}
-        {/* إعداد التذكير */}
-        <div style={{background:"#13131f",borderRadius:10,padding:"10px 12px",marginBottom:10,border:"1px solid #2a2a3a"}}>
-          <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:8}}>🔔 وقت التذكير بالمواعيد</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-            {[{v:30,l:"30 د"},{v:60,l:"ساعة"},{v:120,l:"ساعتين"},{v:1440,l:"يوم"}].map(({v,l})=>(
-              <button key={v} onClick={()=>setReminderMins(v)}
-                style={{padding:"5px 10px",borderRadius:20,border:`1.5px solid ${reminderMins===v?"var(--p)":"#2a2a3a"}`,background:reminderMins===v?"var(--pa12)":"#1a1a2e",color:reminderMins===v?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:700}}>
-                {l}
-              </button>
-            ))}
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:11,color:"#888",flexShrink:0}}>أو أدخل دقائق:</span>
-            <input type="number" min="1" max="10080"
-              style={{width:80,padding:"6px 10px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"var(--p)",fontSize:13,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
-              value={reminderMins} onChange={e=>setReminderMins(Math.max(1,+e.target.value))}/>
-            <span style={{fontSize:11,color:"#888"}}>دقيقة</span>
-          </div>
-        </div>
         {history.length===0?<div style={G.empty}>لا توجد حجوزات سابقة</div>:
           <div style={{display:"flex",flexDirection:"column",gap:9}}>
             {[...history].reverse().map((h,i)=>{
@@ -5271,6 +5272,28 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           </div>
         );
       })()}
+
+      {/* التذكيرات */}
+      {tab==="remind"&&(
+        <div style={{background:"#13131f",borderRadius:10,padding:"14px 14px",border:"1px solid #2a2a3a"}}>
+          <div style={{fontSize:13,color:"var(--p)",fontWeight:700,marginBottom:12}}>🔔 وقت التذكير بالمواعيد</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+            {[{v:30,l:"30 د"},{v:60,l:"ساعة"},{v:120,l:"ساعتين"},{v:1440,l:"يوم"}].map(({v,l})=>(
+              <button key={v} onClick={()=>setReminderMins(v)}
+                style={{padding:"8px 14px",borderRadius:20,border:`1.5px solid ${reminderMins===v?"var(--p)":"#2a2a3a"}`,background:reminderMins===v?"var(--pa12)":"#1a1a2e",color:reminderMins===v?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:12,color:"#888",flexShrink:0}}>أو أدخل دقائق:</span>
+            <input type="number" min="1" max="10080"
+              style={{width:90,padding:"8px 12px",borderRadius:8,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"var(--p)",fontSize:14,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
+              value={reminderMins} onChange={e=>setReminderMins(Math.max(1,+e.target.value))}/>
+            <span style={{fontSize:12,color:"#888"}}>دقيقة</span>
+          </div>
+        </div>
+      )}
 
       {/* إعدادات الحساب */}
       {tab==="settings"&&(
