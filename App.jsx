@@ -1773,7 +1773,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         const selStyle=(active)=>({flex:1,minWidth:72,height:32,borderRadius:8,border:`1.5px solid ${active?"#d4a017":"#333"}`,background:"rgba(12,12,22,.97)",color:active?"#d4a017":"#777",fontSize:11,fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:"0 6px",cursor:"pointer",outline:"none"});
         return(
           <div style={{background:"rgba(0,0,0,.5)",borderBottom:"1px solid rgba(212,160,23,.15)",padding:"8px 10px",display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
-            <button onClick={()=>setShowRegionSelect(false)} style={{background:"transparent",border:"none",color:"#666",fontSize:15,cursor:"pointer",padding:"2px 4px",flexShrink:0,lineHeight:1}}>✕</button>
+            <button onClick={()=>{setShowRegionSelect(false);setFRegion("");setFGov("");setFCenter("");setFVillage("");}} style={{background:"transparent",border:"none",color:"#666",fontSize:15,cursor:"pointer",padding:"2px 4px",flexShrink:0,lineHeight:1}}>✕</button>
             <select value={fRegion||""} onChange={e=>{setFRegion(e.target.value);setFGov("");setFCenter("");setFVillage("");}} style={selStyle(!!fRegion)}>
               <option value="">المنطقة</option>
               {allLoc.map(r=><option key={r.region} value={r.region}>{r.region}</option>)}
