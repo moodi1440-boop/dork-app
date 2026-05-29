@@ -4792,7 +4792,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}></div>
 
       {/* دخول بالبصمة */}
       {localStorage.getItem("dork_biometric_id")&&(
