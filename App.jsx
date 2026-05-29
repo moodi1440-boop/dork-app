@@ -1177,6 +1177,7 @@ export default function App(){
       <style dangerouslySetInnerHTML={{__html:`
         @keyframes splashPulse{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.04) translateY(-4px)}}
         @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes fadeInCards{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
       `}}/>
     </div>
   );
@@ -1406,10 +1407,7 @@ export default function App(){
     <div style={G.app}>
       <div id="dork-bg" style={dorkBgStyle}/>
       <style>{CSS}</style>
-      {/* شريط تحميل رفيع غير حاجب */}
-      {loading&&<div style={{position:"fixed",top:0,left:0,right:0,height:3,zIndex:9999,background:"rgba(212,160,23,.15)",overflow:"hidden"}}><div style={{height:"100%",width:"40%",background:"linear-gradient(90deg,transparent,#d4a017,transparent)",animation:"loadBar 1.2s ease-in-out infinite"}}/></div>}
-      <style dangerouslySetInnerHTML={{__html:"@keyframes loadBar{0%{transform:translateX(-200%)}100%{transform:translateX(400%)}}"}} />
-      {/* بانر خطأ الاتصال */}
+      {/* بانر خطأ الاتصال - يظهر فقط عند الخطأ */}
       {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"#3a1a1a",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>❌ خطأ في الاتصال بقاعدة البيانات — تحقق من الاتصال</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       <TopBar {...sharedProps}/>
@@ -1662,34 +1660,6 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 }
 
 // ==============================================
-//  SKELETON CARD
-// ==============================================
-function SkeletonCard(){
-  return(
-    <div style={{background:"rgba(255,255,255,.04)",borderRadius:14,border:"1px solid rgba(255,255,255,.06)",padding:"14px 14px 10px",overflow:"hidden",position:"relative"}}>
-      <style dangerouslySetInnerHTML={{__html:"@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}"}}/>
-      <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent)",animation:"shimmer 1.6s infinite",pointerEvents:"none"}}/>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-        <div style={{flex:1}}>
-          <div style={{width:"55%",height:15,borderRadius:6,background:"rgba(255,255,255,.09)",marginBottom:7}}/>
-          <div style={{width:"35%",height:11,borderRadius:5,background:"rgba(255,255,255,.06)"}}/>
-        </div>
-        <div style={{width:44,height:44,borderRadius:10,background:"rgba(255,255,255,.08)",flexShrink:0,marginRight:10}}/>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
-        <div style={{width:"50%",height:10,borderRadius:5,background:"rgba(255,255,255,.06)"}}/>
-        <div style={{width:"42%",height:10,borderRadius:5,background:"rgba(255,255,255,.06)"}}/>
-        <div style={{width:"48%",height:10,borderRadius:5,background:"rgba(255,255,255,.06)"}}/>
-      </div>
-      <div style={{display:"flex",gap:6,marginBottom:12}}>
-        {[72,86,64,54].map((w,i)=><div key={i} style={{width:w,height:22,borderRadius:11,background:"rgba(255,255,255,.07)"}}/>)}
-      </div>
-      <div style={{height:40,borderRadius:10,background:"rgba(212,160,23,.12)"}}/>
-    </div>
-  );
-}
-
-// ==============================================
 //  HOME
 // ==============================================
 function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing,loading}){
@@ -1885,12 +1855,10 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           <span style={G.badge}>{sortedSalons.length}</span>
         </div>
         {loading&&sortedSalons.length===0
-          ?<div style={{display:"flex",flexDirection:"column",gap:11}}>
-            {[1,2,3].map(i=><SkeletonCard key={i}/>)}
-          </div>
+          ?null
           :sortedSalons.length===0
             ?<div style={G.empty}>{urgentMode?"لا توجد صالونات مفتوحة الآن":"لا توجد صالونات في هذه المنطقة"}</div>
-            :<div style={{display:"flex",flexDirection:"column",gap:11}}>
+            :<div style={{display:"flex",flexDirection:"column",gap:11,animation:"fadeInCards .4s ease-out"}}>
               {sortedSalons.map(s=>(
                 <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
                   realRating={getRealRating(s.id)}
