@@ -2220,7 +2220,7 @@ function SalonReviewsView({salon,reviews,setView}){
     <div style={G.page}>
       <div style={G.fp}>
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>setView("home")}>{">"}</button>
+          <button style={G.bb} onClick={()=>setView("home")}>← رجوع</button>
           <h2 style={{...G.ft,flex:1}}>آراء العملاء</h2>
         </div>
         {/* ملخص الصالون */}
@@ -2372,7 +2372,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
     <div style={G.page}>
       <div style={G.fp}>
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>setView("home")}>{">"}</button>
+          <button style={G.bb} onClick={()=>setView("home")}>← رجوع</button>
           <h2 style={{...G.ft,flex:1}}>{salon.name}</h2>
           <button style={{...G.favBtn,...(fav?G.favOn:{}),fontSize:20}} onClick={()=>toggleFav(salon.id)}>{fav?"♥":"♡"}</button>
           <ShareBtn salon={salon}/>
@@ -2517,7 +2517,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
     </>
   );
   if(inline)return <div>{inner}</div>;
-  return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>onBack?onBack():setView("home")}>{">"}</button><h2 style={G.ft}>حجز موعد</h2></div>{inner}</div></div>;
+  return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>onBack?onBack():setView("home")}>← رجوع</button><h2 style={G.ft}>حجز موعد</h2></div>{inner}</div></div>;
 }
 
 // ==============================================
@@ -3143,7 +3143,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>تسجيل صالون جديد</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={G.ft}>تسجيل صالون جديد</h2></div>
 
       {/* pending notice */}
       <div style={{background:"var(--pa08)",border:"1px solid var(--pa3)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)"}}>
@@ -3457,7 +3457,7 @@ function NotifsView({setView}){
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}>
-        <button style={G.bb} onClick={()=>setView("home")}>{">"}</button>
+        <button style={G.bb} onClick={()=>setView("home")}>← رجوع</button>
         <h2 style={{...G.ft,flex:1}}>🔔 الإشعارات</h2>
         {notifs.length>0&&<button style={{...G.pageBtn,fontSize:11,padding:"5px 10px"}} onClick={markAll}>قراءة الكل</button>}
         {notifs.length>0&&<button style={{...G.delBtn,fontSize:11,padding:"5px 10px"}} onClick={clearAll}>مسح</button>}
@@ -3487,7 +3487,7 @@ function NotifsView({setView}){
 function CompareSalonsView({salons,setView,setSelSalon}){
   if(!salons||salons.length<2)return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>⚖ مقارنة الصالونات</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={G.ft}>⚖ مقارنة الصالونات</h2></div>
       <div style={G.empty}>اختر صالونين من الصفحة الرئيسية للمقارنة</div>
     </div></div>
   );
@@ -3504,7 +3504,7 @@ function CompareSalonsView({salons,setView,setSelSalon}){
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>⚖ مقارنة الصالونات</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={G.ft}>⚖ مقارنة الصالونات</h2></div>
 
       {/* عناوين */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
@@ -3597,7 +3597,7 @@ function NearMapView({salons,setView,setSelSalon}){
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>📍 الصالونات القريبة</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={G.ft}>📍 الصالونات القريبة</h2></div>
       {!userLoc?(
         <div style={{textAlign:"center",padding:"40px 20px"}}>
           <div style={{fontSize:50,marginBottom:12}}>📍</div>
@@ -3717,7 +3717,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   });
   const[oathChecked,setOathChecked]=useState(false);
 
-  if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>لوحة الصالون</h2></div><div style={G.empty}>الصالون غير موجود</div></div></div>;
+  if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={G.ft}>لوحة الصالون</h2></div><div style={G.empty}>الصالون غير موجود</div></div></div>;
 
   // شاشة القسم — تظهر لمرة واحدة فقط
   if(!oathDone) return(
@@ -4953,7 +4953,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 }
 function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$}){
   const[tab,setTab]=useState(()=>{const t=_dkCustTab;_dkCustTab="settings";return t;});
-  const[sectionMode]=useState(()=>{const m=_dkCustMode==="section";_dkCustMode="full";return m;});
+  const[sectionMode,setSectionMode]=useState(()=>{const m=_dkCustMode==="section";_dkCustMode="full";return m;});
   const[editMode,setEditMode]=useState(false);
   const[editName,setEditName]=useState(customer?.name||"");
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
@@ -5057,7 +5057,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:"حسابي"}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button>}</div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>sectionMode?setSectionMode(false):setView("home")}>← رجوع</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:"حسابي"}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button>}</div>
 
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
       {!sectionMode&&showLocPrompt&&!customer?.locationLat&&(
@@ -5476,7 +5476,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>⚙ الإعدادات</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={G.ft}>⚙ الإعدادات</h2></div>
       <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
         {SECS.map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
@@ -5735,7 +5735,7 @@ const G={
 
   fp:{padding:"0 13px 24px"},
   fh:{display:"flex",alignItems:"center",gap:8,padding:"12px 0 13px",position:"sticky",top:64,background:"var(--shell-bg)",zIndex:10},
-  bb:{background:"var(--surface-2)",border:"none",color:"var(--p)",fontSize:16,cursor:"pointer",width:32,height:32,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",flexShrink:0},
+  bb:{background:"rgba(212,160,23,0.08)",border:"1.5px solid rgba(212,160,23,0.3)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",padding:"6px 14px",borderRadius:20,display:"flex",alignItems:"center",justifyContent:"center",gap:4,fontFamily:"'Cairo',sans-serif",flexShrink:0,WebkitAppearance:"none",appearance:"none"},
   ft:{fontSize:17,fontWeight:700,color:"var(--text-primary)"},
   fc:{background:"var(--surface-1)",borderRadius:13,padding:14,border:"1px solid var(--border-ui)",marginBottom:10},
   sl2:{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:9,paddingBottom:5,borderBottom:"1px solid #2a2a3a"},
