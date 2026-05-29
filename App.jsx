@@ -1715,47 +1715,48 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <button onClick={()=>setShowDel(true)} style={{width:"100%",padding:"14px 20px",background:"linear-gradient(135deg,rgba(231,76,60,.15),rgba(231,76,60,.08))",border:"none",borderTop:"1px solid #181828",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"center",WebkitAppearance:"none",appearance:"none"}}>
           🗑 حذف الحساب نهائياً
         </button>
-        {showLogout&&(
-          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowLogout(false)}>
-            <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #2a2a3a",borderBottom:"none"}} onClick={e=>e.stopPropagation()}>
-              <div style={{textAlign:"center",marginBottom:20}}>
-                <div style={{fontSize:36,marginBottom:10}}>🚪</div>
-                <div style={{fontSize:16,fontWeight:700,color:"#fff",marginBottom:6}}>تسجيل الخروج</div>
-                <div style={{fontSize:12,color:"#888"}}>هل أنت متأكد من رغبتك في الخروج؟</div>
-              </div>
-              <div style={{display:"flex",gap:10}}>
-                <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowLogout(false)}>إلغاء</button>
-                <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setCustomerSession(null);setView("entry");onClose();}}>خروج</button>
-              </div>
-            </div>
-          </div>
-        )}
-        {showDel&&(
-          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowDel(false)}>
-            <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #d4a017",borderBottom:"none",boxShadow:"0 -8px 32px rgba(212,160,23,0.15)"}} onClick={e=>e.stopPropagation()}>
-              <div style={{textAlign:"center",marginBottom:20}}>
-                <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
-                <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:6}}>حذف الحساب نهائياً</div>
-                <div style={{fontSize:12,color:"#888",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
-              </div>
-              <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"#ddd",lineHeight:1.8}}>
-                <div style={{marginBottom:6,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
-                <div>✗ حسابك بشكل نهائي</div>
-                <div>✗ جميع معلوماتك الشخصية</div>
-                <div>✗ سجل حجوزاتك</div>
-              </div>
-              <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:10,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700}}>
-                ⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف
-              </div>
-              <div style={{display:"flex",gap:10}}>
-                <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowDel(false)}>↩️ إلغاء</button>
-                <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={async()=>{try{await sb("customers","DELETE",null,`?id=eq.${customer.id}`);setCustomerSession(null);setView("entry");onClose();}catch(e){toast$("❌ "+e.message,"err");}setShowDel(false);}}>🗑️ حذف نهائياً</button>
-              </div>
-            </div>
-          </div>
-        )}
         <div style={{height:40}}/>
       </div>
+      {/* نوافذ تسجيل الخروج وحذف الحساب — خارج الـ drawer لتجنب تأثير transform */}
+      {showLogout&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowLogout(false)}>
+          <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #2a2a3a",borderBottom:"none"}} onClick={e=>e.stopPropagation()}>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{fontSize:36,marginBottom:10}}>🚪</div>
+              <div style={{fontSize:16,fontWeight:700,color:"#fff",marginBottom:6}}>تسجيل الخروج</div>
+              <div style={{fontSize:12,color:"#888"}}>هل أنت متأكد من رغبتك في الخروج؟</div>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowLogout(false)}>إلغاء</button>
+              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setCustomerSession(null);setView("entry");onClose();}}>خروج</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDel&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowDel(false)}>
+          <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #d4a017",borderBottom:"none",boxShadow:"0 -8px 32px rgba(212,160,23,0.15)"}} onClick={e=>e.stopPropagation()}>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
+              <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:6}}>حذف الحساب نهائياً</div>
+              <div style={{fontSize:12,color:"#888",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
+            </div>
+            <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"#ddd",lineHeight:1.8}}>
+              <div style={{marginBottom:6,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
+              <div>✗ حسابك بشكل نهائي</div>
+              <div>✗ جميع معلوماتك الشخصية</div>
+              <div>✗ سجل حجوزاتك</div>
+            </div>
+            <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:10,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700}}>
+              ⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button style={{flex:1,background:"transparent",border:"1.5px solid #2a2a3a",color:"#aaa",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowDel(false)}>↩️ إلغاء</button>
+              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={async()=>{try{await sb("customers","DELETE",null,`?id=eq.${customer.id}`);setCustomerSession(null);setView("entry");onClose();}catch(e){toast$("❌ "+e.message,"err");}setShowDel(false);}}>🗑️ حذف نهائياً</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* حوار تغيير PIN */}
       {editPinStep&&(
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:20}}>
@@ -5074,7 +5075,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       )}
 
       {/* بروفايل العميل - Premium */}
-      {!sectionMode&&!editMode?(
+      {!sectionMode&&(!editMode?(
         <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
           {/* البادج في الزاوية اليسرى */}
           <div style={{position:"absolute",top:12,left:12,background:`${classification.color}22`,border:`1px solid ${classification.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:classification.color}}>{badge}</div>
@@ -5109,7 +5110,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             <button style={{...G.delBtn,padding:"12px 14px"}} onClick={()=>setEditMode(false)}>إلغاء</button>
           </div>
         </div>
-      )}
+      ))}
 
       {/* تبويبات */}
       {!sectionMode&&<div style={{...G.tabRow,flexWrap:"nowrap"}}>
