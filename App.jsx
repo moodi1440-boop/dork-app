@@ -1387,6 +1387,12 @@ export default function App(){
     setShowFavs(false);
   };
 
+  // حماية: لا تصفح بدون تسجيل دخول
+  useEffect(()=>{
+    const allowed=["entry","ownerLogin","custLogin","register"];
+    if(!customerSession&&!ownerSession&&!allowed.includes(view))setView("entry");
+  },[customerSession,ownerSession]);
+
   const sharedProps={
     ownerSession,setOwnerSession,customerSession,setCustomerSession,
     setView,toast$,allLoc,addExtraLoc,
@@ -1552,13 +1558,13 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const Row=({icon,label,sub,chev,onClick,danger})=>(
     <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 20px",background:"transparent",border:"none",borderBottom:"1px solid #181828",cursor:"pointer",fontFamily:"inherit",color:danger?"#e74c3c":"#e0e0e0",WebkitAppearance:"none",appearance:"none",textAlign:"right"}}>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
-        <span style={{fontSize:13,fontWeight:500}}>{icon} {label}</span>
-        {sub&&<span style={{fontSize:10,color:"#666"}}>{sub}</span>}
+        <span style={{fontSize:15,fontWeight:600}}>{icon} {label}</span>
+        {sub&&<span style={{fontSize:11,color:"#666"}}>{sub}</span>}
       </div>
       {chev&&<span style={{color:exp===chev?"var(--p)":"#444",fontSize:14,transform:exp===chev?"rotate(90deg)":"rotate(-90deg)",transition:"transform 0.2s"}}>‹</span>}
     </button>
   );
-  const SecHead=({label})=>(<div style={{padding:"10px 20px 5px",fontSize:10,color:"var(--p)",fontWeight:700,letterSpacing:.8,background:"#0a0a14",borderBottom:"1px solid #181828",textTransform:"uppercase"}}>{label}</div>);
+  const SecHead=({label})=>(<div style={{padding:"10px 20px 5px",fontSize:12,color:"var(--p)",fontWeight:700,letterSpacing:.8,background:"#0a0a14",borderBottom:"1px solid #181828",textTransform:"uppercase"}}>{label}</div>);
   const Panel=({children})=>(<div style={{background:"#111120",padding:"14px 18px",borderBottom:"1px solid #181828"}}>{children}</div>);
   const BtnRow=({children})=>(<div style={{display:"flex",gap:8,marginTop:8}}>{children}</div>);
   const Btn=({label,onClick,primary,danger,small})=>(<button onClick={onClick} style={{flex:1,padding:small?"8px 10px":"11px 10px",borderRadius:10,border:danger?"1.5px solid #e74c3c":primary?"none":"1.5px solid #2a2a3a",background:primary?"var(--p)":danger?"rgba(231,76,60,.1)":"transparent",color:primary?"#000":danger?"#e74c3c":"#aaa",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:12,WebkitAppearance:"none",appearance:"none"}}>{label}</button>);
@@ -1721,11 +1727,11 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
 // ==============================================
 function EntryView({setView}){
   return(
-    <div style={{minHeight:"100vh",background:"#0b1220",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 32px",gap:36}}>
-      <img src="/logo.png" alt="DORK" style={{width:"68%",maxWidth:260,objectFit:"contain"}}/>
-      <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:14}}>
-        <button onClick={()=>setView("ownerLogin")} style={{width:"100%",padding:"15px 0",borderRadius:14,border:"2px solid #d4a017",background:"transparent",color:"#d4a017",fontSize:16,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>✂️ دخول كصالون</button>
-        <button onClick={()=>setView("custLogin")} style={{width:"100%",padding:"15px 0",borderRadius:14,border:"2px solid #d4a017",background:"rgba(212,160,23,.12)",color:"#d4a017",fontSize:16,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>👤 دخول كعميل</button>
+    <div style={{minHeight:"100vh",background:"#0b1220",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 28px",gap:40}}>
+      <img src="/logo.png" alt="DORK" style={{width:"82%",maxWidth:320,objectFit:"contain"}}/>
+      <div style={{width:"100%",maxWidth:340,display:"flex",flexDirection:"column",gap:16}}>
+        <button onClick={()=>setView("ownerLogin")} style={{width:"100%",padding:"17px 0",borderRadius:14,border:"2px solid #d4a017",background:"transparent",color:"#d4a017",fontSize:18,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>✂️ دخول كصالون</button>
+        <button onClick={()=>setView("custLogin")} style={{width:"100%",padding:"17px 0",borderRadius:14,border:"2px solid #d4a017",background:"rgba(212,160,23,.12)",color:"#d4a017",fontSize:18,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>👤 دخول كعميل</button>
       </div>
     </div>
   );
