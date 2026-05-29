@@ -1399,22 +1399,18 @@ export default function App(){
     handlePullRefresh,pullRefreshing,
     resetHome,
     persistUiToSupabase,
+    loading,
   };
-
-  if(loading)return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#09112e 0%,#0d1535 45%,#111d42 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>
-      <style>{CSS}</style>
-      <div style={{color:"#d4a017",fontSize:14,fontWeight:700,letterSpacing:1}}>جارٍ تحميل البيانات...</div>
-      <div style={{width:36,height:36,border:"3px solid rgba(212,160,23,.15)",borderTop:"3px solid #d4a017",borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
-      <style dangerouslySetInnerHTML={{__html:"@keyframes spin{to{transform:rotate(360deg)}}"}} />
-      {dbError&&<div style={{background:"#3a1a1a",color:"#e74c3c",padding:"12px 20px",borderRadius:10,fontSize:12,maxWidth:320,textAlign:"center",margin:"0 16px"}}>❌ خطأ في الاتصال بقاعدة البيانات:<br/><br/>{dbError}<br/><br/><small style={{color:"#aaa"}}>تحقق من الـ anon key في الكود</small></div>}
-    </div>
-  );
 
   return(
     <div style={G.app}>
       <div id="dork-bg" style={dorkBgStyle}/>
       <style>{CSS}</style>
+      {/* شريط تحميل رفيع غير حاجب */}
+      {loading&&<div style={{position:"fixed",top:0,left:0,right:0,height:3,zIndex:9999,background:"rgba(212,160,23,.15)",overflow:"hidden"}}><div style={{height:"100%",width:"40%",background:"linear-gradient(90deg,transparent,#d4a017,transparent)",animation:"loadBar 1.2s ease-in-out infinite"}}/></div>}
+      <style dangerouslySetInnerHTML={{__html:"@keyframes loadBar{0%{transform:translateX(-200%)}100%{transform:translateX(400%)}}"}} />
+      {/* بانر خطأ الاتصال */}
+      {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"#3a1a1a",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>❌ خطأ في الاتصال بقاعدة البيانات — تحقق من الاتصال</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       <TopBar {...sharedProps}/>
       <div style={{paddingTop:64}}>
@@ -1666,9 +1662,37 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 }
 
 // ==============================================
+//  SKELETON CARD
+// ==============================================
+function SkeletonCard(){
+  return(
+    <div style={{background:"rgba(255,255,255,.04)",borderRadius:14,border:"1px solid rgba(255,255,255,.06)",padding:"14px 14px 10px",overflow:"hidden",position:"relative"}}>
+      <style dangerouslySetInnerHTML={{__html:"@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}"}}/>
+      <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent)",animation:"shimmer 1.6s infinite",pointerEvents:"none"}}/>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+        <div style={{flex:1}}>
+          <div style={{width:"55%",height:15,borderRadius:6,background:"rgba(255,255,255,.09)",marginBottom:7}}/>
+          <div style={{width:"35%",height:11,borderRadius:5,background:"rgba(255,255,255,.06)"}}/>
+        </div>
+        <div style={{width:44,height:44,borderRadius:10,background:"rgba(255,255,255,.08)",flexShrink:0,marginRight:10}}/>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
+        <div style={{width:"50%",height:10,borderRadius:5,background:"rgba(255,255,255,.06)"}}/>
+        <div style={{width:"42%",height:10,borderRadius:5,background:"rgba(255,255,255,.06)"}}/>
+        <div style={{width:"48%",height:10,borderRadius:5,background:"rgba(255,255,255,.06)"}}/>
+      </div>
+      <div style={{display:"flex",gap:6,marginBottom:12}}>
+        {[72,86,64,54].map((w,i)=><div key={i} style={{width:w,height:22,borderRadius:11,background:"rgba(255,255,255,.07)"}}/>)}
+      </div>
+      <div style={{height:40,borderRadius:10,background:"rgba(212,160,23,.12)"}}/>
+    </div>
+  );
+}
+
+// ==============================================
 //  HOME
 // ==============================================
-function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing}){
+function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing,loading}){
   const[urgentMode,setUrgentMode]=useState(false);
   const[showSearch,setShowSearch]=useState(false);
   const[showRegionSelect,setShowRegionSelect]=useState(false);
@@ -1860,23 +1884,27 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           </span>
           <span style={G.badge}>{sortedSalons.length}</span>
         </div>
-        {sortedSalons.length===0
-          ?<div style={G.empty}>{urgentMode?"لا توجد صالونات مفتوحة الآن":"لا توجد صالونات في هذه المنطقة"}</div>
-          :<div style={{display:"flex",flexDirection:"column",gap:11}}>
-            {sortedSalons.map(s=>(
-              <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
-                realRating={getRealRating(s.id)}
-                reviewCount={getReviewCount(s.id)}
-                userLoc={userLoc}
-                getSalonCoords={getSalonCoords}
-                haversine={haversine}
-                isOpenNow={isOpenNow(s)}
-                inCompare={compareSalons.some(x=>x.id===s.id)}
-                onCompare={()=>toggleCompare(s)}
-                onViewReviews={()=>{setSelSalon(s);setView("salonReviews");}}
-                onBook={()=>{setSelSalon(s);setView("book");}}/>
-            ))}
+        {loading&&sortedSalons.length===0
+          ?<div style={{display:"flex",flexDirection:"column",gap:11}}>
+            {[1,2,3].map(i=><SkeletonCard key={i}/>)}
           </div>
+          :sortedSalons.length===0
+            ?<div style={G.empty}>{urgentMode?"لا توجد صالونات مفتوحة الآن":"لا توجد صالونات في هذه المنطقة"}</div>
+            :<div style={{display:"flex",flexDirection:"column",gap:11}}>
+              {sortedSalons.map(s=>(
+                <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
+                  realRating={getRealRating(s.id)}
+                  reviewCount={getReviewCount(s.id)}
+                  userLoc={userLoc}
+                  getSalonCoords={getSalonCoords}
+                  haversine={haversine}
+                  isOpenNow={isOpenNow(s)}
+                  inCompare={compareSalons.some(x=>x.id===s.id)}
+                  onCompare={()=>toggleCompare(s)}
+                  onViewReviews={()=>{setSelSalon(s);setView("salonReviews");}}
+                  onBook={()=>{setSelSalon(s);setView("book");}}/>
+              ))}
+            </div>
         }
       </div>
 
