@@ -249,6 +249,8 @@ function toAppCustomer(row) {
     googleUid: row.google_uid||"",
     favs,
     history,
+    locationLat: row.location_lat||null,
+    locationLng: row.location_lng||null,
     createdAt: row.created_at||new Date().toISOString(),
   };
 }
@@ -922,7 +924,7 @@ export default function App(){
       const [salonRows, bookingRows, custRows] = await Promise.all([
         sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,oath_done,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000"),
-        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,created_at&limit=500"),
+        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&limit=500"),
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
       const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
@@ -1726,13 +1728,23 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   };
 
   // ترتيب الأقرب
+  const savedLoc=(customer?.locationLat&&customer?.locationLng)?{lat:customer.locationLat,lng:customer.locationLng}:null;
   const sortedSalons=(()=>{
     let list=urgentMode?displaySalons.filter(isOpenNow):displaySalons;
+    // ترتيب بزر "أقرب" (GPS لحظي)
     if(sortBy==="nearest"&&userLoc){
       return[...list].sort((a,b)=>{
         const ca=getSalonCoords(a),cb=getSalonCoords(b);
         if(!ca&&!cb)return 0;if(!ca)return 1;if(!cb)return -1;
         return haversine(userLoc.lat,userLoc.lng,ca.lat,ca.lng)-haversine(userLoc.lat,userLoc.lng,cb.lat,cb.lng);
+      });
+    }
+    // ترتيب افتراضي حسب موقع العميل المحفوظ (بدون ضغط أي زر)
+    if(sortBy===""&&savedLoc){
+      return[...list].sort((a,b)=>{
+        const ca=getSalonCoords(a),cb=getSalonCoords(b);
+        if(!ca&&!cb)return 0;if(!ca)return 1;if(!cb)return -1;
+        return haversine(savedLoc.lat,savedLoc.lng,ca.lat,ca.lng)-haversine(savedLoc.lat,savedLoc.lng,cb.lat,cb.lng);
       });
     }
     return list;
@@ -4414,7 +4426,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const loginWithPhone=async()=>{
     if(!phone.trim()){setErr("أدخل رقم الجوال");return;}
     try{
-      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,created_at&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
+      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(!rows.length){setErr("لا يوجد حساب بهذا الرقم");return;}
       const c=toAppCustomer(rows[0]);
       setCustomerSession(c);setView("home");
@@ -4544,7 +4556,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         }
         return;
       }
-      const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,created_at&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
+      const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(exists.length){setErr("❌ هذا الرقم مسجل بالفعل");return;}
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[]},"");
       const nc=toAppCustomer(rows[0]);
@@ -4604,7 +4616,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               provider.setCustomParameters({prompt:"select_account"});
               const result=await fb.auth().signInWithPopup(provider);
               const gUser={name:result.user.displayName||"مستخدم",email:result.user.email||"",googleUid:result.user.uid};
-              const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,created_at&google_uid=eq.${gUser.googleUid}&limit=1`);
+              const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&google_uid=eq.${gUser.googleUid}&limit=1`);
               if(rows.length){
                 const c=toAppCustomer(rows[0]);
                 setCustomerSession(c);setView("home");
@@ -4671,7 +4683,33 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[editTempPin,setEditTempPin]=useState("");
   const[editPinConfirm,setEditPinConfirm]=useState("");
   const[editPinErr,setEditPinErr]=useState("");
+  const[showLocPrompt,setShowLocPrompt]=useState(()=>!customer?.locationLat);
   if(!customer)return null;
+
+  // حفظ موقع العميل
+  const saveCustomerLocation=()=>{
+    if(!navigator.geolocation){toast$&&toast$("❌ المتصفح لا يدعم تحديد الموقع","err");return;}
+    navigator.geolocation.getCurrentPosition(async(p)=>{
+      const lat=p.coords.latitude,lng=p.coords.longitude;
+      try{
+        await sb("customers","PATCH",{location_lat:lat,location_lng:lng},`?id=eq.${customer.id}`);
+        setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));
+        setCustomerSession({...customer,locationLat:lat,locationLng:lng});
+        setShowLocPrompt(false);
+        toast$&&toast$("✅ تم حفظ موقعك بنجاح");
+      }catch{toast$&&toast$("❌ فشل حفظ الموقع","err");}
+    },()=>{toast$&&toast$("❌ تعذّر تحديد موقعك","err");},{enableHighAccuracy:true,timeout:15000});
+  };
+
+  // حذف موقع العميل
+  const clearCustomerLocation=async()=>{
+    try{
+      await sb("customers","PATCH",{location_lat:null,location_lng:null},`?id=eq.${customer.id}`);
+      setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:null,locationLng:null}:c));
+      setCustomerSession({...customer,locationLat:null,locationLng:null});
+      toast$&&toast$("✅ تم حذف الموقع");
+    }catch{toast$&&toast$("❌ فشل حذف الموقع","err");}
+  };
 
   const favSalons=salons.filter(s=>favSet.has(s.id)&&s.status==="approved");
   const history=customer.history||[];
@@ -4729,6 +4767,21 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={{...G.ft,flex:1}}>حسابي</h2><button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("home");}}>خروج</button></div>
+
+      {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
+      {showLocPrompt&&!customer?.locationLat&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,padding:20}}>
+          <div style={{background:"#13131f",borderRadius:20,padding:24,maxWidth:340,width:"100%",border:"1.5px solid rgba(212,160,23,.3)",textAlign:"center"}}>
+            <div style={{fontSize:40,marginBottom:12}}>📍</div>
+            <div style={{fontSize:16,fontWeight:700,color:"var(--p)",marginBottom:10}}>هل تسمح بحفظ موقعك؟</div>
+            <div style={{fontSize:12,color:"#aaa",marginBottom:20,lineHeight:1.7}}>سنستخدم موقعك لعرض الصالونات الأقرب إليك تلقائياً في الشاشة الرئيسية</div>
+            <div style={{display:"flex",gap:10}}>
+              <button style={{flex:1,padding:13,borderRadius:12,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit"}} onClick={saveCustomerLocation}>✅ نعم، احفظ موقعي</button>
+              <button style={{flex:1,padding:13,borderRadius:12,border:"1px solid #444",background:"transparent",color:"#888",cursor:"pointer",fontSize:13,fontFamily:"inherit"}} onClick={()=>setShowLocPrompt(false)}>لاحقاً</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* بروفايل العميل - Premium */}
       {!editMode?(
@@ -4946,6 +4999,26 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:14,paddingBottom:6,borderBottom:"1px solid #2a2a3a"}}>⚙ إعدادات الحساب</div>
           <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>{setTab("settings");setEditMode(true);}}>✏ تعديل البيانات</button>
           <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>setEditPinStep("select")}>🔐 تغيير رمز PIN</button>
+
+          {/* قسم الموقع */}
+          <div style={{background:"rgba(212,160,23,.06)",borderRadius:10,padding:12,border:"1px solid rgba(212,160,23,.2)",marginBottom:10}}>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8}}>📍 موقعي المحفوظ</div>
+            {customer?.locationLat&&customer?.locationLng?(
+              <>
+                <div style={{fontSize:11,color:"#aaa",marginBottom:10}}>✅ موقع محفوظ — تظهر الصالونات الأقرب إليك تلقائياً</div>
+                <div style={{display:"flex",gap:8}}>
+                  <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={saveCustomerLocation}>🔄 تحديث الموقع</button>
+                  <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={clearCustomerLocation}>🗑 حذف الموقع</button>
+                </div>
+              </>
+            ):(
+              <>
+                <div style={{fontSize:11,color:"#888",marginBottom:10}}>لا يوجد موقع محفوظ — احفظ موقعك لترى الصالونات الأقرب تلقائياً</div>
+                <button style={{...G.sub,fontSize:12}} onClick={saveCustomerLocation}>📍 حفظ موقعي الحالي</button>
+              </>
+            )}
+          </div>
+
           <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13}} onClick={deleteAccount}>🗑 حذف الحساب نهائياً</button>
           <div style={{fontSize:10,color:"#555",marginTop:8,textAlign:"center"}}>تحذير: حذف الحساب لا يمكن التراجع عنه</div>
         </div>
