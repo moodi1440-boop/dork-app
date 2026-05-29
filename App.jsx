@@ -1525,6 +1525,8 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const[editName,setEditName]=useState("");
   const[editPhone,setEditPhone]=useState("");
   const[editEmail,setEditEmail]=useState("");
+  const[locMode,setLocMode]=useState("gps");
+  const[locUrl,setLocUrl]=useState("");
   const[showDel,setShowDel]=useState(false);
   const toggle=(s)=>setExp(e=>e===s?null:s);
   if(!customer)return null;
@@ -1544,7 +1546,10 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   };
   const saveEdit=async()=>{
     if(!editName.trim())return;
-    try{await sb("customers","PATCH",{name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim()},`?id=eq.${customer.id}`);setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim()}:c));setExp(null);toast$("✅ تم حفظ البيانات");}catch(e){toast$("❌ "+e.message,"err");}
+    const patch={name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim()};
+    const locExtra={};
+    if(locMode==="url"&&locUrl.trim()){const m=locUrl.match(/q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);if(m){patch.location_lat=parseFloat(m[1]);patch.location_lng=parseFloat(m[2]);locExtra.locationLat=parseFloat(m[1]);locExtra.locationLng=parseFloat(m[2]);}}
+    try{await sb("customers","PATCH",patch,`?id=eq.${customer.id}`);setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim(),...locExtra}:c));setExp(null);toast$("✅ تم حفظ البيانات");}catch(e){toast$("❌ "+e.message,"err");}
   };
   const applyTheme=(id)=>{
     const t=THEMES[id]||THEMES.gold;const r=document.documentElement.style;
@@ -1595,23 +1600,32 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         {/* حسابي */}
         <div style={{height:8}}/>
         <SecHead label="حسابي"/>
-        <Row icon="✏️" label="تعديل البيانات" chev="edit" onClick={()=>{setEditName(customer.name||"");setEditPhone(customer.phone||"");setEditEmail(customer.email||"");toggle("edit");}}/>
+        <Row icon="✏️" label="تعديل البيانات" chev="edit" onClick={()=>{setEditName(customer.name||"");setEditPhone(customer.phone||"");setEditEmail(customer.email||"");setLocMode("gps");setLocUrl("");toggle("edit");}}/>
         {exp==="edit"&&(
           <Panel>
             <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"#888",marginBottom:4}}>الاسم</label><input style={inp} value={editName} onChange={e=>setEditName(e.target.value)}/></div>
             <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"#888",marginBottom:4}}>رقم الجوال</label><input style={inp} inputMode="numeric" value={editPhone} onChange={e=>setEditPhone(e.target.value)}/></div>
-            <div style={{marginBottom:12}}><label style={{display:"block",fontSize:10,color:"#888",marginBottom:4}}>البريد الإلكتروني</label><input style={inp} type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)}/></div>
+            <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"#888",marginBottom:4}}>البريد الإلكتروني</label><input style={inp} type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)}/></div>
+            <div style={{marginBottom:12}}>
+              <label style={{display:"block",fontSize:10,color:"#888",marginBottom:6}}>موقعي 📍</label>
+              <div style={{display:"flex",gap:6,marginBottom:10}}>
+                <button onClick={()=>setLocMode("url")} style={{flex:1,padding:"8px 4px",borderRadius:8,border:`1.5px solid ${locMode==="url"?"var(--p)":"#2a2a3a"}`,background:locMode==="url"?"var(--pa08)":"transparent",color:locMode==="url"?"var(--p)":"#888",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>🔗 رابط</button>
+                <button onClick={()=>setLocMode("gps")} style={{flex:1,padding:"8px 4px",borderRadius:8,border:`1.5px solid ${locMode==="gps"?"var(--p)":"#2a2a3a"}`,background:locMode==="gps"?"var(--pa08)":"transparent",color:locMode==="gps"?"var(--p)":"#888",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>📡 تلقائي</button>
+              </div>
+              {locMode==="url"?(
+                <>
+                  <input style={inp} placeholder="https://maps.google.com/..." value={locUrl} onChange={e=>setLocUrl(e.target.value)} dir="ltr"/>
+                  <div style={{fontSize:10,color:"#555",marginTop:3,textAlign:"right"}}>افتح Google Maps ← الموقع ← شارك ← انسخ</div>
+                </>
+              ):(
+                customer?.locationLat?(
+                  <><div style={{fontSize:11,color:"#27ae60",marginBottom:8}}>✅ موقع محفوظ</div><BtnRow><Btn primary label="🔄 تحديث" onClick={saveLocation}/><Btn danger label="🗑 حذف" onClick={clearLocation}/></BtnRow></>
+                ):(
+                  <Btn primary label="📍 تحديد موقعي تلقائياً" onClick={saveLocation}/>
+                )
+              )}
+            </div>
             <BtnRow><Btn primary label="حفظ" onClick={saveEdit}/><Btn label="إلغاء" onClick={()=>setExp(null)}/></BtnRow>
-          </Panel>
-        )}
-        <Row icon="📍" label="موقعي" sub={customer?.locationLat?"✅ محفوظ":"غير محفوظ"} chev="loc" onClick={()=>toggle("loc")}/>
-        {exp==="loc"&&(
-          <Panel>
-            {customer?.locationLat?(
-              <><div style={{fontSize:12,color:"#27ae60",marginBottom:10}}>✅ موقع محفوظ — الصالونات الأقرب تظهر تلقائياً</div><BtnRow><Btn primary label="🔄 تحديث" onClick={saveLocation}/><Btn danger label="🗑 حذف" onClick={clearLocation}/></BtnRow></>
-            ):(
-              <><div style={{fontSize:11,color:"#888",marginBottom:10}}>لا يوجد موقع محفوظ</div><Btn primary label="📍 إضافة موقعي تلقائياً" onClick={saveLocation}/></>
-            )}
           </Panel>
         )}
         {/* إعدادات التطبيق */}
@@ -3604,7 +3618,6 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
   };
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{">"}</button><h2 style={G.ft}>دخول صاحب الصالون</h2></div>
       <div style={{...G.tabRow,marginBottom:16}}>
         <button style={{...G.tabBtn,flex:1,...(tab==="phone"?G.tabOn:{})}} onClick={()=>{setTab("phone");setErr("");setPinErr("");}}>📱 رقم الجوال</button>
         <button style={{...G.tabBtn,flex:1,...(tab==="pin"?G.tabOn:{})}} onClick={()=>{setTab("pin");setErr("");setPinErr("");}}>🔐 الدخول السريع</button>
