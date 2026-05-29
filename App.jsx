@@ -1578,25 +1578,13 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>القائمة</span>
         </div>
         {/* بطاقة العميل */}
-        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,#13131f,#1c1c30)",borderRadius:16,padding:"14px 16px",border:"1.5px solid var(--p)",boxShadow:"0 4px 24px rgba(212,160,23,.08)"}}>
-          <div style={{position:"absolute",display:"none"}}/>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-            <div style={{width:48,height:48,borderRadius:"50%",background:avatarColor,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:700,color:"#000",flexShrink:0,boxShadow:`0 0 0 3px ${avatarColor}33`}}>{(customer.name||"?")[0]}</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:15,fontWeight:700,color:"#fff",marginBottom:2}}>{customer.name}</div>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{fontSize:10,background:`${cl.color}22`,border:`1px solid ${cl.color}`,borderRadius:5,padding:"2px 6px",color:cl.color,fontWeight:700}}>{cl.label}</span>
-                <span style={{fontSize:11,color:"#666"}}>{customer.phone}</span>
-              </div>
-            </div>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-            {[["حجز",history.length,"📅"],["مفضلة",favSet?.size||0,"❤️"],["انضمام",new Date(customer.createdAt).toLocaleDateString("ar-SA",{month:"short",year:"2-digit"}),"📆"]].map(([l,v,ic])=>(
-              <div key={l} style={{background:"rgba(255,255,255,.04)",borderRadius:10,padding:"8px 6px",textAlign:"center"}}>
-                <div style={{fontSize:ic==="📆"?10:16,fontWeight:700,color:"var(--p)"}}>{v}</div>
-                <div style={{fontSize:9,color:"#777",marginTop:2}}>{l}</div>
-              </div>
-            ))}
+        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
+          <div style={{position:"absolute",top:12,left:12,background:`${cl.color}22`,border:`1px solid ${cl.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:cl.color}}>{cl.label}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📋 الحجوزات: <span style={{color:"#f0c040"}}>{history.length} حجز</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
           </div>
         </div>
         <div style={{height:12}}/>
