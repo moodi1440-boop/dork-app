@@ -696,7 +696,12 @@ const DEMO_SALONS=[
 // ==============================================
 export { ErrorBoundary };
 export default function App(){
-  const[salons,setSalons]=useState([]);
+  const[salons,setSalons]=useState(()=>{
+    try{
+      const c=localStorage.getItem("dork_salons_cache");
+      return c?JSON.parse(c):[];
+    }catch{return[];}
+  });
   const[customers,setCustomers]=useState([]);
   const[reviews,setReviews]=useState([]);
   const[extraLoc,setExtraLoc]=useState(()=>{
@@ -942,6 +947,7 @@ export default function App(){
         return salon;
       });
       setSalons(salonsWithBookings);
+      try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsWithBookings));}catch{}
       setCustomers(custRows.map(toAppCustomer));
       setReviews(reviewRows||[]);
       setDbError(null);
@@ -963,7 +969,11 @@ export default function App(){
     }
   },[loadData,loadAppSettings]);
 
-  useEffect(()=>{ loadData(); loadAppSettings(); }, [loadData,loadAppSettings]);
+  useEffect(()=>{
+    const hasCached=!!localStorage.getItem("dork_salons_cache");
+    loadData(hasCached?{silent:true}:{});
+    loadAppSettings();
+  },[loadData,loadAppSettings]);
 
   // تحديث البيانات لما يرجع المستخدم للتطبيق من الخلفية
   useEffect(()=>{
