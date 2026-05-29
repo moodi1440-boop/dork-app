@@ -1767,62 +1767,43 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       {/* Pull to refresh */}
       {pullRefreshing&&<div style={{position:"fixed",top:64,left:"50%",transform:"translateX(-50%)",zIndex:100,background:"var(--p)",color:"#000",padding:"4px 16px",borderRadius:20,fontSize:12,fontWeight:700}}>⟳ جاري التحديث...</div>}
 
-      {/* Region Select Dropdown - Horizontal */}
-      {showRegionSelect&&(
-      <div style={{padding:"10px 14px",background:"rgba(0,0,0,.4)",borderBottom:"1px solid rgba(212,160,23,.1)"}}>
-        {/* مربع عرض المسار المختار */}
-        <div style={{padding:"10px 14px",borderRadius:10,border:"1.5px solid #d4a017",background:"rgba(212,160,23,.08)",color:([fRegion,fGov,fCenter,fVillage].some(Boolean))?"#f0f0f0":"#888",fontSize:13,fontFamily:"'Cairo',sans-serif",direction:"rtl",marginBottom:10,minHeight:42,display:"flex",alignItems:"center",letterSpacing:.3}}>
-          {[fRegion,fGov,fCenter,fVillage].filter(Boolean).join(" ← ") || "اختر المنطقة..."}
+      {/* Region Select - قائمة متدرجة */}
+      {showRegionSelect&&(()=>{
+        const villages=[...new Set(approvedSalons.filter(s=>s.center===fCenter&&s.village).map(s=>s.village))];
+        // تحديد المستوى الحالي والعناصر
+        const level=fCenter&&villages.length>0?"village":fGov&&centerList2.length>0?"center":fRegion&&govList.length>0?"gov":"region";
+        const levelLabel={region:"المنطقة",gov:"المحافظة",center:"المركز",village:"الحي"}[level];
+        const items=level==="region"?allLoc.map(r=>r.region):level==="gov"?govList.map(g=>g.name||g):level==="center"?centerList2:villages;
+        const goBack=()=>{if(level==="village")setFVillage(""); else if(level==="center"){setFCenter("");setFVillage("");} else if(level==="gov"){setFGov("");setFCenter("");setFVillage("");} else{setFRegion("");setFGov("");setFCenter("");setFVillage("");}};
+        return(
+        <div style={{background:"rgba(0,0,0,.5)",borderBottom:"1px solid rgba(212,160,23,.15)"}}>
+          {/* شريط المسار */}
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px 6px"}}>
+            {[fRegion,fGov,fCenter,fVillage].some(Boolean)&&(
+              <button onClick={goBack} style={{background:"transparent",border:"1px solid #d4a017",borderRadius:6,color:"#d4a017",fontSize:11,fontWeight:700,cursor:"pointer",padding:"4px 8px",fontFamily:"inherit",flexShrink:0}}>→ رجوع</button>
+            )}
+            <div style={{flex:1,padding:"8px 12px",borderRadius:8,border:"1.5px solid #d4a017",background:"rgba(212,160,23,.08)",color:[fRegion,fGov,fCenter,fVillage].some(Boolean)?"#f0f0f0":"#888",fontSize:12,fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>
+              {[fRegion,fGov,fCenter,fVillage].filter(Boolean).join(" ← ")||"اختر المنطقة..."}
+            </div>
+            <button onClick={()=>setShowRegionSelect(false)} style={{background:"transparent",border:"none",color:"#888",fontSize:18,cursor:"pointer",padding:"4px",flexShrink:0}}>✕</button>
+          </div>
+          {/* العنوان */}
+          <div style={{padding:"2px 14px 6px",fontSize:10,color:"#d4a017",fontWeight:700}}>اختر {levelLabel}:</div>
+          {/* القائمة */}
+          <div style={{maxHeight:220,overflowY:"auto",padding:"0 14px 10px",display:"flex",flexDirection:"column",gap:4}}>
+            {level==="region"&&<button style={{textAlign:"right",padding:"9px 12px",borderRadius:8,border:"1px solid #2a2a3a",background:"rgba(255,255,255,.03)",color:"#aaa",cursor:"pointer",fontSize:12,fontFamily:"inherit"}} onClick={()=>{setFRegion("");setFGov("");setFCenter("");setFVillage("");}}>كل المناطق</button>}
+            {items.map(item=>(
+              <button key={item} style={{textAlign:"right",padding:"9px 12px",borderRadius:8,border:`1px solid ${(level==="region"&&fRegion===item)||(level==="gov"&&fGov===item)||(level==="center"&&fCenter===item)||(level==="village"&&fVillage===item)?"#d4a017":"#2a2a3a"}`,background:(level==="region"&&fRegion===item)||(level==="gov"&&fGov===item)||(level==="center"&&fCenter===item)||(level==="village"&&fVillage===item)?"rgba(212,160,23,.15)":"rgba(255,255,255,.03)",color:"#f0f0f0",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:(level==="region"&&fRegion===item)||(level==="gov"&&fGov===item)||(level==="center"&&fCenter===item)||(level==="village"&&fVillage===item)?700:400}} onClick={()=>{
+                if(level==="region"){setFRegion(item);setFGov("");setFCenter("");setFVillage("");}
+                else if(level==="gov"){setFGov(item);setFCenter("");setFVillage("");}
+                else if(level==="center"){setFCenter(item);setFVillage("");}
+                else{setFVillage(item);setShowRegionSelect(false);}
+              }}>{item}</button>
+            ))}
+          </div>
         </div>
-        {/* القوائم المنسدلة + زر الإغلاق */}
-        <div style={{overflowX:"auto",scrollbarWidth:"none",display:"flex",gap:8,alignItems:"flex-end"}}>
-          {/* المنطقة */}
-          <div style={{minWidth:120,flex:"0 0 auto"}}>
-            <div style={{fontSize:9,color:"#d4a017",marginBottom:4,fontWeight:700}}>المنطقة</div>
-            <select style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:12,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} value={fRegion} onChange={e=>{setFRegion(e.target.value);setFGov("");setFCenter("");setFVillage("");}}>
-              <option value="">كل المناطق</option>
-              {allLoc.map(r=><option key={r.region} value={r.region}>{r.region}</option>)}
-            </select>
-          </div>
-
-          {/* المحافظة */}
-          {fRegion&&govList.length>0&&(
-          <div style={{minWidth:120,flex:"0 0 auto"}}>
-            <div style={{fontSize:9,color:"#d4a017",marginBottom:4,fontWeight:700}}>المحافظة</div>
-            <select style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:12,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} value={fGov} onChange={e=>{setFGov(e.target.value);setFCenter("");setFVillage("");}}>
-              <option value="">اختر</option>
-              {govList.map(g=><option key={g.name||g} value={g.name||g}>{g.name||g}</option>)}
-            </select>
-          </div>
-          )}
-
-          {/* المراكز */}
-          {fGov&&centerList2.length>0&&(
-          <div style={{minWidth:120,flex:"0 0 auto"}}>
-            <div style={{fontSize:9,color:"#d4a017",marginBottom:4,fontWeight:700}}>المركز</div>
-            <select style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:12,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} value={fCenter} onChange={e=>{setFCenter(e.target.value);setFVillage("");}}>
-              <option value="">اختر</option>
-              {centerList2.map(c=><option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          )}
-
-          {/* الحي */}
-          {fCenter&&(()=>{const villages=[...new Set(approvedSalons.filter(s=>s.center===fCenter&&s.village).map(s=>s.village))];return villages.length>0?(
-          <div style={{minWidth:120,flex:"0 0 auto"}}>
-            <div style={{fontSize:9,color:"#d4a017",marginBottom:4,fontWeight:700}}>الحي</div>
-            <select style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:12,fontFamily:"'Cairo',sans-serif",direction:"rtl"}} value={fVillage} onChange={e=>{setFVillage(e.target.value);}}>
-              <option value="">اختر</option>
-              {villages.map(v=><option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
-          ):null;})()}
-
-          {/* زر إغلاق */}
-          <button onClick={()=>setShowRegionSelect(false)} style={{minWidth:60,flex:"0 0 auto",padding:"8px 12px",borderRadius:8,border:"1px solid #d4a017",background:"transparent",color:"#d4a017",cursor:"pointer",fontSize:12,fontWeight:700}}>إغلاق</button>
-        </div>
-      </div>
-      )}
+        );
+      })()}
 
       <div style={{padding:"10px 14px 0",display:"flex",gap:8,overflowX:"auto",scrollbarWidth:"none",alignItems:"center"}}>
         {/* البحث - عدسة صغيرة */}
@@ -4802,6 +4783,18 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>الاسم</label><input style={inp2} value={editName} onChange={e=>setEditName(e.target.value)}/></div>
           <div style={{marginBottom:10}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>رقم الجوال</label><input style={inp2} inputMode="numeric" type="tel" value={editPhone} onChange={e=>setEditPhone(e.target.value)}/></div>
           <div style={{marginBottom:12}}><label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>البريد الإلكتروني</label><input style={inp2} type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)}/></div>
+          {/* الموقع */}
+          <div style={{marginBottom:12}}>
+            <label style={{display:"block",fontSize:11,color:"#aaa",marginBottom:4}}>الموقع</label>
+            {customer?.locationLat&&customer?.locationLng?(
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",borderRadius:9,border:"1.5px solid rgba(212,160,23,.4)",background:"rgba(212,160,23,.06)"}}>
+                <span style={{fontSize:11,color:"var(--p)"}}>✅ موقع محفوظ</span>
+                <button style={{background:"transparent",border:"none",color:"#e74c3c",fontSize:11,cursor:"pointer",fontFamily:"inherit",padding:0}} onClick={clearCustomerLocation}>حذف ✕</button>
+              </div>
+            ):(
+              <button style={{...inp2,background:"rgba(212,160,23,.06)",border:"1.5px dashed rgba(212,160,23,.4)",color:"var(--p)",cursor:"pointer",textAlign:"center",fontWeight:700,fontSize:12,padding:"11px"}} onClick={saveCustomerLocation}>📍 إضافة الموقع تلقائياً</button>
+            )}
+          </div>
           <div style={{display:"flex",gap:8}}>
             <button style={G.sub} onClick={saveEdit}>💾 حفظ</button>
             <button style={{...G.delBtn,padding:"12px 14px"}} onClick={()=>setEditMode(false)}>إلغاء</button>
