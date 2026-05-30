@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-F";
+const APP_VERSION = "2026.05.30-G";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -4984,6 +4984,13 @@ function AttendanceView({customer,salons}){
     no_show:records.filter(r=>r.attendance==="no_show").length,
     pending:records.filter(r=>r.status==="approved"&&!r.attendance).length,
   };
+  const evalTotal=counts.attended+counts.no_show;
+  const attendRate=evalTotal>0?Math.round((counts.attended/evalTotal)*100):null;
+  const classification=attendRate===null?null:
+    counts.no_show>=3||attendRate<50?{label:"⚠️ غير ملتزم",color:"#e74c3c",bg:"rgba(231,76,60,.08)"}:
+    counts.attended>=5&&counts.no_show===0?{label:"🌟 مميز",color:"#d4a017",bg:"rgba(212,160,23,.08)"}:
+    attendRate>=70?{label:"✅ منتظم",color:"#27ae60",bg:"rgba(39,174,96,.08)"}:
+    {label:"🆕 جديد",color:"#3498db",bg:"rgba(52,152,219,.08)"};
   const filtersArr=[
     {key:"all",label:"سجلي الكامل",color:"#d4a017"},
     {key:"no_show",label:"غير ملتزم",color:"#e74c3c"},
@@ -5006,6 +5013,29 @@ function AttendanceView({customer,salons}){
           </button>
         ))}
       </div>
+      {!loading&&classification&&(
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{background:classification.bg,borderRadius:12,padding:"12px 16px",
+            border:`1.5px solid ${classification.color}`,
+            display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:13,color:"#aaa"}}>تصنيفك الإجمالي</span>
+            <span style={{fontSize:14,fontWeight:800,color:classification.color}}>{classification.label}</span>
+          </div>
+          <div style={{background:"#13131f",borderRadius:12,padding:"12px 16px",border:"1px solid #2a2a3a"}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+              <span style={{fontSize:12,color:"#aaa"}}>نسبة الحضور</span>
+              <span style={{fontSize:13,fontWeight:700,color:"#27ae60"}}>{attendRate}%</span>
+            </div>
+            <div style={{height:8,background:"#1a1a2e",borderRadius:999,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${attendRate}%`,
+                background:"linear-gradient(90deg,#27ae60,#2ecc71)",borderRadius:999}}/>
+            </div>
+            <div style={{fontSize:11,color:"#666",marginTop:6,textAlign:"right"}}>
+              {counts.attended} حضر من أصل {evalTotal} تم تقييمه
+            </div>
+          </div>
+        </div>
+      )}
       {loading
         ?<div style={{textAlign:"center",color:"#888",padding:24}}>جاري التحميل...</div>
         :displayed.length===0
