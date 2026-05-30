@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-T";
+const APP_VERSION = "2026.05.30-U";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -737,7 +737,7 @@ export default function App(){
     const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#8e8e93":"#f7f7f7";
     const s1=dk?"#13131f":dm?"#28282f":lg?"#aeaeb2":"#ffffff";
     const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#c7c7cc":"#f0f0f2";
-    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#8e8e93":"#e0e0e0";
+    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#aeaeb2":"#e0e0e0";
     const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#1c1c1e":"#2d2d2d";
     const tm=dk?"#888888":dm?"#8e8e9e":lg?"#3a3a3c":"#666666";
     const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#c7c7cc":"#fafafa";
@@ -825,7 +825,7 @@ export default function App(){
               defaultTone:u.defaultTone??s.defaultTone,
               bg:normalizeBgId(u.bg??s.bg??"none"),
             }));
-            if(u.themeMode&&["dark","dim","light","lgray"].includes(u.themeMode)){setThemeMode(u.themeMode);}else if(typeof u.darkMode==="boolean")setDarkMode(u.darkMode);
+            if(u.themeMode&&["dark","dim","light","lgray"].includes(u.themeMode))setThemeMode(u.themeMode);
           }catch{}
         }
       }
@@ -833,7 +833,7 @@ export default function App(){
       if(!silent){
         try{const v=localStorage.getItem("dork_loyalty");if(v)setLoyaltySettings({...DEFAULT_LOYALTY_SETTINGS,...JSON.parse(v)});}catch{}
         try{const v=localStorage.getItem("dork_social");if(v)setSocialLinks({...DEFAULT_SOCIAL_LINKS,...JSON.parse(v)});}catch{}
-        try{const v=localStorage.getItem("dork_ui");if(v){const u=JSON.parse(v);setSettings(s=>({...s,...u,bg:normalizeBgId(u.bg||s.bg)}));if(u.themeMode&&["dark","dim","light","lgray"].includes(u.themeMode)){setThemeMode(u.themeMode);}else if(typeof u.darkMode==="boolean")setDarkMode(u.darkMode);}}catch{}
+        try{const v=localStorage.getItem("dork_ui");if(v){const u=JSON.parse(v);setSettings(s=>({...s,...u,bg:normalizeBgId(u.bg||s.bg)}));if(u.themeMode&&["dark","dim","light","lgray"].includes(u.themeMode))setThemeMode(u.themeMode);}}catch{}
       }
     }
   },[]);
@@ -1682,7 +1682,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <Panel>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {[{v:"dark",l:"🌙 داكن"},{v:"dim",l:"⬛ رمادي"},{v:"lgray",l:"🔘 رمادي فاتح"},{v:"light",l:"☀️ فاتح"}].map(({v,l})=>{const active=themeMode===v;return(
-                <button key={v} onClick={()=>{setThemeMode(v);persistUiToSupabase&&persistUiToSupabase({darkMode:v==="dark"||v==="dim"});}} style={{padding:"13px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
+                <button key={v} onClick={()=>{setThemeMode(v);persistUiToSupabase&&persistUiToSupabase({darkMode:v==="dark"||v==="dim",themeMode:v});}} style={{padding:"13px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
                   {l}{active&&" ✓"}
                 </button>
               );})}
@@ -5683,7 +5683,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
             const active=themeMode===id;
             return(
               <button key={id}
-                onClick={()=>{setThemeMode(id);persistUiToSupabase&&persistUiToSupabase({darkMode:id==="dark"||id==="dim"});}}
+                onClick={()=>{setThemeMode(id);persistUiToSupabase&&persistUiToSupabase({darkMode:id==="dark"||id==="dim",themeMode:id});}}
                 style={{padding:"20px 8px 16px",borderRadius:14,
                   border:`2px solid ${active?"var(--p)":"transparent"}`,
                   background:active?"var(--pa08)":"rgba(255,255,255,.03)",
