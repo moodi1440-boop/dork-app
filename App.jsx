@@ -5112,12 +5112,12 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         </div>
       ))}
 
-      {/* تبويبات */}
-      {!sectionMode&&<div style={{...G.tabRow,flexWrap:"nowrap"}}>
+      {/* تبويبات — دائماً ظاهرة، الكارد فقط هو المخفي في section mode */}
+      <div style={{...G.tabRow,flexWrap:"nowrap"}}>
         <button style={{...G.tabBtn,...(tab==="favs"?G.tabOn:{})}} onClick={()=>setTab("favs")}>♥ المفضلة {favSalons.length>0&&<span style={G.notifDot}>{favSalons.length}</span>}</button>
         <button style={{...G.tabBtn,...(tab==="hist"?G.tabOn:{})}} onClick={()=>setTab("hist")}>📋 حجوزاتي</button>
         <button style={{...G.tabBtn,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙ الحساب</button>
-      </div>}
+      </div>
 
       {/* المفضلة */}
       {tab==="favs"&&<>
