@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-J";
+const APP_VERSION = "2026.05.30-K";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1659,9 +1659,9 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <Row icon="🌙" label="الوضع" sub={themeMode==="dark"?"داكن":themeMode==="dim"?"رمادي":"فاتح"} chev="dark" onClick={()=>toggle("dark")}/>
         {exp==="dark"&&(
           <Panel>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {[{v:true,l:"🌙 داكن"},{v:false,l:"☀️ فاتح"}].map(({v,l})=>{const active=darkMode===v;return(
-                <button key={String(v)} onClick={()=>{setDarkMode&&setDarkMode(v);persistUiToSupabase&&persistUiToSupabase({darkMode:v});}} style={{padding:"13px 8px",borderRadius:12,border:`2px solid ${active?"var(--p)":"#2a2a3a"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+              {[{v:"dark",l:"🌙 داكن"},{v:"dim",l:"⬛ رمادي"},{v:"light",l:"☀️ فاتح"}].map(({v,l})=>{const active=(themeMode||(darkMode?"dark":"light"))===v;return(
+                <button key={v} onClick={()=>{setThemeMode?setThemeMode(v):setDarkMode(v!=="light");persistUiToSupabase&&persistUiToSupabase({darkMode:v!=="light"});}} style={{padding:"13px 4px",borderRadius:12,border:`2px solid ${active?"var(--p)":"#2a2a3a"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
                   {l}{active&&" ✓"}
                 </button>
               );})}
