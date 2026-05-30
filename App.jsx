@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-M";
+const APP_VERSION = "2026.05.30-N";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -734,13 +734,13 @@ export default function App(){
   // تطبيق وضع الإضاءة (داكن / رمادي / فاتح)
   useEffect(()=>{
     const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light";
-    const shell=dk?"#0d0d1a":dm?"#1c1c28":"#f0f0f8";
-    const s1=dk?"#13131f":dm?"#242436":"#ffffff";
-    const s2=dk?"#1a1a2e":dm?"#2c2c42":"#f1f3f9";
-    const bor=dk?"var(--border-ui)":dm?"#3a3a50":"#c8cdd8";
-    const tp=dk?"#f0f0f0":dm?"#e8e8f0":"#141420";
-    const tm=dk?"#888":dm?"#9090a8":"#5c6470";
-    const inp=dk?"#0d0d1a":dm?"#1c1c28":"#f5f5f5";
+    const shell=dk?"#0d0d1a":dm?"#18181e":"#f0f0f8";
+    const s1=dk?"#13131f":dm?"#212128":"#ffffff";
+    const s2=dk?"#1a1a2e":dm?"#28282f":"#f1f3f9";
+    const bor=dk?"#2a2a3a":dm?"#35353d":"#c8cdd8";
+    const tp=dk?"#f0f0f0":dm?"#ededf2":"#141420";
+    const tm=dk?"#888":dm?"#888899":"#5c6470";
+    const inp=dk?"#0d0d1a":dm?"#14141a":"#f5f5f5";
     const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
     setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
     setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
@@ -1901,7 +1901,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
         {reviews.length>0&&(
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 10px",borderRadius:10,background:"rgba(212,160,23,.07)",border:"1px solid rgba(212,160,23,.18)"}}>
             <span style={{fontSize:14,fontWeight:900,color:goldStar,lineHeight:1}}>{globalAvg}</span>
-            <span style={{fontSize:8,color:"#666",marginTop:1}}>{reviews.length} تقييم</span>
+            <span style={{fontSize:8,color:"var(--text-muted)",marginTop:1}}>{reviews.length} تقييم</span>
           </div>
         )}
       </div>
@@ -2090,7 +2090,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         const selStyle=(active)=>({flex:1,minWidth:72,height:32,borderRadius:8,border:`1.5px solid ${active?"#d4a017":"#333"}`,background:"rgba(12,12,22,.97)",color:active?"#d4a017":"#777",fontSize:11,fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:"0 6px",cursor:"pointer",outline:"none"});
         return(
           <div style={{background:"rgba(0,0,0,.5)",borderBottom:"1px solid rgba(212,160,23,.15)",padding:"8px 10px",display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
-            <button onClick={()=>{setShowRegionSelect(false);setFRegion("");setFGov("");setFCenter("");setFVillage("");}} style={{background:"transparent",border:"none",color:"#666",fontSize:15,cursor:"pointer",padding:"2px 4px",flexShrink:0,lineHeight:1}}>✕</button>
+            <button onClick={()=>{setShowRegionSelect(false);setFRegion("");setFGov("");setFCenter("");setFVillage("");}} style={{background:"transparent",border:"none",color:"var(--text-muted)",fontSize:15,cursor:"pointer",padding:"2px 4px",flexShrink:0,lineHeight:1}}>✕</button>
             <select value={fRegion||""} onChange={e=>{setFRegion(e.target.value);setFGov("");setFCenter("");setFVillage("");}} style={selStyle(!!fRegion)}>
               <option value="">المنطقة</option>
               {allLoc.map(r=><option key={r.region} value={r.region}>{r.region}</option>)}
@@ -2145,7 +2145,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         ].map(([k,ic,l])=>(
           <button key={k} style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:sortBy===k?"rgba(212,160,23,.3)":"rgba(255,255,255,.05)",border:`1.5px solid ${sortBy===k?"#d4a017":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s",flexDirection:"column",gap:2}} onClick={()=>{if(sortBy===k){setSortBy("");}else{setShowSearch(false);setShowRegionSelect(false);if(k==="nearest"&&!userLoc){detectUserLoc();return;}setSortBy(k);}}} title={l}>
             <span>{ic}</span>
-            <span style={{fontSize:9,color:"#999"}}>{l}</span>
+            <span style={{fontSize:9,color:"var(--text-muted)"}}>{l}</span>
           </button>
         ))}
       </div>
@@ -2164,7 +2164,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
       <div style={{padding:"10px 14px 80px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <span style={{fontSize:15,fontWeight:700,color:"#fff"}}>
+          <span style={{fontSize:15,fontWeight:700,color:"var(--text-primary)"}}>
             {urgentMode?"🔥 مفتوح الآن":"الصالونات المتاحة"}
           </span>
           <span style={G.badge}>{sortedSalons.length}</span>
@@ -2230,7 +2230,7 @@ function SalonReviewsView({salon,reviews,setView}){
         </div>
         {/* ملخص الصالون */}
         <div style={{background:"rgba(212,160,23,.07)",border:"1px solid rgba(212,160,23,.18)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:6}}>✂ {salon?.name}</div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>✂ {salon?.name}</div>
           {salonReviews.length>0?(
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <span style={{fontSize:28,fontWeight:900,color:goldStar,lineHeight:1}}>{avg}</span>
@@ -2242,7 +2242,7 @@ function SalonReviewsView({salon,reviews,setView}){
               </div>
             </div>
           ):(
-            <div style={{fontSize:12,color:"#555"}}>لا توجد تقييمات بعد</div>
+            <div style={{fontSize:12,color:"var(--text-muted)"}}>لا توجد تقييمات بعد</div>
           )}
         </div>
         {/* قائمة التقييمات */}
@@ -2250,7 +2250,7 @@ function SalonReviewsView({salon,reviews,setView}){
           {salonReviews.map((r,i)=>(
             <div key={i} style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 13px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.comment?6:0}}>
-                <span style={{fontSize:12,color:"#c0c0d0",fontWeight:700}}>👤 {r.name}</span>
+                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700}}>👤 {r.name}</span>
                 <div style={{display:"flex",gap:1}}>
                   {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(212,160,23,.18)"}}>★</span>)}
                 </div>
@@ -2284,13 +2284,13 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
   if(salon.frozen)return(
     <div style={{...G.card,opacity:.5,position:"relative"}}>
       <div style={{position:"absolute",top:8,left:8,background:"#e74c3c",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20}}>🔒 مغلق مؤقتاً</div>
-      <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:4}}>✂ {salon.name}</div>
+      <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)",marginBottom:4}}>✂ {salon.name}</div>
       <div style={{fontSize:11,color:"var(--text-muted)"}}>هذا الصالون مغلق مؤقتاً</div>
     </div>
   );
 
   return(
-    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid #3a3a4a",padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
+    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid var(--border-ui)",padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
       {/* Header Row - Icon + Name + Status + Rating */}
       <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
         <div style={{display:"flex",gap:8,alignItems:"center",flex:1}}>
@@ -2298,7 +2298,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           <div style={{background:"#d4a017",width:40,height:40,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flex:"0 0 auto"}}>✂</div>
 
           {/* Name */}
-          <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{salon.name}</div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div>
 
           {/* Status */}
           <span style={{fontSize:9,color:isOpenNow?"#27ae60":"#e74c3c",fontWeight:700}}>
@@ -2385,12 +2385,12 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
         <div style={G.salonBadge}>
           <span style={{fontSize:20,color:"var(--p)"}}>✂</span>
           <div style={{flex:1}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{salon.name}</div>
+            <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div>
             <div style={{fontSize:11,color:"var(--text-muted)"}}>{salon.gov||salon.region}{salon.village?` > ${salon.village}`:""}</div>
             <div style={{fontSize:11,color:"var(--text-muted)"}}>👤 {salon.owner} - 📞 {salon.phone}</div>
             {salonReviews.length>0&&<>
               <div style={{fontSize:12,color:"#e8c04a",marginTop:2}}>⭐ {avgRating} ({salonReviews.length} تقييم)</div>
-              <div style={{fontSize:9,color:"#666",marginTop:2}}>آراء العملاء تظهر في الصفحة الرئيسية</div>
+              <div style={{fontSize:9,color:"var(--text-muted)",marginTop:2}}>آراء العملاء تظهر في الصفحة الرئيسية</div>
             </>}
           </div>
           <button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع">
@@ -2441,7 +2441,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const v2=()=>{const e={};if(!form.date)e.date="مطلوب";if(!form.time&&!form.waitSlot)e.time="اختر وقتاً أو ينتظر في قائمة الانتظار";setErrors(e);return!Object.keys(e).length;};
   const inner=(
     <>
-      {!inline&&<div style={G.salonBadge}><span style={{fontSize:20,color:"var(--p)"}}>✂</span><div style={{flex:1}}><div style={{fontWeight:700,color:"#fff"}}>{salon.name}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>{salon.gov||salon.region}</div></div><button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg></button></div>}
+      {!inline&&<div style={G.salonBadge}><span style={{fontSize:20,color:"var(--p)"}}>✂</span><div style={{flex:1}}><div style={{fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>{salon.gov||salon.region}</div></div><button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg></button></div>}
       <div style={G.steps}>{["بياناتك","الموعد","تأكيد"].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:10,color:"var(--p)"}}>{l}</span></div>)}</div>
       {step===1&&<div style={G.fc}>
         <F label="اسمك الكريم" error={errors.name}><input style={fi(errors.name)} placeholder="الاسم الكامل" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></F>
@@ -2460,13 +2460,13 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
               const inShift=currentMins>=sh*60+sm&&currentMins<=eh*60+em;
               return(
                 <div key={b.id}
-                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 10px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":inShift?"var(--border-ui)":"#1a1a1a"}`,background:active?"var(--pa12)":inShift?"#1a1a2e":"#0d0d0d",cursor:inShift?"pointer":"not-allowed",opacity:inShift?1:.5,minWidth:60}}
+                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 10px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":inShift?"var(--surface-2)":"var(--shell-bg)",cursor:inShift?"pointer":"not-allowed",opacity:inShift?1:.5,minWidth:60}}
                   onClick={()=>inShift&&setForm(p=>({...p,barberId:b.id,time:""}))}>
                   {b.photo
                     ?<img src={optimizeImageUrl(b.photo,36,36)} alt={b.name} style={{width:36,height:36,borderRadius:"50%",objectFit:"cover",border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`}}/>
                     :<div style={{width:36,height:36,borderRadius:"50%",background:"var(--surface-2)",border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>💈</div>
                   }
-                  <span style={{fontSize:11,color:active?"var(--p)":"#aaa",fontWeight:active?700:400,textAlign:"center"}}>{b.name}</span>
+                  <span style={{fontSize:11,color:active?"var(--p)":"var(--text-muted)",fontWeight:active?700:400,textAlign:"center"}}>{b.name}</span>
                   <span style={{fontSize:9,color:inShift?"#27ae60":"#e74c3c"}}>{inShift?"متاح":"غير متاح"}</span>
                 </div>
               );
@@ -2502,7 +2502,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         <button style={G.sub} onClick={()=>{if(v2())setStep(3);}}>{form.waitSlot?"التالي (انتظار) →":"التالي →"}</button>
       </div>}
       {step===3&&<div style={G.fc}>
-        <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:36}}>{form.waitSlot?"⏳":"✅"}</div><h3 style={{color:"#fff",marginTop:4,fontSize:16}}>{form.waitSlot?"تأكيد الانضمام للانتظار":"تأكيد الحجز"}</h3></div>
+        <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:36}}>{form.waitSlot?"⏳":"✅"}</div><h3 style={{color:"var(--text-primary)",marginTop:4,fontSize:16}}>{form.waitSlot?"تأكيد الانضمام للانتظار":"تأكيد الحجز"}</h3></div>
         {[["الاسم",form.name],["الجوال",form.phone],["البريد",form.email||"-"],["الخدمات",form.services.join(" + ")],["الحلاق",barber?.name||"أي حلاق"],["التاريخ",form.date],["الوقت",form.waitSlot?`⏳ انتظار ${form.waitSlot}`:form.time],["الإجمالي",`${total} ريال`]].map(([l,v])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid var(--border-ui)"}}><span style={{color:"var(--text-muted)",fontSize:12}}>{l}</span><span style={{color:"var(--text-primary)",fontWeight:600,fontSize:12}}>{v}</span></div>)}
         <button style={{...G.mapsBtn,width:"100%",marginTop:10,justifyContent:"center",display:"flex",padding:10}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>📍 افتح على الخريطة</button>
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.1)",border:"1px solid #f39c1255",borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:11,color:"#f39c12"}}>⏳ ستنضم لقائمة الانتظار للساعة {form.waitSlot} — ستُبلَّغ عند تحرر الوقت</div>}
@@ -2559,7 +2559,7 @@ function TermsView({onAccept}){
         </div>
         <label style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,cursor:"pointer",padding:"12px 16px",background:"var(--surface-1)",borderRadius:10,border:`1.5px solid ${checked?"var(--p,#d4a017)":"var(--border-ui)"}`}}>
           <input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)} style={{width:18,height:18,cursor:"pointer"}}/>
-          <span style={{fontSize:13,color:"#fff",fontWeight:600}}>أوافق على الشروط والأحكام</span>
+          <span style={{fontSize:13,color:"var(--text-primary)",fontWeight:600}}>أوافق على الشروط والأحكام</span>
         </label>
         <button style={{width:"100%",padding:14,borderRadius:12,border:"none",background:checked?"linear-gradient(135deg,var(--p,#d4a017),var(--pl,#f0c040))":"var(--border-ui)",color:checked?"#000":"#555",fontSize:15,fontWeight:900,cursor:checked?"pointer":"not-allowed",fontFamily:"inherit"}}
           disabled={!checked} onClick={onAccept}>
@@ -2644,7 +2644,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
             {String(parseInt(selectedDate.split("-")[2])).padStart(2,"0")} 📅
           </button>
           {showDayPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
               <div style={{display:"flex",flexDirection:"column",gap:4}}>
                 {Array.from({length:31},(_, i)=>{
                   const day=i+1;
@@ -2667,7 +2667,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
             {MONTHS_AR[m]} 📅
           </button>
           {showMonthPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
               <div style={{display:"flex",flexDirection:"column",gap:4}}>
                 {MONTHS_AR.map((month,idx)=>{
                   const isSel=m===idx;
@@ -2688,7 +2688,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
             {y} 📅
           </button>
           {showYearPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
               <div style={{display:"flex",flexDirection:"column",gap:4}}>
                 {Array.from({length:10},(_, i)=>y-5+i).map(yr=>{
                   const isSel=y===yr;
@@ -2743,7 +2743,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                 {String(barberD).padStart(2,"0")} 📅
               </button>
               {showBarberDayPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4}}>
                     {Array.from({length:31},(_, i)=>{
                       const day=i+1;
@@ -2765,7 +2765,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                 {MONTHS_AR[barberM]} 📆
               </button>
               {showBarberMonthPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
                     {MONTHS_AR.map((month,idx)=>{
                       const isSel=barberM===idx;
@@ -2786,7 +2786,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                 {barberY} 📊
               </button>
               {showBarberYearPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1a1a2a",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
                     {Array.from({length:10},(_, i)=>{
                       const year=new Date().getFullYear()-5+i;
@@ -2813,7 +2813,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                     <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
                       <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#d4a017,#f0c040)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>✂</div>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:12,fontWeight:700,color:"#fff"}}>{barber.name||barber.barber_name||"بدون اسم"}</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)"}}>{barber.name||barber.barber_name||"بدون اسم"}</div>
                         <div style={{fontSize:10,color:"var(--text-muted)"}}>{stats.dayCount} حجز</div>
                       </div>
                     </div>
@@ -2963,7 +2963,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
               <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
                 {allSlots.map(sl=>{const sel=mForm.slot===sl;return(
                   <button key={sl} onClick={()=>setMForm(p=>({...p,slot:p.slot===sl?"":sl}))}
-                    style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa25)":"#13131f",color:sel?"var(--p)":"#888",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:sel?700:400}}>
+                    style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa25)":"var(--surface-1)",color:sel?"var(--p)":"var(--text-muted)",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:sel?700:400}}>
                     {sl}
                   </button>
                 );})}
@@ -2995,14 +2995,14 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
                 <div key={w.id} style={{padding:"8px 0",borderTop:"1px solid var(--border-ui)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                     <div>
-                      <div style={{fontSize:12,color:"#fff",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                      <div style={{fontSize:12,color:"var(--text-primary)",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
                         <span style={{background:"var(--border-ui)",color:"var(--p)",borderRadius:10,padding:"1px 6px",fontSize:10}}>#{idx+1}</span>
                         {w.name}
                         {cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}
                       </div>
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>📞 {w.phone}</div>
                       {w.slotTime&&<div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>⏰ {w.slotDate} - {w.slotTime}</div>}
-                      <div style={{fontSize:10,color:"#555"}}>أضيف: {w.addedAt}</div>
+                      <div style={{fontSize:10,color:"var(--text-muted)"}}>أضيف: {w.addedAt}</div>
                     </div>
                     <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}>✕</button>
                   </div>
@@ -3022,7 +3022,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       <div style={{display:"flex",flexDirection:"column",gap:8}}>{bks.map(b=>(
         <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
           <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
-            {(()=>{const cust=customers.find(c=>c.phone&&b.phone&&c.phone.replace(/\D/g,"").slice(-9)===b.phone.replace(/\D/g,"").slice(-9));const cl=cust?getCustomerClassification(cust):null;return(<div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name}{cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>);})()}
+            {(()=>{const cust=customers.find(c=>c.phone&&b.phone&&c.phone.replace(/\D/g,"").slice(-9)===b.phone.replace(/\D/g,"").slice(-9));const cl=cust?getCustomerClassification(cust):null;return(<div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name}{cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>);})()}
             <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?"✅ مقبول":b.status==="rejected"?"❌ مرفوض":"⏳ انتظار"}</span>
           </div>
           {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>✅ قبول</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>❌ رفض</button></div>}
@@ -3228,7 +3228,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           <button style={{...G.locTab,...(locMethod==="detect"?G.locTabOn:{})}} onClick={()=>setLocMethod("detect")}>📡 تلقائي</button>
         </div>
         {locMethod==="link"
-          ?<F error={errors.locationUrl}><input style={fi(errors.locationUrl)} placeholder="https://maps.google.com/..." value={form.locationUrl} onChange={e=>setForm(p=>({...p,locationUrl:e.target.value}))}/><div style={{fontSize:10,color:"#555",marginTop:3}}>افتح Google Maps ← الموقع ← شارك ← انسخ</div></F>
+          ?<F error={errors.locationUrl}><input style={fi(errors.locationUrl)} placeholder="https://maps.google.com/..." value={form.locationUrl} onChange={e=>setForm(p=>({...p,locationUrl:e.target.value}))}/><div style={{fontSize:10,color:"var(--text-muted)",marginTop:3}}>افتح Google Maps ← الموقع ← شارك ← انسخ</div></F>
           :<div style={{marginBottom:11}}><button style={{...G.detectBtn,opacity:detecting?0.6:1}} disabled={detecting} onClick={detect}>{detecting?"⏳ جاري...":"📡 تحديد موقعي"}</button>{form.locationUrl&&locMethod==="detect"&&<div style={{color:"#4caf50",fontSize:11,marginTop:4,textAlign:"center"}}>✅ تم</div>}{errors.locationUrl&&<div style={G.err}>{errors.locationUrl}</div>}</div>
         }
       </div>
@@ -3252,11 +3252,11 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 
       <div style={G.fc}>
         <SL>الحلاقون {errors.barbers&&<span style={{color:"#e74c3c",fontSize:10,fontWeight:400}}>- {errors.barbers}</span>}</SL>
-        <div style={{fontSize:11,color:"#666",marginBottom:8}}>عدد الحلاقين = حجوزات متزامنة في نفس الوقت</div>
+        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>عدد الحلاقين = حجوزات متزامنة في نفس الوقت</div>
         {form.barbers.map((b,i)=>(
           <div key={b.id} style={{display:"flex",gap:8,marginBottom:10,alignItems:"center"}}>
             <div style={{position:"relative",flexShrink:0}} onClick={()=>pickPhoto(b.id)}>
-              <div style={{width:44,height:44,borderRadius:"50%",background:b.photo?"transparent":"#1a1a2e",border:`2px dashed var(--p)`,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+              <div style={{width:44,height:44,borderRadius:"50%",background:b.photo?"transparent":"var(--surface-2)",border:`2px dashed var(--p)`,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
                 {b.photo?<img src={optimizeImageUrl(b.photo,44,44)} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:<span style={{fontSize:18,color:"var(--p)"}}>📷</span>}
               </div>
               <div style={{position:"absolute",bottom:-2,right:-2,background:"var(--p)",borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#000",cursor:"pointer"}}>+</div>
@@ -3283,7 +3283,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
             <span style={{fontSize:12,color:"var(--text-primary)"}}>{s}</span>
             <div style={{display:"flex",alignItems:"center",gap:5}}>
               <button style={G.pmBtn} onClick={()=>adjustPrice(s,-5)}>-</button>
-              <input type="number" style={{width:52,background:"var(--bg-input)",border:"1px solid var(--border-ui)",borderRadius:6,color:"#fff",textAlign:"center",fontSize:13,padding:"3px 0",fontFamily:"inherit",outline:"none"}} value={form.prices[s]||0} onChange={e=>setPrice(s,e.target.value)}/>
+              <input type="number" style={{width:52,background:"var(--bg-input)",border:"1px solid var(--border-ui)",borderRadius:6,color:"var(--text-primary)",textAlign:"center",fontSize:13,padding:"3px 0",fontFamily:"inherit",outline:"none"}} value={form.prices[s]||0} onChange={e=>setPrice(s,e.target.value)}/>
               <button style={G.pmBtn} onClick={()=>adjustPrice(s,5)}>+</button>
               <span style={{color:"var(--p)",fontSize:11}}>ر</span>
             </div>
@@ -3296,7 +3296,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:5}}>
           {TONES.map(t=><div key={t.id} style={{...G.chip,...(form.tone===t.id?G.chipOn:{})}} onClick={()=>{setForm(p=>({...p,tone:t.id}));playTone(t.id,0.8);}}>{t.label}</div>)}
         </div>
-        <div style={{fontSize:11,color:"#555"}}>اضغط للمعاينة بصوت عالٍ</div>
+        <div style={{fontSize:11,color:"var(--text-muted)"}}>اضغط للمعاينة بصوت عالٍ</div>
       </div>
 
       <button style={{...G.sub,marginBottom:30}} onClick={()=>{if(validate())addSalon(form);}}>إرسال طلب التسجيل ✂</button>
@@ -3370,12 +3370,12 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
       <div style={{padding:"12px 16px",background:"linear-gradient(180deg,rgba(212,160,23,.06),transparent)"}}>
         <div style={{display:"flex",gap:10,overflowX:"auto",scrollbarWidth:"none",paddingBottom:4}}>
           {/* All */}
-          <button onClick={()=>setFilter(0)} style={{flex:"0 0 auto",padding:"6px 14px",borderRadius:20,border:`1px solid ${filter===0?gold:"rgba(212,160,23,.2)"}`,background:filter===0?"rgba(212,160,23,.12)":"transparent",color:filter===0?gold:"#888",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
+          <button onClick={()=>setFilter(0)} style={{flex:"0 0 auto",padding:"6px 14px",borderRadius:20,border:`1px solid ${filter===0?gold:"rgba(212,160,23,.2)"}`,background:filter===0?"rgba(212,160,23,.12)":"transparent",color:filter===0?gold:"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
             الكل ({feed.length})
           </button>
           {dist.map(({star,count})=>(
             <button key={star} onClick={()=>setFilter(star===filter?0:star)}
-              style={{flex:"0 0 auto",display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:20,border:`1px solid ${filter===star?gold:"rgba(212,160,23,.2)"}`,background:filter===star?"rgba(212,160,23,.12)":"transparent",color:filter===star?goldStar:"#888",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
+              style={{flex:"0 0 auto",display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:20,border:`1px solid ${filter===star?gold:"rgba(212,160,23,.2)"}`,background:filter===star?"rgba(212,160,23,.12)":"transparent",color:filter===star?goldStar:"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
               {"★".repeat(star)} ({count})
             </button>
           ))}
@@ -3385,7 +3385,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
       {/* ── Cards grid ── */}
       <div style={{padding:"0 14px",display:"flex",flexDirection:"column",gap:10}}>
         {filtered.length===0&&(
-          <div style={{textAlign:"center",padding:"32px 0",color:"#555",fontSize:13}}>لا توجد نتائج مطابقة للبحث</div>
+          <div style={{textAlign:"center",padding:"32px 0",color:"var(--text-muted)",fontSize:13}}>لا توجد نتائج مطابقة للبحث</div>
         )}
         {filtered.map((r,i)=>(
           <div key={r.key} onClick={()=>openSalon(r.salonId)}
@@ -3402,14 +3402,14 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
             {r.comment&&(
               <>
                 <div style={{height:1,background:"rgba(212,160,23,.1)",margin:"8px 0"}}/>
-                <div style={{fontSize:11,color:"#a0a0bc",fontStyle:"italic",lineHeight:1.55}}>«{r.comment}»</div>
+                <div style={{fontSize:11,color:"var(--text-muted)",fontStyle:"italic",lineHeight:1.55}}>«{r.comment}»</div>
               </>
             )}
-            <div style={{fontSize:9,color:"#363650",marginTop:10}}>📅 {r.date||"—"}</div>
+            <div style={{fontSize:9,color:"var(--text-muted)",marginTop:10}}>📅 {r.date||"—"}</div>
             {r.ownerReply&&(
               <div style={{marginTop:8,padding:"7px 10px",background:"rgba(212,160,23,.06)",borderRight:"3px solid #d4a017",borderRadius:"0 7px 7px 0"}}>
                 <div style={{fontSize:9,color:"#d4a017",fontWeight:700,marginBottom:2}}>✂ رد الصالون</div>
-                <div style={{fontSize:10,color:"#b8b880",lineHeight:1.5}}>{r.ownerReply}</div>
+                <div style={{fontSize:10,color:"var(--text-muted)",lineHeight:1.5}}>{r.ownerReply}</div>
               </div>
             )}
           </div>
@@ -3475,9 +3475,9 @@ function NotifsView({setView}){
               <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
                 <span style={{fontSize:20,flexShrink:0}}>{n.icon}</span>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.title}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{n.title}</div>
                   <div style={{fontSize:12,color:"var(--text-muted)",marginTop:2}}>{n.body}</div>
-                  <div style={{fontSize:10,color:"#555",marginTop:4}}>{n.time}</div>
+                  <div style={{fontSize:10,color:"var(--text-muted)",marginTop:4}}>{n.time}</div>
                 </div>
                 {!n.read&&<div style={{width:8,height:8,borderRadius:"50%",background:"var(--p)",flexShrink:0,marginTop:4}}/>}
               </div>
