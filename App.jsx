@@ -717,6 +717,7 @@ export default function App(){
   const[loading,setLoading]=useState(false); // تحميل سريع - البيانات تُحمّل في الخلفية
   const[dbError,setDbError]=useState(null);
   const[view,setView]=useState(()=>{try{const o=localStorage.getItem("dork_owner");const c=localStorage.getItem("dork_customer");if(o)return"ownerDash";if(c)return"home";return"entry";}catch{return"entry";}});
+  const[custDashKey,setCustDashKey]=useState(0);
   const[selSalon,setSelSalon]=useState(null);
   const[toast,setToast]=useState(null);
   const[showDrawer,setShowDrawer]=useState(false);
@@ -1433,7 +1434,7 @@ export default function App(){
       {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"#3a1a1a",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>❌ خطأ في الاتصال بقاعدة البيانات — تحقق من الاتصال</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
-      <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
+      <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
       <div style={{paddingTop:(view==="entry"||view==="custLogin"||view==="ownerLogin")?0:64}}>
         {view==="entry"&&     <EntryView setView={setView}/>}
         {view==="home"&&      <HomeView {...sharedProps}/>}
@@ -1443,7 +1444,7 @@ export default function App(){
         {view==="ownerLogin"&&<OwnerLogin {...sharedProps}/>}
         {view==="ownerDash"&& <OwnerDash  salon={salons.find(s=>s.id===ownerSession)} {...sharedProps}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
-        {view==="custDash"&&  <CustomerDash customer={customer} {...sharedProps}/>}
+        {view==="custDash"&&  <CustomerDash key={custDashKey} customer={customer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
         {view==="nearMap"&&   <NearMapView salons={approvedSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="compare"&&   <CompareSalonsView salons={compareSalons} setView={setView} setSelSalon={setSelSalon}/>}
@@ -1522,7 +1523,7 @@ function DorkLogoSvg({size=40}){
 // ==============================================
 //  CUSTOMER DRAWER — القائمة الجانبية للعميل
 // ==============================================
-function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,setView,settings,setSettings,darkMode,setDarkMode,persistUiToSupabase,toast$,salons,favSet}){
+function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,setView,setCustDashKey,settings,setSettings,darkMode,setDarkMode,persistUiToSupabase,toast$,salons,favSet}){
   const[exp,setExp]=useState(null);
   const[editName,setEditName]=useState("");
   const[editPhone,setEditPhone]=useState("");
@@ -1603,10 +1604,10 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <div style={{height:12}}/>
         {/* التنقل */}
         <SecHead label="تنقل سريع"/>
-        <Row icon="🔔" label="الإشعارات" onClick={()=>{_dkCustMode="section";_dkCustTab="notif";onClose();setView("custDash");}}/>
-        <Row icon="📅" label="حجوزاتي" onClick={()=>{_dkCustMode="section";_dkCustTab="hist";onClose();setView("custDash");}}/>
-        <Row icon="❤️" label="المفضلة" onClick={()=>{_dkCustMode="section";_dkCustTab="favs";onClose();setView("custDash");}}/>
-        <Row icon="⏰" label="التذكيرات" onClick={()=>{_dkCustMode="section";_dkCustTab="remind";onClose();setView("custDash");}}/>
+        <Row icon="🔔" label="الإشعارات" onClick={()=>{_dkCustMode="section";_dkCustTab="notif";onClose();setCustDashKey(k=>k+1);setView("custDash");}}/>
+        <Row icon="📅" label="حجوزاتي" onClick={()=>{_dkCustMode="section";_dkCustTab="hist";onClose();setCustDashKey(k=>k+1);setView("custDash");}}/>
+        <Row icon="❤️" label="المفضلة" onClick={()=>{_dkCustMode="section";_dkCustTab="favs";onClose();setCustDashKey(k=>k+1);setView("custDash");}}/>
+        <Row icon="⏰" label="التذكيرات" onClick={()=>{_dkCustMode="section";_dkCustTab="remind";onClose();setCustDashKey(k=>k+1);setView("custDash");}}/>
         {/* حسابي */}
         <div style={{height:8}}/>
         <SecHead label="حسابي"/>
