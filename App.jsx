@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-P";
+const APP_VERSION = "2026.05.30-Q";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -725,7 +725,7 @@ export default function App(){
   const[showDrawer,setShowDrawer]=useState(false);
   const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
   const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light"||t==="lgray")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
-  const darkMode=themeMode==="dark"||themeMode==="dim"||themeMode==="lgray";
+  const darkMode=themeMode==="dark"||themeMode==="dim";
   const setDarkMode=useCallback((v)=>setThemeMode(v?"dark":"light"),[]);
   const[compareSalons,setCompareSalons]=useState([]); // مقارنة صالونين
   const[pullRefreshing,setPullRefreshing]=useState(false); // Pull to refresh
@@ -735,12 +735,12 @@ export default function App(){
   useEffect(()=>{
     const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light",lg=themeMode==="lgray";
     const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#8e8e93":"#f7f7f7";
-    const s1=dk?"#13131f":dm?"#28282f":lg?"#a8a8ad":"#ffffff";
-    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#7c7c81":"#f0f0f2";
-    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#6e6e73":"#e0e0e0";
-    const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#f5f5f5":"#2d2d2d";
-    const tm=dk?"#888888":dm?"#8e8e9e":lg?"#d4d4d8":"#666666";
-    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#7c7c81":"#fafafa";
+    const s1=dk?"#13131f":dm?"#28282f":lg?"#d5d5d9":"#ffffff";
+    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#c2c2c6":"#f0f0f2";
+    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#9e9ea3":"#e0e0e0";
+    const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#1c1c1e":"#2d2d2d";
+    const tm=dk?"#888888":dm?"#8e8e9e":lg?"#6e6e73":"#666666";
+    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#e5e5ea":"#fafafa";
     const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
     setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
     setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
@@ -749,7 +749,7 @@ export default function App(){
     document.body.style.background=shell;
     document.documentElement.classList.remove("dork-dark","dork-dim","dork-light","dork-lgray");
     document.documentElement.classList.add("dork-"+themeMode);
-    try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",lt?"0":"1");}catch{}
+    try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",(lt||lg)?"0":"1");}catch{}
   },[themeMode]);
 
   // Splash Screen - يختفي بعد ثانيتين
@@ -2497,7 +2497,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {salon.shiftEnabled&&<div style={{fontSize:11,color:"var(--p)",background:"var(--pa07)",borderRadius:8,padding:"6px 10px",marginBottom:8}}>⏰ {salon.shift1Start}-{salon.shift1End} | {salon.shift2Start}-{salon.shift2End}</div>}
         <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:7}}>اختر الوقت{form.barberId?` - ${barber?.name||""}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
-        <div style={G.timeGrid}>{slots.map(sl=>{const used=slotUsed(sl);const full=slotFull(sl);const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={full&&!waiting} onClick={()=>!full&&setForm(p=>({...p,time:sl,waitSlot:""}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div><div style={{fontSize:9,marginTop:1,color:full?"#555":sel?"var(--p)":"#666"}}>{full?"محجوز":`${bc-used} متاح`}</div></button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>
+        <div style={G.timeGrid}>{slots.map(sl=>{const used=slotUsed(sl);const full=slotFull(sl);const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={full&&!waiting} onClick={()=>!full&&setForm(p=>({...p,time:sl,waitSlot:""}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div><div style={{fontSize:9,marginTop:1,color:full?"var(--text-muted)":sel?"var(--p)":"var(--text-muted)"}}>{full?"محجوز":`${bc-used} متاح`}</div></button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:11,color:"#f39c12",textAlign:"center"}}>⏳ ستنضم لقائمة الانتظار للساعة <strong>{form.waitSlot}</strong> — سيصلك إشعار عند تحرر الوقت</div>}
         <button style={G.sub} onClick={()=>{if(v2())setStep(3);}}>{form.waitSlot?"التالي (انتظار) →":"التالي →"}</button>
       </div>}
@@ -3632,7 +3632,7 @@ function NearMapView({salons,setView,setSelSalon}){
                       <div style={{fontSize:14,fontWeight:900,color:s.dist<5?"#27ae60":s.dist<20?"var(--p)":"#888"}}>
                         {s.dist<999?`${s.dist.toFixed(1)} كم`:"-"}
                       </div>
-                      <div style={{fontSize:10,color:"#555",marginTop:2}}>⭐ {s.rating}</div>
+                      <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2}}>⭐ {s.rating}</div>
                     </div>
                   </div>
                 </div>
@@ -3931,7 +3931,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           </div>
         )}
         {!_nextBk&&(
-          <div style={{fontSize:11,color:"#444",textAlign:"center",paddingTop:_tdApproved.length>0?8:0}}>
+          <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"center",paddingTop:_tdApproved.length>0?8:0}}>
             {_tdApproved.length>0?"✓ انتهت جميع حجوزات اليوم":"لا توجد حجوزات مؤكدة لهذا اليوم"}
           </div>
         )}
@@ -3952,7 +3952,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
                   style={{background:isOpen?`${color}18`:`${color}0f`,borderRadius:isOpen?"13px 13px 0 0":13,padding:"11px 6px",height:68,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:`1.5px solid ${isOpen?`${color}55`:`${color}1a`}`,borderBottom:isOpen?`1.5px solid ${color}55`:"",textAlign:"center",animationDelay:`${delay}ms`,cursor:"pointer",transition:"all .22s ease",boxShadow:isOpen?`0 0 14px ${color}1a`:"none"}}>
                   <div style={{fontSize:22,fontWeight:900,color,marginBottom:2,lineHeight:1}}>{value}</div>
                   <div style={{fontSize:10,color:isOpen?color:"#666",fontWeight:600,marginBottom:3}}>{label}</div>
-                  <div style={{fontSize:9,color:isOpen?color:"#444",lineHeight:1,transition:"transform .2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▼</div>
+                  <div style={{fontSize:9,color:isOpen?color:"var(--text-muted)",lineHeight:1,transition:"transform .2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▼</div>
                 </div>
               );
             })}
@@ -4160,7 +4160,7 @@ function BookingCalendar({salon,onUpdate}){
       </div>
       {/* days header */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
-        {["أح","إث","ثل","أر","خم","جم","سب"].map(d=><div key={d} style={{textAlign:"center",fontSize:10,color:"#555",padding:"4px 0"}}>{d}</div>)}
+        {["أح","إث","ثل","أر","خم","جم","سب"].map(d=><div key={d} style={{textAlign:"center",fontSize:10,color:"var(--text-muted)",padding:"4px 0"}}>{d}</div>)}
       </div>
       {/* calendar grid */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:12}}>
@@ -4285,7 +4285,7 @@ function MessagesPanel({salon,toast$}){
             <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="owner"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="owner"?"var(--pa25)":"#1a1a2e",border:`1px solid ${m.from==="owner"?"var(--pa4)":"var(--border-ui)"}`}}>
               <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{m.from==="owner"?"أنت":"الإدارة"}</div>
               <div style={{fontSize:13,color:"#fff"}}>{m.text}</div>
-              <div style={{fontSize:9,color:"#555",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}</div>
+              <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}</div>
             </div>
           </div>
         ))}
@@ -4484,7 +4484,7 @@ function OwnerSettings({salon,setSalons,toast$}){
             );
           })}
         </div>
-        <div style={{fontSize:11,color:"#555",marginTop:8}}>اضغط للمعاينة</div>
+        <div style={{fontSize:11,color:"var(--text-muted)",marginTop:8}}>اضغط للمعاينة</div>
       </div>}
 
       {sec==="pin"&&<div style={box}>
@@ -4890,7 +4890,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             <F label="رمز PIN" error={pinErr}><input style={fi(pinErr)} type="password" inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}} maxLength={6}/></F>
             <button style={G.sub} onClick={loginWithPin}>دخول</button>
           </>}
-          <div style={{textAlign:"center",margin:"12px 0",color:"#555",fontSize:12}}>- أو -</div>
+          <div style={{textAlign:"center",margin:"12px 0",color:"var(--text-muted)",fontSize:12}}>- أو -</div>
           <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #4285f4",background:"rgba(66,133,244,.1)",color:"#4285f4",cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={async()=>{
             try{
               setErr("");
@@ -5367,7 +5367,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       <div style={{flex:1}}>
                         <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.title}</div>
                         <div style={{fontSize:12,color:"var(--text-muted)",marginTop:2}}>{n.body}</div>
-                        <div style={{fontSize:10,color:"#555",marginTop:3}}>{n.time}</div>
+                        <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3}}>{n.time}</div>
                       </div>
                     </div>
                   </div>
@@ -5429,7 +5429,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           </div>
 
           <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13}} onClick={deleteAccount}>🗑 حذف الحساب نهائياً</button>
-          <div style={{fontSize:10,color:"#555",marginTop:8,textAlign:"center"}}>تحذير: حذف الحساب لا يمكن التراجع عنه</div>
+          <div style={{fontSize:10,color:"var(--text-muted)",marginTop:8,textAlign:"center"}}>تحذير: حذف الحساب لا يمكن التراجع عنه</div>
         </div>
       )}
 
@@ -5656,7 +5656,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
           {[
             {id:"dark",  icon:"🌙", label:"داكن",        desc:"مريح للليل",     shell:"#0d0d1a", card:"#13131f"},
             {id:"dim",   icon:"⬛", label:"رمادي",       desc:"متوازن وهادئ",   shell:"#1e1e24", card:"#28282f"},
-            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#8e8e93", card:"#a8a8ad"},
+            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#8e8e93", card:"#d5d5d9"},
             {id:"light", icon:"☀️", label:"فاتح",        desc:"واضح للنهار",    shell:"#f7f7f7", card:"#ffffff"},
           ].map(({id,icon,label,desc,shell,card})=>{
             const active=themeMode===id;
@@ -5810,23 +5810,20 @@ const CSS=`
   html.dork-dark input[type=date]::-webkit-calendar-picker-indicator,
   html.dork-dark input[type=time]::-webkit-calendar-picker-indicator,
   html.dork-dim input[type=date]::-webkit-calendar-picker-indicator,
-  html.dork-dim input[type=time]::-webkit-calendar-picker-indicator,
-  html.dork-lgray input[type=date]::-webkit-calendar-picker-indicator,
-  html.dork-lgray input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);}
+  html.dork-dim input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);}
   select option{background:#1a1a2e;color:#f0f0f0;}
-  html.dork-light select option{background:#ffffff;color:#2d2d2d;}
-  html.dork-lgray select option{background:#7c7c81;color:#f5f5f5;}
+  html.dork-light select option,html.dork-lgray select option{background:#ffffff;color:#1c1c1e;}
   html.dork-dim select option{background:#28282f;color:#ededf2;}
   html.dork-light body,html.dork-light body *{scrollbar-color:#e0e0e0 #f7f7f7;}
-  html.dork-lgray body,html.dork-lgray body *{scrollbar-color:#6e6e73 #8e8e93;}
+  html.dork-lgray body,html.dork-lgray body *{scrollbar-color:#9e9ea3 #8e8e93;}
   html.dork-light{color-scheme:light;}
-  html.dork-lgray{color-scheme:dark;}
+  html.dork-lgray{color-scheme:light;}
   html.dork-dim{color-scheme:dark;}
-  html.dork-light input,html.dork-light textarea,html.dork-light select{
+  html.dork-light input,html.dork-light textarea,html.dork-light select,
+  html.dork-lgray input,html.dork-lgray textarea,html.dork-lgray select{
     background:var(--bg-input)!important;color:var(--text-primary)!important;
     border-color:var(--border-ui)!important;}
-  html.dork-dim input,html.dork-dim textarea,html.dork-dim select,
-  html.dork-lgray input,html.dork-lgray textarea,html.dork-lgray select{
+  html.dork-dim input,html.dork-dim textarea,html.dork-dim select{
     background:var(--bg-input)!important;color:var(--text-primary)!important;
     border-color:var(--border-ui)!important;}
   button:active{opacity:.82;}
@@ -5857,12 +5854,12 @@ const G={
 
   section:{padding:"10px 14px 0"},
   badge:{background:"var(--p)",color:"#000",padding:"2px 9px",borderRadius:20,fontSize:11,fontWeight:700},
-  empty:{textAlign:"center",color:"#555",padding:"36px 0",fontSize:13},
+  empty:{textAlign:"center",color:"var(--text-muted)",padding:"36px 0",fontSize:13},
 
   card:{background:"var(--surface-1)",borderRadius:14,padding:13,border:"1px solid var(--border-ui)",boxShadow:"0 4px 16px rgba(0,0,0,.3)"},
   cav:{width:38,height:38,borderRadius:10,background:"var(--grad)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0},
-  tag:{background:"#1e1e30",color:"var(--p)",padding:"2px 8px",borderRadius:20,fontSize:10,border:"1px solid var(--border-ui)"},
-  favBtn:{background:"transparent",border:"none",cursor:"pointer",fontSize:20,color:"#555",padding:0,lineHeight:1},
+  tag:{background:"var(--surface-2)",color:"var(--p)",padding:"2px 8px",borderRadius:20,fontSize:10,border:"1px solid var(--border-ui)"},
+  favBtn:{background:"transparent",border:"none",cursor:"pointer",fontSize:20,color:"var(--text-muted)",padding:0,lineHeight:1},
   favOn:{color:"#e74c3c"},
 
   mapsBtn:{background:"rgba(42,109,217,.12)",border:"1.5px solid #2a6dd9",color:"#6aadff",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600,whiteSpace:"nowrap"},
@@ -5897,7 +5894,7 @@ const G={
 
   timeGrid:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:7,marginBottom:10},
   ts:{padding:"8px 3px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",textAlign:"center"},
-  tsF:{background:"#160a0a",color:"#444",borderColor:"#2a1414",cursor:"not-allowed"},
+  tsF:{background:"var(--surface-2)",color:"var(--text-muted)",borderColor:"var(--border-ui)",cursor:"not-allowed",opacity:.5},
   tsS:{background:"var(--pa15)",borderColor:"var(--p)",color:"var(--p)",fontWeight:700},
 
   bItem:{background:"var(--surface-1)",borderRadius:10,padding:"10px 12px",border:"1px solid var(--border-ui)"},
