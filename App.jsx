@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-C";
+const APP_VERSION = "2026.05.30-D";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1446,7 +1446,7 @@ export default function App(){
         {view==="ownerLogin"&&<OwnerLogin {...sharedProps}/>}
         {view==="ownerDash"&& <OwnerDash  salon={salons.find(s=>s.id===ownerSession)} {...sharedProps}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
-        {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} {...sharedProps}/>}
+        {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
         {view==="nearMap"&&   <NearMapView salons={approvedSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="compare"&&   <CompareSalonsView salons={compareSalons} setView={setView} setSelSalon={setSelSalon}/>}
@@ -4955,7 +4955,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     </div></div>
   );
 }
-function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$,initTab="settings",initSection=false}){
+function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$,initTab="settings",initSection=false,setShowDrawer}){
   const[tab,setTab]=useState(initTab);
   const[sectionMode,setSectionMode]=useState(initSection);
   const[editMode,setEditMode]=useState(false);
@@ -5061,7 +5061,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:"حسابي"}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button>}</div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer(true);}}>← رجوع</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:"حسابي"}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button>}</div>
 
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
       {!sectionMode&&showLocPrompt&&!customer?.locationLat&&(
