@@ -5061,7 +5061,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{if(sectionMode){setSectionMode(false);setTab("settings");}else setView("home");}}>← رجوع</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:"حسابي"}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button>}</div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{if(sectionMode&&tab!=="settings"){setTab("settings");}else setView("home");}}>← رجوع</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:"حسابي"}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button>}</div>
 
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
       {!sectionMode&&showLocPrompt&&!customer?.locationLat&&(
@@ -5116,12 +5116,11 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         </div>
       ))}
 
-      {/* تبويبات — دائماً ظاهرة */}
-      <div style={{...G.tabRow,flexWrap:"nowrap"}}>
+      {!sectionMode&&<div style={{...G.tabRow,flexWrap:"nowrap"}}>
         <button style={{...G.tabBtn,...(tab==="favs"?G.tabOn:{})}} onClick={()=>setTab("favs")}>♥ المفضلة {favSalons.length>0&&<span style={G.notifDot}>{favSalons.length}</span>}</button>
         <button style={{...G.tabBtn,...(tab==="hist"?G.tabOn:{})}} onClick={()=>setTab("hist")}>📋 حجوزاتي</button>
         <button style={{...G.tabBtn,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>⚙ الحساب</button>
-      </div>
+      </div>}
 
       {/* المفضلة */}
       {tab==="favs"&&<>
