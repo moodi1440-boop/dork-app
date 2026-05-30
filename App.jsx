@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-G";
+const APP_VERSION = "2026.05.30-H";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -4992,10 +4992,10 @@ function AttendanceView({customer,salons}){
     attendRate>=70?{label:"✅ منتظم",color:"#27ae60",bg:"rgba(39,174,96,.08)"}:
     {label:"🆕 جديد",color:"#3498db",bg:"rgba(52,152,219,.08)"};
   const filtersArr=[
-    {key:"all",label:"سجلي الكامل",color:"#d4a017"},
+    {key:"attended",label:"ملتزم",color:"#27ae60"},
     {key:"no_show",label:"غير ملتزم",color:"#e74c3c"},
     {key:"pending",label:"قيد الانتظار",color:"#888"},
-    {key:"attended",label:"ملتزم",color:"#27ae60"},
+    {key:"all",label:"سجلي الكامل",color:"#d4a017"},
   ];
   return(
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
