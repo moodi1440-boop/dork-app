@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-Q";
+const APP_VERSION = "2026.05.30-R";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -734,18 +734,33 @@ export default function App(){
   // تطبيق وضع الإضاءة (داكن / رمادي / فاتح / رمادي فاتح)
   useEffect(()=>{
     const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light",lg=themeMode==="lgray";
-    const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#8e8e93":"#f7f7f7";
-    const s1=dk?"#13131f":dm?"#28282f":lg?"#d5d5d9":"#ffffff";
-    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#c2c2c6":"#f0f0f2";
-    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#9e9ea3":"#e0e0e0";
+    const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#f2f2f7":"#f7f7f7";
+    const s1=dk?"#13131f":dm?"#28282f":lg?"#fafafa":"#ffffff";
+    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#e5e5ea":"#f0f0f2";
+    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#c7c7cc":"#e0e0e0";
     const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#1c1c1e":"#2d2d2d";
-    const tm=dk?"#888888":dm?"#8e8e9e":lg?"#6e6e73":"#666666";
-    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#e5e5ea":"#fafafa";
+    const tm=dk?"#888888":dm?"#8e8e9e":lg?"#8e8e93":"#666666";
+    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#f8f8f8":"#fafafa";
     const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
     setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
     setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
     setProp("--shell-bg",shell);setProp("--surface-1",s1);setProp("--surface-2",s2);
     setProp("--border-ui",bor);setProp("--text-primary",tp);setProp("--text-muted",tm);
+    // لوحة ألوان lgray: بدون ذهبي — رمادي فحمي أنيق (Apple style)
+    if(lg){
+      setProp("--p","#3a3a3c");setProp("--pl","#636366");setProp("--pd","#1c1c1e");
+      setProp("--pll","#aeaeb2");setProp("--pr","58,58,60");
+      setProp("--pa5","rgba(58,58,60,.05)");setProp("--pa07","rgba(58,58,60,.07)");
+      setProp("--pa08","rgba(58,58,60,.08)");setProp("--pa12","rgba(58,58,60,.12)");
+      setProp("--pa15","rgba(58,58,60,.15)");setProp("--pa18","rgba(58,58,60,.18)");
+      setProp("--pa2","rgba(58,58,60,.2)");setProp("--pa25","rgba(58,58,60,.25)");
+      setProp("--pa3","rgba(58,58,60,.3)");setProp("--pa4","rgba(58,58,60,.45)");
+      setProp("--grad","linear-gradient(135deg,#3a3a3c,#48484a)");
+      setProp("--grad2","linear-gradient(135deg,#636366,#3a3a3c)");
+      setProp("--p-text","#ffffff");
+    } else {
+      setProp("--p-text","#000000");
+    }
     document.body.style.background=shell;
     document.documentElement.classList.remove("dork-dark","dork-dim","dork-light","dork-lgray");
     document.documentElement.classList.add("dork-"+themeMode);
@@ -842,6 +857,8 @@ export default function App(){
     document.documentElement.style.setProperty("--base-font",sizes[settings.fontSize||"md"]);
   },[settings.fontSize]);
   useEffect(()=>{
+    // lgray لها لوحة ألوانها المستقلة — لا تُطبَّق ألوان الثيم عليها
+    if(themeMode==="lgray") return;
     const t=THEMES[settings.theme]||THEMES.gold;
     const r=document.documentElement.style;
     r.setProperty("--p",  t.primary);
@@ -861,7 +878,8 @@ export default function App(){
     r.setProperty("--pa4",  `rgba(${t.rgb},.45)`);
     r.setProperty("--grad", `linear-gradient(135deg,${t.primary},${t.light})`);
     r.setProperty("--grad2",`linear-gradient(135deg,${t.light},${t.primary})`);
-  },[settings.theme]);
+    r.setProperty("--p-text","#000000");
+  },[settings.theme,themeMode]);
 
   const saveAppSettings=useCallback(async(social,uiPatch)=>{
     const S={...DEFAULT_SOCIAL_LINKS,...(social??socialLinks)};
@@ -5656,7 +5674,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
           {[
             {id:"dark",  icon:"🌙", label:"داكن",        desc:"مريح للليل",     shell:"#0d0d1a", card:"#13131f"},
             {id:"dim",   icon:"⬛", label:"رمادي",       desc:"متوازن وهادئ",   shell:"#1e1e24", card:"#28282f"},
-            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#8e8e93", card:"#d5d5d9"},
+            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#f2f2f7", card:"#fafafa"},
             {id:"light", icon:"☀️", label:"فاتح",        desc:"واضح للنهار",    shell:"#f7f7f7", card:"#ffffff"},
           ].map(({id,icon,label,desc,shell,card})=>{
             const active=themeMode===id;
@@ -5844,7 +5862,7 @@ const G={
   roleBtn:{width:36,height:36,borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--text-muted)",cursor:"pointer",fontSize:16,position:"relative",display:"flex",alignItems:"center",justifyContent:"center"},
   roleBtnActive:{border:"1.5px solid var(--p)",color:"var(--p)",background:"rgba(var(--pr),.1)"},
   roleDot:{position:"absolute",top:-4,right:-4,background:"#e74c3c",color:"#fff",borderRadius:"50%",width:16,height:16,fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"},
-  registerTopBtn:{background:"var(--grad)",color:"#000",border:"none",padding:"7px 13px",borderRadius:9,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"'Cairo',sans-serif"},
+  registerTopBtn:{background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"7px 13px",borderRadius:9,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"'Cairo',sans-serif"},
 
   fRow:{display:"flex",alignItems:"center",background:"var(--surface-1)",borderRadius:9,border:"1.5px solid var(--border-ui)",padding:"7px 11px",gap:7},
   fSel:{flex:1,background:"transparent",border:"none",color:"var(--text-primary)",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
@@ -5864,7 +5882,7 @@ const G={
 
   mapsBtn:{background:"rgba(42,109,217,.12)",border:"1.5px solid #2a6dd9",color:"#6aadff",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600,whiteSpace:"nowrap"},
   pageBtn:{background:"rgba(100,60,180,.15)",border:"1.5px solid #7c4dff",color:"#b39ddb",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600,whiteSpace:"nowrap"},
-  bookBtn:{flex:1,background:"var(--grad)",color:"#000",border:"none",padding:"8px 0",borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif"},
+  bookBtn:{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"8px 0",borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif"},
   delBtn:{background:"rgba(192,57,43,.15)",border:"1.5px solid #c0392b",color:"#e74c3c",padding:"5px 9px",borderRadius:8,cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600},
   accBtn:{flex:1,background:"rgba(39,174,96,.15)",border:"1.5px solid #27ae60",color:"#4caf50",padding:"8px 0",borderRadius:9,cursor:"pointer",fontSize:13,fontFamily:"'Cairo',sans-serif",fontWeight:700},
   rejBtn:{flex:1,background:"rgba(192,57,43,.15)",border:"1.5px solid #c0392b",color:"#e74c3c",padding:"8px 0",borderRadius:9,cursor:"pointer",fontSize:13,fontFamily:"'Cairo',sans-serif",fontWeight:700},
@@ -5876,7 +5894,7 @@ const G={
   fc:{background:"var(--surface-1)",borderRadius:13,padding:14,border:"1px solid var(--border-ui)",marginBottom:10},
   sl2:{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:9,paddingBottom:5,borderBottom:"1px solid var(--border-ui)"},
   err:{color:"#e74c3c",fontSize:11,marginTop:2},
-  sub:{width:"100%",background:"var(--grad)",color:"#000",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",marginTop:4,fontFamily:"'Cairo',sans-serif"},
+  sub:{width:"100%",background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",marginTop:4,fontFamily:"'Cairo',sans-serif"},
 
   salonBadge:{display:"flex",alignItems:"center",gap:8,background:"rgba(var(--pr),.06)",border:"1px solid var(--pa2)",borderRadius:10,padding:"10px 12px",marginBottom:11},
   tabRow:{display:"flex",gap:6,marginBottom:11},
