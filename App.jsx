@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 
+// رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
+const APP_VERSION = "2026.05.30-A";
+
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
   static getDerivedStateFromError(e){return{err:e};}
@@ -1715,6 +1718,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <button onClick={()=>setShowDel(true)} style={{width:"100%",padding:"14px 20px",background:"linear-gradient(135deg,rgba(231,76,60,.15),rgba(231,76,60,.08))",border:"none",borderTop:"1px solid #181828",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"center",WebkitAppearance:"none",appearance:"none"}}>
           🗑 حذف الحساب نهائياً
         </button>
+        <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"#555",fontFamily:"monospace"}}>الإصدار {APP_VERSION}</div>
         <div style={{height:40}}/>
       </div>
       {/* نوافذ تسجيل الخروج وحذف الحساب — خارج الـ drawer لتجنب تأثير transform */}
