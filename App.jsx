@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-R";
+const APP_VERSION = "2026.05.30-S";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -734,19 +734,19 @@ export default function App(){
   // تطبيق وضع الإضاءة (داكن / رمادي / فاتح / رمادي فاتح)
   useEffect(()=>{
     const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light",lg=themeMode==="lgray";
-    const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#f2f2f7":"#f7f7f7";
-    const s1=dk?"#13131f":dm?"#28282f":lg?"#fafafa":"#ffffff";
-    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#e5e5ea":"#f0f0f2";
-    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#c7c7cc":"#e0e0e0";
+    const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#8e8e93":"#f7f7f7";
+    const s1=dk?"#13131f":dm?"#28282f":lg?"#e8e8ed":"#ffffff";
+    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#d1d1d6":"#f0f0f2";
+    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#aeaeb2":"#e0e0e0";
     const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#1c1c1e":"#2d2d2d";
-    const tm=dk?"#888888":dm?"#8e8e9e":lg?"#8e8e93":"#666666";
-    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#f8f8f8":"#fafafa";
+    const tm=dk?"#888888":dm?"#8e8e9e":lg?"#3a3a3c":"#666666";
+    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#dadadf":"#fafafa";
     const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
     setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
     setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
     setProp("--shell-bg",shell);setProp("--surface-1",s1);setProp("--surface-2",s2);
     setProp("--border-ui",bor);setProp("--text-primary",tp);setProp("--text-muted",tm);
-    // لوحة ألوان lgray: بدون ذهبي — رمادي فحمي أنيق (Apple style)
+    // لوحة ألوان lgray: بدون ذهبي — رمادي فضي متعدد الدرجات
     if(lg){
       setProp("--p","#3a3a3c");setProp("--pl","#636366");setProp("--pd","#1c1c1e");
       setProp("--pll","#aeaeb2");setProp("--pr","58,58,60");
@@ -755,9 +755,9 @@ export default function App(){
       setProp("--pa15","rgba(58,58,60,.15)");setProp("--pa18","rgba(58,58,60,.18)");
       setProp("--pa2","rgba(58,58,60,.2)");setProp("--pa25","rgba(58,58,60,.25)");
       setProp("--pa3","rgba(58,58,60,.3)");setProp("--pa4","rgba(58,58,60,.45)");
-      setProp("--grad","linear-gradient(135deg,#3a3a3c,#48484a)");
-      setProp("--grad2","linear-gradient(135deg,#636366,#3a3a3c)");
-      setProp("--p-text","#ffffff");
+      setProp("--grad","linear-gradient(135deg,#aeaeb2,#c7c7cc)");
+      setProp("--grad2","linear-gradient(135deg,#c7c7cc,#aeaeb2)");
+      setProp("--p-text","#1c1c1e");
     } else {
       setProp("--p-text","#000000");
     }
@@ -5674,7 +5674,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
           {[
             {id:"dark",  icon:"🌙", label:"داكن",        desc:"مريح للليل",     shell:"#0d0d1a", card:"#13131f"},
             {id:"dim",   icon:"⬛", label:"رمادي",       desc:"متوازن وهادئ",   shell:"#1e1e24", card:"#28282f"},
-            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#f2f2f7", card:"#fafafa"},
+            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#8e8e93", card:"#e8e8ed"},
             {id:"light", icon:"☀️", label:"فاتح",        desc:"واضح للنهار",    shell:"#f7f7f7", card:"#ffffff"},
           ].map(({id,icon,label,desc,shell,card})=>{
             const active=themeMode===id;
