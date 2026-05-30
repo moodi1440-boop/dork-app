@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-W";
+const APP_VERSION = "2026.05.30-X";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -15,7 +15,7 @@ class ErrorBoundary extends React.Component {
         <div style={{color:"#e74c3c",fontSize:14,fontWeight:700}}>خطأ في التطبيق</div>
         <div style={{color:"var(--text-muted)",fontSize:11,background:"var(--surface-2)",padding:"12px 16px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr"}}>{String(this.state.err)}</div>
         {this.state.info&&<div style={{color:"#666",fontSize:9,background:"#111",padding:"8px 12px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr",maxHeight:120,overflow:"auto"}}>{this.state.info}</div>}
-        <button onClick={()=>window.location.reload()} style={{background:"#d4a017",color:"#000",border:"none",borderRadius:8,padding:"8px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer"}}>إعادة تحميل</button>
+        <button onClick={()=>window.location.reload()} style={{background:"var(--gold)",color:"#000",border:"none",borderRadius:8,padding:"8px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer"}}>إعادة تحميل</button>
       </div>
     );
     return this.props.children;
@@ -303,13 +303,13 @@ const THEMES = {
 const BACKGROUNDS=[
   {id:"none",    label:"بلا خلفية",    emoji:"⬛", style:{background:"var(--bg-input)",backgroundImage:"none"}},
   {id:"stars",   label:"نجوم",          emoji:"✨", style:{background:"radial-gradient(ellipse at top,#1a1a3a 0%,#0d0d1a 70%)",backgroundImage:"radial-gradient(circle,rgba(255,255,255,.08) 1px,transparent 1px)",backgroundSize:"40px 40px"}},
-  {id:"grid",    label:"شبكة",          emoji:"🔲", style:{background:"var(--bg-input)",backgroundImage:"linear-gradient(rgba(212,160,23,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(212,160,23,.05) 1px,transparent 1px)",backgroundSize:"30px 30px"}},
+  {id:"grid",    label:"شبكة",          emoji:"🔲", style:{background:"var(--bg-input)",backgroundImage:"linear-gradient(rgba(var(--gold-rgb),.05) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--gold-rgb),.05) 1px,transparent 1px)",backgroundSize:"30px 30px"}},
   {id:"waves",   label:"أمواج",         emoji:"🌊", style:{background:"linear-gradient(180deg,#0d0d1a 0%,#0a1628 50%,#0d0d1a 100%)",backgroundImage:"none"}},
   {id:"marble",  label:"رخام",          emoji:"🪨", style:{background:"linear-gradient(135deg,#111118 25%,#1a1a2a 25%,#1a1a2a 50%,#111118 50%,#111118 75%,#1a1a2a 75%)",backgroundSize:"20px 20px",backgroundImage:"none"}},
-  {id:"circuit", label:"دوائر",         emoji:"🔌", style:{background:"var(--bg-input)",backgroundImage:"radial-gradient(circle at 50% 50%,rgba(212,160,23,.03) 0%,transparent 60%)"}},
+  {id:"circuit", label:"دوائر",         emoji:"🔌", style:{background:"var(--bg-input)",backgroundImage:"radial-gradient(circle at 50% 50%,rgba(var(--gold-rgb),.03) 0%,transparent 60%)"}},
   {id:"royal",   label:"ملكي",          emoji:"👑", style:{
     background:"linear-gradient(160deg,#12081f 0%,#1a0a28 45%,#0f0818 100%)",
-    backgroundImage:"radial-gradient(ellipse 90% 45% at 50% -15%, rgba(212,160,23,.18), transparent), radial-gradient(circle at 100% 100%, rgba(91,33,182,.14), transparent 55%)",
+    backgroundImage:"radial-gradient(ellipse 90% 45% at 50% -15%, rgba(var(--gold-rgb),.18), transparent), radial-gradient(circle at 100% 100%, rgba(91,33,182,.14), transparent 55%)",
   }},
   {id:"tech",    label:"تقني",          emoji:"⚡", style:{
     background:"#050a12",
@@ -318,7 +318,7 @@ const BACKGROUNDS=[
   }},
   {id:"goldMarble",label:"رخام ذهبي",   emoji:"✦", style:{
     background:"linear-gradient(118deg,#141210 0%,#1c1812 30%,#12100c 60%,#1a1612 100%)",
-    backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(212,160,23,.05) 3px,rgba(212,160,23,.05) 6px), radial-gradient(ellipse 70% 50% at 25% 15%, rgba(240,192,64,.14), transparent 55%)",
+    backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(var(--gold-rgb),.05) 3px,rgba(var(--gold-rgb),.05) 6px), radial-gradient(ellipse 70% 50% at 25% 15%, rgba(var(--gold-rgb),.14), transparent 55%)",
   }},
 ];
 
@@ -330,7 +330,7 @@ const BG_LIGHT_STYLES={
   waves:{background:"linear-gradient(180deg,#f0f2f8 0%,#e2e8f4 50%,#f0f2f8 100%)",backgroundImage:"none"},
   marble:{background:"linear-gradient(135deg,#f8f7f5 25%,#ece8e4 25%,#ece8e4 50%,#f8f7f5 50%,#f8f7f5 75%,#ece8e4 75%)",backgroundSize:"20px 20px",backgroundImage:"none"},
   circuit:{background:"#eef1f8",backgroundImage:"radial-gradient(circle at 50% 40%,rgba(59,130,246,.06) 0%,transparent 65%)"},
-  royal:{background:"linear-gradient(165deg,#ede8f5 0%,#e8e4f2 50%,#f2f0fa 100%)",backgroundImage:"radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,.12), transparent), radial-gradient(circle at 100% 100%, rgba(212,160,23,.08), transparent 50%)"},
+  royal:{background:"linear-gradient(165deg,#ede8f5 0%,#e8e4f2 50%,#f2f0fa 100%)",backgroundImage:"radial-gradient(ellipse 80% 40% at 50% 0%, rgba(99,102,241,.12), transparent), radial-gradient(circle at 100% 100%, rgba(var(--gold-rgb),.08), transparent 50%)"},
   tech:{background:"#f0f4fa",backgroundImage:"linear-gradient(rgba(14,116,144,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(14,116,144,.05) 1px,transparent 1px), radial-gradient(ellipse 100% 35% at 50% 0%, rgba(56,189,248,.1), transparent 55%)",backgroundSize:"22px 22px,22px 22px,100% 100%"},
   goldMarble:{background:"linear-gradient(120deg,#faf8f5 0%,#f3efe8 45%,#faf7f2 100%)",backgroundImage:"repeating-linear-gradient(-35deg,transparent,transparent 3px,rgba(166,124,41,.06) 3px,rgba(166,124,41,.06) 6px), radial-gradient(ellipse 65% 45% at 30% 10%, rgba(201,162,39,.12), transparent 50%)"},
 };
@@ -398,7 +398,7 @@ function getCustomerClassification(customer){
   const lateCancels=history.filter(h=>h.status==="cancelled").length;
   if(lateCancels>=3||noShows>=3)return{label:"⚠️ غير ملتزم",color:"#e74c3c",key:"unreliable"};
   if(total===0)return{label:"🆕 جديد",color:"#3498db",key:"new"};
-  if(completed>=5&&lateCancels===0)return{label:"🌟 مميز",color:"#d4a017",key:"vip"};
+  if(completed>=5&&lateCancels===0)return{label:"🌟 مميز",color:"var(--gold)",key:"vip"};
   if(completed>=2&&lateCancels<=1)return{label:"✅ منتظم",color:"#27ae60",key:"regular"};
   return{label:"🆕 جديد",color:"#3498db",key:"new"};
 }
@@ -759,9 +759,13 @@ export default function App(){
       setProp("--grad2","linear-gradient(135deg,#d0cecd,#b8b6b4)");
       setProp("--p-text","#1c1c1e");
       setProp("--chip-border","#5a5a5c");
+      setProp("--gold","var(--p)");
+      setProp("--gold-rgb","28,28,30");
     } else {
       setProp("--p-text","#000000");
       setProp("--chip-border",bor);
+      setProp("--gold","#d4a017");
+      setProp("--gold-rgb","212,160,23");
     }
     document.body.style.background=shell;
     document.documentElement.classList.remove("dork-dark","dork-dim","dork-light","dork-lgray");
@@ -1209,10 +1213,10 @@ export default function App(){
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#09112e 0%,#0d1535 45%,#111d42 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",gap:0}}>
       {/* Full brand logo as text */}
       <div style={{animation:"splashPulse 1.4s ease-in-out infinite",marginBottom:28}}>
-        <div style={{fontSize:72,fontWeight:900,color:"#d4a017",filter:"drop-shadow(0 4px 32px rgba(212,160,23,.5))",letterSpacing:2}}>دورك</div>
+        <div style={{fontSize:72,fontWeight:900,color:"var(--gold)",filter:"drop-shadow(0 4px 32px rgba(var(--gold-rgb),.5))",letterSpacing:2}}>دورك</div>
       </div>
       {/* Loading spinner */}
-      <div style={{width:36,height:36,border:"3px solid rgba(212,160,23,.15)",borderTop:"3px solid #d4a017",borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
+      <div style={{width:36,height:36,border:"3px solid rgba(var(--gold-rgb),.15)",borderTop:"3px solid var(--gold)",borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
       <style dangerouslySetInnerHTML={{__html:`
         @keyframes splashPulse{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.04) translateY(-4px)}}
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -1615,7 +1619,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>القائمة</span>
         </div>
         {/* بطاقة العميل */}
-        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,var(--surface-1),var(--surface-2))",borderRadius:16,padding:16,border:`1.5px solid ${themeMode==="lgray"?"var(--border-ui)":"#d4a017"}`,position:"relative",boxShadow:`0 4px 16px ${themeMode==="lgray"?"rgba(0,0,0,0.12)":"rgba(212,160,23,0.1)"}`}}>
+        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,var(--surface-1),var(--surface-2))",borderRadius:16,padding:16,border:`1.5px solid ${themeMode==="lgray"?"var(--border-ui)":"#d4a017"}`,position:"relative",boxShadow:`0 4px 16px ${themeMode==="lgray"?"rgba(0,0,0,0.12)":"rgba(var(--gold-rgb),.1)"}`}}>
           <div style={themeMode==="lgray"?{position:"absolute",top:12,left:12,background:"#e5e5ea",border:"1px solid #aeaeb2",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#3a3a3c",boxShadow:"0 2px 8px rgba(0,0,0,.22)"}:{position:"absolute",top:12,left:12,background:`${cl.color}22`,border:`1px solid ${cl.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:cl.color}}>{cl.label}</div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>👤 الاسم: <span style={{color:themeMode==="lgray"?"var(--p)":"#f0c040"}}>{customer.name}</span></div>
@@ -1761,14 +1765,14 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
       )}
       {showDel&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowDel(false)}>
-          <div style={{width:"100%",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #d4a017",borderBottom:"none",boxShadow:"0 -8px 32px rgba(212,160,23,0.15)"}} onClick={e=>e.stopPropagation()}>
+          <div style={{width:"100%",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--gold)",borderBottom:"none",boxShadow:"0 -8px 32px rgba(var(--gold-rgb),.15)"}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
               <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
               <div style={{fontSize:16,fontWeight:900,color:"var(--text-primary)",marginBottom:6}}>حذف الحساب نهائياً</div>
               <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
             </div>
-            <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"var(--text-primary)",lineHeight:1.8}}>
-              <div style={{marginBottom:6,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
+            <div style={{background:"rgba(var(--gold-rgb),.08)",border:"1px solid rgba(var(--gold-rgb),.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"var(--text-primary)",lineHeight:1.8}}>
+              <div style={{marginBottom:6,fontWeight:700,color:"var(--gold)"}}>سيتم حذف:</div>
               <div>✗ حسابك بشكل نهائي</div>
               <div>✗ جميع معلوماتك الشخصية</div>
               <div>✗ سجل حجوزاتك</div>
@@ -1791,8 +1795,8 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>🔐 تغيير رمز PIN</div>
               <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center",marginBottom:20}}>اختر عدد الأرقام</div>
               <div style={{display:"flex",gap:12,marginBottom:16}}>
-                <button onClick={()=>{setEditPinLength(4);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===4?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>4 أرقام</button>
-                <button onClick={()=>{setEditPinLength(6);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===6?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>6 أرقام</button>
+                <button onClick={()=>{setEditPinLength(4);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===4?"rgba(var(--gold-rgb),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>4 أرقام</button>
+                <button onClick={()=>{setEditPinLength(6);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===6?"rgba(var(--gold-rgb),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>6 أرقام</button>
               </div>
               <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);}} style={{width:"100%",padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>إلغاء</button>
             </>:editPinStep==="enter"?<>
@@ -1822,8 +1826,8 @@ function EntryView({setView}){
     <div style={{minHeight:"100vh",background:"var(--shell-bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 28px",gap:40}}>
       <img src="/logo.png" alt="DORK" style={{width:"82%",maxWidth:320,objectFit:"contain"}}/>
       <div style={{width:"100%",maxWidth:340,display:"flex",flexDirection:"column",gap:16}}>
-        <button onClick={()=>setView("ownerLogin")} style={{width:"100%",padding:"17px 0",borderRadius:14,border:"2px solid #d4a017",background:"transparent",color:"#d4a017",fontSize:18,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>✂️ دخول كصالون</button>
-        <button onClick={()=>setView("custLogin")} style={{width:"100%",padding:"17px 0",borderRadius:14,border:"2px solid #d4a017",background:"rgba(212,160,23,.12)",color:"#d4a017",fontSize:18,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>👤 دخول كعميل</button>
+        <button onClick={()=>setView("ownerLogin")} style={{width:"100%",padding:"17px 0",borderRadius:14,border:"2px solid var(--gold)",background:"transparent",color:"var(--gold)",fontSize:18,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>✂️ دخول كصالون</button>
+        <button onClick={()=>setView("custLogin")} style={{width:"100%",padding:"17px 0",borderRadius:14,border:"2px solid var(--gold)",background:"rgba(var(--gold-rgb),.12)",color:"var(--gold)",fontSize:18,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>👤 دخول كعميل</button>
       </div>
     </div>
   );
@@ -1844,8 +1848,8 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         </button>
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-          <span style={{fontSize:19,fontWeight:900,color:"#d4a017",letterSpacing:0.5}}>احجز</span>
-          <span style={{fontSize:32,fontWeight:900,color:"#d4a017",letterSpacing:1}}>DORK</span>
+          <span style={{fontSize:19,fontWeight:900,color:"var(--gold)",letterSpacing:0.5}}>احجز</span>
+          <span style={{fontSize:32,fontWeight:900,color:"var(--gold)",letterSpacing:1}}>DORK</span>
         </div>
       </div>
     );
@@ -1860,8 +1864,8 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         <button style={{...G.roleBtn,background:"var(--pa12)",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>🏠</button>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-        <span style={{fontSize:19,fontWeight:900,color:"#d4a017",letterSpacing:0.5}}>احجز</span>
-        <span style={{fontSize:32,fontWeight:900,color:"#d4a017",letterSpacing:1}}>DORK</span>
+        <span style={{fontSize:19,fontWeight:900,color:"var(--gold)",letterSpacing:0.5}}>احجز</span>
+        <span style={{fontSize:32,fontWeight:900,color:"var(--gold)",letterSpacing:1}}>DORK</span>
       </div>
     </div>
   );
@@ -1875,9 +1879,9 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
   const [activeIdx,setActiveIdx]=useState(0);
   const scrollRef=useRef(null);
   const timerRef=useRef(null);
-  const gold="#d4a017";
-  const goldStar="#e8c04a";
-  const dimStar="rgba(212,160,23,.18)";
+  const gold="var(--gold)";
+  const goldStar="var(--gold)";
+  const dimStar="rgba(var(--gold-rgb),.18)";
   const shown=reviews.slice(0,16);
 
   const scrollTo=idx=>{
@@ -1912,7 +1916,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
     :0;
 
   return(
-    <div style={{padding:"16px 0 8px",borderTop:"1px solid rgba(212,160,23,.1)"}}>
+    <div style={{padding:"16px 0 8px",borderTop:"1px solid rgba(var(--gold-rgb),.1)"}}>
       {/* ── Header row ── */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",marginBottom:12}}>
         <div>
@@ -1920,7 +1924,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
           <div style={{fontSize:10,color:gold,opacity:.85}}>تجارب حقيقية من زوار الصالونات</div>
         </div>
         {reviews.length>0&&(
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 10px",borderRadius:10,background:"rgba(212,160,23,.07)",border:"1px solid rgba(212,160,23,.18)"}}>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 10px",borderRadius:10,background:"rgba(var(--gold-rgb),.07)",border:"1px solid rgba(var(--gold-rgb),.18)"}}>
             <span style={{fontSize:14,fontWeight:900,color:goldStar,lineHeight:1}}>{globalAvg}</span>
             <span style={{fontSize:8,color:"var(--text-muted)",marginTop:1}}>{reviews.length} تقييم</span>
           </div>
@@ -1929,7 +1933,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 
       {/* ── Carousel track ── */}
       {reviews.length===0?(
-        <div style={{margin:"0 16px",padding:"18px 14px",borderRadius:14,background:"var(--shell-bg)",border:"1px dashed rgba(212,160,23,.2)",textAlign:"center"}}>
+        <div style={{margin:"0 16px",padding:"18px 14px",borderRadius:14,background:"var(--shell-bg)",border:"1px dashed rgba(var(--gold-rgb),.2)",textAlign:"center"}}>
           <div style={{fontSize:12,color:"var(--text-muted)"}}>لا توجد تقييمات بعد. قيّم زيارتك من حسابك.</div>
         </div>
       ):(
@@ -1954,14 +1958,14 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
                   flex:"0 0 calc(88% - 24px)",
                   maxWidth:310,
                   background:"var(--surface-1)",
-                  border:`1px solid rgba(212,160,23,${i===activeIdx?.42:.18})`,
+                  border:`1px solid rgba(var(--gold-rgb),${i===activeIdx?.42:.18})`,
                   borderRadius:16,
                   padding:"14px 14px 12px",
                   transition:"border-color .3s",
                   display:"flex",flexDirection:"column",gap:0,
                 }}>
                 {/* Salon name */}
-                <div style={{fontSize:12,fontWeight:800,color:"#d4a017",marginBottom:8,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:.2}}>
+                <div style={{fontSize:12,fontWeight:800,color:"var(--gold)",marginBottom:8,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:.2}}>
                   ✂ {r.salonName}
                 </div>
                 {/* Customer + stars */}
@@ -1976,19 +1980,19 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
                   </div>
                 </div>
                 {/* Divider */}
-                <div style={{height:1,background:"rgba(212,160,23,.08)",marginBottom:10}}/>
+                <div style={{height:1,background:"rgba(var(--gold-rgb),.08)",marginBottom:10}}/>
                 {/* Comment */}
                 <div style={{fontSize:11,color:"var(--text-muted)",fontStyle:r.comment?"italic":"normal",lineHeight:1.55,flex:1,minHeight:32}}>
                   {r.comment?`«${r.comment}»`:"بدون تعليق نصي"}
                 </div>
                 {/* Date */}
-                <div style={{fontSize:9,color:"var(--text-muted)",marginTop:8,paddingTop:6,borderTop:"1px solid rgba(212,160,23,.06)"}}>
+                <div style={{fontSize:9,color:"var(--text-muted)",marginTop:8,paddingTop:6,borderTop:"1px solid rgba(var(--gold-rgb),.06)"}}>
                   📅 {r.date||"—"}{r.time?` · ${r.time}`:""}
                 </div>
                 {/* عرض الكل — minimalist gold-border button */}
                 <button
                   onClick={e=>{e.stopPropagation();openSalon(r.salonId);}}
-                  style={{marginTop:12,width:"100%",background:"transparent",border:"1px solid rgba(212,160,23,.45)",color:gold,borderRadius:8,padding:"7px 0",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:700,letterSpacing:.4}}>
+                  style={{marginTop:12,width:"100%",background:"transparent",border:"1px solid rgba(var(--gold-rgb),.45)",color:gold,borderRadius:8,padding:"7px 0",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:700,letterSpacing:.4}}>
                   عرض الكل
                 </button>
               </div>
@@ -1999,7 +2003,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
           {shown.length>1&&(
             <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:10,padding:"0 16px"}}>
               {shown.map((_,i)=>(
-                <button key={i} onClick={()=>scrollTo(i)} style={{width:i===activeIdx?18:6,height:6,borderRadius:3,background:i===activeIdx?gold:"rgba(212,160,23,.2)",border:"none",cursor:"pointer",padding:0,transition:"width .3s,background .3s"}}/>
+                <button key={i} onClick={()=>scrollTo(i)} style={{width:i===activeIdx?18:6,height:6,borderRadius:3,background:i===activeIdx?gold:"rgba(var(--gold-rgb),.2)",border:"none",cursor:"pointer",padding:0,transition:"width .3s,background .3s"}}/>
               ))}
             </div>
           )}
@@ -2108,9 +2112,9 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       {/* Region Select - قائمة متدرجة */}
       {showRegionSelect&&(()=>{
         const villages=[...new Set(approvedSalons.filter(s=>s.center===fCenter&&s.village).map(s=>s.village))];
-        const selStyle=(active)=>({flex:1,minWidth:72,height:32,borderRadius:8,border:`1.5px solid ${active?"#d4a017":"#333"}`,background:"rgba(12,12,22,.97)",color:active?"#d4a017":"#777",fontSize:11,fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:"0 6px",cursor:"pointer",outline:"none"});
+        const selStyle=(active)=>({flex:1,minWidth:72,height:32,borderRadius:8,border:`1.5px solid ${active?"var(--gold)":"#333"}`,background:"rgba(12,12,22,.97)",color:active?"#d4a017":"#777",fontSize:11,fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:"0 6px",cursor:"pointer",outline:"none"});
         return(
-          <div style={{background:"rgba(0,0,0,.5)",borderBottom:"1px solid rgba(212,160,23,.15)",padding:"8px 10px",display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
+          <div style={{background:"rgba(0,0,0,.5)",borderBottom:"1px solid rgba(var(--gold-rgb),.15)",padding:"8px 10px",display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
             <button onClick={()=>{setShowRegionSelect(false);setFRegion("");setFGov("");setFCenter("");setFVillage("");}} style={{background:"transparent",border:"none",color:"var(--text-muted)",fontSize:15,cursor:"pointer",padding:"2px 4px",flexShrink:0,lineHeight:1}}>✕</button>
             <select value={fRegion||""} onChange={e=>{setFRegion(e.target.value);setFGov("");setFCenter("");setFVillage("");}} style={selStyle(!!fRegion)}>
               <option value="">المنطقة</option>
@@ -2173,7 +2177,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
       {/* البحث */}
       {showSearch&&(
-      <div style={{padding:"10px 14px",background:"rgba(0,0,0,.4)",borderBottom:"1px solid rgba(212,160,23,.1)",animation:"slideDown 0.2s ease-out"}}>
+      <div style={{padding:"10px 14px",background:"rgba(0,0,0,.4)",borderBottom:"1px solid rgba(var(--gold-rgb),.1)",animation:"slideDown 0.2s ease-out"}}>
         <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid var(--border-ui)",padding:"8px 12px",gap:6,cursor:"text"}}>
           <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
           <input autoFocus style={{flex:1,background:"transparent",border:"none",color:"var(--text-primary)",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl",WebkitAppearance:"none",appearance:"none"}} placeholder="ابحث..." value={search} onChange={e=>setSearch(e.target.value)} onBlur={()=>{if(!search)setShowSearch(false);}}/>
@@ -2231,8 +2235,8 @@ function LocFilter({icon,label,value,onChange,options,all}){
 //  SALON REVIEWS PAGE
 // ==============================================
 function SalonReviewsView({salon,reviews,setView}){
-  const gold="#d4a017";
-  const goldStar="#e8c04a";
+  const gold="var(--gold)";
+  const goldStar="var(--gold)";
   const salonReviews=useMemo(()=>{
     if(!reviews||!salon)return[];
     const id=Number(salon.id);
@@ -2250,14 +2254,14 @@ function SalonReviewsView({salon,reviews,setView}){
           <h2 style={{...G.ft,flex:1}}>آراء العملاء</h2>
         </div>
         {/* ملخص الصالون */}
-        <div style={{background:"rgba(212,160,23,.07)",border:"1px solid rgba(212,160,23,.18)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+        <div style={{background:"rgba(var(--gold-rgb),.07)",border:"1px solid rgba(var(--gold-rgb),.18)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
           <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>✂ {salon?.name}</div>
           {salonReviews.length>0?(
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <span style={{fontSize:28,fontWeight:900,color:goldStar,lineHeight:1}}>{avg}</span>
               <div>
                 <div style={{display:"flex",gap:2,marginBottom:2}}>
-                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:16,color:n<=Math.round(avg)?goldStar:"rgba(212,160,23,.2)"}}>★</span>)}
+                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:16,color:n<=Math.round(avg)?goldStar:"rgba(var(--gold-rgb),.2)"}}>★</span>)}
                 </div>
                 <div style={{fontSize:10,color:"var(--text-muted)"}}>{salonReviews.length} تقييم</div>
               </div>
@@ -2273,14 +2277,14 @@ function SalonReviewsView({salon,reviews,setView}){
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.comment?6:0}}>
                 <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700}}>👤 {r.name}</span>
                 <div style={{display:"flex",gap:1}}>
-                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(212,160,23,.18)"}}>★</span>)}
+                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(var(--gold-rgb),.18)"}}>★</span>)}
                 </div>
               </div>
               {r.comment&&<div style={{fontSize:12,color:"var(--text-muted)",fontStyle:"italic",lineHeight:1.5,marginBottom:5}}>«{r.comment}»</div>}
               {r.date&&<div style={{fontSize:9,color:"var(--text-muted)",marginBottom:r.ownerReply?8:0}}>📅 {r.date}</div>}
               {r.ownerReply&&(
-                <div style={{marginTop:6,padding:"8px 10px",background:"rgba(212,160,23,.07)",borderRight:"3px solid #d4a017",borderRadius:"0 8px 8px 0"}}>
-                  <div style={{fontSize:10,color:"#d4a017",fontWeight:700,marginBottom:3}}>✂ رد الصالون</div>
+                <div style={{marginTop:6,padding:"8px 10px",background:"rgba(var(--gold-rgb),.07)",borderRight:"3px solid #d4a017",borderRadius:"0 8px 8px 0"}}>
+                  <div style={{fontSize:10,color:"var(--gold)",fontWeight:700,marginBottom:3}}>✂ رد الصالون</div>
                   <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.5}}>{r.ownerReply}</div>
                 </div>
               )}
@@ -2316,7 +2320,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
         <div style={{display:"flex",gap:8,alignItems:"center",flex:1}}>
           {/* Scissors Icon - Yellow Background */}
-          <div style={{background:"#d4a017",width:40,height:40,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flex:"0 0 auto"}}>✂</div>
+          <div style={{background:"var(--gold)",width:40,height:40,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flex:"0 0 auto"}}>✂</div>
 
           {/* Name */}
           <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div>
@@ -2328,8 +2332,8 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
         </div>
 
         {/* Rating on Right - Clickable */}
-        <button onClick={onViewReviews} style={{border:"1.5px solid rgba(212,160,23,.4)",borderRadius:10,padding:"6px 10px",minWidth:"65px",textAlign:"center",flex:"0 0 auto",background:"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-          <div style={{fontSize:16,fontWeight:900,color:"#d4a017"}}>⭐ {displayRating}</div>
+        <button onClick={onViewReviews} style={{border:"1.5px solid rgba(var(--gold-rgb),.4)",borderRadius:10,padding:"6px 10px",minWidth:"65px",textAlign:"center",flex:"0 0 auto",background:"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+          <div style={{fontSize:16,fontWeight:900,color:"var(--gold)"}}>⭐ {displayRating}</div>
           <div style={{fontSize:8,color:"var(--text-muted)"}}>({reviewCount})</div>
         </button>
       </div>
@@ -2352,23 +2356,23 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       {salon.services.length>0&&(
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {salon.services.slice(0,4).map(s=>(
-            <span key={s} style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>
+            <span key={s} style={{fontSize:9,background:"rgba(var(--gold-rgb),.12)",color:"var(--gold)",padding:"4px 10px",borderRadius:8,fontWeight:600}}>
               {s}
             </span>
           ))}
-          {salon.services.length>4&&<span style={{fontSize:9,background:"rgba(212,160,23,.12)",color:"#d4a017",padding:"4px 10px",borderRadius:8,fontWeight:600}}>+{salon.services.length-4}</span>}
+          {salon.services.length>4&&<span style={{fontSize:9,background:"rgba(var(--gold-rgb),.12)",color:"var(--gold)",padding:"4px 10px",borderRadius:8,fontWeight:600}}>+{salon.services.length-4}</span>}
         </div>
       )}
 
       {/* Divider */}
-      <div style={{height:1,background:"rgba(212,160,23,.1)"}}/>
+      <div style={{height:1,background:"rgba(var(--gold-rgb),.1)"}}/>
 
       {/* Book Button + Action Buttons - Reordered */}
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#e74c3c",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           📍
         </button>
-        <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"#d4a017":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+        <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"var(--gold)":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           {fav?"♥":"♡"}
         </button>
         <button onClick={onCompare} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"var(--text-muted)",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
@@ -2661,18 +2665,18 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       <div style={{display:"flex",gap:6,marginBottom:12}}>
         {/* Day Picker */}
         <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>setShowDayPicker(!showDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showDayPicker?"#d4a017":"var(--border-ui)"}`,background:showDayPicker?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          <button onClick={()=>setShowDayPicker(!showDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showDayPicker?"var(--gold)":"var(--border-ui)"}`,background:showDayPicker?"rgba(var(--gold-rgb),.13)":"var(--bg-input)",color:"var(--gold)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
             {String(parseInt(selectedDate.split("-")[2])).padStart(2,"0")} 📅
           </button>
           {showDayPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--gold)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
               <div style={{display:"flex",flexDirection:"column",gap:4}}>
                 {Array.from({length:31},(_, i)=>{
                   const day=i+1;
                   const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
                   const isSel=selectedDate===dateStr;
                   return(
-                    <button key={day} onClick={()=>{setSelectedDate(dateStr);setShowDayPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    <button key={day} onClick={()=>{setSelectedDate(dateStr);setShowDayPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"var(--gold)":"transparent",color:isSel?"#000":"var(--gold)",border:`1px solid ${isSel?"var(--gold)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                       {day}
                     </button>
                   );
@@ -2684,16 +2688,16 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
         {/* Month Picker */}
         <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>setShowMonthPicker(!showMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showMonthPicker?"#d4a017":"var(--border-ui)"}`,background:showMonthPicker?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          <button onClick={()=>setShowMonthPicker(!showMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showMonthPicker?"var(--gold)":"var(--border-ui)"}`,background:showMonthPicker?"rgba(var(--gold-rgb),.13)":"var(--bg-input)",color:"var(--gold)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
             {MONTHS_AR[m]} 📅
           </button>
           {showMonthPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--gold)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
               <div style={{display:"flex",flexDirection:"column",gap:4}}>
                 {MONTHS_AR.map((month,idx)=>{
                   const isSel=m===idx;
                   return(
-                    <button key={idx} onClick={()=>{setM(idx);const newDate=`${y}-${String(idx+1).padStart(2,"0")}-01`;setSelectedDate(newDate);setShowMonthPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    <button key={idx} onClick={()=>{setM(idx);const newDate=`${y}-${String(idx+1).padStart(2,"0")}-01`;setSelectedDate(newDate);setShowMonthPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"var(--gold)":"transparent",color:isSel?"#000":"var(--gold)",border:`1px solid ${isSel?"var(--gold)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                       {month}
                     </button>
                   );
@@ -2705,16 +2709,16 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
         {/* Year Picker */}
         <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>setShowYearPicker(!showYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showYearPicker?"#d4a017":"var(--border-ui)"}`,background:showYearPicker?"#d4a01722":"#13131f",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          <button onClick={()=>setShowYearPicker(!showYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showYearPicker?"var(--gold)":"var(--border-ui)"}`,background:showYearPicker?"rgba(var(--gold-rgb),.13)":"var(--bg-input)",color:"var(--gold)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
             {y} 📅
           </button>
           {showYearPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid #d4a017",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
+            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--gold)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
               <div style={{display:"flex",flexDirection:"column",gap:4}}>
                 {Array.from({length:10},(_, i)=>y-5+i).map(yr=>{
                   const isSel=y===yr;
                   return(
-                    <button key={yr} onClick={()=>{setY(yr);const newDate=`${yr}-${String(m+1).padStart(2,"0")}-01`;setSelectedDate(newDate);setShowYearPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"#d4a017":"transparent",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                    <button key={yr} onClick={()=>{setY(yr);const newDate=`${yr}-${String(m+1).padStart(2,"0")}-01`;setSelectedDate(newDate);setShowYearPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"var(--gold)":"transparent",color:isSel?"#000":"var(--gold)",border:`1px solid ${isSel?"var(--gold)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                       {yr}
                     </button>
                   );
@@ -2728,7 +2732,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       {/* إحصائيات اليوم المختار */}
       {selectedDate&&(
         <div style={{marginBottom:12}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#d4a017",marginBottom:8}}>📊 {selectedDate}</div>
+          <div style={{fontSize:12,fontWeight:700,color:"var(--gold)",marginBottom:8}}>📊 {selectedDate}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
             <div style={{background:"#27ae6022",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #27ae6044"}}>
               <div style={{fontSize:18,fontWeight:900,color:"#27ae60"}}>{todayApproved.length}</div>
@@ -2742,8 +2746,8 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
               <div style={{fontSize:18,fontWeight:900,color:"#e74c3c"}}>{todayRejected.length}</div>
               <div style={{fontSize:9,color:"var(--text-muted)"}}>مرفوض</div>
             </div>
-            <div style={{background:"#d4a01722",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid #d4a01744"}}>
-              <div style={{fontSize:18,fontWeight:900,color:"#d4a017"}}>{todayBks.length}</div>
+            <div style={{background:"rgba(var(--gold-rgb),.13)",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid rgba(var(--gold-rgb),.27)"}}>
+              <div style={{fontSize:18,fontWeight:900,color:"var(--gold)"}}>{todayBks.length}</div>
               <div style={{fontSize:9,color:"var(--text-muted)"}}>الكل</div>
             </div>
           </div>
@@ -2754,13 +2758,13 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       {/* قسم أداء الحلاقين */}
       {salon.barbers&&salon.barbers.length>0&&(
         <div style={{background:"var(--surface-1)",borderRadius:14,padding:"12px",border:"1px solid var(--border-ui)",marginBottom:12}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#d4a017",marginBottom:10}}>👨‍💼 أداء الحلاقين</div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--gold)",marginBottom:10}}>👨‍💼 أداء الحلاقين</div>
 
           {/* منتقيات اليوم/الشهر/السنة للحلاقين */}
           <div style={{display:"flex",gap:6,marginBottom:10}}>
             {/* اليوم */}
             <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberDayPicker(!showBarberDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              <button onClick={()=>setShowBarberDayPicker(!showBarberDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--gold)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                 {String(barberD).padStart(2,"0")} 📅
               </button>
               {showBarberDayPicker&&(
@@ -2770,7 +2774,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                       const day=i+1;
                       const isSel=barberD===day;
                       return(
-                        <button key={day} onClick={()=>{setBarberD(day);setShowBarberDayPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"#d4a017":"#0d0d1a",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        <button key={day} onClick={()=>{setBarberD(day);setShowBarberDayPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"var(--gold)":"#0d0d1a",color:isSel?"#000":"var(--gold)",border:`1px solid ${isSel?"var(--gold)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                           {day}
                         </button>
                       );
@@ -2782,7 +2786,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
             {/* الشهر */}
             <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberMonthPicker(!showBarberMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              <button onClick={()=>setShowBarberMonthPicker(!showBarberMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--gold)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                 {MONTHS_AR[barberM]} 📆
               </button>
               {showBarberMonthPicker&&(
@@ -2791,7 +2795,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                     {MONTHS_AR.map((month,idx)=>{
                       const isSel=barberM===idx;
                       return(
-                        <button key={idx} onClick={()=>{setBarberM(idx);setShowBarberMonthPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"#0d0d1a",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"var(--border-ui)"}`,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        <button key={idx} onClick={()=>{setBarberM(idx);setShowBarberMonthPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"var(--gold)":"#0d0d1a",color:isSel?"#000":"var(--gold)",border:`1px solid ${isSel?"var(--gold)":"var(--border-ui)"}`,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                           {month}
                         </button>
                       );
@@ -2803,7 +2807,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
             {/* السنة */}
             <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberYearPicker(!showBarberYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"#d4a017",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              <button onClick={()=>setShowBarberYearPicker(!showBarberYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--gold)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                 {barberY} 📊
               </button>
               {showBarberYearPicker&&(
@@ -2813,7 +2817,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                       const year=new Date().getFullYear()-5+i;
                       const isSel=barberY===year;
                       return(
-                        <button key={year} onClick={()=>{setBarberY(year);setShowBarberYearPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"#d4a017":"#0d0d1a",color:isSel?"#000":"#d4a017",border:`1px solid ${isSel?"#d4a017":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        <button key={year} onClick={()=>{setBarberY(year);setShowBarberYearPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"var(--gold)":"#0d0d1a",color:isSel?"#000":"var(--gold)",border:`1px solid ${isSel?"var(--gold)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                           {year}
                         </button>
                       );
@@ -2832,14 +2836,14 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
                 <div key={barber.id} style={{background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:"1px solid var(--border-ui)",transition:"all .2s"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-                      <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#d4a017,#f0c040)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>✂</div>
+                      <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,var(--gold),var(--pl))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>✂</div>
                       <div style={{flex:1}}>
                         <div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)"}}>{barber.name||barber.barber_name||"بدون اسم"}</div>
                         <div style={{fontSize:10,color:"var(--text-muted)"}}>{stats.dayCount} حجز</div>
                       </div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:13,fontWeight:900,color:"#d4a017"}}>{stats.dayRevenue}</div>
+                      <div style={{fontSize:13,fontWeight:900,color:"var(--gold)"}}>{stats.dayRevenue}</div>
                       <div style={{fontSize:9,color:"var(--text-muted)"}}>ريال</div>
                     </div>
                   </div>
@@ -3331,9 +3335,9 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
   const[filter,setFilter]=useState(0);
   const[search,setSearch]=useState("");
-  const gold="#d4a017";
-  const goldStar="#e8c04a";
-  const dimStar="rgba(212,160,23,.18)";
+  const gold="var(--gold)";
+  const goldStar="var(--gold)";
+  const dimStar="rgba(var(--gold-rgb),.18)";
 
   const byId=new Map(approvedSalons.map(s=>[Number(s.id),s]));
   const approvedSet=new Set(approvedSalons.map(s=>Number(s.id)));
@@ -3369,7 +3373,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
   return(
     <div style={{minHeight:"100vh",fontFamily:"'Cairo',sans-serif",direction:"rtl",paddingBottom:40}}>
       {/* ── Sticky Header ── */}
-      <div style={{position:"sticky",top:64,zIndex:50,background:"var(--bg-input)",borderBottom:"1px solid rgba(212,160,23,.15)",padding:"12px 16px 10px"}}>
+      <div style={{position:"sticky",top:64,zIndex:50,background:"var(--bg-input)",borderBottom:"1px solid rgba(var(--gold-rgb),.15)",padding:"12px 16px 10px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
           <button onClick={()=>setView("home")} style={{background:"transparent",border:"none",color:gold,fontSize:20,cursor:"pointer",padding:"0 4px",lineHeight:1}}>←</button>
           <DorkLogoSvg size={26}/>
@@ -3383,20 +3387,20 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
           value={search}
           onChange={e=>setSearch(e.target.value)}
           placeholder="🔍 ابحث باسم الصالون أو العميل..."
-          style={{width:"100%",boxSizing:"border-box",padding:"8px 12px",borderRadius:10,background:"var(--bg-input)",border:"1px solid rgba(212,160,23,.25)",color:"var(--text-primary)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none"}}
+          style={{width:"100%",boxSizing:"border-box",padding:"8px 12px",borderRadius:10,background:"var(--bg-input)",border:"1px solid rgba(var(--gold-rgb),.25)",color:"var(--text-primary)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none"}}
         />
       </div>
 
       {/* ── Summary bar ── */}
-      <div style={{padding:"12px 16px",background:"linear-gradient(180deg,rgba(212,160,23,.06),transparent)"}}>
+      <div style={{padding:"12px 16px",background:"linear-gradient(180deg,rgba(var(--gold-rgb),.06),transparent)"}}>
         <div style={{display:"flex",gap:10,overflowX:"auto",scrollbarWidth:"none",paddingBottom:4}}>
           {/* All */}
-          <button onClick={()=>setFilter(0)} style={{flex:"0 0 auto",padding:"6px 14px",borderRadius:20,border:`1px solid ${filter===0?gold:"rgba(212,160,23,.2)"}`,background:filter===0?"rgba(212,160,23,.12)":"transparent",color:filter===0?gold:"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
+          <button onClick={()=>setFilter(0)} style={{flex:"0 0 auto",padding:"6px 14px",borderRadius:20,border:`1px solid ${filter===0?gold:"rgba(var(--gold-rgb),.2)"}`,background:filter===0?"rgba(var(--gold-rgb),.12)":"transparent",color:filter===0?gold:"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
             الكل ({feed.length})
           </button>
           {dist.map(({star,count})=>(
             <button key={star} onClick={()=>setFilter(star===filter?0:star)}
-              style={{flex:"0 0 auto",display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:20,border:`1px solid ${filter===star?gold:"rgba(212,160,23,.2)"}`,background:filter===star?"rgba(212,160,23,.12)":"transparent",color:filter===star?goldStar:"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
+              style={{flex:"0 0 auto",display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:20,border:`1px solid ${filter===star?gold:"rgba(var(--gold-rgb),.2)"}`,background:filter===star?"rgba(var(--gold-rgb),.12)":"transparent",color:filter===star?goldStar:"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
               {"★".repeat(star)} ({count})
             </button>
           ))}
@@ -3410,7 +3414,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
         )}
         {filtered.map((r,i)=>(
           <div key={r.key} onClick={()=>openSalon(r.salonId)}
-            style={{cursor:"pointer",background:"var(--surface-1)",border:`1px solid rgba(212,160,23,.28)`,borderRadius:14,padding:"14px 14px 12px",boxShadow:"0 2px 16px rgba(0,0,0,.35)",transition:"box-shadow .2s"}}>
+            style={{cursor:"pointer",background:"var(--surface-1)",border:`1px solid rgba(var(--gold-rgb),.28)`,borderRadius:14,padding:"14px 14px 12px",boxShadow:"0 2px 16px rgba(0,0,0,.35)",transition:"box-shadow .2s"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
               <div style={{fontSize:12,fontWeight:800,color:gold,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                 ✂ {r.salonName}
@@ -3422,14 +3426,14 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
             <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:r.comment?8:0}}>👤 {r.customerName}</div>
             {r.comment&&(
               <>
-                <div style={{height:1,background:"rgba(212,160,23,.1)",margin:"8px 0"}}/>
+                <div style={{height:1,background:"rgba(var(--gold-rgb),.1)",margin:"8px 0"}}/>
                 <div style={{fontSize:11,color:"var(--text-muted)",fontStyle:"italic",lineHeight:1.55}}>«{r.comment}»</div>
               </>
             )}
             <div style={{fontSize:9,color:"var(--text-muted)",marginTop:10}}>📅 {r.date||"—"}</div>
             {r.ownerReply&&(
-              <div style={{marginTop:8,padding:"7px 10px",background:"rgba(212,160,23,.06)",borderRight:"3px solid #d4a017",borderRadius:"0 7px 7px 0"}}>
-                <div style={{fontSize:9,color:"#d4a017",fontWeight:700,marginBottom:2}}>✂ رد الصالون</div>
+              <div style={{marginTop:8,padding:"7px 10px",background:"rgba(var(--gold-rgb),.06)",borderRight:"3px solid #d4a017",borderRadius:"0 7px 7px 0"}}>
+                <div style={{fontSize:9,color:"var(--gold)",fontWeight:700,marginBottom:2}}>✂ رد الصالون</div>
                 <div style={{fontSize:10,color:"var(--text-muted)",lineHeight:1.5}}>{r.ownerReply}</div>
               </div>
             )}
@@ -3754,12 +3758,12 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           <div style={{fontSize:20,fontWeight:900,color:"var(--p,#d4a017)",marginBottom:4}}>القسم الشرعي</div>
           <div style={{fontSize:12,color:"var(--text-muted)"}}>يُعرض لمرة واحدة فقط عند أول دخول</div>
         </div>
-        <div style={{background:"rgba(212,160,23,.06)",border:"1.5px solid rgba(212,160,23,.3)",borderRadius:14,padding:"20px 18px",marginBottom:18}}>
-          <div style={{fontSize:14,color:"#f0c040",lineHeight:2.1,textAlign:"center",fontWeight:600}}>
+        <div style={{background:"rgba(var(--gold-rgb),.06)",border:"1.5px solid rgba(var(--gold-rgb),.3)",borderRadius:14,padding:"20px 18px",marginBottom:18}}>
+          <div style={{fontSize:14,color:"var(--gold)",lineHeight:2.1,textAlign:"center",fontWeight:600}}>
             «أقسم بالله العظيم، أن ألتزم بالأمانة والصدق في دفع عمولة الوساطة المستحقة لتطبيق (دورك) بواقع (1 ريال) عن كل حجز مكتمل يتم عبر المنصة، وألا أتحايل على النظام بأي وسيلة كانت، وأن أراقب الله في ذلك.. والله على ما أقول شهيد»
           </div>
         </div>
-        <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:16,cursor:"pointer",padding:"12px 14px",background:"rgba(212,160,23,.05)",borderRadius:10,border:`1.5px solid ${oathChecked?"var(--p,#d4a017)":"var(--border-ui)"}`}}>
+        <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:16,cursor:"pointer",padding:"12px 14px",background:"rgba(var(--gold-rgb),.05)",borderRadius:10,border:`1.5px solid ${oathChecked?"var(--p,#d4a017)":"var(--border-ui)"}`}}>
           <input type="checkbox" checked={oathChecked} onChange={e=>setOathChecked(e.target.checked)} style={{width:18,height:18,marginTop:2,flexShrink:0,cursor:"pointer"}}/>
           <span style={{fontSize:13,color:"#fff",lineHeight:1.7}}>أقر بأنني قرأت القسم كاملاً وأقسمت بالله العظيم على الالتزام به</span>
         </label>
@@ -3770,7 +3774,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             localStorage.setItem(`dork_oath_${salon.id}`,"1");
             setOathDone(true);
           }}
-          style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:oathChecked?"linear-gradient(135deg,var(--p,#d4a017),#f0c040)":"var(--border-ui)",color:oathChecked?"#000":"#555",fontSize:15,fontWeight:900,cursor:oathChecked?"pointer":"not-allowed",fontFamily:"inherit",transition:"all .3s"}}>
+          style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:oathChecked?"linear-gradient(135deg,var(--p,#d4a017),var(--pl))":"var(--border-ui)",color:oathChecked?"#000":"#555",fontSize:15,fontWeight:900,cursor:oathChecked?"pointer":"not-allowed",fontFamily:"inherit",transition:"all .3s"}}>
           قبول ودخول لوحة التحكم
         </button>
       </div>
@@ -3815,7 +3819,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         @keyframes growBar {from{transform:scaleX(0);}to{transform:scaleX(1);}}
         @keyframes pulse {0%,100%{opacity:1;}50%{opacity:.6;}}
         .stat-card{animation:fadeInUp .45s ease-out both;transition:all .25s ease;}
-        .stat-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(212,160,23,.18);}
+        .stat-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(var(--gold-rgb),.18);}
         .tab-button{transition:all .2s ease;}
         .balance-tab{animation:slideInFromRight .4s cubic-bezier(0.4,0,0.2,1);}
         .notif-banner{animation:fadeInUp .4s ease-out;transition:all .3s ease;}
@@ -3829,9 +3833,9 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:12,paddingBottom:2}}>
         <button
           onClick={()=>{setTab(null);setActiveCard(null);}}
-          style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:tab===null?"rgba(212,160,23,.13)":"rgba(255,255,255,.04)",border:`1px solid ${tab===null?"rgba(212,160,23,.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
+          style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:tab===null?"rgba(var(--gold-rgb),.13)":"rgba(255,255,255,.04)",border:`1px solid ${tab===null?"rgba(var(--gold-rgb),.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
           <span style={{fontSize:18}}>📋</span>
-          <span style={{fontSize:8,color:tab===null?"#d4a017":"#666",fontWeight:tab===null?700:400,whiteSpace:"nowrap"}}>لوحتي</span>
+          <span style={{fontSize:8,color:tab===null?"var(--gold)":"#666",fontWeight:tab===null?700:400,whiteSpace:"nowrap"}}>لوحتي</span>
         </button>
         {[
           {id:"messages",icon:"💬",label:"رسائل"},
@@ -3850,9 +3854,9 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
                 setTab(t=>t===id?null:id);
                 setActiveCard(null);
               }}
-              style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:isActive?"rgba(212,160,23,.13)":"rgba(255,255,255,.04)",border:`1px solid ${isActive?"rgba(212,160,23,.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,position:"relative",fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
+              style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:isActive?"rgba(var(--gold-rgb),.13)":"rgba(255,255,255,.04)",border:`1px solid ${isActive?"rgba(var(--gold-rgb),.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,position:"relative",fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
               <span style={{fontSize:18}}>{icon}</span>
-              <span style={{fontSize:8,color:isActive?"#d4a017":"#666",fontWeight:isActive?700:400,whiteSpace:"nowrap"}}>{label}</span>
+              <span style={{fontSize:8,color:isActive?"var(--gold)":"#666",fontWeight:isActive?700:400,whiteSpace:"nowrap"}}>{label}</span>
               {hasBadge&&<div style={{position:"absolute",top:4,right:4,width:6,height:6,borderRadius:"50%",background:"#e74c3c",boxShadow:"0 0 4px #e74c3c"}}/>}
             </button>
           );
@@ -3867,7 +3871,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
       {/* بانر إشعارات الإدارة */}
       {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
-        <div key={n.id} className="notif-banner" style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",border:"1px solid rgba(212,160,23,.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div key={n.id} className="notif-banner" style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.12),rgba(var(--gold-rgb),.06))",border:"1px solid rgba(var(--gold-rgb),.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span>{n.icon} {n.title} — {n.body}</span>
           <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"var(--text-muted)",cursor:"pointer",fontSize:14,padding:0}}>✕</button>
         </div>
@@ -3878,38 +3882,38 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <>
 
       {/* ── بادج الصالون المحسّن (ثابت في لوحتي فقط) ── */}
-      <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
+      <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid var(--gold)",marginBottom:12,boxShadow:"0 4px 16px rgba(var(--gold-rgb),.1)"}}>
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{fontSize:14,color:"#fff",fontWeight:700}}>✂ الاسم: <span style={{color:"#f0c040"}}>{salon.name}</span></div>
-              {salon.status==="approved"&&<div style={{background:"rgba(240,192,64,.15)",border:"1px solid #f0c040",borderRadius:8,padding:"4px 12px",fontSize:13,color:"#f0c040",fontWeight:700}}>نشط</div>}
+              <div style={{fontSize:14,color:"#fff",fontWeight:700}}>✂ الاسم: <span style={{color:"var(--gold)"}}>{salon.name}</span></div>
+              {salon.status==="approved"&&<div style={{background:"rgba(var(--gold-rgb),.15)",border:"1px solid var(--gold)",borderRadius:8,padding:"4px 12px",fontSize:13,color:"var(--gold)",fontWeight:700}}>نشط</div>}
             </div>
-            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>⭐ <span style={{color:"#f0c040"}}>{(salon.rating||0).toFixed(1)}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>⭐ <span style={{color:"var(--gold)"}}>{(salon.rating||0).toFixed(1)}</span></div>
           </div>
-          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{salon.phone||"غير متوفر"}</span></div>
-          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📍 الموقع: <span style={{color:"#f0c040"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
-          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"var(--gold)"}}>{salon.phone||"غير متوفر"}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📍 الموقع: <span style={{color:"var(--gold)"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"var(--gold)"}}>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
         </div>
       </div>
 
       {salon.status!=="approved"&&(
-        <div style={{background:"rgba(240,192,64,.07)",border:"1px solid rgba(240,192,64,.25)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:12,color:"var(--pl)"}}>
+        <div style={{background:"rgba(var(--gold-rgb),.07)",border:"1px solid rgba(var(--gold-rgb),.25)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:12,color:"var(--pl)"}}>
           🔔 صالونك في انتظار موافقة الإدارة — سيظهر للعملاء بعد القبول
         </div>
       )}
 
       {/* ── بطاقة ملخص اليوم ── */}
-      <div className="today-card" style={{background:"linear-gradient(145deg,#16112a,#0e0e1e)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(212,160,23,.2)",boxShadow:"0 0 30px rgba(212,160,23,.06),inset 0 1px 0 rgba(212,160,23,.08)"}}>
+      <div className="today-card" style={{background:"linear-gradient(145deg,#16112a,#0e0e1e)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(var(--gold-rgb),.2)",boxShadow:"0 0 30px rgba(var(--gold-rgb),.06),inset 0 1px 0 rgba(var(--gold-rgb),.08)"}}>
 
         {/* التاريخ */}
-        <div style={{fontSize:13,fontWeight:700,color:"#d4a017",marginBottom:14}}>🌅 {_dayLabel}</div>
+        <div style={{fontSize:13,fontWeight:700,color:"var(--gold)",marginBottom:14}}>🌅 {_dayLabel}</div>
 
         {/* حجوزات اليوم + إيراد اليوم */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-          <div style={{background:"rgba(212,160,23,.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(212,160,23,.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
+          <div style={{background:"rgba(var(--gold-rgb),.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(var(--gold-rgb),.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.06}}>📅</div>
-            <div style={{fontSize:30,fontWeight:900,color:"#d4a017",lineHeight:1}}>{_tdApproved.length}</div>
+            <div style={{fontSize:30,fontWeight:900,color:"var(--gold)",lineHeight:1}}>{_tdApproved.length}</div>
             <div style={{fontSize:10,color:"var(--text-muted)",marginTop:5}}>حجز مقبول اليوم</div>
           </div>
           <div style={{background:"rgba(39,174,96,.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(39,174,96,.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
@@ -3923,24 +3927,24 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <div style={{marginBottom:_nextBk?14:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
             <div style={{fontSize:11,color:"#777"}}>امتلاء اليوم</div>
-            <div style={{fontSize:12,fontWeight:800,color:_occ>=80?"#e74c3c":_occ>=50?"#d4a017":"#27ae60"}}>{_occ}%</div>
+            <div style={{fontSize:12,fontWeight:800,color:_occ>=80?"#e74c3c":_occ>=50?"var(--gold)":"#27ae60"}}>{_occ}%</div>
           </div>
           <div style={{height:7,background:"rgba(255,255,255,.05)",borderRadius:10,overflow:"hidden"}}>
-            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,#a07810,#f0c040)":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center",boxShadow:_occ>0?`0 0 8px ${_occ>=80?"rgba(231,76,60,.5)":_occ>=50?"rgba(212,160,23,.5)":"rgba(39,174,96,.5)"}`:""}}/>
+            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center",boxShadow:_occ>0?`0 0 8px ${_occ>=80?"rgba(231,76,60,.5)":_occ>=50?"rgba(var(--gold-rgb),.5)":"rgba(39,174,96,.5)"}`:""}}/>
           </div>
         </div>
 
         {/* الحجز القادم */}
         {_nextBk&&(
-          <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(212,160,23,.06)",borderRadius:11,padding:"10px 12px",border:"1px dashed rgba(212,160,23,.2)"}}>
-            <div style={{width:32,height:32,borderRadius:9,background:"rgba(212,160,23,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>⏰</div>
+          <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(var(--gold-rgb),.06)",borderRadius:11,padding:"10px 12px",border:"1px dashed rgba(var(--gold-rgb),.2)"}}>
+            <div style={{width:32,height:32,borderRadius:9,background:"rgba(var(--gold-rgb),.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>⏰</div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:10,color:"#666",marginBottom:2}}>الحجز القادم</div>
               <div style={{fontSize:13,fontWeight:700,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                 {_nextBk.customerName||_nextBk.customer_name||"عميل"} — {_nextBk.time}
               </div>
             </div>
-            <div style={{fontSize:11,fontWeight:800,color:"#d4a017",background:"rgba(212,160,23,.12)",padding:"4px 9px",borderRadius:8,flexShrink:0,whiteSpace:"nowrap"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"var(--gold)",background:"rgba(var(--gold-rgb),.12)",padding:"4px 9px",borderRadius:8,flexShrink:0,whiteSpace:"nowrap"}}>
               {(()=>{
                 const[h,m]=(_nextBk.time||"0:0").split(":").map(Number);
                 const diff=h*60+m-_nowMins;
@@ -3961,7 +3965,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
-              {label:"الكل",value:_tdBks.length,color:"#d4a017",filter:"all",delay:0},
+              {label:"الكل",value:_tdBks.length,color:"var(--gold)",filter:"all",delay:0},
               {label:"انتظار",value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
               {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:160},
               {label:"مرفوض",value:_tdRejected.length,color:"#e74c3c",filter:"rejected",delay:240}
@@ -3981,7 +3985,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
           {/* قائمة الحجوزات المنسدلة */}
           {activeCard&&(
-            <div style={{animation:"fadeInUp .3s ease-out",marginBottom:14,border:`1.5px solid ${activeCard==="all"?"#d4a017":activeCard==="pending"?"#f39c12":activeCard==="approved"?"#27ae60":"#e74c3c"}33`,borderTop:"none",borderRadius:"0 0 14px 14px",overflow:"hidden",background:"rgba(255,255,255,.02)"}}>
+            <div style={{animation:"fadeInUp .3s ease-out",marginBottom:14,border:`1.5px solid ${activeCard==="all"?"var(--gold)":activeCard==="pending"?"#f39c12":activeCard==="approved"?"#27ae60":"#e74c3c"}33`,borderTop:"none",borderRadius:"0 0 14px 14px",overflow:"hidden",background:"rgba(255,255,255,.02)"}}>
               <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings}/>
             </div>
           )}
@@ -3995,17 +3999,17 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {tab==="stats"&&<StatsPanel salon={salon} onUpdate={updateBookingStatus} customers={customers} refreshSalonBookings={refreshSalonBookings}/>}
       {tab==="balance"&&(
         <div style={{paddingTop:8}}>
-          <div className="balance-tab" style={{background:"linear-gradient(135deg,rgba(212,160,23,.12),rgba(212,160,23,.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(212,160,23,.3)",marginBottom:12}}>
+          <div className="balance-tab" style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.12),rgba(var(--gold-rgb),.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(var(--gold-rgb),.3)",marginBottom:12}}>
             <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>رصيدك المتاح</div>
-            <div style={{fontSize:32,fontWeight:900,color:"#d4a017",marginBottom:10,transition:"all .3s ease"}}>{balance} <span style={{fontSize:14}}>ريال</span></div>
+            <div style={{fontSize:32,fontWeight:900,color:"var(--gold)",marginBottom:10,transition:"all .3s ease"}}>{balance} <span style={{fontSize:14}}>ريال</span></div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <div style={{background:"rgba(39,174,96,.1)",borderRadius:10,padding:"10px",border:"1px solid #27ae6055",transition:"all .3s ease",cursor:"pointer"}}>
                 <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>المستحق</div>
                 <div style={{fontSize:16,fontWeight:700,color:"#27ae60"}}>{totalEarned} ر</div>
               </div>
-              <div style={{background:"rgba(212,160,23,.1)",borderRadius:10,padding:"10px",border:"1px solid rgba(212,160,23,.3)",transition:"all .3s ease",cursor:"pointer"}}>
+              <div style={{background:"rgba(var(--gold-rgb),.1)",borderRadius:10,padding:"10px",border:"1px solid rgba(var(--gold-rgb),.3)",transition:"all .3s ease",cursor:"pointer"}}>
                 <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>المدفوع</div>
-                <div style={{fontSize:16,fontWeight:700,color:"#d4a017"}}>{totalPaid} ر</div>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--gold)"}}>{totalPaid} ر</div>
               </div>
             </div>
             {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"10px",fontSize:11,color:"#e74c3c",marginTop:10,textAlign:"center",animation:"fadeInUp .5s ease-out .2s both"}}>⚠ يوجد مبلغ مستحق — يُرجى السداد</div>}
@@ -4021,8 +4025,8 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 //  OWNER REVIEWS PANEL - لوحة تقييمات الصالون للمالك
 // ==============================================
 function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
-  const gold="#d4a017";
-  const goldStar="#e8c04a";
+  const gold="var(--gold)";
+  const goldStar="var(--gold)";
   const[replyDraft,setReplyDraft]=useState({});
   const[saving,setSaving]=useState(null);
 
@@ -4060,11 +4064,11 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
   return(
     <div style={{paddingTop:8}}>
       {/* ملخص */}
-      <div style={{background:"rgba(212,160,23,.07)",border:"1px solid rgba(212,160,23,.18)",borderRadius:12,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:14}}>
+      <div style={{background:"rgba(var(--gold-rgb),.07)",border:"1px solid rgba(var(--gold-rgb),.18)",borderRadius:12,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:14}}>
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:28,fontWeight:900,color:goldStar,lineHeight:1}}>{avg||"—"}</div>
           <div style={{display:"flex",gap:1,justifyContent:"center",margin:"4px 0"}}>
-            {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=Math.round(avg)?goldStar:"rgba(212,160,23,.2)"}}>★</span>)}
+            {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=Math.round(avg)?goldStar:"rgba(var(--gold-rgb),.2)"}}>★</span>)}
           </div>
           <div style={{fontSize:10,color:"var(--text-muted)"}}>{salonReviews.length} تقييم</div>
         </div>
@@ -4075,7 +4079,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
             return(
               <div key={s} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
                 <span style={{fontSize:10,color:goldStar,width:8}}>{s}</span>
-                <div style={{flex:1,height:5,background:"rgba(212,160,23,.1)",borderRadius:3,overflow:"hidden"}}>
+                <div style={{flex:1,height:5,background:"rgba(var(--gold-rgb),.1)",borderRadius:3,overflow:"hidden"}}>
                   <div style={{width:`${pct}%`,height:"100%",background:gold,borderRadius:3,transition:"width .4s"}}/>
                 </div>
                 <span style={{fontSize:9,color:"#666",width:24,textAlign:"left"}}>{cnt}</span>
@@ -4097,7 +4101,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                 <span style={{fontSize:12,color:"#c0c0d0",fontWeight:700}}>👤 {r.customer_name||"عميل"}</span>
                 <div style={{display:"flex",gap:1}}>
-                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(212,160,23,.18)"}}>★</span>)}
+                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(var(--gold-rgb),.18)"}}>★</span>)}
                 </div>
               </div>
               {r.comment&&<div style={{fontSize:11,color:"var(--text-muted)",fontStyle:"italic",lineHeight:1.5,marginBottom:4}}>«{r.comment}»</div>}
@@ -4105,7 +4109,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
 
               {/* رد موجود */}
               {hasReply&&!(replyDraft[r.id]!=null&&replyDraft[r.id]!==r.owner_reply)&&(
-                <div style={{padding:"8px 10px",background:"rgba(212,160,23,.07)",borderRight:"3px solid #d4a017",borderRadius:"0 8px 8px 0",marginBottom:6}}>
+                <div style={{padding:"8px 10px",background:"rgba(var(--gold-rgb),.07)",borderRight:"3px solid #d4a017",borderRadius:"0 8px 8px 0",marginBottom:6}}>
                   <div style={{fontSize:10,color:gold,fontWeight:700,marginBottom:2}}>✂ ردّك</div>
                   <div style={{fontSize:11,color:"#c8c8a8",lineHeight:1.5}}>{r.owner_reply}</div>
                   <div style={{display:"flex",gap:6,marginTop:8}}>
@@ -4129,7 +4133,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
                     <button
                       onClick={()=>saveReply(r.id)}
                       disabled={saving===r.id||!draft.trim()}
-                      style={{flex:1,padding:"8px",borderRadius:8,border:"none",background:draft.trim()?"linear-gradient(135deg,var(--p),#f0c040)":"var(--border-ui)",color:draft.trim()?"#000":"#555",fontWeight:700,cursor:draft.trim()?"pointer":"not-allowed",fontFamily:"inherit",fontSize:12}}>
+                      style={{flex:1,padding:"8px",borderRadius:8,border:"none",background:draft.trim()?"linear-gradient(135deg,var(--p),var(--pl))":"var(--border-ui)",color:draft.trim()?"#000":"#555",fontWeight:700,cursor:draft.trim()?"pointer":"not-allowed",fontFamily:"inherit",fontSize:12}}>
                       {saving===r.id?"جاري الحفظ...":"💬 إرسال الرد"}
                     </button>
                     {hasReply&&<button onClick={()=>setReplyDraft(p=>{const n={...p};delete n[r.id];return n;})} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #333",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:12}}>إلغاء</button>}
@@ -4511,7 +4515,7 @@ function OwnerSettings({salon,setSalons,toast$}){
       {sec==="pin"&&<div style={box}>
         <div style={hdr}>🔐 الدخول السريع (PIN)</div>
         <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:14,lineHeight:1.6}}>تغيير رمز PIN سيؤثر على جميع طرق الدخول السريع</div>
-        <button onClick={()=>setF(p=>({...p,_editPinStep:"select",_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--p)",background:"rgba(212,160,23,.1)",color:"var(--p)",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
+        <button onClick={()=>setF(p=>({...p,_editPinStep:"select",_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--p)",background:"rgba(var(--gold-rgb),.1)",color:"var(--p)",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
           ✏️ تغيير رمز PIN
         </button>
         {f._editPinStep&&(
@@ -4521,10 +4525,10 @@ function OwnerSettings({salon,setSalons,toast$}){
                 <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>🔐 تغيير رمز PIN</div>
                 <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center",marginBottom:20}}>اختر عدد الأرقام</div>
                 <div style={{display:"flex",gap:12,marginBottom:16}}>
-                  <button onClick={()=>setF(p=>({...p,_editPinLength:4,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===4?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                  <button onClick={()=>setF(p=>({...p,_editPinLength:4,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===4?"rgba(var(--gold-rgb),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                     4 أرقام
                   </button>
-                  <button onClick={()=>setF(p=>({...p,_editPinLength:6,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===6?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                  <button onClick={()=>setF(p=>({...p,_editPinLength:6,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===6?"rgba(var(--gold-rgb),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                     6 أرقام
                   </button>
                 </div>
@@ -5009,14 +5013,14 @@ function AttendanceView({customer,salons}){
   const attendRate=evalTotal>0?Math.round((counts.attended/evalTotal)*100):null;
   const classification=attendRate===null?null:
     counts.no_show>=3||attendRate<50?{label:"⚠️ غير ملتزم",color:"#e74c3c",bg:"rgba(231,76,60,.08)"}:
-    counts.attended>=5&&counts.no_show===0?{label:"🌟 مميز",color:"#d4a017",bg:"rgba(212,160,23,.08)"}:
+    counts.attended>=5&&counts.no_show===0?{label:"🌟 مميز",color:"var(--gold)",bg:"rgba(var(--gold-rgb),.08)"}:
     attendRate>=70?{label:"✅ منتظم",color:"#27ae60",bg:"rgba(39,174,96,.08)"}:
     {label:"🆕 جديد",color:"#3498db",bg:"rgba(52,152,219,.08)"};
   const filtersArr=[
     {key:"attended",label:"ملتزم",color:"#27ae60"},
     {key:"no_show",label:"غير ملتزم",color:"#e74c3c"},
     {key:"pending",label:"قيد الانتظار",color:"var(--text-muted)"},
-    {key:"all",label:"سجلي الكامل",color:"#d4a017"},
+    {key:"all",label:"سجلي الكامل",color:"var(--gold)"},
   ];
   return(
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -5045,11 +5049,11 @@ function AttendanceView({customer,salons}){
           <div style={{background:"var(--surface-1)",borderRadius:12,padding:"12px 16px",border:"1px solid var(--border-ui)"}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
               <span style={{fontSize:12,color:"var(--text-muted)"}}>نسبة الحضور</span>
-              <span style={{fontSize:13,fontWeight:700,color:"#d4a017"}}>{attendRate}%</span>
+              <span style={{fontSize:13,fontWeight:700,color:"var(--gold)"}}>{attendRate}%</span>
             </div>
             <div style={{height:8,background:"var(--surface-2)",borderRadius:999,overflow:"hidden"}}>
               <div style={{height:"100%",width:`${attendRate}%`,
-                background:"linear-gradient(90deg,#d4a017,#f0c040)",borderRadius:999}}/>
+                background:"linear-gradient(90deg,var(--gold),var(--pl))",borderRadius:999}}/>
             </div>
             <div style={{fontSize:11,color:"#666",marginTop:6,textAlign:"right"}}>
               {counts.attended} حضر من أصل {evalTotal} تم تقييمه
@@ -5188,7 +5192,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
       {!sectionMode&&showLocPrompt&&!customer?.locationLat&&(
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,padding:20}}>
-          <div style={{background:"var(--surface-1)",borderRadius:20,padding:24,maxWidth:340,width:"100%",border:"1.5px solid rgba(212,160,23,.3)",textAlign:"center"}}>
+          <div style={{background:"var(--surface-1)",borderRadius:20,padding:24,maxWidth:340,width:"100%",border:"1.5px solid rgba(var(--gold-rgb),.3)",textAlign:"center"}}>
             <div style={{fontSize:40,marginBottom:12}}>📍</div>
             <div style={{fontSize:16,fontWeight:700,color:"var(--p)",marginBottom:10}}>هل تسمح بحفظ موقعك؟</div>
             <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:20,lineHeight:1.7}}>سنستخدم موقعك لعرض الصالونات الأقرب إليك تلقائياً في الشاشة الرئيسية</div>
@@ -5202,15 +5206,15 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
       {/* بروفايل العميل - Premium */}
       {!sectionMode&&(!editMode?(
-        <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",marginBottom:12,position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
+        <div style={{background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid var(--gold)",marginBottom:12,position:"relative",boxShadow:"0 4px 16px rgba(var(--gold-rgb),.1)"}}>
           {/* البادج في الزاوية اليسرى */}
           <div style={{position:"absolute",top:12,left:12,background:`${classification.color}22`,border:`1px solid ${classification.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:classification.color}}>{badge}</div>
 
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
-            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
-            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📋 الحجوزات: <span style={{color:"#f0c040"}}>{history.length} حجز</span></div>
-            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"var(--gold)"}}>{customer.name}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"var(--gold)"}}>{customer.phone}</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📋 الحجوزات: <span style={{color:"var(--gold)"}}>{history.length} حجز</span></div>
+            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"var(--gold)"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
           </div>
         </div>
       ):(
@@ -5223,12 +5227,12 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <div style={{marginBottom:12}}>
             <label style={{display:"block",fontSize:11,color:"var(--text-muted)",marginBottom:4}}>الموقع</label>
             {customer?.locationLat&&customer?.locationLng?(
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",borderRadius:9,border:"1.5px solid rgba(212,160,23,.4)",background:"rgba(212,160,23,.06)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",borderRadius:9,border:"1.5px solid rgba(var(--gold-rgb),.4)",background:"rgba(var(--gold-rgb),.06)"}}>
                 <span style={{fontSize:11,color:"var(--p)"}}>✅ موقع محفوظ</span>
                 <button style={{background:"transparent",border:"none",color:"#e74c3c",fontSize:11,cursor:"pointer",fontFamily:"inherit",padding:0}} onClick={clearCustomerLocation}>حذف ✕</button>
               </div>
             ):(
-              <button style={{...inp2,background:"rgba(212,160,23,.06)",border:"1.5px dashed rgba(212,160,23,.4)",color:"var(--p)",cursor:"pointer",textAlign:"center",fontWeight:700,fontSize:12,padding:"11px"}} onClick={saveCustomerLocation}>📍 إضافة الموقع تلقائياً</button>
+              <button style={{...inp2,background:"rgba(var(--gold-rgb),.06)",border:"1.5px dashed rgba(var(--gold-rgb),.4)",color:"var(--p)",cursor:"pointer",textAlign:"center",fontWeight:700,fontSize:12,padding:"11px"}} onClick={saveCustomerLocation}>📍 إضافة الموقع تلقائياً</button>
             )}
           </div>
           <div style={{display:"flex",gap:8}}>
@@ -5318,7 +5322,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       <div style={{fontSize:11,fontWeight:700,color:stColor,marginTop:3}}>{stLabel}</div>
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-                      {h.rating>0&&<div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><span key={n} style={{fontSize:12,color:n<=h.rating?"#f0c040":"#333"}}>★</span>)}</div>}
+                      {h.rating>0&&<div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><span key={n} style={{fontSize:12,color:n<=h.rating?"var(--gold)":"#333"}}>★</span>)}</div>}
                       {s&&<button style={{...G.bookBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setSelSalon(s);setView("book");}}>🔄 احجز مجدداً</button>}
                       <button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>scheduleReminder({...h,salonName:s?.name})}>🔔 ذكّرني</button>
                       {(status==="pending"||status==="approved")&&realBooking?.id&&(<>
@@ -5431,7 +5435,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10}} onClick={()=>setEditPinStep("select")}>🔐 تغيير رمز PIN</button>
 
           {/* قسم الموقع */}
-          <div style={{background:"rgba(212,160,23,.06)",borderRadius:10,padding:12,border:"1px solid rgba(212,160,23,.2)",marginBottom:10}}>
+          <div style={{background:"rgba(var(--gold-rgb),.06)",borderRadius:10,padding:12,border:"1px solid rgba(var(--gold-rgb),.2)",marginBottom:10}}>
             <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8}}>📍 موقعي المحفوظ</div>
             {customer?.locationLat&&customer?.locationLng?(
               <>
@@ -5462,10 +5466,10 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>🔐 تغيير رمز PIN</div>
               <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center",marginBottom:20}}>اختر عدد الأرقام</div>
               <div style={{display:"flex",gap:12,marginBottom:16}}>
-                <button onClick={()=>{setEditPinLength(4);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===4?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                <button onClick={()=>{setEditPinLength(4);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===4?"rgba(var(--gold-rgb),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                   4 أرقام
                 </button>
-                <button onClick={()=>{setEditPinLength(6);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===6?"rgba(212,160,23,.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                <button onClick={()=>{setEditPinLength(6);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===6?"rgba(var(--gold-rgb),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                   6 أرقام
                 </button>
               </div>
@@ -5492,14 +5496,14 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       {/* حذف الحساب - Dialog */}
       {showDeleteConfirm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowDeleteConfirm(false)}>
-          <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #d4a017",borderBottom:"none",boxShadow:"0 -8px 32px rgba(212,160,23,0.15)"}} onClick={e=>e.stopPropagation()}>
+          <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--gold)",borderBottom:"none",boxShadow:"0 -8px 32px rgba(var(--gold-rgb),.15)"}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
               <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
               <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:6}}>حذف الحساب نهائياً</div>
               <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
             </div>
-            <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"#ddd",lineHeight:1.8}}>
-              <div style={{marginBottom:6,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
+            <div style={{background:"rgba(var(--gold-rgb),.08)",border:"1px solid rgba(var(--gold-rgb),.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"#ddd",lineHeight:1.8}}>
+              <div style={{marginBottom:6,fontWeight:700,color:"var(--gold)"}}>سيتم حذف:</div>
               <div>✗ حسابك بشكل نهائي</div>
               <div>✗ جميع معلوماتك الشخصية</div>
               <div>✗ سجل حجوزاتك</div>
@@ -5528,7 +5532,7 @@ function InlineStarRating({rated,comment,onRate}){
   if(rated>0) return(
     <div style={{marginTop:8,borderTop:"1px solid #1e1e2e",paddingTop:8}}>
       <div style={{display:"flex",gap:1,marginBottom:comment?4:0}}>
-        {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:18,color:n<=rated?"#f0c040":"#333"}}>★</span>)}
+        {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:18,color:n<=rated?"var(--gold)":"#333"}}>★</span>)}
         <span style={{fontSize:11,color:"var(--text-muted)",marginRight:6,alignSelf:"center"}}>{labels[rated]}</span>
       </div>
       {comment&&<div style={{fontSize:12,color:"var(--text-muted)",fontStyle:"italic"}}>"{comment}"</div>}
@@ -5540,7 +5544,7 @@ function InlineStarRating({rated,comment,onRate}){
       <div style={{display:"flex",alignItems:"center",gap:3,marginBottom:8}}>
         {[1,2,3,4,5].map(n=>(
           <span key={n}
-            style={{fontSize:28,cursor:"pointer",color:n<=(hover||sel)?"#f0c040":"var(--border-ui)",transition:"color .1s",lineHeight:1,userSelect:"none"}}
+            style={{fontSize:28,cursor:"pointer",color:n<=(hover||sel)?"var(--gold)":"var(--border-ui)",transition:"color .1s",lineHeight:1,userSelect:"none"}}
             onMouseEnter={()=>setHover(n)}
             onMouseLeave={()=>setHover(0)}
             onClick={()=>setSel(n)}>★</span>
@@ -5574,7 +5578,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
     {id:"danger",icon:"⚠",label:"الخطر"},
   ];
   const THEME_OPTIONS=[
-    {id:"gold",label:"ذهبي",color:"#d4a017",emoji:"✨"},
+    {id:"gold",label:"ذهبي",color:"var(--gold)",emoji:"✨"},
     {id:"emerald",label:"زمردي",color:"#10b981",emoji:"🌿"},
     {id:"sapphire",label:"ياقوتي",color:"#3b82f6",emoji:"💎"},
     {id:"royalBlue",label:"أزرق ملكي",color:"#1e3a8a",emoji:"👑"},
@@ -5687,7 +5691,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
                 style={{padding:"20px 8px 16px",borderRadius:14,
                   border:`2px solid ${active?"var(--p)":"transparent"}`,
                   background:active?"var(--pa08)":"rgba(255,255,255,.03)",
-                  boxShadow:active?"0 0 18px rgba(212,160,23,.18)":"none",
+                  boxShadow:active?"0 0 18px rgba(var(--gold-rgb),.18)":"none",
                   cursor:"pointer",fontFamily:"inherit",outline:"none",
                   display:"flex",flexDirection:"column",alignItems:"center",gap:5,
                   transition:"all .2s",WebkitTapHighlightColor:"transparent"}}>
@@ -5814,10 +5818,10 @@ const fi=(err)=>({width:"100%",padding:"10px 12px",borderRadius:9,border:`1.5px 
 const CSS=`
   :root {
     --p: #d4a017; --pl: #f0c040; --pd: #a07810; --pll: #f5d76e; --pr: 212,160,23;
-    --pa5: rgba(212,160,23,.05); --pa07: rgba(212,160,23,.07); --pa08: rgba(212,160,23,.08);
-    --pa12: rgba(212,160,23,.12); --pa15: rgba(212,160,23,.15); --pa18: rgba(212,160,23,.18);
-    --pa2: rgba(212,160,23,.2); --pa25: rgba(212,160,23,.25); --pa3: rgba(212,160,23,.3);
-    --pa4: rgba(212,160,23,.45);
+    --pa5: rgba(var(--gold-rgb),.05); --pa07: rgba(var(--gold-rgb),.07); --pa08: rgba(var(--gold-rgb),.08);
+    --pa12: rgba(var(--gold-rgb),.12); --pa15: rgba(var(--gold-rgb),.15); --pa18: rgba(var(--gold-rgb),.18);
+    --pa2: rgba(var(--gold-rgb),.2); --pa25: rgba(var(--gold-rgb),.25); --pa3: rgba(var(--gold-rgb),.3);
+    --pa4: rgba(var(--gold-rgb),.45);
     --grad: linear-gradient(135deg,#d4a017,#f0c040);
     --grad2: linear-gradient(135deg,#f0c040,#d4a017);
     --shell-bg: #0d0d1a; --surface-1: #13131f; --surface-2: #1a1a2e; --border-ui: #2a2a3a;
@@ -5893,7 +5897,7 @@ const G={
 
   fp:{padding:"0 13px 24px"},
   fh:{display:"flex",alignItems:"center",gap:8,padding:"12px 0 13px",position:"sticky",top:64,background:"var(--shell-bg)",zIndex:10},
-  bb:{background:"rgba(212,160,23,0.08)",border:"1.5px solid rgba(212,160,23,0.3)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",padding:"6px 14px",borderRadius:20,display:"flex",alignItems:"center",justifyContent:"center",gap:4,fontFamily:"'Cairo',sans-serif",flexShrink:0,WebkitAppearance:"none",appearance:"none"},
+  bb:{background:"rgba(var(--gold-rgb),.08)",border:"1.5px solid rgba(var(--gold-rgb),.3)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",padding:"6px 14px",borderRadius:20,display:"flex",alignItems:"center",justifyContent:"center",gap:4,fontFamily:"'Cairo',sans-serif",flexShrink:0,WebkitAppearance:"none",appearance:"none"},
   ft:{fontSize:17,fontWeight:700,color:"var(--text-primary)"},
   fc:{background:"var(--surface-1)",borderRadius:13,padding:14,border:"1px solid var(--border-ui)",marginBottom:10},
   sl2:{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:9,paddingBottom:5,borderBottom:"1px solid var(--border-ui)"},
