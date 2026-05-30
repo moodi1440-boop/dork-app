@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-D";
+const APP_VERSION = "2026.05.30-E";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1609,6 +1609,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <Row icon="🔔" label="الإشعارات" onClick={()=>{setCustDashNav({tab:"notif",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
         <Row icon="📅" label="حجوزاتي" onClick={()=>{setCustDashNav({tab:"hist",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
         <Row icon="❤️" label="المفضلة" onClick={()=>{setCustDashNav({tab:"favs",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
+        <Row icon="📊" label="تقييم الحضور" onClick={()=>{setCustDashNav({tab:"attend",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
         <Row icon="⏰" label="التذكيرات" onClick={()=>{setCustDashNav({tab:"remind",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
         {/* حسابي */}
         <div style={{height:8}}/>
@@ -4955,6 +4956,66 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     </div></div>
   );
 }
+function AttendanceView({customer,salons}){
+  const[filter,setFilter]=useState("all");
+  const[records,setRecords]=useState([]);
+  const[loading,setLoading]=useState(true);
+  useEffect(()=>{
+    if(!customer?.phone){setLoading(false);return;}
+    sb("bookings","GET",null,
+      `?customer_phone=eq.${encodeURIComponent(customer.phone)}&select=id,salon_id,attendance,status&order=created_at.desc&limit=200`
+    ).then(data=>{
+      if(Array.isArray(data)) setRecords(data.filter(b=>
+        b.attendance==="attended"||b.attendance==="no_show"||(b.status==="approved"&&!b.attendance)
+      ));
+    }).catch(()=>{}).finally(()=>setLoading(false));
+  },[customer?.phone]);
+  const displayed=
+    filter==="attended"?records.filter(r=>r.attendance==="attended"):
+    filter==="no_show"?records.filter(r=>r.attendance==="no_show"):
+    filter==="pending"?records.filter(r=>r.status==="approved"&&!r.attendance):
+    records;
+  const getStatus=r=>r.attendance==="attended"?{label:"ملتزم",color:"#27ae60"}:
+    r.attendance==="no_show"?{label:"غير ملتزم",color:"#e74c3c"}:{label:"قيد الانتظار",color:"#888"};
+  const getSalonName=r=>(salons?.find(x=>String(x.id)===String(r.salon_id))?.name)||"صالون";
+  const filtersArr=[
+    {key:"attended",label:"ملتزم",color:"#27ae60"},
+    {key:"no_show",label:"غير ملتزم",color:"#e74c3c"},
+    {key:"pending",label:"قيد الانتظار",color:"#888"},
+    {key:"all",label:"سجلي الكامل",color:"#d4a017"},
+  ];
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+        {filtersArr.map(f=>(
+          <button key={f.key}
+            style={{padding:"8px 4px",borderRadius:8,border:`1.5px solid ${f.color}`,
+              background:filter===f.key?f.color:"transparent",
+              color:filter===f.key?"#000":f.color,
+              fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}
+            onClick={()=>setFilter(f.key)}>{f.label}</button>
+        ))}
+      </div>
+      {loading
+        ?<div style={{textAlign:"center",color:"#888",padding:24}}>جاري التحميل...</div>
+        :displayed.length===0
+          ?<div style={{textAlign:"center",color:"#888",padding:24}}>لا توجد سجلات</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {displayed.map((r,i)=>{
+              const st=getStatus(r);
+              return(
+                <div key={r.id||i} style={{background:"#13131f",borderRadius:10,padding:"12px 14px",
+                  borderRight:`3px solid ${st.color}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {getSalonName(r)}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:st.color,background:`${st.color}22`,
+                    padding:"4px 10px",borderRadius:20}}>{st.label}</div>
+                </div>
+              );
+            })}
+          </div>}
+    </div>
+  );
+}
 function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$,initTab="settings",initSection=false,setShowDrawer}){
   const[tab,setTab]=useState(initTab);
   const[sectionMode,setSectionMode]=useState(initSection);
@@ -5057,7 +5118,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   const inp2={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid #2a2a3a",background:"#0d0d1a",color:"#f0f0f0",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
 
-  const sectionTitle=tab==="notif"?"الإشعارات":tab==="hist"?"حجوزاتي":tab==="favs"?"المفضلة":tab==="remind"?"التذكيرات":"حسابي";
+  const sectionTitle=tab==="notif"?"الإشعارات":tab==="hist"?"حجوزاتي":tab==="favs"?"المفضلة":tab==="remind"?"التذكيرات":tab==="attend"?"تقييم الحضور":"حسابي";
 
   return(
     <div style={G.page}><div style={G.fp}>
@@ -5298,6 +5359,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           </div>
         </div>
       )}
+
+      {tab==="attend"&&<AttendanceView customer={customer} salons={salons}/>}
 
       {/* إعدادات الحساب */}
       {tab==="settings"&&(
