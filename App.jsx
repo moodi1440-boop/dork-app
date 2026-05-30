@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-L";
+const APP_VERSION = "2026.05.30-M";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1572,35 +1572,35 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const THEME_OPT=[{id:"gold",l:"ذهبي",c:"#d4a017",e:"✨"},{id:"emerald",l:"زمردي",c:"#10b981",e:"🌿"},{id:"sapphire",l:"ياقوتي",c:"#3b82f6",e:"💎"},{id:"royalBlue",l:"ملكي",c:"#1e3a8a",e:"👑"},{id:"bronze",l:"برونزي",c:"#8b5a2b",e:"🏺"},{id:"rose",l:"وردي",c:"#ec4899",e:"🌸"},{id:"violet",l:"بنفسجي",c:"#8b5cf6",e:"🔮"},{id:"crimson",l:"قرمزي",c:"#ef4444",e:"🔴"}];
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   const Row=({icon,label,sub,chev,onClick,danger})=>(
-    <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 20px",background:"transparent",border:"none",borderBottom:"1px solid #181828",cursor:"pointer",fontFamily:"inherit",color:danger?"#e74c3c":"#e0e0e0",WebkitAppearance:"none",appearance:"none",textAlign:"right"}}>
+    <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 20px",background:"transparent",border:"none",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",fontFamily:"inherit",color:danger?"#e74c3c":"var(--text-primary)",WebkitAppearance:"none",appearance:"none",textAlign:"right"}}>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
         <span style={{fontSize:15,fontWeight:600}}>{icon} {label}</span>
-        {sub&&<span style={{fontSize:11,color:"#666"}}>{sub}</span>}
+        {sub&&<span style={{fontSize:11,color:"var(--text-muted)"}}>{sub}</span>}
       </div>
-      {chev&&<span style={{color:exp===chev?"var(--p)":"#444",fontSize:14,transform:exp===chev?"rotate(90deg)":"rotate(-90deg)",transition:"transform 0.2s"}}>‹</span>}
+      {chev&&<span style={{color:exp===chev?"var(--p)":"var(--text-muted)",fontSize:14,transform:exp===chev?"rotate(90deg)":"rotate(-90deg)",transition:"transform 0.2s"}}>‹</span>}
     </button>
   );
-  const SecHead=({label})=>(<div style={{padding:"10px 20px 5px",fontSize:12,color:"var(--p)",fontWeight:700,letterSpacing:.8,background:"#0a0a14",borderBottom:"1px solid #181828",textTransform:"uppercase"}}>{label}</div>);
-  const Panel=({children})=>(<div style={{background:"#111120",padding:"14px 18px",borderBottom:"1px solid #181828"}}>{children}</div>);
+  const SecHead=({label})=>(<div style={{padding:"10px 20px 5px",fontSize:12,color:"var(--p)",fontWeight:700,letterSpacing:.8,background:"var(--shell-bg)",borderBottom:"1px solid var(--border-ui)",textTransform:"uppercase"}}>{label}</div>);
+  const Panel=({children})=>(<div style={{background:"var(--surface-1)",padding:"14px 18px",borderBottom:"1px solid var(--border-ui)"}}>{children}</div>);
   const BtnRow=({children})=>(<div style={{display:"flex",gap:8,marginTop:8}}>{children}</div>);
   const Btn=({label,onClick,primary,danger,small})=>(<button onClick={onClick} style={{flex:1,padding:small?"8px 10px":"11px 10px",borderRadius:10,border:danger?"1.5px solid #e74c3c":primary?"none":"1.5px solid var(--border-ui)",background:primary?"var(--p)":danger?"rgba(231,76,60,.1)":"transparent",color:primary?"#000":danger?"#e74c3c":"#aaa",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:12,WebkitAppearance:"none",appearance:"none"}}>{label}</button>);
   return(
     <>
       {open&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:1100,backdropFilter:"blur(2px)"}}/>}
-      <div style={{position:"fixed",top:0,right:0,bottom:0,width:"82%",maxWidth:340,background:"#0c0c1a",zIndex:1101,transform:open?"translateX(0)":"translateX(110%)",transition:"transform 0.3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",display:"flex",flexDirection:"column",direction:"rtl",boxShadow:open?"-4px 0 32px rgba(0,0,0,.6)":"none"}}>
+      <div style={{position:"fixed",top:0,right:0,bottom:0,width:"82%",maxWidth:340,background:"var(--shell-bg)",zIndex:1101,transform:open?"translateX(0)":"translateX(110%)",transition:"transform 0.3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",display:"flex",flexDirection:"column",direction:"rtl",boxShadow:open?"-4px 0 32px rgba(0,0,0,.6)":"none"}}>
         {/* رأس الـ Drawer */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 20px 16px",borderBottom:"1px solid #181828",background:"#0c0c1a",position:"sticky",top:0,zIndex:1}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 20px 16px",borderBottom:"1px solid var(--border-ui)",background:"var(--shell-bg)",position:"sticky",top:0,zIndex:1}}>
           <button onClick={onClose} style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
           <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>القائمة</span>
         </div>
         {/* بطاقة العميل */}
-        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:16,padding:16,border:"1.5px solid #d4a017",position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
+        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,var(--surface-1),var(--surface-2))",borderRadius:16,padding:16,border:"1.5px solid #d4a017",position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
           <div style={{position:"absolute",top:12,left:12,background:`${cl.color}22`,border:`1px solid ${cl.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:cl.color}}>{cl.label}</div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
-            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
-            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📋 الحجوزات: <span style={{color:"#f0c040"}}>{history.length} حجز</span></div>
-            <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📋 الحجوزات: <span style={{color:"#f0c040"}}>{history.length} حجز</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
           </div>
         </div>
         <div style={{height:12}}/>
@@ -1647,10 +1647,10 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <Panel>
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
               {THEME_OPT.map(t=>{const active=settings?.theme===t.id;return(
-                <button key={t.id} onClick={()=>applyTheme(t.id)} style={{padding:"10px 4px",borderRadius:10,border:`2px solid ${active?t.c:"var(--border-ui)"}`,background:active?t.c+"22":"#1a1a2e",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4,WebkitAppearance:"none",appearance:"none"}}>
+                <button key={t.id} onClick={()=>applyTheme(t.id)} style={{padding:"10px 4px",borderRadius:10,border:`2px solid ${active?t.c:"var(--border-ui)"}`,background:active?t.c+"22":"var(--surface-2)",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4,WebkitAppearance:"none",appearance:"none"}}>
                   <span style={{fontSize:18}}>{t.e}</span>
                   <div style={{width:14,height:14,borderRadius:"50%",background:t.c,boxShadow:active?`0 0 0 2px ${t.c}55`:"none"}}/>
-                  <span style={{fontSize:9,color:active?t.c:"#555",fontFamily:"inherit"}}>{t.l}</span>
+                  <span style={{fontSize:9,color:active?t.c:"var(--text-muted)",fontFamily:"inherit"}}>{t.l}</span>
                 </button>
               );})}
             </div>
@@ -1661,7 +1661,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <Panel>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
               {[{v:"dark",l:"🌙 داكن"},{v:"dim",l:"⬛ رمادي"},{v:"light",l:"☀️ فاتح"}].map(({v,l})=>{const active=(themeMode||(darkMode?"dark":"light"))===v;return(
-                <button key={v} onClick={()=>{setThemeMode?setThemeMode(v):setDarkMode(v!=="light");persistUiToSupabase&&persistUiToSupabase({darkMode:v!=="light"});}} style={{padding:"13px 4px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
+                <button key={v} onClick={()=>{setThemeMode?setThemeMode(v):setDarkMode(v!=="light");persistUiToSupabase&&persistUiToSupabase({darkMode:v!=="light"});}} style={{padding:"13px 4px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
                   {l}{active&&" ✓"}
                 </button>
               );})}
@@ -1673,7 +1673,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <Panel>
             <div style={{display:"flex",gap:8}}>
               {[{id:"sm",l:"صغير",s:12},{id:"md",l:"متوسط",s:14},{id:"lg",l:"كبير",s:16}].map(({id,l,s})=>{const active=(settings?.fontSize||"md")===id;return(
-                <button key={id} onClick={()=>{setSettings(st=>({...st,fontSize:id}));persistUiToSupabase&&persistUiToSupabase({fontSize:id});}} style={{flex:1,padding:"12px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,fontSize:s,WebkitAppearance:"none",appearance:"none"}}>
+                <button key={id} onClick={()=>{setSettings(st=>({...st,fontSize:id}));persistUiToSupabase&&persistUiToSupabase({fontSize:id});}} style={{flex:1,padding:"12px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,fontSize:s,WebkitAppearance:"none",appearance:"none"}}>
                   {l}
                 </button>
               );})}
@@ -1685,9 +1685,9 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <Panel>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
               {BACKGROUNDS.map(bg=>{const active=(settings?.bg||"none")===bg.id;return(
-                <button key={bg.id} onClick={()=>{setSettings(st=>({...st,bg:bg.id}));persistUiToSupabase&&persistUiToSupabase({bg:bg.id});}} style={{padding:"12px 4px",borderRadius:10,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"#1a1a2e",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4,WebkitAppearance:"none",appearance:"none"}}>
+                <button key={bg.id} onClick={()=>{setSettings(st=>({...st,bg:bg.id}));persistUiToSupabase&&persistUiToSupabase({bg:bg.id});}} style={{padding:"12px 4px",borderRadius:10,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4,WebkitAppearance:"none",appearance:"none"}}>
                   <span style={{fontSize:20}}>{bg.emoji}</span>
-                  <span style={{fontSize:9,color:active?"var(--p)":"#555",fontFamily:"inherit"}}>{bg.label}{active&&" ✓"}</span>
+                  <span style={{fontSize:9,color:active?"var(--p)":"var(--text-muted)",fontFamily:"inherit"}}>{bg.label}{active&&" ✓"}</span>
                 </button>
               );})}
             </div>
@@ -1698,7 +1698,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <Panel>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
               {TONES.map(t=>{const active=settings?.defaultTone===t.id;return(
-                <button key={t.id} onClick={()=>{setSettings(st=>({...st,defaultTone:t.id}));playTone(t.id,0.8);persistUiToSupabase&&persistUiToSupabase({defaultTone:t.id});}} style={{padding:"8px 6px",borderRadius:9,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#aaa",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
+                <button key={t.id} onClick={()=>{setSettings(st=>({...st,defaultTone:t.id}));playTone(t.id,0.8);persistUiToSupabase&&persistUiToSupabase({defaultTone:t.id});}} style={{padding:"8px 6px",borderRadius:9,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
                   {t.label}{active&&" ✓"}
                 </button>
               );})}
@@ -1713,22 +1713,22 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <Row icon="❓" label="أسئلة شائعة" onClick={()=>{onClose();setView("settings");}}/>
         {/* الخروج والحذف */}
         <div style={{height:16}}/>
-        <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid #181828",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
+        <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
           🚪 تسجيل الخروج
         </button>
-        <button onClick={()=>setShowDel(true)} style={{width:"100%",padding:"14px 20px",background:"linear-gradient(135deg,rgba(231,76,60,.15),rgba(231,76,60,.08))",border:"none",borderTop:"1px solid #181828",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"center",WebkitAppearance:"none",appearance:"none"}}>
+        <button onClick={()=>setShowDel(true)} style={{width:"100%",padding:"14px 20px",background:"linear-gradient(135deg,rgba(231,76,60,.15),rgba(231,76,60,.08))",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"center",WebkitAppearance:"none",appearance:"none"}}>
           🗑 حذف الحساب نهائياً
         </button>
-        <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"#555",fontFamily:"monospace"}}>الإصدار {APP_VERSION}</div>
+        <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>الإصدار {APP_VERSION}</div>
         <div style={{height:40}}/>
       </div>
       {/* نوافذ تسجيل الخروج وحذف الحساب — خارج الـ drawer لتجنب تأثير transform */}
       {showLogout&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowLogout(false)}>
-          <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--border-ui)",borderBottom:"none"}} onClick={e=>e.stopPropagation()}>
+          <div style={{width:"100%",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--border-ui)",borderBottom:"none"}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
               <div style={{fontSize:36,marginBottom:10}}>🚪</div>
-              <div style={{fontSize:16,fontWeight:700,color:"#fff",marginBottom:6}}>تسجيل الخروج</div>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>تسجيل الخروج</div>
               <div style={{fontSize:12,color:"var(--text-muted)"}}>هل أنت متأكد من رغبتك في الخروج؟</div>
             </div>
             <div style={{display:"flex",gap:10}}>
@@ -1740,13 +1740,13 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
       )}
       {showDel&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowDel(false)}>
-          <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #d4a017",borderBottom:"none",boxShadow:"0 -8px 32px rgba(212,160,23,0.15)"}} onClick={e=>e.stopPropagation()}>
+          <div style={{width:"100%",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid #d4a017",borderBottom:"none",boxShadow:"0 -8px 32px rgba(212,160,23,0.15)"}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
               <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
-              <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:6}}>حذف الحساب نهائياً</div>
+              <div style={{fontSize:16,fontWeight:900,color:"var(--text-primary)",marginBottom:6}}>حذف الحساب نهائياً</div>
               <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
             </div>
-            <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"#ddd",lineHeight:1.8}}>
+            <div style={{background:"rgba(212,160,23,0.08)",border:"1px solid rgba(212,160,23,0.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"var(--text-primary)",lineHeight:1.8}}>
               <div style={{marginBottom:6,fontWeight:700,color:"#f0c040"}}>سيتم حذف:</div>
               <div>✗ حسابك بشكل نهائي</div>
               <div>✗ جميع معلوماتك الشخصية</div>
@@ -1798,7 +1798,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
 // ==============================================
 function EntryView({setView}){
   return(
-    <div style={{minHeight:"100vh",background:"#0b1220",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 28px",gap:40}}>
+    <div style={{minHeight:"100vh",background:"var(--shell-bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 28px",gap:40}}>
       <img src="/logo.png" alt="DORK" style={{width:"82%",maxWidth:320,objectFit:"contain"}}/>
       <div style={{width:"100%",maxWidth:340,display:"flex",flexDirection:"column",gap:16}}>
         <button onClick={()=>setView("ownerLogin")} style={{width:"100%",padding:"17px 0",borderRadius:14,border:"2px solid #d4a017",background:"transparent",color:"#d4a017",fontSize:18,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>✂️ دخول كصالون</button>
@@ -1908,8 +1908,8 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 
       {/* ── Carousel track ── */}
       {reviews.length===0?(
-        <div style={{margin:"0 16px",padding:"18px 14px",borderRadius:14,background:"#0b0f1c",border:"1px dashed rgba(212,160,23,.2)",textAlign:"center"}}>
-          <div style={{fontSize:12,color:"#555"}}>لا توجد تقييمات بعد. قيّم زيارتك من حسابك.</div>
+        <div style={{margin:"0 16px",padding:"18px 14px",borderRadius:14,background:"var(--shell-bg)",border:"1px dashed rgba(212,160,23,.2)",textAlign:"center"}}>
+          <div style={{fontSize:12,color:"var(--text-muted)"}}>لا توجد تقييمات بعد. قيّم زيارتك من حسابك.</div>
         </div>
       ):(
         <>
@@ -1932,7 +1932,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
                   scrollSnapAlign:"start",
                   flex:"0 0 calc(88% - 24px)",
                   maxWidth:310,
-                  background:"#0b1220",
+                  background:"var(--surface-1)",
                   border:`1px solid rgba(212,160,23,${i===activeIdx?.42:.18})`,
                   borderRadius:16,
                   padding:"14px 14px 12px",
@@ -1945,7 +1945,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
                 </div>
                 {/* Customer + stars */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                  <span style={{fontSize:11,color:"#c8c8d8",fontWeight:600}}>
+                  <span style={{fontSize:11,color:"var(--text-primary)",fontWeight:600}}>
                     👤 {r.customerName}
                   </span>
                   <div style={{display:"flex",gap:1}}>
@@ -1957,11 +1957,11 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
                 {/* Divider */}
                 <div style={{height:1,background:"rgba(212,160,23,.08)",marginBottom:10}}/>
                 {/* Comment */}
-                <div style={{fontSize:11,color:r.comment?"#a8a8bc":"#3a3a50",fontStyle:r.comment?"italic":"normal",lineHeight:1.55,flex:1,minHeight:32}}>
+                <div style={{fontSize:11,color:"var(--text-muted)",fontStyle:r.comment?"italic":"normal",lineHeight:1.55,flex:1,minHeight:32}}>
                   {r.comment?`«${r.comment}»`:"بدون تعليق نصي"}
                 </div>
                 {/* Date */}
-                <div style={{fontSize:9,color:"#3a3a52",marginTop:8,paddingTop:6,borderTop:"1px solid rgba(212,160,23,.06)"}}>
+                <div style={{fontSize:9,color:"var(--text-muted)",marginTop:8,paddingTop:6,borderTop:"1px solid rgba(212,160,23,.06)"}}>
                   📅 {r.date||"—"}{r.time?` · ${r.time}`:""}
                 </div>
                 {/* عرض الكل — minimalist gold-border button */}
@@ -2255,12 +2255,12 @@ function SalonReviewsView({salon,reviews,setView}){
                   {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(212,160,23,.18)"}}>★</span>)}
                 </div>
               </div>
-              {r.comment&&<div style={{fontSize:12,color:"#a8a8bc",fontStyle:"italic",lineHeight:1.5,marginBottom:5}}>«{r.comment}»</div>}
-              {r.date&&<div style={{fontSize:9,color:"#444",marginBottom:r.ownerReply?8:0}}>📅 {r.date}</div>}
+              {r.comment&&<div style={{fontSize:12,color:"var(--text-muted)",fontStyle:"italic",lineHeight:1.5,marginBottom:5}}>«{r.comment}»</div>}
+              {r.date&&<div style={{fontSize:9,color:"var(--text-muted)",marginBottom:r.ownerReply?8:0}}>📅 {r.date}</div>}
               {r.ownerReply&&(
                 <div style={{marginTop:6,padding:"8px 10px",background:"rgba(212,160,23,.07)",borderRight:"3px solid #d4a017",borderRadius:"0 8px 8px 0"}}>
                   <div style={{fontSize:10,color:"#d4a017",fontWeight:700,marginBottom:3}}>✂ رد الصالون</div>
-                  <div style={{fontSize:11,color:"#c8c8a8",lineHeight:1.5}}>{r.ownerReply}</div>
+                  <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.5}}>{r.ownerReply}</div>
                 </div>
               )}
             </div>
@@ -3362,7 +3362,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
           value={search}
           onChange={e=>setSearch(e.target.value)}
           placeholder="🔍 ابحث باسم الصالون أو العميل..."
-          style={{width:"100%",boxSizing:"border-box",padding:"8px 12px",borderRadius:10,background:"#111825",border:"1px solid rgba(212,160,23,.25)",color:"#e0e0e0",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none"}}
+          style={{width:"100%",boxSizing:"border-box",padding:"8px 12px",borderRadius:10,background:"var(--bg-input)",border:"1px solid rgba(212,160,23,.25)",color:"var(--text-primary)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none"}}
         />
       </div>
 
@@ -3389,7 +3389,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
         )}
         {filtered.map((r,i)=>(
           <div key={r.key} onClick={()=>openSalon(r.salonId)}
-            style={{cursor:"pointer",background:"#0b1220",border:`1px solid rgba(212,160,23,.28)`,borderRadius:14,padding:"14px 14px 12px",boxShadow:"0 2px 16px rgba(0,0,0,.35)",transition:"box-shadow .2s"}}>
+            style={{cursor:"pointer",background:"var(--surface-1)",border:`1px solid rgba(212,160,23,.28)`,borderRadius:14,padding:"14px 14px 12px",boxShadow:"0 2px 16px rgba(0,0,0,.35)",transition:"box-shadow .2s"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
               <div style={{fontSize:12,fontWeight:800,color:gold,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                 ✂ {r.salonName}
@@ -3398,7 +3398,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
                 {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:dimStar}}>★</span>)}
               </div>
             </div>
-            <div style={{fontSize:11,color:"#9898a8",marginBottom:r.comment?8:0}}>👤 {r.customerName}</div>
+            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:r.comment?8:0}}>👤 {r.customerName}</div>
             {r.comment&&(
               <>
                 <div style={{height:1,background:"rgba(212,160,23,.1)",margin:"8px 0"}}/>
@@ -4079,8 +4079,8 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
                   {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(212,160,23,.18)"}}>★</span>)}
                 </div>
               </div>
-              {r.comment&&<div style={{fontSize:11,color:"#a8a8bc",fontStyle:"italic",lineHeight:1.5,marginBottom:4}}>«{r.comment}»</div>}
-              <div style={{fontSize:9,color:"#444",marginBottom:8}}>📅 {r.booking_date||r.created_at?.split("T")[0]||"—"}</div>
+              {r.comment&&<div style={{fontSize:11,color:"var(--text-muted)",fontStyle:"italic",lineHeight:1.5,marginBottom:4}}>«{r.comment}»</div>}
+              <div style={{fontSize:9,color:"var(--text-muted)",marginBottom:8}}>📅 {r.booking_date||r.created_at?.split("T")[0]||"—"}</div>
 
               {/* رد موجود */}
               {hasReply&&!(replyDraft[r.id]!=null&&replyDraft[r.id]!==r.owner_reply)&&(
