@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-O";
+const APP_VERSION = "2026.05.30-P";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -725,7 +725,7 @@ export default function App(){
   const[showDrawer,setShowDrawer]=useState(false);
   const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
   const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light"||t==="lgray")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
-  const darkMode=themeMode==="dark"||themeMode==="dim";
+  const darkMode=themeMode==="dark"||themeMode==="dim"||themeMode==="lgray";
   const setDarkMode=useCallback((v)=>setThemeMode(v?"dark":"light"),[]);
   const[compareSalons,setCompareSalons]=useState([]); // مقارنة صالونين
   const[pullRefreshing,setPullRefreshing]=useState(false); // Pull to refresh
@@ -734,13 +734,13 @@ export default function App(){
   // تطبيق وضع الإضاءة (داكن / رمادي / فاتح / رمادي فاتح)
   useEffect(()=>{
     const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light",lg=themeMode==="lgray";
-    const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#eaeaed":"#f7f7f7";
-    const s1=dk?"#13131f":dm?"#28282f":lg?"#f5f5f8":"#ffffff";
-    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#e0e0e5":"#f0f0f2";
-    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#c6c6cb":"#e0e0e0";
-    const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#1c1c1e":"#2d2d2d";
-    const tm=dk?"#888888":dm?"#8e8e9e":lg?"#8e8e93":"#666666";
-    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#ffffff":"#fafafa";
+    const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#8e8e93":"#f7f7f7";
+    const s1=dk?"#13131f":dm?"#28282f":lg?"#a8a8ad":"#ffffff";
+    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#7c7c81":"#f0f0f2";
+    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#6e6e73":"#e0e0e0";
+    const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#f5f5f5":"#2d2d2d";
+    const tm=dk?"#888888":dm?"#8e8e9e":lg?"#d4d4d8":"#666666";
+    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#7c7c81":"#fafafa";
     const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
     setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
     setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
@@ -749,7 +749,7 @@ export default function App(){
     document.body.style.background=shell;
     document.documentElement.classList.remove("dork-dark","dork-dim","dork-light","dork-lgray");
     document.documentElement.classList.add("dork-"+themeMode);
-    try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",(lt||lg)?"0":"1");}catch{}
+    try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",lt?"0":"1");}catch{}
   },[themeMode]);
 
   // Splash Screen - يختفي بعد ثانيتين
@@ -5656,7 +5656,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
           {[
             {id:"dark",  icon:"🌙", label:"داكن",        desc:"مريح للليل",     shell:"#0d0d1a", card:"#13131f"},
             {id:"dim",   icon:"⬛", label:"رمادي",       desc:"متوازن وهادئ",   shell:"#1e1e24", card:"#28282f"},
-            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#eaeaed", card:"#f5f5f8"},
+            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#8e8e93", card:"#a8a8ad"},
             {id:"light", icon:"☀️", label:"فاتح",        desc:"واضح للنهار",    shell:"#f7f7f7", card:"#ffffff"},
           ].map(({id,icon,label,desc,shell,card})=>{
             const active=themeMode===id;
@@ -5810,21 +5810,23 @@ const CSS=`
   html.dork-dark input[type=date]::-webkit-calendar-picker-indicator,
   html.dork-dark input[type=time]::-webkit-calendar-picker-indicator,
   html.dork-dim input[type=date]::-webkit-calendar-picker-indicator,
-  html.dork-dim input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);}
+  html.dork-dim input[type=time]::-webkit-calendar-picker-indicator,
+  html.dork-lgray input[type=date]::-webkit-calendar-picker-indicator,
+  html.dork-lgray input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);}
   select option{background:#1a1a2e;color:#f0f0f0;}
   html.dork-light select option{background:#ffffff;color:#2d2d2d;}
-  html.dork-lgray select option{background:#f5f5f8;color:#1c1c1e;}
+  html.dork-lgray select option{background:#7c7c81;color:#f5f5f5;}
   html.dork-dim select option{background:#28282f;color:#ededf2;}
   html.dork-light body,html.dork-light body *{scrollbar-color:#e0e0e0 #f7f7f7;}
-  html.dork-lgray body,html.dork-lgray body *{scrollbar-color:#c6c6cb #eaeaed;}
+  html.dork-lgray body,html.dork-lgray body *{scrollbar-color:#6e6e73 #8e8e93;}
   html.dork-light{color-scheme:light;}
-  html.dork-lgray{color-scheme:light;}
+  html.dork-lgray{color-scheme:dark;}
   html.dork-dim{color-scheme:dark;}
-  html.dork-light input,html.dork-light textarea,html.dork-light select,
-  html.dork-lgray input,html.dork-lgray textarea,html.dork-lgray select{
+  html.dork-light input,html.dork-light textarea,html.dork-light select{
     background:var(--bg-input)!important;color:var(--text-primary)!important;
     border-color:var(--border-ui)!important;}
-  html.dork-dim input,html.dork-dim textarea,html.dork-dim select{
+  html.dork-dim input,html.dork-dim textarea,html.dork-dim select,
+  html.dork-lgray input,html.dork-lgray textarea,html.dork-lgray select{
     background:var(--bg-input)!important;color:var(--text-primary)!important;
     border-color:var(--border-ui)!important;}
   button:active{opacity:.82;}
