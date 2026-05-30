@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-I";
+const APP_VERSION = "2026.05.30-J";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -724,33 +724,33 @@ export default function App(){
   const[toast,setToast]=useState(null);
   const[showDrawer,setShowDrawer]=useState(false);
   const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
-  const[darkMode,setDarkMode]=useState(()=>{try{return localStorage.getItem("dork_dark")!=="0";}catch{return true;}});
+  const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
+  const darkMode=themeMode!=="light";
+  const setDarkMode=useCallback((v)=>setThemeMode(v?"dark":"light"),[]);
   const[compareSalons,setCompareSalons]=useState([]); // مقارنة صالونين
   const[pullRefreshing,setPullRefreshing]=useState(false); // Pull to refresh
   const[rescheduleId,setRescheduleId]=useState(null);
 
-  // تطبيق وضع الإضاءة
+  // تطبيق وضع الإضاءة (داكن / رمادي / فاتح)
   useEffect(()=>{
-    const shell=darkMode?"#0d0d1a":"#e8eaf0";
-    const s1=darkMode?"#13131f":"#ffffff";
-    const s2=darkMode?"#1a1a2e":"#f1f3f9";
-    const bor=darkMode?"#2a2a3a":"#c8cdd8";
-    document.documentElement.style.setProperty("--bg-main",darkMode?"#0d0d1a":"#f0f0f8");
-    document.documentElement.style.setProperty("--bg-card",s1);
-    document.documentElement.style.setProperty("--bg-input",darkMode?"#0d0d1a":"#f5f5f5");
-    document.documentElement.style.setProperty("--txt-main",darkMode?"#f0f0f0":"#1a1a2e");
-    document.documentElement.style.setProperty("--txt-sub",darkMode?"#888":"#5c6470");
-    document.documentElement.style.setProperty("--border",bor);
-    document.documentElement.style.setProperty("--shell-bg",shell);
-    document.documentElement.style.setProperty("--surface-1",s1);
-    document.documentElement.style.setProperty("--surface-2",s2);
-    document.documentElement.style.setProperty("--border-ui",bor);
-    document.documentElement.style.setProperty("--text-primary",darkMode?"#f0f0f0":"#141420");
-    document.documentElement.style.setProperty("--text-muted",darkMode?"#888":"#5c6470");
+    const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light";
+    const shell=dk?"#0d0d1a":dm?"#1c1c28":"#f0f0f8";
+    const s1=dk?"#13131f":dm?"#242436":"#ffffff";
+    const s2=dk?"#1a1a2e":dm?"#2c2c42":"#f1f3f9";
+    const bor=dk?"#2a2a3a":dm?"#3a3a50":"#c8cdd8";
+    const tp=dk?"#f0f0f0":dm?"#e8e8f0":"#141420";
+    const tm=dk?"#888":dm?"#9090a8":"#5c6470";
+    const inp=dk?"#0d0d1a":dm?"#1c1c28":"#f5f5f5";
+    const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
+    setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
+    setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
+    setProp("--shell-bg",shell);setProp("--surface-1",s1);setProp("--surface-2",s2);
+    setProp("--border-ui",bor);setProp("--text-primary",tp);setProp("--text-muted",tm);
     document.body.style.background=shell;
-    document.documentElement.classList.toggle("dork-light",!darkMode);
-    try{localStorage.setItem("dork_dark",darkMode?"1":"0");}catch{}
-  },[darkMode]);
+    document.documentElement.classList.remove("dork-dark","dork-dim","dork-light");
+    document.documentElement.classList.add("dork-"+themeMode);
+    try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",lt?"0":"1");}catch{}
+  },[themeMode]);
 
   // Splash Screen - يختفي بعد ثانيتين
   useEffect(()=>{
@@ -1419,7 +1419,7 @@ export default function App(){
     search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,settings,setSettings,
     socialLinks,setSocialLinks:updateSocial,
     handleCustomerLogin,
-    darkMode,setDarkMode,
+    darkMode,setDarkMode,themeMode,setThemeMode,
     compareSalons,setCompareSalons,
     handlePullRefresh,pullRefreshing,
     resetHome,
@@ -1436,7 +1436,7 @@ export default function App(){
       {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"#3a1a1a",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>❌ خطأ في الاتصال بقاعدة البيانات — تحقق من الاتصال</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
-      <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
+      <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
       <div style={{paddingTop:(view==="entry"||view==="custLogin"||view==="ownerLogin")?0:64}}>
         {view==="entry"&&     <EntryView setView={setView}/>}
         {view==="home"&&      <HomeView {...sharedProps}/>}
@@ -1525,7 +1525,7 @@ function DorkLogoSvg({size=40}){
 // ==============================================
 //  CUSTOMER DRAWER — القائمة الجانبية للعميل
 // ==============================================
-function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,setView,setCustDashKey,setCustDashNav,settings,setSettings,darkMode,setDarkMode,persistUiToSupabase,toast$,salons,favSet}){
+function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,setView,setCustDashKey,setCustDashNav,settings,setSettings,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase,toast$,salons,favSet}){
   const[exp,setExp]=useState(null);
   const[editName,setEditName]=useState("");
   const[editPhone,setEditPhone]=useState("");
@@ -1656,7 +1656,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
             </div>
           </Panel>
         )}
-        <Row icon="🌙" label="الوضع" sub={darkMode?"داكن":"فاتح"} chev="dark" onClick={()=>toggle("dark")}/>
+        <Row icon="🌙" label="الوضع" sub={themeMode==="dark"?"داكن":themeMode==="dim"?"رمادي":"فاتح"} chev="dark" onClick={()=>toggle("dark")}/>
         {exp==="dark"&&(
           <Panel>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
@@ -5539,7 +5539,7 @@ function InlineStarRating({rated,comment,onRate}){
   );
 }
 
-function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,persistUiToSupabase}){
+function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase}){
   const[sec,setSec]=useState("theme");
   const SECS=[
     {id:"theme",icon:"🎨",label:"الألوان"},
@@ -5651,17 +5651,31 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
       {sec==="dark"&&<div style={box}>
         <div style={hdr}>🌙 وضع الإضاءة</div>
-        <div style={{fontSize:11,color:"#666",marginBottom:14}}>اختر الوضع المناسب لك</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {[{id:true,label:"🌙 داكن",desc:"خلفية سوداء"},{id:false,label:"☀ فاتح",desc:"خلفية بيضاء"}].map(({id,label,desc})=>{
-            const active=darkMode===id;
+        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:16}}>اختر الوضع المناسب لعينيك</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+          {[
+            {id:"dark", icon:"🌙", label:"داكن",   desc:"مريح للليل",   bg:"#0d0d1a", preview:"#13131f"},
+            {id:"dim",  icon:"⬛", label:"رمادي",  desc:"متوازن وهادئ", bg:"#1c1c28", preview:"#242436"},
+            {id:"light",icon:"☀️", label:"فاتح",   desc:"واضح للنهار",  bg:"#f0f0f8", preview:"#ffffff"},
+          ].map(({id,icon,label,desc,bg,preview})=>{
+            const active=(themeMode||(darkMode?"dark":"light"))===id;
             return(
-              <button key={String(id)} onClick={()=>{setDarkMode&&setDarkMode(id);persistUiToSupabase&&persistUiToSupabase({darkMode:id});}}
-                style={{padding:"18px 10px",borderRadius:12,border:`2px solid ${active?"var(--p)":"#2a2a3a"}`,background:active?"var(--pa12)":id?"#0d0d1a":"#f0f0f0",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)"}}>
-                <span style={{fontSize:28}}>{label.split(" ")[0]}</span>
-                <span style={{fontSize:13,color:active?"var(--p)":id?"#aaa":"#555",fontWeight:active?700:400}}>{label.split(" ")[1]}</span>
-                <span style={{fontSize:11,color:"#888"}}>{desc}</span>
-                {active&&<span style={{fontSize:10,color:"var(--p)"}}>✓ مفعّل</span>}
+              <button key={id}
+                onClick={()=>{setThemeMode?setThemeMode(id):setDarkMode(id!=="light");persistUiToSupabase&&persistUiToSupabase({darkMode:id!=="light"});}}
+                style={{padding:"20px 8px 16px",borderRadius:14,
+                  border:`2px solid ${active?"var(--p)":"transparent"}`,
+                  background:active?"var(--pa08)":"rgba(255,255,255,.03)",
+                  boxShadow:active?"0 0 18px rgba(212,160,23,.18)":"none",
+                  cursor:"pointer",fontFamily:"inherit",outline:"none",
+                  display:"flex",flexDirection:"column",alignItems:"center",gap:5,
+                  transition:"all .2s",WebkitTapHighlightColor:"transparent"}}>
+                <div style={{width:44,height:30,borderRadius:8,background:bg,border:`1.5px solid ${preview}`,
+                  display:"flex",alignItems:"center",justifyContent:"center",marginBottom:4,fontSize:18}}>
+                  {icon}
+                </div>
+                <span style={{fontSize:13,fontWeight:700,color:active?"var(--p)":"var(--text-primary)"}}>{label}</span>
+                <span style={{fontSize:10,color:"var(--text-muted)",textAlign:"center"}}>{desc}</span>
+                {active&&<span style={{fontSize:10,color:"var(--p)",fontWeight:700,marginTop:2}}>✓ مفعّل</span>}
               </button>
             );
           })}
@@ -5792,10 +5806,20 @@ const CSS=`
   body{direction:rtl;font-family:'Cairo',sans-serif;background:var(--shell-bg);}
   ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:var(--p);border-radius:4px;}
   .hcard{transition:transform .18s,box-shadow .18s;} .hcard:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(var(--pr),.18)!important;}
-  html:not(.dork-light) input[type=date]::-webkit-calendar-picker-indicator,
-  html:not(.dork-light) input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);}
+  html.dork-dark input[type=date]::-webkit-calendar-picker-indicator,
+  html.dork-dark input[type=time]::-webkit-calendar-picker-indicator,
+  html.dork-dim input[type=date]::-webkit-calendar-picker-indicator,
+  html.dork-dim input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);}
   select option{background:#1a1a2e;color:#f0f0f0;}
   html.dork-light select option{background:#f3f4f6;color:#1a1a2e;}
+  html.dork-dim select option{background:#2c2c42;color:#e8e8f0;}
+  html.dork-light body,html.dork-light body *{scrollbar-color:#c8cdd8 #f0f0f8;}
+  html.dork-light input,html.dork-light textarea,html.dork-light select{
+    background:var(--bg-input)!important;color:var(--text-primary)!important;
+    border-color:var(--border-ui)!important;}
+  html.dork-dim input,html.dork-dim textarea,html.dork-dim select{
+    background:var(--bg-input)!important;color:var(--text-primary)!important;
+    border-color:var(--border-ui)!important;}
   button:active{opacity:.82;}
 `;
 
