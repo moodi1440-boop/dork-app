@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-B";
+const APP_VERSION = "2026.05.30-C";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -5061,7 +5061,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{if(sectionMode&&tab!=="settings"){setTab("settings");}else setView("home");}}>← رجوع</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:"حسابي"}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button>}</div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:"حسابي"}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"#aaa",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>خروج</button>}</div>
 
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
       {!sectionMode&&showLocPrompt&&!customer?.locationLat&&(
