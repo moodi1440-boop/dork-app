@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-S";
+const APP_VERSION = "2026.05.30-T";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -735,31 +735,33 @@ export default function App(){
   useEffect(()=>{
     const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light",lg=themeMode==="lgray";
     const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#8e8e93":"#f7f7f7";
-    const s1=dk?"#13131f":dm?"#28282f":lg?"#e8e8ed":"#ffffff";
-    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#d1d1d6":"#f0f0f2";
-    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#aeaeb2":"#e0e0e0";
+    const s1=dk?"#13131f":dm?"#28282f":lg?"#aeaeb2":"#ffffff";
+    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#c7c7cc":"#f0f0f2";
+    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#8e8e93":"#e0e0e0";
     const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#1c1c1e":"#2d2d2d";
     const tm=dk?"#888888":dm?"#8e8e9e":lg?"#3a3a3c":"#666666";
-    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#dadadf":"#fafafa";
+    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#c7c7cc":"#fafafa";
     const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
     setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
     setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
     setProp("--shell-bg",shell);setProp("--surface-1",s1);setProp("--surface-2",s2);
     setProp("--border-ui",bor);setProp("--text-primary",tp);setProp("--text-muted",tm);
-    // لوحة ألوان lgray: بدون ذهبي — رمادي فضي متعدد الدرجات
+    // لوحة ألوان lgray: بدون ذهبي — رمادي متعدد الدرجات
     if(lg){
-      setProp("--p","#3a3a3c");setProp("--pl","#636366");setProp("--pd","#1c1c1e");
-      setProp("--pll","#aeaeb2");setProp("--pr","58,58,60");
-      setProp("--pa5","rgba(58,58,60,.05)");setProp("--pa07","rgba(58,58,60,.07)");
-      setProp("--pa08","rgba(58,58,60,.08)");setProp("--pa12","rgba(58,58,60,.12)");
-      setProp("--pa15","rgba(58,58,60,.15)");setProp("--pa18","rgba(58,58,60,.18)");
-      setProp("--pa2","rgba(58,58,60,.2)");setProp("--pa25","rgba(58,58,60,.25)");
-      setProp("--pa3","rgba(58,58,60,.3)");setProp("--pa4","rgba(58,58,60,.45)");
-      setProp("--grad","linear-gradient(135deg,#aeaeb2,#c7c7cc)");
-      setProp("--grad2","linear-gradient(135deg,#c7c7cc,#aeaeb2)");
+      setProp("--p","#1c1c1e");setProp("--pl","#3a3a3c");setProp("--pd","#1c1c1e");
+      setProp("--pll","#636366");setProp("--pr","28,28,30");
+      setProp("--pa5","rgba(28,28,30,.05)");setProp("--pa07","rgba(28,28,30,.07)");
+      setProp("--pa08","rgba(28,28,30,.08)");setProp("--pa12","rgba(28,28,30,.12)");
+      setProp("--pa15","rgba(28,28,30,.15)");setProp("--pa18","rgba(28,28,30,.18)");
+      setProp("--pa2","rgba(28,28,30,.2)");setProp("--pa25","rgba(28,28,30,.25)");
+      setProp("--pa3","rgba(28,28,30,.3)");setProp("--pa4","rgba(28,28,30,.45)");
+      setProp("--grad","linear-gradient(135deg,#c7c7cc,#dadadf)");
+      setProp("--grad2","linear-gradient(135deg,#dadadf,#c7c7cc)");
       setProp("--p-text","#1c1c1e");
+      setProp("--chip-border","#3a3a3c");
     } else {
       setProp("--p-text","#000000");
+      setProp("--chip-border",bor);
     }
     document.body.style.background=shell;
     document.documentElement.classList.remove("dork-dark","dork-dim","dork-light","dork-lgray");
@@ -823,7 +825,7 @@ export default function App(){
               defaultTone:u.defaultTone??s.defaultTone,
               bg:normalizeBgId(u.bg??s.bg??"none"),
             }));
-            if(typeof u.darkMode==="boolean")setDarkMode(u.darkMode);
+            if(u.themeMode&&["dark","dim","light","lgray"].includes(u.themeMode)){setThemeMode(u.themeMode);}else if(typeof u.darkMode==="boolean")setDarkMode(u.darkMode);
           }catch{}
         }
       }
@@ -831,7 +833,7 @@ export default function App(){
       if(!silent){
         try{const v=localStorage.getItem("dork_loyalty");if(v)setLoyaltySettings({...DEFAULT_LOYALTY_SETTINGS,...JSON.parse(v)});}catch{}
         try{const v=localStorage.getItem("dork_social");if(v)setSocialLinks({...DEFAULT_SOCIAL_LINKS,...JSON.parse(v)});}catch{}
-        try{const v=localStorage.getItem("dork_ui");if(v){const u=JSON.parse(v);setSettings(s=>({...s,...u,bg:normalizeBgId(u.bg||s.bg)}));if(typeof u.darkMode==="boolean")setDarkMode(u.darkMode);}}catch{}
+        try{const v=localStorage.getItem("dork_ui");if(v){const u=JSON.parse(v);setSettings(s=>({...s,...u,bg:normalizeBgId(u.bg||s.bg)}));if(u.themeMode&&["dark","dim","light","lgray"].includes(u.themeMode)){setThemeMode(u.themeMode);}else if(typeof u.darkMode==="boolean")setDarkMode(u.darkMode);}}catch{}
       }
     }
   },[]);
@@ -891,6 +893,7 @@ export default function App(){
       defaultTone:p.defaultTone??settings.defaultTone??"bell",
       bg:normalizeBgId(p.bg??settings.bg??"none"),
       darkMode:typeof p.darkMode==="boolean"?p.darkMode:darkMode,
+      themeMode:p.themeMode??themeMode,
     };
     const base={social_links:JSON.stringify(S)};
     const full={...base,ui_settings:JSON.stringify(U)};
@@ -921,7 +924,7 @@ export default function App(){
         localStorage.setItem("dork_ui",JSON.stringify(U));
       }catch{}
     }
-  },[socialLinks,settings.theme,settings.fontSize,settings.defaultTone,settings.bg,darkMode]);
+  },[socialLinks,settings.theme,settings.fontSize,settings.defaultTone,settings.bg,darkMode,themeMode]);
 
   const updateSocial=useCallback((newVal)=>{
     const merged={...DEFAULT_SOCIAL_LINKS,...(typeof newVal==="function"?newVal(socialLinks):{...socialLinks,...newVal})};
@@ -1612,13 +1615,13 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>القائمة</span>
         </div>
         {/* بطاقة العميل */}
-        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,var(--surface-1),var(--surface-2))",borderRadius:16,padding:16,border:"1.5px solid #d4a017",position:"relative",boxShadow:"0 4px 16px rgba(212,160,23,0.1)"}}>
-          <div style={{position:"absolute",top:12,left:12,background:`${cl.color}22`,border:`1px solid ${cl.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:cl.color}}>{cl.label}</div>
+        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,var(--surface-1),var(--surface-2))",borderRadius:16,padding:16,border:`1.5px solid ${themeMode==="lgray"?"var(--border-ui)":"#d4a017"}`,position:"relative",boxShadow:`0 4px 16px ${themeMode==="lgray"?"rgba(0,0,0,0.12)":"rgba(212,160,23,0.1)"}`}}>
+          <div style={themeMode==="lgray"?{position:"absolute",top:12,left:12,background:"#e5e5ea",border:"1px solid #aeaeb2",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#3a3a3c",boxShadow:"0 2px 8px rgba(0,0,0,.22)"}:{position:"absolute",top:12,left:12,background:`${cl.color}22`,border:`1px solid ${cl.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:cl.color}}>{cl.label}</div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📋 الحجوزات: <span style={{color:"#f0c040"}}>{history.length} حجز</span></div>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>👤 الاسم: <span style={{color:themeMode==="lgray"?"var(--p)":"#f0c040"}}>{customer.name}</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📞 الجوال: <span style={{color:themeMode==="lgray"?"var(--p)":"#f0c040"}}>{customer.phone}</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📋 الحجوزات: <span style={{color:themeMode==="lgray"?"var(--p)":"#f0c040"}}>{history.length} حجز</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📅 الانضمام: <span style={{color:themeMode==="lgray"?"var(--p)":"#f0c040"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
           </div>
         </div>
         <div style={{height:12}}/>
@@ -1639,7 +1642,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
             <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4}}>رقم الجوال</label><input style={inp} inputMode="numeric" value={editPhone} onChange={e=>setEditPhone(e.target.value)}/></div>
             <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4}}>البريد الإلكتروني</label><input style={inp} type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)}/></div>
             {/* موقعي */}
-            <div style={{marginBottom:12,background:"rgba(212,160,23,.06)",borderRadius:10,padding:10,border:"1px solid rgba(212,160,23,.2)"}}>
+            <div style={{marginBottom:12,background:"var(--pa08)",borderRadius:10,padding:10,border:"1px solid var(--pa18)"}}>
               <div style={{fontSize:11,fontWeight:700,color:"var(--p)",marginBottom:8}}>📍 موقعي</div>
               {customer?.locationLat?(
                 <div style={{display:"flex",gap:8}}>
@@ -1651,7 +1654,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
               )}
             </div>
             {/* PIN */}
-            <div style={{marginBottom:12,background:"rgba(212,160,23,.06)",borderRadius:10,padding:10,border:"1px solid rgba(212,160,23,.2)"}}>
+            <div style={{marginBottom:12,background:"var(--pa08)",borderRadius:10,padding:10,border:"1px solid var(--pa18)"}}>
               <button style={{width:"100%",padding:"9px",borderRadius:8,border:"1.5px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setEditPinStep("select")}>🔐 تغيير رمز PIN</button>
             </div>
             <BtnRow><Btn primary label="حفظ" onClick={saveEdit}/><Btn label="إلغاء" onClick={()=>setExp(null)}/></BtnRow>
@@ -5674,7 +5677,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
           {[
             {id:"dark",  icon:"🌙", label:"داكن",        desc:"مريح للليل",     shell:"#0d0d1a", card:"#13131f"},
             {id:"dim",   icon:"⬛", label:"رمادي",       desc:"متوازن وهادئ",   shell:"#1e1e24", card:"#28282f"},
-            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#8e8e93", card:"#e8e8ed"},
+            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#8e8e93", card:"#aeaeb2"},
             {id:"light", icon:"☀️", label:"فاتح",        desc:"واضح للنهار",    shell:"#f7f7f7", card:"#ffffff"},
           ].map(({id,icon,label,desc,shell,card})=>{
             const active=themeMode===id;
@@ -5833,7 +5836,8 @@ const CSS=`
   html.dork-light select option,html.dork-lgray select option{background:#ffffff;color:#1c1c1e;}
   html.dork-dim select option{background:#28282f;color:#ededf2;}
   html.dork-light body,html.dork-light body *{scrollbar-color:#e0e0e0 #f7f7f7;}
-  html.dork-lgray body,html.dork-lgray body *{scrollbar-color:#9e9ea3 #8e8e93;}
+  html.dork-lgray body,html.dork-lgray body *{scrollbar-color:#3a3a3c #8e8e93;}
+  html.dork-lgray body{font-weight:500;}
   html.dork-light{color-scheme:light;}
   html.dork-lgray{color-scheme:light;}
   html.dork-dim{color-scheme:dark;}
@@ -5851,7 +5855,7 @@ const G={
   searchRow:{display:"flex",alignItems:"center",gap:8,background:"var(--surface-1)",borderRadius:10,border:"1.5px solid var(--border-ui)",padding:"9px 12px"},
   searchInput:{flex:1,background:"transparent",border:"none",color:"var(--text-primary)",fontSize:14,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
   searchClear:{background:"var(--border-ui)",border:"none",color:"var(--text-muted)",cursor:"pointer",borderRadius:"50%",width:22,height:22,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",flexShrink:0},
-  sortChip:{padding:"6px 12px",borderRadius:20,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600,whiteSpace:"nowrap",flexShrink:0},
+  sortChip:{padding:"6px 12px",borderRadius:20,border:"1.5px solid var(--chip-border)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600,whiteSpace:"nowrap",flexShrink:0},
   sortChipOn:{background:"var(--pa15)",border:"1.5px solid var(--p)",color:"var(--p)"},
   app:{minHeight:"100vh",background:"var(--shell-bg)",color:"var(--text-primary)",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
   page:{maxWidth:480,margin:"0 auto",minHeight:"100vh",paddingBottom:30},
