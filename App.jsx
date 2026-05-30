@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-X";
+const APP_VERSION = "2026.05.30-Y";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -724,53 +724,36 @@ export default function App(){
   const[toast,setToast]=useState(null);
   const[showDrawer,setShowDrawer]=useState(false);
   const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
-  const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light"||t==="lgray")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
+  const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
   const darkMode=themeMode==="dark"||themeMode==="dim";
   const setDarkMode=useCallback((v)=>setThemeMode(v?"dark":"light"),[]);
   const[compareSalons,setCompareSalons]=useState([]); // مقارنة صالونين
   const[pullRefreshing,setPullRefreshing]=useState(false); // Pull to refresh
   const[rescheduleId,setRescheduleId]=useState(null);
 
-  // تطبيق وضع الإضاءة (داكن / رمادي / فاتح / رمادي فاتح)
+  // تطبيق وضع الإضاءة (داكن / رمادي / فاتح)
   useEffect(()=>{
-    const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light",lg=themeMode==="lgray";
-    const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#9e9b98":"#f7f7f7";
-    const s1=dk?"#13131f":dm?"#28282f":lg?"#e0dedd":"#ffffff";
-    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#d0cecd":"#f0f0f2";
-    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#5a5a5c":"#e0e0e0";
-    const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#1c1c1e":"#2d2d2d";
-    const tm=dk?"#888888":dm?"#8e8e9e":lg?"#3a3a3c":"#666666";
-    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#d4d2d0":"#fafafa";
+    const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light";
+    const shell=dk?"#0d0d1a":dm?"#1e1e24":"#f7f7f7";
+    const s1=dk?"#13131f":dm?"#28282f":"#ffffff";
+    const s2=dk?"#1a1a2e":dm?"#32323a":"#f0f0f2";
+    const bor=dk?"#2a2a3a":dm?"#3d3d47":"#e0e0e0";
+    const tp=dk?"#f0f0f0":dm?"#ededf2":"#2d2d2d";
+    const tm=dk?"#888888":dm?"#8e8e9e":"#666666";
+    const inp=dk?"#0d0d1a":dm?"#1a1a21":"#fafafa";
     const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
     setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
     setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
     setProp("--shell-bg",shell);setProp("--surface-1",s1);setProp("--surface-2",s2);
     setProp("--border-ui",bor);setProp("--text-primary",tp);setProp("--text-muted",tm);
-    // lgray: خلفية رمادية دافئة — فواصل فحمية منفصلة تماماً عن الخلفية
-    if(lg){
-      setProp("--p","#1c1c1e");setProp("--pl","#3a3a3c");setProp("--pd","#1c1c1e");
-      setProp("--pll","#636366");setProp("--pr","28,28,30");
-      setProp("--pa5","rgba(28,28,30,.05)");setProp("--pa07","rgba(28,28,30,.07)");
-      setProp("--pa08","rgba(28,28,30,.08)");setProp("--pa12","rgba(28,28,30,.12)");
-      setProp("--pa15","rgba(28,28,30,.15)");setProp("--pa18","rgba(28,28,30,.18)");
-      setProp("--pa2","rgba(28,28,30,.2)");setProp("--pa25","rgba(28,28,30,.25)");
-      setProp("--pa3","rgba(28,28,30,.3)");setProp("--pa4","rgba(28,28,30,.45)");
-      setProp("--grad","linear-gradient(135deg,#b8b6b4,#d0cecd)");
-      setProp("--grad2","linear-gradient(135deg,#d0cecd,#b8b6b4)");
-      setProp("--p-text","#1c1c1e");
-      setProp("--chip-border","#5a5a5c");
-      setProp("--gold","var(--p)");
-      setProp("--gold-rgb","28,28,30");
-    } else {
-      setProp("--p-text","#000000");
-      setProp("--chip-border",bor);
-      setProp("--gold","#d4a017");
-      setProp("--gold-rgb","212,160,23");
-    }
+    setProp("--p-text","#000000");
+    setProp("--chip-border",bor);
+    setProp("--gold","#d4a017");
+    setProp("--gold-rgb","212,160,23");
     document.body.style.background=shell;
-    document.documentElement.classList.remove("dork-dark","dork-dim","dork-light","dork-lgray");
+    document.documentElement.classList.remove("dork-dark","dork-dim","dork-light");
     document.documentElement.classList.add("dork-"+themeMode);
-    try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",(lt||lg)?"0":"1");}catch{}
+    try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",lt?"0":"1");}catch{}
   },[themeMode]);
 
   // Splash Screen - يختفي بعد ثانيتين
@@ -829,7 +812,7 @@ export default function App(){
               defaultTone:u.defaultTone??s.defaultTone,
               bg:normalizeBgId(u.bg??s.bg??"none"),
             }));
-            if(u.themeMode&&["dark","dim","light","lgray"].includes(u.themeMode))setThemeMode(u.themeMode);
+            if(u.themeMode&&["dark","dim","light"].includes(u.themeMode))setThemeMode(u.themeMode);
           }catch{}
         }
       }
@@ -837,7 +820,7 @@ export default function App(){
       if(!silent){
         try{const v=localStorage.getItem("dork_loyalty");if(v)setLoyaltySettings({...DEFAULT_LOYALTY_SETTINGS,...JSON.parse(v)});}catch{}
         try{const v=localStorage.getItem("dork_social");if(v)setSocialLinks({...DEFAULT_SOCIAL_LINKS,...JSON.parse(v)});}catch{}
-        try{const v=localStorage.getItem("dork_ui");if(v){const u=JSON.parse(v);setSettings(s=>({...s,...u,bg:normalizeBgId(u.bg||s.bg)}));if(u.themeMode&&["dark","dim","light","lgray"].includes(u.themeMode))setThemeMode(u.themeMode);}}catch{}
+        try{const v=localStorage.getItem("dork_ui");if(v){const u=JSON.parse(v);setSettings(s=>({...s,...u,bg:normalizeBgId(u.bg||s.bg)}));if(u.themeMode&&["dark","dim","light"].includes(u.themeMode))setThemeMode(u.themeMode);}}catch{}
       }
     }
   },[]);
@@ -863,8 +846,6 @@ export default function App(){
     document.documentElement.style.setProperty("--base-font",sizes[settings.fontSize||"md"]);
   },[settings.fontSize]);
   useEffect(()=>{
-    // lgray لها لوحة ألوانها المستقلة — لا تُطبَّق ألوان الثيم عليها
-    if(themeMode==="lgray") return;
     const t=THEMES[settings.theme]||THEMES.gold;
     const r=document.documentElement.style;
     r.setProperty("--p",  t.primary);
@@ -1619,13 +1600,13 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>القائمة</span>
         </div>
         {/* بطاقة العميل */}
-        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,var(--surface-1),var(--surface-2))",borderRadius:16,padding:16,border:`1.5px solid ${themeMode==="lgray"?"var(--border-ui)":"#d4a017"}`,position:"relative",boxShadow:`0 4px 16px ${themeMode==="lgray"?"rgba(0,0,0,0.12)":"rgba(var(--gold-rgb),.1)"}`}}>
-          <div style={themeMode==="lgray"?{position:"absolute",top:12,left:12,background:"#e5e5ea",border:"1px solid #aeaeb2",borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#3a3a3c",boxShadow:"0 2px 8px rgba(0,0,0,.22)"}:{position:"absolute",top:12,left:12,background:`${cl.color}22`,border:`1px solid ${cl.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:cl.color}}>{cl.label}</div>
+        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,var(--surface-1),var(--surface-2))",borderRadius:16,padding:16,border:"1.5px solid var(--gold)",position:"relative",boxShadow:"0 4px 16px rgba(var(--gold-rgb),.1)"}}>
+          <div style={{position:"absolute",top:12,left:12,background:`${cl.color}22`,border:`1px solid ${cl.color}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:cl.color}}>{cl.label}</div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>👤 الاسم: <span style={{color:themeMode==="lgray"?"var(--p)":"#f0c040"}}>{customer.name}</span></div>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📞 الجوال: <span style={{color:themeMode==="lgray"?"var(--p)":"#f0c040"}}>{customer.phone}</span></div>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📋 الحجوزات: <span style={{color:themeMode==="lgray"?"var(--p)":"#f0c040"}}>{history.length} حجز</span></div>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📅 الانضمام: <span style={{color:themeMode==="lgray"?"var(--p)":"#f0c040"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>👤 الاسم: <span style={{color:"#f0c040"}}>{customer.name}</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📞 الجوال: <span style={{color:"#f0c040"}}>{customer.phone}</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📋 الحجوزات: <span style={{color:"#f0c040"}}>{history.length} حجز</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📅 الانضمام: <span style={{color:"#f0c040"}}>{new Date(customer.createdAt).toLocaleDateString("ar")}</span></div>
           </div>
         </div>
         <div style={{height:12}}/>
@@ -1681,11 +1662,11 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
             </div>
           </Panel>
         )}
-        <Row icon="🌙" label="الوضع" sub={themeMode==="dark"?"داكن":themeMode==="dim"?"رمادي":themeMode==="lgray"?"رمادي فاتح":"فاتح"} chev="dark" onClick={()=>toggle("dark")}/>
+        <Row icon="🌙" label="الوضع" sub={themeMode==="dark"?"داكن":themeMode==="dim"?"رمادي":"فاتح"} chev="dark" onClick={()=>toggle("dark")}/>
         {exp==="dark"&&(
           <Panel>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {[{v:"dark",l:"🌙 داكن"},{v:"dim",l:"⬛ رمادي"},{v:"lgray",l:"🔘 رمادي فاتح"},{v:"light",l:"☀️ فاتح"}].map(({v,l})=>{const active=themeMode===v;return(
+              {[{v:"dark",l:"🌙 داكن"},{v:"dim",l:"⬛ رمادي"},{v:"light",l:"☀️ فاتح"}].map(({v,l})=>{const active=themeMode===v;return(
                 <button key={v} onClick={()=>{setThemeMode(v);persistUiToSupabase&&persistUiToSupabase({darkMode:v==="dark"||v==="dim",themeMode:v});}} style={{padding:"13px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
                   {l}{active&&" ✓"}
                 </button>
@@ -5681,7 +5662,6 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
           {[
             {id:"dark",  icon:"🌙", label:"داكن",        desc:"مريح للليل",     shell:"#0d0d1a", card:"#13131f"},
             {id:"dim",   icon:"⬛", label:"رمادي",       desc:"متوازن وهادئ",   shell:"#1e1e24", card:"#28282f"},
-            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#9e9b98", card:"#e0dedd"},
             {id:"light", icon:"☀️", label:"فاتح",        desc:"واضح للنهار",    shell:"#f7f7f7", card:"#ffffff"},
           ].map(({id,icon,label,desc,shell,card})=>{
             const active=themeMode===id;
@@ -5837,16 +5817,12 @@ const CSS=`
   html.dork-dim input[type=date]::-webkit-calendar-picker-indicator,
   html.dork-dim input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);}
   select option{background:#1a1a2e;color:#f0f0f0;}
-  html.dork-light select option,html.dork-lgray select option{background:#ffffff;color:#1c1c1e;}
+  html.dork-light select option{background:#ffffff;color:#1c1c1e;}
   html.dork-dim select option{background:#28282f;color:#ededf2;}
   html.dork-light body,html.dork-light body *{scrollbar-color:#e0e0e0 #f7f7f7;}
-  html.dork-lgray body,html.dork-lgray body *{scrollbar-color:#5a5a5c #9e9b98;}
-  html.dork-lgray body{font-weight:500;}
   html.dork-light{color-scheme:light;}
-  html.dork-lgray{color-scheme:light;}
   html.dork-dim{color-scheme:dark;}
-  html.dork-light input,html.dork-light textarea,html.dork-light select,
-  html.dork-lgray input,html.dork-lgray textarea,html.dork-lgray select{
+  html.dork-light input,html.dork-light textarea,html.dork-light select{
     background:var(--bg-input)!important;color:var(--text-primary)!important;
     border-color:var(--border-ui)!important;}
   html.dork-dim input,html.dork-dim textarea,html.dork-dim select{
