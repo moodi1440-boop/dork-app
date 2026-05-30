@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-H";
+const APP_VERSION = "2026.05.30-I";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -5024,11 +5024,11 @@ function AttendanceView({customer,salons}){
           <div style={{background:"#13131f",borderRadius:12,padding:"12px 16px",border:"1px solid #2a2a3a"}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
               <span style={{fontSize:12,color:"#aaa"}}>نسبة الحضور</span>
-              <span style={{fontSize:13,fontWeight:700,color:"#27ae60"}}>{attendRate}%</span>
+              <span style={{fontSize:13,fontWeight:700,color:"#d4a017"}}>{attendRate}%</span>
             </div>
             <div style={{height:8,background:"#1a1a2e",borderRadius:999,overflow:"hidden"}}>
               <div style={{height:"100%",width:`${attendRate}%`,
-                background:"linear-gradient(90deg,#27ae60,#2ecc71)",borderRadius:999}}/>
+                background:"linear-gradient(90deg,#d4a017,#f0c040)",borderRadius:999}}/>
             </div>
             <div style={{fontSize:11,color:"#666",marginTop:6,textAlign:"right"}}>
               {counts.attended} حضر من أصل {evalTotal} تم تقييمه
