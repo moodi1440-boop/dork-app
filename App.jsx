@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-N";
+const APP_VERSION = "2026.05.30-O";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -724,32 +724,32 @@ export default function App(){
   const[toast,setToast]=useState(null);
   const[showDrawer,setShowDrawer]=useState(false);
   const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
-  const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
-  const darkMode=themeMode!=="light";
+  const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light"||t==="lgray")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
+  const darkMode=themeMode==="dark"||themeMode==="dim";
   const setDarkMode=useCallback((v)=>setThemeMode(v?"dark":"light"),[]);
   const[compareSalons,setCompareSalons]=useState([]); // مقارنة صالونين
   const[pullRefreshing,setPullRefreshing]=useState(false); // Pull to refresh
   const[rescheduleId,setRescheduleId]=useState(null);
 
-  // تطبيق وضع الإضاءة (داكن / رمادي / فاتح)
+  // تطبيق وضع الإضاءة (داكن / رمادي / فاتح / رمادي فاتح)
   useEffect(()=>{
-    const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light";
-    const shell=dk?"#0d0d1a":dm?"#18181e":"#f0f0f8";
-    const s1=dk?"#13131f":dm?"#212128":"#ffffff";
-    const s2=dk?"#1a1a2e":dm?"#28282f":"#f1f3f9";
-    const bor=dk?"#2a2a3a":dm?"#35353d":"#c8cdd8";
-    const tp=dk?"#f0f0f0":dm?"#ededf2":"#141420";
-    const tm=dk?"#888":dm?"#888899":"#5c6470";
-    const inp=dk?"#0d0d1a":dm?"#14141a":"#f5f5f5";
+    const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light",lg=themeMode==="lgray";
+    const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#eaeaed":"#f7f7f7";
+    const s1=dk?"#13131f":dm?"#28282f":lg?"#f5f5f8":"#ffffff";
+    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#e0e0e5":"#f0f0f2";
+    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#c6c6cb":"#e0e0e0";
+    const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#1c1c1e":"#2d2d2d";
+    const tm=dk?"#888888":dm?"#8e8e9e":lg?"#8e8e93":"#666666";
+    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#ffffff":"#fafafa";
     const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
     setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
     setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
     setProp("--shell-bg",shell);setProp("--surface-1",s1);setProp("--surface-2",s2);
     setProp("--border-ui",bor);setProp("--text-primary",tp);setProp("--text-muted",tm);
     document.body.style.background=shell;
-    document.documentElement.classList.remove("dork-dark","dork-dim","dork-light");
+    document.documentElement.classList.remove("dork-dark","dork-dim","dork-light","dork-lgray");
     document.documentElement.classList.add("dork-"+themeMode);
-    try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",lt?"0":"1");}catch{}
+    try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",(lt||lg)?"0":"1");}catch{}
   },[themeMode]);
 
   // Splash Screen - يختفي بعد ثانيتين
@@ -1656,12 +1656,12 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
             </div>
           </Panel>
         )}
-        <Row icon="🌙" label="الوضع" sub={themeMode==="dark"?"داكن":themeMode==="dim"?"رمادي":"فاتح"} chev="dark" onClick={()=>toggle("dark")}/>
+        <Row icon="🌙" label="الوضع" sub={themeMode==="dark"?"داكن":themeMode==="dim"?"رمادي":themeMode==="lgray"?"رمادي فاتح":"فاتح"} chev="dark" onClick={()=>toggle("dark")}/>
         {exp==="dark"&&(
           <Panel>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-              {[{v:"dark",l:"🌙 داكن"},{v:"dim",l:"⬛ رمادي"},{v:"light",l:"☀️ فاتح"}].map(({v,l})=>{const active=(themeMode||(darkMode?"dark":"light"))===v;return(
-                <button key={v} onClick={()=>{setThemeMode?setThemeMode(v):setDarkMode(v!=="light");persistUiToSupabase&&persistUiToSupabase({darkMode:v!=="light"});}} style={{padding:"13px 4px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {[{v:"dark",l:"🌙 داكن"},{v:"dim",l:"⬛ رمادي"},{v:"lgray",l:"🔘 رمادي فاتح"},{v:"light",l:"☀️ فاتح"}].map(({v,l})=>{const active=themeMode===v;return(
+                <button key={v} onClick={()=>{setThemeMode(v);persistUiToSupabase&&persistUiToSupabase({darkMode:v==="dark"||v==="dim"});}} style={{padding:"13px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
                   {l}{active&&" ✓"}
                 </button>
               );})}
@@ -5652,16 +5652,17 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
       {sec==="dark"&&<div style={box}>
         <div style={hdr}>🌙 وضع الإضاءة</div>
         <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:16}}>اختر الوضع المناسب لعينيك</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           {[
-            {id:"dark", icon:"🌙", label:"داكن",   desc:"مريح للليل",   bg:"#0d0d1a", preview:"#13131f"},
-            {id:"dim",  icon:"⬛", label:"رمادي",  desc:"متوازن وهادئ", bg:"#1c1c28", preview:"#242436"},
-            {id:"light",icon:"☀️", label:"فاتح",   desc:"واضح للنهار",  bg:"#f0f0f8", preview:"#ffffff"},
-          ].map(({id,icon,label,desc,bg,preview})=>{
-            const active=(themeMode||(darkMode?"dark":"light"))===id;
+            {id:"dark",  icon:"🌙", label:"داكن",        desc:"مريح للليل",     shell:"#0d0d1a", card:"#13131f"},
+            {id:"dim",   icon:"⬛", label:"رمادي",       desc:"متوازن وهادئ",   shell:"#1e1e24", card:"#28282f"},
+            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#eaeaed", card:"#f5f5f8"},
+            {id:"light", icon:"☀️", label:"فاتح",        desc:"واضح للنهار",    shell:"#f7f7f7", card:"#ffffff"},
+          ].map(({id,icon,label,desc,shell,card})=>{
+            const active=themeMode===id;
             return(
               <button key={id}
-                onClick={()=>{setThemeMode?setThemeMode(id):setDarkMode(id!=="light");persistUiToSupabase&&persistUiToSupabase({darkMode:id!=="light"});}}
+                onClick={()=>{setThemeMode(id);persistUiToSupabase&&persistUiToSupabase({darkMode:id==="dark"||id==="dim"});}}
                 style={{padding:"20px 8px 16px",borderRadius:14,
                   border:`2px solid ${active?"var(--p)":"transparent"}`,
                   background:active?"var(--pa08)":"rgba(255,255,255,.03)",
@@ -5669,7 +5670,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
                   cursor:"pointer",fontFamily:"inherit",outline:"none",
                   display:"flex",flexDirection:"column",alignItems:"center",gap:5,
                   transition:"all .2s",WebkitTapHighlightColor:"transparent"}}>
-                <div style={{width:44,height:30,borderRadius:8,background:bg,border:`1.5px solid ${preview}`,
+                <div style={{width:44,height:30,borderRadius:8,background:shell,border:`1.5px solid ${card}`,
                   display:"flex",alignItems:"center",justifyContent:"center",marginBottom:4,fontSize:18}}>
                   {icon}
                 </div>
@@ -5811,12 +5812,16 @@ const CSS=`
   html.dork-dim input[type=date]::-webkit-calendar-picker-indicator,
   html.dork-dim input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);}
   select option{background:#1a1a2e;color:#f0f0f0;}
-  html.dork-light select option{background:#f3f4f6;color:#1a1a2e;}
-  html.dork-dim select option{background:#2c2c42;color:#e8e8f0;}
-  html.dork-light body,html.dork-light body *{scrollbar-color:#c8cdd8 #f0f0f8;}
+  html.dork-light select option{background:#ffffff;color:#2d2d2d;}
+  html.dork-lgray select option{background:#f5f5f8;color:#1c1c1e;}
+  html.dork-dim select option{background:#28282f;color:#ededf2;}
+  html.dork-light body,html.dork-light body *{scrollbar-color:#e0e0e0 #f7f7f7;}
+  html.dork-lgray body,html.dork-lgray body *{scrollbar-color:#c6c6cb #eaeaed;}
   html.dork-light{color-scheme:light;}
+  html.dork-lgray{color-scheme:light;}
   html.dork-dim{color-scheme:dark;}
-  html.dork-light input,html.dork-light textarea,html.dork-light select{
+  html.dork-light input,html.dork-light textarea,html.dork-light select,
+  html.dork-lgray input,html.dork-lgray textarea,html.dork-lgray select{
     background:var(--bg-input)!important;color:var(--text-primary)!important;
     border-color:var(--border-ui)!important;}
   html.dork-dim input,html.dork-dim textarea,html.dork-dim select{
