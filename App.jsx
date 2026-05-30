@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-E";
+const APP_VERSION = "2026.05.30-F";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -4978,22 +4978,32 @@ function AttendanceView({customer,salons}){
   const getStatus=r=>r.attendance==="attended"?{label:"ملتزم",color:"#27ae60"}:
     r.attendance==="no_show"?{label:"غير ملتزم",color:"#e74c3c"}:{label:"قيد الانتظار",color:"#888"};
   const getSalonName=r=>(salons?.find(x=>String(x.id)===String(r.salon_id))?.name)||"صالون";
+  const counts={
+    all:records.length,
+    attended:records.filter(r=>r.attendance==="attended").length,
+    no_show:records.filter(r=>r.attendance==="no_show").length,
+    pending:records.filter(r=>r.status==="approved"&&!r.attendance).length,
+  };
   const filtersArr=[
-    {key:"attended",label:"ملتزم",color:"#27ae60"},
+    {key:"all",label:"سجلي الكامل",color:"#d4a017"},
     {key:"no_show",label:"غير ملتزم",color:"#e74c3c"},
     {key:"pending",label:"قيد الانتظار",color:"#888"},
-    {key:"all",label:"سجلي الكامل",color:"#d4a017"},
+    {key:"attended",label:"ملتزم",color:"#27ae60"},
   ];
   return(
-    <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
         {filtersArr.map(f=>(
           <button key={f.key}
-            style={{padding:"8px 4px",borderRadius:8,border:`1.5px solid ${f.color}`,
-              background:filter===f.key?f.color:"transparent",
-              color:filter===f.key?"#000":f.color,
-              fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}
-            onClick={()=>setFilter(f.key)}>{f.label}</button>
+            onClick={()=>setFilter(f.key)}
+            style={{padding:"18px 4px 14px",borderRadius:14,border:`2px solid ${f.color}`,
+              background:filter===f.key?`${f.color}22`:"#0d0d1a",
+              color:f.color,cursor:"pointer",fontFamily:"inherit",
+              display:"flex",flexDirection:"column",alignItems:"center",gap:6,
+              outline:"none",WebkitTapHighlightColor:"transparent"}}>
+            <span style={{fontSize:24,fontWeight:800,lineHeight:1}}>{counts[f.key]}</span>
+            <span style={{fontSize:10,fontWeight:700,textAlign:"center",lineHeight:1.3}}>{f.label}</span>
+          </button>
         ))}
       </div>
       {loading
