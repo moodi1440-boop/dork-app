@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-U";
+const APP_VERSION = "2026.05.30-V";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -734,19 +734,19 @@ export default function App(){
   // تطبيق وضع الإضاءة (داكن / رمادي / فاتح / رمادي فاتح)
   useEffect(()=>{
     const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light",lg=themeMode==="lgray";
-    const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#8e8e93":"#f7f7f7";
-    const s1=dk?"#13131f":dm?"#28282f":lg?"#aeaeb2":"#ffffff";
-    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#c7c7cc":"#f0f0f2";
-    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#aeaeb2":"#e0e0e0";
+    const shell=dk?"#0d0d1a":dm?"#1e1e24":lg?"#9e9b98":"#f7f7f7";
+    const s1=dk?"#13131f":dm?"#28282f":lg?"#e0dedd":"#ffffff";
+    const s2=dk?"#1a1a2e":dm?"#32323a":lg?"#d0cecd":"#f0f0f2";
+    const bor=dk?"#2a2a3a":dm?"#3d3d47":lg?"#5a5a5c":"#e0e0e0";
     const tp=dk?"#f0f0f0":dm?"#ededf2":lg?"#1c1c1e":"#2d2d2d";
     const tm=dk?"#888888":dm?"#8e8e9e":lg?"#3a3a3c":"#666666";
-    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#c7c7cc":"#fafafa";
+    const inp=dk?"#0d0d1a":dm?"#1a1a21":lg?"#d4d2d0":"#fafafa";
     const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
     setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
     setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
     setProp("--shell-bg",shell);setProp("--surface-1",s1);setProp("--surface-2",s2);
     setProp("--border-ui",bor);setProp("--text-primary",tp);setProp("--text-muted",tm);
-    // لوحة ألوان lgray: بدون ذهبي — رمادي متعدد الدرجات
+    // lgray: خلفية رمادية دافئة — فواصل فحمية منفصلة تماماً عن الخلفية
     if(lg){
       setProp("--p","#1c1c1e");setProp("--pl","#3a3a3c");setProp("--pd","#1c1c1e");
       setProp("--pll","#636366");setProp("--pr","28,28,30");
@@ -755,10 +755,10 @@ export default function App(){
       setProp("--pa15","rgba(28,28,30,.15)");setProp("--pa18","rgba(28,28,30,.18)");
       setProp("--pa2","rgba(28,28,30,.2)");setProp("--pa25","rgba(28,28,30,.25)");
       setProp("--pa3","rgba(28,28,30,.3)");setProp("--pa4","rgba(28,28,30,.45)");
-      setProp("--grad","linear-gradient(135deg,#c7c7cc,#dadadf)");
-      setProp("--grad2","linear-gradient(135deg,#dadadf,#c7c7cc)");
+      setProp("--grad","linear-gradient(135deg,#b8b6b4,#d0cecd)");
+      setProp("--grad2","linear-gradient(135deg,#d0cecd,#b8b6b4)");
       setProp("--p-text","#1c1c1e");
-      setProp("--chip-border","#3a3a3c");
+      setProp("--chip-border","#5a5a5c");
     } else {
       setProp("--p-text","#000000");
       setProp("--chip-border",bor);
@@ -5677,7 +5677,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
           {[
             {id:"dark",  icon:"🌙", label:"داكن",        desc:"مريح للليل",     shell:"#0d0d1a", card:"#13131f"},
             {id:"dim",   icon:"⬛", label:"رمادي",       desc:"متوازن وهادئ",   shell:"#1e1e24", card:"#28282f"},
-            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#8e8e93", card:"#aeaeb2"},
+            {id:"lgray", icon:"🔘", label:"رمادي فاتح",  desc:"محايد وفخم",     shell:"#9e9b98", card:"#e0dedd"},
             {id:"light", icon:"☀️", label:"فاتح",        desc:"واضح للنهار",    shell:"#f7f7f7", card:"#ffffff"},
           ].map(({id,icon,label,desc,shell,card})=>{
             const active=themeMode===id;
@@ -5836,7 +5836,7 @@ const CSS=`
   html.dork-light select option,html.dork-lgray select option{background:#ffffff;color:#1c1c1e;}
   html.dork-dim select option{background:#28282f;color:#ededf2;}
   html.dork-light body,html.dork-light body *{scrollbar-color:#e0e0e0 #f7f7f7;}
-  html.dork-lgray body,html.dork-lgray body *{scrollbar-color:#3a3a3c #8e8e93;}
+  html.dork-lgray body,html.dork-lgray body *{scrollbar-color:#5a5a5c #9e9b98;}
   html.dork-lgray body{font-weight:500;}
   html.dork-light{color-scheme:light;}
   html.dork-lgray{color-scheme:light;}
