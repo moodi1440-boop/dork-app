@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-E";
+const APP_VERSION = "2026.05.31-F";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -882,7 +882,7 @@ export default function App(){
       darkMode:typeof p.darkMode==="boolean"?p.darkMode:darkMode,
       themeMode:p.themeMode??themeMode,
     };
-    const base={social_links:JSON.stringify(S)};
+    const base=social!==undefined?{social_links:JSON.stringify(S)}:{};
     const full={...base,ui_settings:JSON.stringify(U)};
     const push=async(data)=>{
       const id=appSettingsIdRef.current;
@@ -918,10 +918,10 @@ export default function App(){
     if(!Array.isArray(merged.customFields))merged.customFields=[];
     setSocialLinks(merged);
     try{localStorage.setItem("dork_social",JSON.stringify(merged));}catch{}
-    void saveAppSettings(null,merged);
+    void saveAppSettings(merged,null);
   },[socialLinks,saveAppSettings]);
 
-  const persistUiToSupabase=useCallback((patch)=>{void saveAppSettings(socialLinks,patch);},[saveAppSettings,socialLinks]);
+  const persistUiToSupabase=useCallback((patch)=>{void saveAppSettings(undefined,patch);},[saveAppSettings]);
 
   const dorkBgStyle=useMemo(()=>buildDorkBgStyle(settings.bg||"none",darkMode),[settings.bg,darkMode]);
 
@@ -5744,29 +5744,29 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
       {sec==="social"&&<div style={box}>
         <div style={hdr}>📱 وسائل التواصل</div>
-        <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12,background:"rgba(var(--pr),.06)",padding:"8px 12px",borderRadius:8,border:"1px solid rgba(var(--pr),.2)",display:"flex",alignItems:"center",gap:6}}>
-          <span>💡</span><span>للتواصل مع إدارة التطبيق — التعديل متاح من لوحة الإدارة</span>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {socialLinks?.email&&<a href={`mailto:${socialLinks.email}`} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
+            <span style={{fontSize:18}}>📧</span><span style={{fontSize:13}}>{socialLinks.email}</span>
+          </a>}
+          {socialLinks?.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
+            <span style={{fontSize:18}}>💬</span><span style={{fontSize:13}}>{socialLinks.whatsapp}</span>
+          </a>}
+          {socialLinks?.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
+            <span style={{fontSize:18}}>🐦</span><span style={{fontSize:13}}>{socialLinks.twitter}</span>
+          </a>}
+          {(socialLinks?.telegram||socialLinks?.telegramUser)&&<a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
+            <span style={{fontSize:18}}>✈</span><span style={{fontSize:13}}>{socialLinks.telegramUser||socialLinks.telegram}</span>
+          </a>}
+          {(socialLinks?.customFields||[]).filter(f=>f&&f.label&&(f.value||"").trim()).map((f,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",color:"var(--text-primary)"}}>
+              <span style={{fontSize:18}}>📌</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,color:"var(--text-muted)"}}>{f.label}</div>
+                <div style={{fontSize:13}}>{f.value}</div>
+              </div>
+            </div>
+          ))}
         </div>
-        {socialLinks?.enabled&&(socialLinks.email||socialLinks.whatsapp||socialLinks.twitter||socialLinks.telegramUser||socialLinks.telegram)
-          ?<div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {socialLinks.email&&<a href={`mailto:${socialLinks.email}`} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
-              <span style={{fontSize:18}}>📧</span><span style={{fontSize:13}}>{socialLinks.email}</span>
-            </a>}
-            {socialLinks.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
-              <span style={{fontSize:18}}>💬</span><span style={{fontSize:13}}>{socialLinks.whatsapp}</span>
-            </a>}
-            {socialLinks.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
-              <span style={{fontSize:18}}>🐦</span><span style={{fontSize:13}}>{socialLinks.twitter}</span>
-            </a>}
-            {(socialLinks.telegram||socialLinks.telegramUser)&&<a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
-              <span style={{fontSize:18}}>✈</span><span style={{fontSize:13}}>{socialLinks.telegramUser||socialLinks.telegram}</span>
-            </a>}
-          </div>
-          :<div style={{textAlign:"center",padding:"30px 0",color:"var(--text-muted)",fontSize:13}}>
-            <div style={{fontSize:32,marginBottom:8}}>📭</div>
-            <div>لم تُضف الإدارة وسائل تواصل بعد</div>
-          </div>
-        }
       </div>}
 
       {sec==="guide"&&<div style={box}>
