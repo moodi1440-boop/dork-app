@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-V";
+const APP_VERSION = "2026.05.31-W";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1833,7 +1833,7 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1,marginLeft:8}} onClick={()=>resetHome&&resetHome()}>
           <span style={{fontSize:17,fontWeight:700,color:"#e6c980",letterSpacing:0.5,lineHeight:1}}>احجز</span>
-          <span style={{fontSize:48,fontWeight:900,fontFamily:"'Cormorant SC',serif",background:"linear-gradient(180deg,#fffbe8 0%,#f5d96a 20%,#c8920a 50%,#e8b830 75%,#7a4f10 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",WebkitTextStroke:"1.5px #c9920a",letterSpacing:1,lineHeight:1}}>DORK</span>
+          <span style={{fontSize:48,fontWeight:900,fontFamily:"'Cinzel',serif",background:"linear-gradient(180deg,#fffde0 0%,#f8e060 8%,#d4a820 25%,#c89818 50%,#d4a828 72%,#8a5808 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",WebkitTextStroke:"1.5px #c9920a",letterSpacing:1,lineHeight:1}}>DORK</span>
         </div>
       </div>
     );
