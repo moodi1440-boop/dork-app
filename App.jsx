@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-AB";
+const APP_VERSION = "2026.05.31-AC";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1831,8 +1831,10 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
           <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
         </button>
         {/* RIGHT: شعار */}
-        <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginLeft:8}} onClick={()=>resetHome&&resetHome()}>
-          <span style={{fontSize:48,fontFamily:"'Cinzel',serif",fontWeight:700,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.2))",letterSpacing:1,lineHeight:1}}>DORK</span>
+        <div style={{cursor:"pointer",marginLeft:8,color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>
+          <svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+            <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontFamily="Cinzel, serif" fontSize="48" fontWeight="700" fill="currentColor" letterSpacing="2">DORK</text>
+          </svg>
         </div>
       </div>
     );
@@ -1846,8 +1848,10 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         <button style={G.roleBtn} onClick={()=>setView("settings")}>⚙</button>
         <button style={{...G.roleBtn,background:"var(--pa12)",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>🏠</button>
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-        <span style={{fontSize:48,fontFamily:"'Cinzel',serif",fontWeight:700,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.2))",letterSpacing:1,lineHeight:1}}>DORK</span>
+      <div style={{cursor:"pointer",color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>
+        <svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+          <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontFamily="Cinzel, serif" fontSize="48" fontWeight="700" fill="currentColor" letterSpacing="2">DORK</text>
+        </svg>
       </div>
     </div>
   );
