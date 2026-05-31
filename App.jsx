@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-A";
+const APP_VERSION = "2026.05.31-B";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -301,7 +301,7 @@ const THEMES = {
 };
 
 const BACKGROUNDS=[
-  {id:"none",    label:"بلا خلفية",    emoji:"⬛", style:{background:"var(--bg-input)",backgroundImage:"none"}},
+  {id:"none",    label:"بلا خلفية",    emoji:"⬛", style:{background:"var(--shell-bg)",backgroundImage:"none"}},
   {id:"stars",   label:"نجوم",          emoji:"✨", style:{background:"radial-gradient(ellipse at top,#1a1a3a 0%,#0d0d1a 70%)",backgroundImage:"radial-gradient(circle,rgba(255,255,255,.08) 1px,transparent 1px)",backgroundSize:"40px 40px"}},
   {id:"grid",    label:"شبكة",          emoji:"🔲", style:{background:"var(--bg-input)",backgroundImage:"linear-gradient(rgba(var(--gold-rgb),.05) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--gold-rgb),.05) 1px,transparent 1px)",backgroundSize:"30px 30px"}},
   {id:"waves",   label:"أمواج",         emoji:"🌊", style:{background:"linear-gradient(180deg,#0d0d1a 0%,#0a1628 50%,#0d0d1a 100%)",backgroundImage:"none"}},
@@ -324,7 +324,7 @@ const BACKGROUNDS=[
 
 /** أوضاع فاتحة لطبقة الخلفية خلف المحتوى */
 const BG_LIGHT_STYLES={
-  none:{background:"#eef0f6",backgroundImage:"none",backgroundSize:"auto"},
+  none:{background:"var(--shell-bg)",backgroundImage:"none",backgroundSize:"auto"},
   stars:{background:"linear-gradient(180deg,#e4e8f4 0%,#f4f5fb 100%)",backgroundImage:"radial-gradient(circle,rgba(30,58,138,.07) 1px,transparent 1px)",backgroundSize:"40px 40px"},
   grid:{background:"#eef0f6",backgroundImage:"linear-gradient(rgba(30,58,138,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(30,58,138,.06) 1px,transparent 1px)",backgroundSize:"30px 30px"},
   waves:{background:"linear-gradient(180deg,#f0f2f8 0%,#e2e8f4 50%,#f0f2f8 100%)",backgroundImage:"none"},
@@ -844,8 +844,8 @@ export default function App(){
 
   // حجم الخط
   useEffect(()=>{
-    const sizes={sm:"13px",md:"15px",lg:"17px"};
-    document.documentElement.style.setProperty("--base-font",sizes[settings.fontSize||"md"]);
+    const zooms={sm:"0.91",md:"1",lg:"1.10"};
+    document.documentElement.style.zoom=zooms[settings.fontSize||"md"];
   },[settings.fontSize]);
   useEffect(()=>{
     const t=THEMES[settings.theme]||THEMES.gold;
@@ -5839,7 +5839,7 @@ const G={
   searchClear:{background:"var(--border-ui)",border:"none",color:"var(--text-muted)",cursor:"pointer",borderRadius:"50%",width:22,height:22,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",flexShrink:0},
   sortChip:{padding:"6px 12px",borderRadius:20,border:"1.5px solid var(--chip-border)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600,whiteSpace:"nowrap",flexShrink:0},
   sortChipOn:{background:"var(--pa15)",border:"1.5px solid var(--p)",color:"var(--p)"},
-  app:{minHeight:"100vh",background:"var(--shell-bg)",color:"var(--text-primary)",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
+  app:{minHeight:"100vh",background:"transparent",color:"var(--text-primary)",fontFamily:"'Cairo',sans-serif",direction:"rtl"},
   page:{maxWidth:480,margin:"0 auto",minHeight:"100vh",paddingBottom:30},
   toast:{position:"fixed",top:64,left:"50%",transform:"translateX(-50%)",padding:"10px 22px",borderRadius:11,color:"#fff",fontWeight:700,zIndex:9999,fontSize:13,boxShadow:"0 4px 20px rgba(0,0,0,.5)",whiteSpace:"nowrap"},
 
