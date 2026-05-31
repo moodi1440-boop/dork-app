@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-Z";
+const APP_VERSION = "2026.05.31-AA";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1831,9 +1831,9 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
           <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
         </button>
         {/* RIGHT: شعار */}
-        <div style={{display:"flex",alignItems:"baseline",gap:4,cursor:"pointer",lineHeight:1,marginLeft:8,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.3))",fontWeight:700}} onClick={()=>resetHome&&resetHome()}>
-          <span style={{fontSize:20,fontFamily:"'Amiri',serif"}}>احجز</span>
-          <span style={{fontSize:48,fontFamily:"'Cinzel',serif",letterSpacing:2}}>DORK</span>
+        <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginLeft:8}} onClick={()=>resetHome&&resetHome()}>
+          <span style={{fontSize:28,fontFamily:"'Cairo',sans-serif",fontWeight:400,color:"#d4af37",letterSpacing:"normal",lineHeight:1}}>احجز</span>
+          <span style={{fontSize:40,fontFamily:"'Cinzel',serif",fontWeight:700,color:"#d4af37",lineHeight:1}}>DORK</span>
         </div>
       </div>
     );
