@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-AD";
+const APP_VERSION = "2026.05.31-AE";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1832,8 +1832,8 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         </button>
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer",marginLeft:8}} onClick={()=>resetHome&&resetHome()}>
-          <span style={{fontSize:17,fontWeight:700,fontFamily:"'Cairo',sans-serif",color:"#e6c980",letterSpacing:0.5,lineHeight:1}}>احجز</span>
-          <span style={{fontSize:48,fontWeight:700,fontFamily:"'Cinzel',serif",background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
+          <span style={{fontSize:17,fontWeight:700,fontFamily:"'Cairo',sans-serif",color:"var(--p)",letterSpacing:0.5,lineHeight:1}}>احجز</span>
+          <span style={{fontSize:48,fontWeight:700,fontFamily:"'Cinzel',serif",color:"var(--p)",letterSpacing:2,lineHeight:1}}>DORK</span>
         </div>
       </div>
     );
@@ -1848,8 +1848,8 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         <button style={{...G.roleBtn,background:"var(--pa12)",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>🏠</button>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>resetHome&&resetHome()}>
-        <span style={{fontSize:17,fontWeight:700,fontFamily:"'Cairo',sans-serif",color:"#e6c980",letterSpacing:0.5,lineHeight:1}}>احجز</span>
-        <span style={{fontSize:48,fontWeight:700,fontFamily:"'Cinzel',serif",background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
+        <span style={{fontSize:17,fontWeight:700,fontFamily:"'Cairo',sans-serif",color:"var(--p)",letterSpacing:0.5,lineHeight:1}}>احجز</span>
+        <span style={{fontSize:48,fontWeight:700,fontFamily:"'Cinzel',serif",color:"var(--p)",letterSpacing:2,lineHeight:1}}>DORK</span>
       </div>
     </div>
   );
