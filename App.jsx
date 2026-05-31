@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-AE";
+const APP_VERSION = "2026.05.31-AF";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -290,7 +290,7 @@ const TONES = [
 ];
 
 const THEMES = {
-  gold:      {primary:"#d4a017", light:"#f0c040", dark:"#a07810", lightest:"#f5d76e", rgb:"212,160,23"},
+  gold:      {primary:"#d4af37", light:"#f0ce60", dark:"#a07c18", lightest:"#f7e080", rgb:"212,175,55"},
   emerald:   {primary:"#10b981", light:"#34d399", dark:"#047857", lightest:"#6ee7b7", rgb:"16,185,129"},
   sapphire:  {primary:"#3b82f6", light:"#60a5fa", dark:"#1e40af", lightest:"#93c5fd", rgb:"59,130,246"},
   royalBlue: {primary:"#1e3a8a", light:"#3b82f6", dark:"#172554", lightest:"#93c5fd", rgb:"30,58,138"},
@@ -748,7 +748,7 @@ export default function App(){
     setProp("--border-ui",bor);setProp("--text-primary",tp);setProp("--text-muted",tm);
     setProp("--p-text","#000000");
     setProp("--chip-border",bor);
-    setProp("--gold","#d4a017");
+    setProp("--gold","#d4af37");
     setProp("--gold-rgb","212,160,23");
     setProp("--card-shadow",lt?"0 2px 12px rgba(0,0,0,.09)":"0 4px 16px rgba(0,0,0,.30)");
     setProp("--circle-shadow",lt?"0 2px 8px rgba(0,0,0,.13)":"none");
@@ -1478,7 +1478,7 @@ function DorkLogoSvg({size=40}){
         <linearGradient id="dlg" x1="0" y1="0" x2="100" y2="110" gradientUnits="userSpaceOnUse">
           <stop offset="0%"   stopColor="#fff8c8"/>
           <stop offset="22%"  stopColor="#f5d060"/>
-          <stop offset="55%"  stopColor="#d4a017"/>
+          <stop offset="55%"  stopColor="#d4af37"/>
           <stop offset="100%" stopColor="#8b6000"/>
         </linearGradient>
         <linearGradient id="dlg2" x1="50" y1="0" x2="50" y2="110" gradientUnits="userSpaceOnUse">
@@ -1553,7 +1553,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   if(!customer)return null;
   const cl=getCustomerClassification(customer);
   const history=customer.history||[];
-  const avatarColors=["#d4a017","#27ae60","#3b82f6","#8b5cf6","#e74c3c"];
+  const avatarColors=["#d4af37","#27ae60","#3b82f6","#8b5cf6","#e74c3c"];
   const avatarColor=avatarColors[(customer.name?.charCodeAt(0)||0)%avatarColors.length];
   const saveLocation=()=>{
     if(!navigator.geolocation){toast$("❌ المتصفح لا يدعم الموقع","err");return;}
@@ -1579,7 +1579,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
     r.setProperty("--grad",`linear-gradient(135deg,${t.primary},${t.light})`);r.setProperty("--grad2",`linear-gradient(135deg,${t.light},${t.primary})`);
     setSettings(s=>({...s,theme:id}));persistUiToSupabase&&persistUiToSupabase({theme:id});
   };
-  const THEME_OPT=[{id:"gold",l:"ذهبي",c:"#d4a017",e:"✨"},{id:"emerald",l:"زمردي",c:"#10b981",e:"🌿"},{id:"sapphire",l:"ياقوتي",c:"#3b82f6",e:"💎"},{id:"royalBlue",l:"ملكي",c:"#1e3a8a",e:"👑"},{id:"bronze",l:"برونزي",c:"#8b5a2b",e:"🏺"},{id:"rose",l:"وردي",c:"#ec4899",e:"🌸"},{id:"violet",l:"بنفسجي",c:"#8b5cf6",e:"🔮"},{id:"crimson",l:"قرمزي",c:"#ef4444",e:"🔴"}];
+  const THEME_OPT=[{id:"gold",l:"ذهبي",c:"#d4af37",e:"✨"},{id:"emerald",l:"زمردي",c:"#10b981",e:"🌿"},{id:"sapphire",l:"ياقوتي",c:"#3b82f6",e:"💎"},{id:"royalBlue",l:"ملكي",c:"#1e3a8a",e:"👑"},{id:"bronze",l:"برونزي",c:"#8b5a2b",e:"🏺"},{id:"rose",l:"وردي",c:"#ec4899",e:"🌸"},{id:"violet",l:"بنفسجي",c:"#8b5cf6",e:"🔮"},{id:"crimson",l:"قرمزي",c:"#ef4444",e:"🔴"}];
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   const Row=({icon,label,sub,chev,onClick,danger})=>(
     <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 20px",background:"transparent",border:"none",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",fontFamily:"inherit",color:danger?"#e74c3c":"var(--text-primary)",WebkitAppearance:"none",appearance:"none",textAlign:"right"}}>
@@ -5158,7 +5158,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   // avatar بالحرف الأول
   const initials=(customer.name||"?")[0];
-  const avatarColors=["#d4a017","#27ae60","#3b82f6","#8b5cf6","#e74c3c"];
+  const avatarColors=["#d4af37","#27ae60","#3b82f6","#8b5cf6","#e74c3c"];
   const avatarColor=avatarColors[customer.name?.charCodeAt(0)%avatarColors.length||0];
 
   const lastSalon=history.length>0?salons.find(s=>s.id===history[history.length-1].salonId||s.id===Number(history[history.length-1].salonId)):null;
@@ -5848,13 +5848,13 @@ const fi=(err)=>({width:"100%",padding:"10px 12px",borderRadius:9,border:`1.5px 
 // ==============================================
 const CSS=`
   :root {
-    --p: #d4a017; --pl: #f0c040; --pd: #a07810; --pll: #f5d76e; --pr: 212,160,23;
+    --p: #d4af37; --pl: #f0ce60; --pd: #a07c18; --pll: #f7e080; --pr: 212,175,55;
     --pa5: rgba(var(--pr),.05); --pa07: rgba(var(--pr),.07); --pa08: rgba(var(--pr),.08);
     --pa12: rgba(var(--pr),.12); --pa15: rgba(var(--pr),.15); --pa18: rgba(var(--pr),.18);
     --pa2: rgba(var(--pr),.2); --pa25: rgba(var(--pr),.25); --pa3: rgba(var(--pr),.3);
     --pa4: rgba(var(--pr),.45);
-    --grad: linear-gradient(135deg,#d4a017,#f0c040);
-    --grad2: linear-gradient(135deg,#f0c040,#d4a017);
+    --grad: linear-gradient(135deg,#d4af37,#f0ce60);
+    --grad2: linear-gradient(135deg,#f0ce60,#d4af37);
     --shell-bg: #0d0d1a; --surface-1: #13131f; --surface-2: #1a1a2e; --border-ui: #2a2a3a;
     --text-primary: #f0f0f0; --text-muted: #888;
   }
