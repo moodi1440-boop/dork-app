@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-AA";
+const APP_VERSION = "2026.05.31-AB";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1832,8 +1832,7 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         </button>
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginLeft:8}} onClick={()=>resetHome&&resetHome()}>
-          <span style={{fontSize:28,fontFamily:"'Cairo',sans-serif",fontWeight:400,color:"#d4af37",letterSpacing:"normal",lineHeight:1}}>احجز</span>
-          <span style={{fontSize:40,fontFamily:"'Cinzel',serif",fontWeight:700,color:"#d4af37",lineHeight:1}}>DORK</span>
+          <span style={{fontSize:48,fontFamily:"'Cinzel',serif",fontWeight:700,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.2))",letterSpacing:1,lineHeight:1}}>DORK</span>
         </div>
       </div>
     );
@@ -1847,9 +1846,8 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         <button style={G.roleBtn} onClick={()=>setView("settings")}>⚙</button>
         <button style={{...G.roleBtn,background:"var(--pa12)",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>🏠</button>
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-        <span style={{fontSize:19,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
-        <span style={{fontSize:32,fontWeight:900,color:"var(--p)",letterSpacing:1}}>DORK</span>
+      <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
+        <span style={{fontSize:48,fontFamily:"'Cinzel',serif",fontWeight:700,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.2))",letterSpacing:1,lineHeight:1}}>DORK</span>
       </div>
     </div>
   );
