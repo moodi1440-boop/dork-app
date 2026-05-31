@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-H";
+const APP_VERSION = "2026.05.31-I";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1456,7 +1456,9 @@ export default function App(){
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
-        {view==="social"&&    <SettingsView {...sharedProps} socialOnly/>}
+        {view==="social"&&    <SettingsView {...sharedProps} onlySec="social"/>}
+        {view==="guide"&&     <SettingsView {...sharedProps} onlySec="guide"/>}
+        {view==="faq"&&       <SettingsView {...sharedProps} onlySec="faq"/>}
         {view==="nearMap"&&   <NearMapView salons={approvedSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="compare"&&   <CompareSalonsView salons={compareSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="notifs"&&    <NotifsView setView={setView}/>}
@@ -1718,8 +1720,8 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <div style={{height:8}}/>
         <SecHead label="مزيد"/>
         <Row icon="📱" label="التواصل الاجتماعي" onClick={()=>{onClose();setView("social");}}/>
-        <Row icon="📖" label="الدليل" onClick={()=>{onClose();setView("settings");}}/>
-        <Row icon="❓" label="أسئلة شائعة" onClick={()=>{onClose();setView("settings");}}/>
+        <Row icon="📖" label="الدليل" onClick={()=>{onClose();setView("guide");}}/>
+        <Row icon="❓" label="أسئلة شائعة" onClick={()=>{onClose();setView("faq");}}/>
         {/* الخروج والحذف */}
         <div style={{height:16}}/>
         <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
@@ -5584,8 +5586,8 @@ function InlineStarRating({rated,comment,onRate}){
   );
 }
 
-function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase,setShowDrawer,socialOnly}){
-  const[sec,setSec]=useState(socialOnly?"social":"theme");
+function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase,setShowDrawer,onlySec}){
+  const[sec,setSec]=useState(onlySec||"theme");
   const SECS=[
     {id:"theme",icon:"🎨",label:"الألوان"},
     {id:"bg",   icon:"🖼",label:"الخلفية"},
@@ -5627,8 +5629,8 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>← رجوع</button><h2 style={G.ft}>{socialOnly?"📱 التواصل":"⚙ الإعدادات"}</h2></div>
-      {!socialOnly&&<div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>← رجوع</button><h2 style={G.ft}>{onlySec?({social:"📱 التواصل",guide:"📖 الدليل",faq:"❓ أسئلة شائعة"}[onlySec]||"⚙ الإعدادات"):"⚙ الإعدادات"}</h2></div>
+      {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
         {SECS.map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
             style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"var(--border-ui)"}`,background:sec===s.id?"var(--pa12)":"#1a1a2e",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
