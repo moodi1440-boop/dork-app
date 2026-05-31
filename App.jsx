@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-D";
+const APP_VERSION = "2026.05.31-E";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -3721,7 +3721,7 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
     </div></div>
   );
 }
-function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews,customers=[]}){
+function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews,customers=[],socialLinks,setSocialLinks}){
   const[tab,setTab]=useState(null);
   const[activeCard,setActiveCard]=useState(null);
   const[ownerNotifs,setOwnerNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
@@ -3999,7 +3999,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           </div>
         </div>
       )}
-      {tab==="settings"&&<OwnerSettings salon={salon} setSalons={setSalons} toast$={toast$}/>}
+      {tab==="settings"&&<OwnerSettings salon={salon} setSalons={setSalons} toast$={toast$} socialLinks={socialLinks} setSocialLinks={setSocialLinks}/>}
     </div></div>
   );
 }
@@ -4311,9 +4311,12 @@ function MessagesPanel({salon,toast$}){
 
 // ==============================================
 
-function OwnerSettings({salon,setSalons,toast$}){
+function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks}){
   const[saving,setSaving]=useState(false);
   const[sec,setSec]=useState("info");
+  const[draftSocial,setDraftSocial]=useState({...DEFAULT_SOCIAL_LINKS,...(socialLinks||{})});
+  const[socialSaved,setSocialSaved]=useState(false);
+  const saveSocial=()=>{setSocialLinks&&setSocialLinks(draftSocial);setSocialSaved(true);setTimeout(()=>setSocialSaved(false),2500);};
   const[f,setF]=useState({
     name:salon.name||"",
     phone:salon.phone||"",
@@ -4362,7 +4365,7 @@ function OwnerSettings({salon,setSalons,toast$}){
   return(
     <div>
       <div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
-        {[{id:"info",icon:"📋",label:"المعلومات"},{id:"hours",icon:"🕐",label:"الأوقات"},{id:"services",icon:"✂",label:"الخدمات"},{id:"barbers",icon:"💈",label:"الحلاقون"},{id:"tone",icon:"🔔",label:"النغمة"},{id:"pin",icon:"🔐",label:"PIN"}].map(s=>(
+        {[{id:"info",icon:"📋",label:"المعلومات"},{id:"hours",icon:"🕐",label:"الأوقات"},{id:"services",icon:"✂",label:"الخدمات"},{id:"barbers",icon:"💈",label:"الحلاقون"},{id:"tone",icon:"🔔",label:"النغمة"},{id:"social",icon:"📱",label:"التواصل"},{id:"pin",icon:"🔐",label:"PIN"}].map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
             style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"var(--border-ui)"}`,background:sec===s.id?"var(--pa12)":"#1a1a2e",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
             {s.icon} {s.label}
@@ -4493,6 +4496,39 @@ function OwnerSettings({salon,setSalons,toast$}){
           })}
         </div>
         <div style={{fontSize:11,color:"var(--text-muted)",marginTop:8}}>اضغط للمعاينة</div>
+      </div>}
+
+      {sec==="social"&&<div style={box}>
+        <div style={hdr}>📱 وسائل التواصل</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,padding:"10px 14px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)"}}>
+          <span style={{fontSize:13,fontWeight:600,color:"var(--text-primary)"}}>إظهار للعملاء</span>
+          <button onClick={()=>setDraftSocial(d=>({...d,enabled:!d.enabled}))}
+            style={{width:46,height:26,borderRadius:13,border:"none",cursor:"pointer",position:"relative",
+              background:draftSocial.enabled?"var(--p)":"var(--border-ui)",transition:"background .2s",flexShrink:0}}>
+            <div style={{position:"absolute",top:3,width:20,height:20,borderRadius:"50%",background:"#fff",
+              transition:"left .2s",left:draftSocial.enabled?23:3}}/>
+          </button>
+        </div>
+        {[
+          {key:"email",      label:"📧 البريد الإلكتروني", placeholder:"info@example.com", type:"email"},
+          {key:"whatsapp",   label:"💬 واتساب",             placeholder:"05XXXXXXXX",       type:"tel"},
+          {key:"twitter",    label:"🐦 تويتر / X",          placeholder:"@username"},
+          {key:"telegramUser",label:"✈ تيليغرام",           placeholder:"@username"},
+        ].map(({key,label,placeholder,type})=>(
+          <div key={key} style={{marginBottom:12}}>
+            <label style={lbl}>{label}</label>
+            <input style={inp} value={draftSocial[key]||""} dir="ltr"
+              onChange={e=>setDraftSocial(d=>({...d,[key]:e.target.value}))}
+              placeholder={placeholder} type={type||"text"}
+              inputMode={type==="tel"?"numeric":undefined}/>
+          </div>
+        ))}
+        <button onClick={saveSocial}
+          style={{width:"100%",padding:"12px",borderRadius:10,border:"none",
+            background:socialSaved?"#27ae60":"var(--p)",color:"#000",
+            fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"background .3s"}}>
+          {socialSaved?"✅ تم الحفظ":"💾 حفظ وسائل التواصل"}
+        </button>
       </div>}
 
       {sec==="pin"&&<div style={box}>
@@ -5549,9 +5585,6 @@ function InlineStarRating({rated,comment,onRate}){
 
 function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase}){
   const[sec,setSec]=useState("theme");
-  const[draftSocial,setDraftSocial]=useState({...DEFAULT_SOCIAL_LINKS,...(socialLinks||{})});
-  const[socialSaved,setSocialSaved]=useState(false);
-  const saveSocial=()=>{setSocialLinks(draftSocial);setSocialSaved(true);setTimeout(()=>setSocialSaved(false),2000);};
   const SECS=[
     {id:"theme",icon:"🎨",label:"الألوان"},
     {id:"bg",   icon:"🖼",label:"الخلفية"},
@@ -5711,39 +5744,29 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
       {sec==="social"&&<div style={box}>
         <div style={hdr}>📱 وسائل التواصل</div>
-        {/* Toggle التفعيل */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,padding:"10px 14px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)"}}>
-          <span style={{fontSize:13,fontWeight:600,color:"var(--text-primary)"}}>إظهار وسائل التواصل للعملاء</span>
-          <button onClick={()=>setDraftSocial(d=>({...d,enabled:!d.enabled}))}
-            style={{width:46,height:26,borderRadius:13,border:"none",cursor:"pointer",position:"relative",
-              background:draftSocial.enabled?"var(--p)":"var(--border-ui)",transition:"background .2s",flexShrink:0}}>
-            <div style={{position:"absolute",top:3,width:20,height:20,borderRadius:"50%",background:"#fff",
-              transition:"left .2s",left:draftSocial.enabled?23:3}}/>
-          </button>
+        <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12,background:"rgba(var(--pr),.06)",padding:"8px 12px",borderRadius:8,border:"1px solid rgba(var(--pr),.2)",display:"flex",alignItems:"center",gap:6}}>
+          <span>💡</span><span>للتواصل مع إدارة التطبيق — التعديل متاح من لوحة الإدارة</span>
         </div>
-        {/* حقول الإدخال */}
-        {[
-          {key:"email",      label:"📧 البريد الإلكتروني", placeholder:"info@example.com", type:"email"},
-          {key:"whatsapp",   label:"💬 واتساب",             placeholder:"05XXXXXXXX",       type:"tel"},
-          {key:"twitter",    label:"🐦 تويتر / X",          placeholder:"@username"},
-          {key:"telegramUser",label:"✈ تيليغرام",           placeholder:"@username"},
-        ].map(({key,label,placeholder,type})=>(
-          <div key={key} style={{marginBottom:12}}>
-            <label style={lbl}>{label}</label>
-            <input style={inp2} value={draftSocial[key]||""} dir="ltr"
-              onChange={e=>setDraftSocial(d=>({...d,[key]:e.target.value}))}
-              placeholder={placeholder} type={type||"text"}
-              inputMode={type==="tel"?"numeric":undefined}/>
+        {socialLinks?.enabled&&(socialLinks.email||socialLinks.whatsapp||socialLinks.twitter||socialLinks.telegramUser||socialLinks.telegram)
+          ?<div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {socialLinks.email&&<a href={`mailto:${socialLinks.email}`} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
+              <span style={{fontSize:18}}>📧</span><span style={{fontSize:13}}>{socialLinks.email}</span>
+            </a>}
+            {socialLinks.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
+              <span style={{fontSize:18}}>💬</span><span style={{fontSize:13}}>{socialLinks.whatsapp}</span>
+            </a>}
+            {socialLinks.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
+              <span style={{fontSize:18}}>🐦</span><span style={{fontSize:13}}>{socialLinks.twitter}</span>
+            </a>}
+            {(socialLinks.telegram||socialLinks.telegramUser)&&<a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
+              <span style={{fontSize:18}}>✈</span><span style={{fontSize:13}}>{socialLinks.telegramUser||socialLinks.telegram}</span>
+            </a>}
           </div>
-        ))}
-        {/* زر الحفظ */}
-        <button onClick={saveSocial}
-          style={{width:"100%",padding:"12px",borderRadius:10,border:"none",
-            background:socialSaved?"#27ae60":"var(--p)",color:"#000",
-            fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",
-            transition:"background .3s"}}>
-          {socialSaved?"✅ تم الحفظ":"💾 حفظ وسائل التواصل"}
-        </button>
+          :<div style={{textAlign:"center",padding:"30px 0",color:"var(--text-muted)",fontSize:13}}>
+            <div style={{fontSize:32,marginBottom:8}}>📭</div>
+            <div>لم تُضف الإدارة وسائل تواصل بعد</div>
+          </div>
+        }
       </div>}
 
       {sec==="guide"&&<div style={box}>
