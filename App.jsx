@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-K";
+const APP_VERSION = "2026.05.31-L";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1832,8 +1832,8 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         </button>
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-          <span style={{fontSize:19,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
-          <span style={{fontSize:32,fontWeight:900,color:"var(--p)",letterSpacing:1}}>DORK</span>
+          <span style={{fontSize:18,fontWeight:700,background:"linear-gradient(180deg,#f7e7b7,#e6c980,#d4b15f,#f1d99c,#c9a24a)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",letterSpacing:0.5}}>احجز</span>
+          <span style={{fontSize:32,fontWeight:900,fontFamily:"'Cinzel',serif",background:"linear-gradient(180deg,#f7e7b7,#e6c980,#d4b15f,#f1d99c,#c9a24a)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",letterSpacing:2}}>DORK</span>
         </div>
       </div>
     );
@@ -5858,7 +5858,7 @@ const CSS=`
     --shell-bg: #0d0d1a; --surface-1: #13131f; --surface-2: #1a1a2e; --border-ui: #2a2a3a;
     --text-primary: #f0f0f0; --text-muted: #888;
   }
-  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Cinzel:wght@700;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   body{direction:rtl;font-family:'Cairo',sans-serif;background:var(--shell-bg);}
   ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:var(--p);border-radius:4px;}
