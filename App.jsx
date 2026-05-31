@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-I";
+const APP_VERSION = "2026.05.31-J";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1457,7 +1457,6 @@ export default function App(){
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
         {view==="social"&&    <SettingsView {...sharedProps} onlySec="social"/>}
-        {view==="guide"&&     <SettingsView {...sharedProps} onlySec="guide"/>}
         {view==="faq"&&       <SettingsView {...sharedProps} onlySec="faq"/>}
         {view==="nearMap"&&   <NearMapView salons={approvedSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="compare"&&   <CompareSalonsView salons={compareSalons} setView={setView} setSelSalon={setSelSalon}/>}
@@ -1720,7 +1719,6 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <div style={{height:8}}/>
         <SecHead label="مزيد"/>
         <Row icon="📱" label="التواصل الاجتماعي" onClick={()=>{onClose();setView("social");}}/>
-        <Row icon="📖" label="الدليل" onClick={()=>{onClose();setView("guide");}}/>
         <Row icon="❓" label="أسئلة شائعة" onClick={()=>{onClose();setView("faq");}}/>
         {/* الخروج والحذف */}
         <div style={{height:16}}/>
@@ -5595,7 +5593,6 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
     {id:"dark", icon:"🌙",label:"الإضاءة"},
     {id:"tone", icon:"🔔",label:"النغمات"},
     {id:"social",icon:"📱",label:"التواصل"},
-    {id:"guide",icon:"📖",label:"الدليل"},
     {id:"faq",  icon:"❓",label:"أسئلة"},
     {id:"danger",icon:"⚠",label:"الخطر"},
   ];
@@ -5629,7 +5626,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>← رجوع</button><h2 style={G.ft}>{onlySec?({social:"📱 التواصل",guide:"📖 الدليل",faq:"❓ أسئلة شائعة"}[onlySec]||"⚙ الإعدادات"):"⚙ الإعدادات"}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>← رجوع</button><h2 style={G.ft}>{onlySec?({social:"📱 التواصل",faq:"❓ أسئلة شائعة"}[onlySec]||"⚙ الإعدادات"):"⚙ الإعدادات"}</h2></div>
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
         {SECS.map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
@@ -5769,24 +5766,28 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
         ))}
       </div>}
 
-      {sec==="guide"&&<div style={box}>
-        <div style={hdr}>📖 دليل الاستخدام</div>
-        {[{t:"👤 للعميل",steps:["ابحث عن صالون من الصفحة الرئيسية","اضغط على الصالون واختر الخدمة والحلاق","حدد الموعد وأرسل طلب الحجز","انتظر موافقة الصالون","بعد الزيارة قيّم تجربتك"]},{t:"✂ للصالون",steps:["سجّل صالونك من زر المقص","أضف خدماتك وأسعارك وأوقات العمل","انتظر موافقة الإدارة","استقبل الحجوزات من لوحتك","تابع إحصائياتك الشهرية والسنوية"]}].map(({t,steps})=>(
-          <div key={t} style={{marginBottom:14}}>
-            <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:8}}>{t}</div>
-            {steps.map((s,i)=>(
-              <div key={i} style={{display:"flex",gap:8,marginBottom:6,alignItems:"flex-start"}}>
-                <div style={{width:20,height:20,borderRadius:"50%",background:"var(--p)",color:"#000",fontSize:11,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
-                <div style={{fontSize:12,color:"#ccc",lineHeight:1.6}}>{s}</div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>}
-
       {sec==="faq"&&<div style={box}>
         <div style={hdr}>❓ الأسئلة الشائعة</div>
-        {[{q:"كيف أحجز موعد؟",a:"ابحث عن صالون، اضغط عليه، اختر الخدمة والوقت، ثم أرسل الطلب."},{q:"هل الحجز مجاني؟",a:"نعم، الحجز عبر دورك مجاني تماماً للعملاء."},{q:"ماذا لو تأخرت؟",a:"تواصل مع الصالون فوراً. التأخر المتكرر قد يؤثر على أولويتك."},{q:"كيف ألغي حجزي؟",a:"تواصل مع الصالون مباشرة عبر رقم الجوال."},{q:"كيف أسجّل صالوني؟",a:"اضغط على أيقونة المقص في الشريط العلوي."},{q:"ما هي نقاط الولاء؟",a:"نقاط تكسبها مع كل حجز للحصول على خصومات عند تفعيلها من الإدارة."},{q:"كم يستغرق قبول تسجيل الصالون؟",a:"عادة من 24 إلى 48 ساعة."}].map(({q,a},i)=>(
+        {[
+          {q:"كيف أحجز موعداً؟",a:"اضغط على أي صالون من الصفحة الرئيسية، اختر خدماتك والحلاق، حدد التاريخ والوقت، ثم اضغط إرسال الطلب. ستصلك إشعار فور موافقة الصالون."},
+          {q:"هل الحجز مجاني؟",a:"نعم، الحجز عبر دورك مجاني تماماً للعملاء."},
+          {q:"كيف أعرف أن حجزي تأكد؟",a:"ستصلك إشعار فور موافقة الصالون. يمكنك أيضاً متابعة حالة الحجز من حسابي ← حجوزاتي في أي وقت."},
+          {q:"المواعيد ممتلئة، ماذا أفعل؟",a:"اضغط على أيقونة ⏳ بجانب الوقت الممتلئ لتنضم لقائمة الانتظار. ستتلقى إشعاراً فور تحرر موعد."},
+          {q:"كيف أعدّل موعدي؟",a:"ادخل حسابي ← حجوزاتي، اضغط ✏️ تعديل على الحجز، واختر التاريخ والوقت الجديد. الحجز القديم يُلغى تلقائياً عند التأكيد."},
+          {q:"كيف ألغي حجزي؟",a:"ادخل حسابي ← حجوزاتي، اضغط 🚫 إلغاء على الحجز المراد. تجنب الإلغاء المتأخر (أقل من ساعتين من الموعد) لأنه يؤثر على تصنيفك."},
+          {q:"ماذا لو تأخرت عن موعدي؟",a:"تواصل مع الصالون فوراً. التأخر المتكرر يُسجَّل ويؤثر على تصنيفك ويقلل أولويتك في الحصول على مواعيد مستقبلاً."},
+          {q:"كيف أقيّم تجربتي بعد الزيارة؟",a:"ادخل حسابي ← حجوزاتي، اضغط على الحجز المكتمل، واختر عدد النجوم وأضف تعليقك. التقييمات تساعد العملاء الآخرين في اختيار الصالون المناسب."},
+          {q:"ما معنى تصنيف العميل؟",a:"تصنيفك يعكس مدى التزامك بمواعيدك: 🌟 مميز (5+ حجوزات بحضور كامل)، ✅ منتظم (70%+ حضور)، ⚠️ غير ملتزم (3+ غياب أو أقل من 50% حضور). يمكنك مراجعة سجلك من حسابي ← تقييم الحضور."},
+          {q:"كيف أضيف صالوناً للمفضلة؟",a:"اضغط على أيقونة ♡ في بطاقة الصالون أو داخل صفحته. يمكنك استعراض مفضلتك والحجز مباشرة منها عبر حسابي ← المفضلة."},
+          {q:"كيف أقارن بين صالونين؟",a:"في الصفحة الرئيسية اضغط زر ⚖ المقارنة على صالون، ثم اختر صالوناً ثانياً. ستظهر مقارنة شاملة بالأسعار والتقييمات وعدد الخدمات والحلاقين."},
+          {q:"كيف أجد أقرب صالون إليّ؟",a:"اضغط على أيقونة الخريطة في الشريط العلوي لعرض الصالونات القريبة مرتبةً حسب المسافة، أو فعّل الموقع ثم اضغط 📍 ترتيب حسب الأقرب في الصفحة الرئيسية."},
+          {q:"كيف أضبط تذكيراً قبل موعدي؟",a:"اضغط 🔔 ذكّرني على أي حجز مقبول من حجوزاتي، ثم اختر مدة التنبيه (30 دقيقة، ساعة، يوم...). ستصلك رسالة تنبيه في الوقت المحدد."},
+          {q:"كيف أغيّر مظهر التطبيق؟",a:"من الإعدادات يمكنك تغيير: لون الواجهة (8 ألوان)، خلفية التطبيق، حجم الخط (صغير/متوسط/كبير)، ووضع الإضاءة. جميع التغييرات تُحفظ تلقائياً."},
+          {q:"ما الفرق بين أوضاع الإضاءة؟",a:"داكن 🌙: مريح للعينين في الإضاءة الخافتة والليل. رمادي ⬛: متوازن مناسب لأي وقت. فاتح ☀️: واضح في الضوء الساطع أو في النهار."},
+          {q:"كيف أحمي حسابي برمز PIN؟",a:"من الإعدادات ← الحساب ← تغيير PIN، اختر رمزاً من 4 أو 6 أرقام. الرمز محفوظ على جهازك فقط ولا يُرسل لأي خادم."},
+          {q:"كيف أحدّث بياناتي الشخصية؟",a:"ادخل حسابي، اضغط ✏️ تعديل، عدّل اسمك أو جوالك أو بريدك الإلكتروني، ثم اضغط حفظ."},
+          {q:"ماذا يحدث إذا حذفت حسابي؟",a:"يُحذف حسابك وجميع بياناتك نهائياً ولا يمكن استعادتها. للحذف ادخل حسابي ← مسح الحساب."},
+        ].map(({q,a},i)=>(
           <FAQItem key={i} q={q} a={a}/>
         ))}
       </div>}
