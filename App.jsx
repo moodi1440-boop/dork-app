@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.31-F";
+const APP_VERSION = "2026.05.31-G";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -5583,7 +5583,7 @@ function InlineStarRating({rated,comment,onRate}){
   );
 }
 
-function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase}){
+function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase,setShowDrawer}){
   const[sec,setSec]=useState("theme");
   const SECS=[
     {id:"theme",icon:"🎨",label:"الألوان"},
@@ -5626,7 +5626,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={G.ft}>⚙ الإعدادات</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>← رجوع</button><h2 style={G.ft}>⚙ الإعدادات</h2></div>
       <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
         {SECS.map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
@@ -5742,31 +5742,28 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
         </div>
       </div>}
 
-      {sec==="social"&&<div style={box}>
-        <div style={hdr}>📱 وسائل التواصل</div>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {socialLinks?.email&&<a href={`mailto:${socialLinks.email}`} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
-            <span style={{fontSize:18}}>📧</span><span style={{fontSize:13}}>{socialLinks.email}</span>
-          </a>}
-          {socialLinks?.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
-            <span style={{fontSize:18}}>💬</span><span style={{fontSize:13}}>{socialLinks.whatsapp}</span>
-          </a>}
-          {socialLinks?.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
-            <span style={{fontSize:18}}>🐦</span><span style={{fontSize:13}}>{socialLinks.twitter}</span>
-          </a>}
-          {(socialLinks?.telegram||socialLinks?.telegramUser)&&<a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"var(--text-primary)"}}>
-            <span style={{fontSize:18}}>✈</span><span style={{fontSize:13}}>{socialLinks.telegramUser||socialLinks.telegram}</span>
-          </a>}
-          {(socialLinks?.customFields||[]).filter(f=>f&&f.label&&(f.value||"").trim()).map((f,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)",color:"var(--text-primary)"}}>
-              <span style={{fontSize:18}}>📌</span>
-              <div style={{flex:1}}>
-                <div style={{fontSize:11,color:"var(--text-muted)"}}>{f.label}</div>
-                <div style={{fontSize:13}}>{f.value}</div>
-              </div>
+      {sec==="social"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {socialLinks?.email&&<a href={`mailto:${socialLinks.email}`} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,textDecoration:"none",color:"var(--text-primary)"}}>
+          <span style={{fontSize:18}}>📧</span><span style={{fontSize:13}}>{socialLinks.email}</span>
+        </a>}
+        {socialLinks?.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,textDecoration:"none",color:"var(--text-primary)"}}>
+          <span style={{fontSize:18}}>💬</span><span style={{fontSize:13}}>{socialLinks.whatsapp}</span>
+        </a>}
+        {socialLinks?.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,textDecoration:"none",color:"var(--text-primary)"}}>
+          <span style={{fontSize:18}}>🐦</span><span style={{fontSize:13}}>{socialLinks.twitter}</span>
+        </a>}
+        {(socialLinks?.telegram||socialLinks?.telegramUser)&&<a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,textDecoration:"none",color:"var(--text-primary)"}}>
+          <span style={{fontSize:18}}>✈</span><span style={{fontSize:13}}>{socialLinks.telegramUser||socialLinks.telegram}</span>
+        </a>}
+        {(socialLinks?.customFields||[]).filter(f=>f&&f.label&&(f.value||"").trim()).map((f,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,color:"var(--text-primary)"}}>
+            <span style={{fontSize:18}}>📌</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,color:"var(--text-muted)"}}>{f.label}</div>
+              <div style={{fontSize:13}}>{f.value}</div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>}
 
       {sec==="guide"&&<div style={box}>
