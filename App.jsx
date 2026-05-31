@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-Z";
+const APP_VERSION = "2026.05.31-A";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -734,13 +734,13 @@ export default function App(){
   // تطبيق وضع الإضاءة (داكن / رمادي / فاتح)
   useEffect(()=>{
     const dk=themeMode==="dark",dm=themeMode==="dim",lt=themeMode==="light";
-    const shell=dk?"#0d0d1a":dm?"#28282f":"#f7f7f7";
+    const shell=dk?"#0d0d1a":dm?"#28282f":"#efefef";
     const s1=dk?"#13131f":dm?"#333340":"#ffffff";
-    const s2=dk?"#1a1a2e":dm?"#3d3d4a":"#f0f0f2";
-    const bor=dk?"#2a2a3a":dm?"#4a4a58":"#e0e0e0";
-    const tp=dk?"#f0f0f0":dm?"#ededf2":"#2d2d2d";
-    const tm=dk?"#888888":dm?"#9595a8":"#666666";
-    const inp=dk?"#0d0d1a":dm?"#242430":"#fafafa";
+    const s2=dk?"#1a1a2e":dm?"#3d3d4a":"#e8e8ec";
+    const bor=dk?"#2a2a3a":dm?"#4a4a58":"#d8d8d8";
+    const tp=dk?"#f0f0f0":dm?"#ededf2":"#1e1e1e";
+    const tm=dk?"#888888":dm?"#9595a8":"#444444";
+    const inp=dk?"#0d0d1a":dm?"#242430":"#f8f8f8";
     const setProp=(k,v)=>document.documentElement.style.setProperty(k,v);
     setProp("--bg-main",shell);setProp("--bg-card",s1);setProp("--bg-input",inp);
     setProp("--txt-main",tp);setProp("--txt-sub",tm);setProp("--border",bor);
@@ -750,6 +750,8 @@ export default function App(){
     setProp("--chip-border",bor);
     setProp("--gold","#d4a017");
     setProp("--gold-rgb","212,160,23");
+    setProp("--card-shadow",lt?"0 2px 12px rgba(0,0,0,.09)":"0 4px 16px rgba(0,0,0,.30)");
+    setProp("--circle-shadow",lt?"0 2px 8px rgba(0,0,0,.13)":"none");
     document.body.style.background=shell;
     document.documentElement.classList.remove("dork-dark","dork-dim","dork-light");
     document.documentElement.classList.add("dork-"+themeMode);
@@ -2149,9 +2151,9 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           ["priceHigh","💰","أغلى"],
           ["priceLow","🪙","أرخص"],
         ].map(([k,ic,l])=>(
-          <button key={k} style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:sortBy===k?"var(--pa3)":"var(--surface-2)",border:`1.5px solid ${sortBy===k?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s",flexDirection:"column",gap:2}} onClick={()=>{if(sortBy===k){setSortBy("");}else{setShowSearch(false);setShowRegionSelect(false);if(k==="nearest"&&!userLoc){detectUserLoc();return;}setSortBy(k);}}} title={l}>
+          <button key={k} style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:sortBy===k?"var(--pa3)":"var(--surface-1)",border:`1.5px solid ${sortBy===k?"var(--p)":"var(--border-ui)"}`,boxShadow:"var(--circle-shadow)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s",flexDirection:"column",gap:2}} onClick={()=>{if(sortBy===k){setSortBy("");}else{setShowSearch(false);setShowRegionSelect(false);if(k==="nearest"&&!userLoc){detectUserLoc();return;}setSortBy(k);}}} title={l}>
             <span>{ic}</span>
-            <span style={{fontSize:9,color:"var(--text-muted)"}}>{l}</span>
+            <span style={{fontSize:10,color:"var(--text-muted)"}}>{l}</span>
           </button>
         ))}
       </div>
@@ -2304,7 +2306,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           <div style={{background:"var(--gold)",width:40,height:40,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flex:"0 0 auto"}}>✂</div>
 
           {/* Name */}
-          <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div>
+          <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div>
 
           {/* Status */}
           <span style={{fontSize:9,color:isOpenNow?"#27ae60":"#e74c3c",fontWeight:700}}>
@@ -2320,11 +2322,11 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       </div>
 
       {/* Location Row */}
-      <div style={{fontSize:10,color:"var(--text-muted)"}}>
+      <div style={{fontSize:11,color:"var(--text-muted)"}}>
         📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
 
       {/* Hours & Wait Time */}
-      <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:11,color:"var(--text-muted)"}}>
+      <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:12,color:"var(--text-muted)"}}>
         <div>
           ⏰ {salon.shiftEnabled?(salon.shift1Start&&salon.shift1End?`${salon.shift1Start.slice(0,5)}-${salon.shift1End.slice(0,5)}`:"--:-- - --:--"):(salon.workStart&&salon.workEnd?`${salon.workStart.slice(0,5)}-${salon.workEnd.slice(0,5)}`:"--:-- - --:--")}
         </div>
@@ -2337,11 +2339,11 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       {salon.services.length>0&&(
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {salon.services.slice(0,4).map(s=>(
-            <span key={s} style={{fontSize:9,background:"rgba(var(--gold-rgb),.12)",color:"var(--gold)",padding:"4px 10px",borderRadius:8,fontWeight:600}}>
+            <span key={s} style={{fontSize:10,background:"rgba(var(--gold-rgb),.12)",color:"var(--gold)",padding:"4px 10px",borderRadius:8,fontWeight:600}}>
               {s}
             </span>
           ))}
-          {salon.services.length>4&&<span style={{fontSize:9,background:"rgba(var(--gold-rgb),.12)",color:"var(--gold)",padding:"4px 10px",borderRadius:8,fontWeight:600}}>+{salon.services.length-4}</span>}
+          {salon.services.length>4&&<span style={{fontSize:10,background:"rgba(var(--gold-rgb),.12)",color:"var(--gold)",padding:"4px 10px",borderRadius:8,fontWeight:600}}>+{salon.services.length-4}</span>}
         </div>
       )}
 
@@ -2350,13 +2352,13 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
 
       {/* Book Button + Action Buttons - Reordered */}
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        <button onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"#e74c3c",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+        <button onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" style={{background:"transparent",border:"1.5px solid var(--border-ui)",color:"#e74c3c",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           📍
         </button>
-        <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"var(--gold)":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+        <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid var(--border-ui)",color:fav?"var(--gold)":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           {fav?"♥":"♡"}
         </button>
-        <button onClick={onCompare} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"var(--text-muted)",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
+        <button onClick={onCompare} title="مقارنة" style={{background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           ⚖
         </button>
         <button onClick={onBook} style={{background:"var(--grad)",color:"var(--p-text,#000)",border:"none",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",flex:1,fontFamily:"'Cairo',sans-serif"}}>
@@ -5662,16 +5664,16 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
           {[
             {id:"dark",  icon:"🌙", label:"داكن",        desc:"مريح للليل",     shell:"#0d0d1a", card:"#13131f"},
             {id:"dim",   icon:"⬛", label:"رمادي",       desc:"متوازن وهادئ",   shell:"#28282f", card:"#333340"},
-            {id:"light", icon:"☀️", label:"فاتح",        desc:"واضح للنهار",    shell:"#f7f7f7", card:"#ffffff"},
+            {id:"light", icon:"☀️", label:"فاتح",        desc:"واضح للنهار",    shell:"#efefef", card:"#ffffff"},
           ].map(({id,icon,label,desc,shell,card})=>{
             const active=themeMode===id;
             return(
               <button key={id}
                 onClick={()=>{setThemeMode(id);persistUiToSupabase&&persistUiToSupabase({darkMode:id==="dark"||id==="dim",themeMode:id});}}
                 style={{padding:"20px 8px 16px",borderRadius:14,
-                  border:`2px solid ${active?"var(--p)":"transparent"}`,
-                  background:active?"var(--pa08)":"rgba(255,255,255,.03)",
-                  boxShadow:active?"0 0 18px rgba(var(--gold-rgb),.18)":"none",
+                  border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,
+                  background:active?"var(--pa08)":themeMode==="light"?"#ffffff":"rgba(255,255,255,.03)",
+                  boxShadow:active?"0 0 22px rgba(var(--gold-rgb),.30)":themeMode==="light"?"0 3px 10px rgba(0,0,0,.09)":"none",
                   cursor:"pointer",fontFamily:"inherit",outline:"none",
                   display:"flex",flexDirection:"column",alignItems:"center",gap:5,
                   transition:"all .2s",WebkitTapHighlightColor:"transparent"}}>
@@ -5819,7 +5821,7 @@ const CSS=`
   select option{background:#1a1a2e;color:#f0f0f0;}
   html.dork-light select option{background:#ffffff;color:#1c1c1e;}
   html.dork-dim select option{background:#333340;color:#ededf2;}
-  html.dork-light body,html.dork-light body *{scrollbar-color:#e0e0e0 #f7f7f7;}
+  html.dork-light body,html.dork-light body *{scrollbar-color:#d8d8d8 #efefef;}
   html.dork-light{color-scheme:light;}
   html.dork-dim{color-scheme:dark;}
   html.dork-light input,html.dork-light textarea,html.dork-light select{
@@ -5858,7 +5860,7 @@ const G={
   badge:{background:"var(--p)",color:"#000",padding:"2px 9px",borderRadius:20,fontSize:11,fontWeight:700},
   empty:{textAlign:"center",color:"var(--text-muted)",padding:"36px 0",fontSize:13},
 
-  card:{background:"var(--surface-1)",borderRadius:14,padding:13,border:"1px solid var(--border-ui)",boxShadow:"0 4px 16px rgba(0,0,0,.3)"},
+  card:{background:"var(--surface-1)",borderRadius:14,padding:13,border:"1px solid var(--border-ui)",boxShadow:"var(--card-shadow)"},
   cav:{width:38,height:38,borderRadius:10,background:"var(--grad)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0},
   tag:{background:"var(--surface-2)",color:"var(--p)",padding:"2px 8px",borderRadius:20,fontSize:10,border:"1px solid var(--border-ui)"},
   favBtn:{background:"transparent",border:"none",cursor:"pointer",fontSize:20,color:"var(--text-muted)",padding:0,lineHeight:1},
