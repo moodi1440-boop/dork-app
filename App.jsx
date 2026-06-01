@@ -1786,18 +1786,9 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
     <>
       {open&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:1100,backdropFilter:"blur(2px)"}}/>}
       <div style={{position:"fixed",top:0,right:0,bottom:0,width:"82%",maxWidth:340,background:"var(--shell-bg)",zIndex:1101,transform:open?"translateX(0)":"translateX(110%)",transition:"transform 0.3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",display:"flex",flexDirection:"column",direction:dir,boxShadow:open?"-4px 0 32px rgba(0,0,0,.6)":"none"}}>
-        <div style={{display:"flex",flexDirection:"column",padding:"16px 20px 12px",borderBottom:"1px solid var(--border-ui)",background:"var(--shell-bg)",position:"sticky",top:0,zIndex:1}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <button onClick={onClose} style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
-            <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>{t("salon_drawer.title")}</span>
-          </div>
-          <div style={{display:"flex",gap:5,justifyContent:"center"}}>
-            {SALON_LANGS.map(l=>(
-              <button key={l} onClick={()=>i18n.changeLanguage(l)} style={{flex:1,padding:"5px 0",borderRadius:8,border:`1.5px solid ${i18n.language===l?"var(--p)":"var(--border-ui)"}`,background:i18n.language===l?"var(--pa15)":"transparent",color:i18n.language===l?"var(--p)":"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all 0.2s"}}>
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 20px 16px",borderBottom:"1px solid var(--border-ui)",background:"var(--shell-bg)",position:"sticky",top:0,zIndex:1}}>
+          <button onClick={onClose} style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+          <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>{t("salon_drawer.title")}</span>
         </div>
         <div style={{height:8}}/>
         <SecHead label={t("salon_drawer.section_operations")}/>
@@ -1819,6 +1810,14 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
         <Row icon="🔔" label={t("salon_drawer.tones")} onClick={()=>nav(()=>setView("ownerTone"))}/>
         <Row icon="🔐" label={t("salon_drawer.pin")} onClick={()=>nav(()=>setView("ownerPin"))}/>
         <Row icon="❓" label={t("salon_drawer.faq")} onClick={()=>nav(()=>setView("ownerFaq"))}/>
+        <SecHead label={"🌐 "+t("salon_drawer.language")}/>
+        <div style={{display:"flex",gap:8,padding:"12px 16px"}}>
+          {SALON_LANGS.map(l=>(
+            <button key={l} onClick={()=>i18n.changeLanguage(l)} style={{flex:1,padding:"8px 0",borderRadius:10,border:`1.5px solid ${i18n.language===l?"var(--p)":"var(--border-ui)"}`,background:i18n.language===l?"var(--pa15)":"transparent",color:i18n.language===l?"var(--p)":"var(--text-muted)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all 0.2s"}}>
+              {l.toUpperCase()}
+            </button>
+          ))}
+        </div>
         <div style={{height:16}}/>
         <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:dir==="rtl"?"right":"left",WebkitAppearance:"none",appearance:"none"}}>
           🚪 {t("salon_drawer.logout_btn")}
