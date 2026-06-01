@@ -28,6 +28,10 @@
     "cancel": "İptal",
     "exit": "Çıkış"
   },
+  "entry": {
+    "salon_btn": "✂️ Salon Girişi",
+    "client_btn": "👤 Müşteri Girişi"
+  },
   "owner_dash": {
     "back": "← Geri",
     "page_title": "Kontrol Paneli",

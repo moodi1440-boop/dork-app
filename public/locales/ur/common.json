@@ -28,6 +28,10 @@
     "cancel": "منسوخ",
     "exit": "باہر نکلیں"
   },
+  "entry": {
+    "salon_btn": "✂️ سیلون داخلہ",
+    "client_btn": "👤 گاہک داخلہ"
+  },
   "owner_dash": {
     "back": "← واپس",
     "page_title": "ڈیش بورڈ",

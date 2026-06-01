@@ -28,6 +28,10 @@
     "cancel": "Cancel",
     "exit": "Exit"
   },
+  "entry": {
+    "salon_btn": "✂️ Enter as Salon",
+    "client_btn": "👤 Enter as Client"
+  },
   "owner_dash": {
     "back": "← Back",
     "page_title": "Dashboard",

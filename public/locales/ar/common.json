@@ -28,6 +28,10 @@
     "cancel": "إلغاء",
     "exit": "خروج"
   },
+  "entry": {
+    "salon_btn": "✂️ دخول كصالون",
+    "client_btn": "👤 دخول كعميل"
+  },
   "owner_dash": {
     "back": "← رجوع",
     "page_title": "لوحة الصالون",
