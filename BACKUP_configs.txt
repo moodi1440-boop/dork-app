@@ -1,0 +1,173 @@
+================================================================
+        ملفات الإعداد — نسخة احتياطية
+        التاريخ: 2026-06-01
+        الإصدار: 2026.06.01-SV
+================================================================
+
+
+----------------------------------------------------------------
+[1] package.json — الحزم والمكتبات
+----------------------------------------------------------------
+
+{
+  "name": "dork-barbershop",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "playwright": "^1.60.0",
+    "vite": "^5.0.0"
+  }
+}
+
+
+----------------------------------------------------------------
+[2] index.html — صفحة الدخول الرئيسية
+----------------------------------------------------------------
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d0d1a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="دورك" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <title>دورك – حلاقة وصالونات</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;900&family=Cinzel:wght@700;900&family=Playfair+Display:wght@700;900&family=Cormorant+SC:wght@700;900&display=swap" rel="stylesheet"/>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/main.jsx"></script>
+  </body>
+</html>
+
+
+----------------------------------------------------------------
+[3] main.jsx — نقطة دخول React
+----------------------------------------------------------------
+
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App, { ErrorBoundary } from './App.jsx'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  </React.StrictMode>,
+)
+
+
+----------------------------------------------------------------
+[4] vite.config.js — إعداد بناء التطبيق
+----------------------------------------------------------------
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  root: '.',
+  publicDir: 'public',
+  build: {
+    outDir: 'dist',
+    chunkSizeWarningLimit: 600,
+    copyPublicDir: true,
+  },
+})
+
+
+----------------------------------------------------------------
+[5] public/manifest.json — إعداد PWA
+----------------------------------------------------------------
+
+{
+  "name": "دورك – حلاقة وصالونات",
+  "short_name": "دورك",
+  "description": "تطبيق حجز مواعيد الصالونات والحلاقة",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0d0d1a",
+  "background_color": "#0d0d1a",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["lifestyle", "business"]
+}
+
+
+----------------------------------------------------------------
+[6] vercel.json — إعداد النشر
+----------------------------------------------------------------
+
+{
+  "headers": [
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Pragma",        "value": "no-cache" },
+        { "key": "Expires",       "value": "0" }
+      ]
+    },
+    {
+      "source": "/(service-worker|firebase-cloud-messaging-sw)\\.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Pragma",        "value": "no-cache" },
+        { "key": "Expires",       "value": "0" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}
+
+
+================================================================
+        ملاحظات مهمة للاستعادة
+================================================================
+
+إذا انكسر التطبيق:
+
+١. الملف الأهم هو BACKUP_App.txt — هو كامل التطبيق
+   استبدله بـ App.jsx وسيعود كل شيء كما كان
+
+٢. الترتيب الصحيح للاستعادة:
+   أ. انسخ BACKUP_App.txt  →  App.jsx
+   ب. تأكد من package.json صحيح
+   ج. شغّل: npm install
+   د. شغّل: npm run build
+   هـ. ارفع على Vercel
+
+٣. قاعدة البيانات (Supabase) لا تتأثر أبداً
+   البيانات (الحجوزات / العملاء / الصالونات) آمنة
+
+================================================================
