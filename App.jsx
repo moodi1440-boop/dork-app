@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SALON_LANGS } from './src/i18n.js';
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.06.01-SD";
+const APP_VERSION = "2026.06.01-SV";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
