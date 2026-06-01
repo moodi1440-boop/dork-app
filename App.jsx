@@ -1457,7 +1457,7 @@ export default function App(){
         {view==="ownerLogin"&&<OwnerLogin {...sharedProps}/>}
         {view==="ownerDash"&& <OwnerDash  salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} showSalonDrawer={showSalonDrawer} setShowSalonDrawer={setShowSalonDrawer} {...sharedProps}/>}
         {(view==="ownerInfo"||view==="ownerHours"||view==="ownerServices"||view==="ownerBarbers"||view==="ownerSocial"||view==="ownerTone"||view==="ownerPin")&&<OwnerSettings salon={salons.find(s=>s.id===ownerSession)} setSalons={sharedProps.setSalons} toast$={toast$} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.updateSocial||sharedProps.setSocialLinks} setView={setView} setShowSalonDrawer={setShowSalonDrawer} onlySec={view.replace("owner","").toLowerCase()}/>}
-        {view==="ownerTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setView("ownerDash");setShowSalonDrawer(true);}}/>}
+        {view==="ownerTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>setView("ownerDash")}/>}
         {view==="ownerFaq"&&<OwnerFaqView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
@@ -4417,7 +4417,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 
   return(
     <div style={onlySec?G.page:undefined}><div style={onlySec?G.fp:undefined}>
-      {onlySec&&<div style={G.fh}><button style={G.bb} onClick={()=>{setView&&setView("ownerDash");setShowSalonDrawer&&setShowSalonDrawer(true);}}>← رجوع</button><h2 style={G.ft}>{SEC_TITLES[onlySec]||"إعدادات الصالون"}</h2></div>}
+      {onlySec&&<div style={G.fh}><button style={G.bb} onClick={()=>setView&&setView("ownerDash")}>← رجوع</button><h2 style={G.ft}>{SEC_TITLES[onlySec]||"إعدادات الصالون"}</h2></div>}
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
         {[{id:"info",icon:"📋",label:"المعلومات"},{id:"hours",icon:"🕐",label:"الأوقات"},{id:"services",icon:"✂",label:"الخدمات"},{id:"barbers",icon:"💈",label:"الحلاقون"},{id:"tone",icon:"🔔",label:"النغمة"},{id:"social",icon:"📱",label:"التواصل"},{id:"pin",icon:"🔐",label:"PIN"}].map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
@@ -4659,7 +4659,7 @@ function OwnerFaqView({setView,setShowSalonDrawer}){
   const filtered=faqQ.trim()?ALL.filter(x=>x.q.includes(faqQ)||x.a.includes(faqQ)):ALL;
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("ownerDash");setShowSalonDrawer&&setShowSalonDrawer(true);}}>← رجوع</button><h2 style={G.ft}>❓ أسئلة شائعة</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("ownerDash")}>← رجوع</button><h2 style={G.ft}>❓ أسئلة شائعة</h2></div>
       <input value={faqQ} onChange={e=>setFaqQ(e.target.value)} placeholder="🔍 ابحث في الأسئلة..." style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl",marginBottom:12}}/>
       {filtered.length===0&&<div style={G.empty}>لا توجد نتائج</div>}
       {filtered.map((item,i)=>(
