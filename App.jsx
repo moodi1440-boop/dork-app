@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.06.01-SD";
+const APP_VERSION = "2026.06.01-SV";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -1458,12 +1458,18 @@ export default function App(){
         {view==="ownerDash"&& <OwnerDash  salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} showSalonDrawer={showSalonDrawer} setShowSalonDrawer={setShowSalonDrawer} {...sharedProps}/>}
         {(view==="ownerInfo"||view==="ownerHours"||view==="ownerServices"||view==="ownerBarbers"||view==="ownerSocial"||view==="ownerTone"||view==="ownerPin")&&<OwnerSettings salon={salons.find(s=>s.id===ownerSession)} setSalons={sharedProps.setSalons} toast$={toast$} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.updateSocial||sharedProps.setSocialLinks} setView={setView} setShowSalonDrawer={setShowSalonDrawer} onlySec={view.replace("owner","").toLowerCase()}/>}
         {view==="ownerTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setView("ownerDash");setShowSalonDrawer(true);}}/>}
+        {view==="ownerDark"&& <SettingsView {...sharedProps} onlySec="dark"  backFn={()=>{setView("ownerDash");setShowSalonDrawer(true);}}/>}
         {view==="ownerFaq"&&<OwnerFaqView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
         {view==="social"&&    <SettingsView {...sharedProps} onlySec="social"/>}
         {view==="faq"&&       <SettingsView {...sharedProps} onlySec="faq"/>}
+        {view==="custSettingsTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="custSettingsDark"&& <SettingsView {...sharedProps} onlySec="dark"  backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="custSettingsFont"&& <SettingsView {...sharedProps} onlySec="font"  backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="custSettingsBg"&&   <SettingsView {...sharedProps} onlySec="bg"    backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="custSettingsTone"&& <SettingsView {...sharedProps} onlySec="tone"  backFn={()=>{setView("home");setShowDrawer(true);}}/>}
         {view==="nearMap"&&   <NearMapView salons={approvedSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="compare"&&   <CompareSalonsView salons={compareSalons} setView={setView} setSelSalon={setSelSalon}/>}
         {view==="notifs"&&    <NotifsView setView={setView}/>}
@@ -1578,13 +1584,6 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
     if(locMode==="url"&&locUrl.trim()){const m=locUrl.match(/q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);if(m){patch.location_lat=parseFloat(m[1]);patch.location_lng=parseFloat(m[2]);locExtra.locationLat=parseFloat(m[1]);locExtra.locationLng=parseFloat(m[2]);}}
     try{await sb("customers","PATCH",patch,`?id=eq.${customer.id}`);setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim(),...locExtra}:c));setExp(null);toast$("✅ تم حفظ البيانات");}catch(e){toast$("❌ "+e.message,"err");}
   };
-  const applyTheme=(id)=>{
-    const t=THEMES[id]||THEMES.gold;const r=document.documentElement.style;
-    r.setProperty("--p",t.primary);r.setProperty("--pl",t.light);r.setProperty("--pd",t.dark);r.setProperty("--pll",t.lightest);r.setProperty("--pr",t.rgb);
-    ["5","07","08","12","15","18","2","25","3","4"].forEach(a=>{const pct=a==="4"?.45:a==="3"?.3:a==="25"?.25:a==="2"?.2:a==="18"?.18:a==="15"?.15:a==="12"?.12:a==="08"?.08:a==="07"?.07:.05;r.setProperty(`--pa${a}`,`rgba(${t.rgb},${pct})`);});
-    r.setProperty("--grad",`linear-gradient(135deg,${t.primary},${t.light})`);r.setProperty("--grad2",`linear-gradient(135deg,${t.light},${t.primary})`);
-    setSettings(s=>({...s,theme:id}));persistUiToSupabase&&persistUiToSupabase({theme:id});
-  };
   const THEME_OPT=[{id:"gold",l:"ذهبي",c:"#d4af37",e:"✨"},{id:"emerald",l:"زمردي",c:"#10b981",e:"🌿"},{id:"sapphire",l:"ياقوتي",c:"#3b82f6",e:"💎"},{id:"royalBlue",l:"ملكي",c:"#1e3a8a",e:"👑"},{id:"bronze",l:"برونزي",c:"#8b5a2b",e:"🏺"},{id:"rose",l:"وردي",c:"#ec4899",e:"🌸"},{id:"violet",l:"بنفسجي",c:"#8b5cf6",e:"🔮"},{id:"crimson",l:"قرمزي",c:"#ef4444",e:"🔴"}];
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   const Row=({icon,label,sub,chev,onClick,danger})=>(
@@ -1658,69 +1657,11 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         {/* إعدادات التطبيق */}
         <div style={{height:8}}/>
         <SecHead label="إعدادات التطبيق"/>
-        <Row icon="🎨" label="الألوان" sub={THEME_OPT.find(t=>t.id===settings?.theme)?.l||"ذهبي"} chev="colors" onClick={()=>toggle("colors")}/>
-        {exp==="colors"&&(
-          <Panel>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
-              {THEME_OPT.map(t=>{const active=settings?.theme===t.id;return(
-                <button key={t.id} onClick={()=>applyTheme(t.id)} style={{padding:"10px 4px",borderRadius:10,border:`2px solid ${active?t.c:"var(--border-ui)"}`,background:active?t.c+"22":"var(--surface-2)",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4,WebkitAppearance:"none",appearance:"none"}}>
-                  <span style={{fontSize:18}}>{t.e}</span>
-                  <div style={{width:14,height:14,borderRadius:"50%",background:t.c,boxShadow:active?`0 0 0 2px ${t.c}55`:"none"}}/>
-                  <span style={{fontSize:9,color:active?t.c:"var(--text-muted)",fontFamily:"inherit"}}>{t.l}</span>
-                </button>
-              );})}
-            </div>
-          </Panel>
-        )}
-        <Row icon="🌙" label="الوضع" sub={themeMode==="dark"?"داكن":themeMode==="dim"?"رمادي":"فاتح"} chev="dark" onClick={()=>toggle("dark")}/>
-        {exp==="dark"&&(
-          <Panel>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {[{v:"dark",l:"🌙 داكن"},{v:"dim",l:"⬛ رمادي"},{v:"light",l:"☀️ فاتح"}].map(({v,l})=>{const active=themeMode===v;return(
-                <button key={v} onClick={()=>{setThemeMode(v);persistUiToSupabase&&persistUiToSupabase({darkMode:v==="dark"||v==="dim",themeMode:v});}} style={{padding:"13px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
-                  {l}{active&&" ✓"}
-                </button>
-              );})}
-            </div>
-          </Panel>
-        )}
-        <Row icon="🔤" label="حجم الخط" sub={{sm:"صغير",md:"متوسط",lg:"كبير"}[settings?.fontSize||"md"]} chev="font" onClick={()=>toggle("font")}/>
-        {exp==="font"&&(
-          <Panel>
-            <div style={{display:"flex",gap:8}}>
-              {[{id:"sm",l:"صغير",s:12},{id:"md",l:"متوسط",s:14},{id:"lg",l:"كبير",s:16}].map(({id,l,s})=>{const active=(settings?.fontSize||"md")===id;return(
-                <button key={id} onClick={()=>{setSettings(st=>({...st,fontSize:id}));persistUiToSupabase&&persistUiToSupabase({fontSize:id});}} style={{flex:1,padding:"12px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,fontSize:s,WebkitAppearance:"none",appearance:"none"}}>
-                  {l}
-                </button>
-              );})}
-            </div>
-          </Panel>
-        )}
-        <Row icon="🖼" label="خلفية التطبيق" sub={BACKGROUNDS.find(b=>b.id===(settings?.bg||"none"))?.label||"بلا خلفية"} chev="bg" onClick={()=>toggle("bg")}/>
-        {exp==="bg"&&(
-          <Panel>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-              {BACKGROUNDS.map(bg=>{const active=(settings?.bg||"none")===bg.id;return(
-                <button key={bg.id} onClick={()=>{setSettings(st=>({...st,bg:bg.id}));persistUiToSupabase&&persistUiToSupabase({bg:bg.id});}} style={{padding:"12px 4px",borderRadius:10,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4,WebkitAppearance:"none",appearance:"none"}}>
-                  <span style={{fontSize:20}}>{bg.emoji}</span>
-                  <span style={{fontSize:9,color:active?"var(--p)":"var(--text-muted)",fontFamily:"inherit"}}>{bg.label}{active&&" ✓"}</span>
-                </button>
-              );})}
-            </div>
-          </Panel>
-        )}
-        <Row icon="🔔" label="نغمة التنبيه" sub={TONES.find(t=>t.id===settings?.defaultTone)?.label||"—"} chev="tones" onClick={()=>toggle("tones")}/>
-        {exp==="tones"&&(
-          <Panel>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-              {TONES.map(t=>{const active=settings?.defaultTone===t.id;return(
-                <button key={t.id} onClick={()=>{setSettings(st=>({...st,defaultTone:t.id}));playTone(t.id,0.8);persistUiToSupabase&&persistUiToSupabase({defaultTone:t.id});}} style={{padding:"8px 6px",borderRadius:9,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:active?700:400,WebkitAppearance:"none",appearance:"none"}}>
-                  {t.label}{active&&" ✓"}
-                </button>
-              );})}
-            </div>
-          </Panel>
-        )}
+        <Row icon="🎨" label="الألوان" sub={THEME_OPT.find(t=>t.id===settings?.theme)?.l||"ذهبي"} onClick={()=>{onClose();setView("custSettingsTheme");}}/>
+        <Row icon="🌙" label="نمط الإضاءة" sub={themeMode==="dark"?"داكن":themeMode==="dim"?"رمادي":"فاتح"} onClick={()=>{onClose();setView("custSettingsDark");}}/>
+        <Row icon="🔤" label="حجم الخط" sub={{sm:"صغير",md:"متوسط",lg:"كبير"}[settings?.fontSize||"md"]} onClick={()=>{onClose();setView("custSettingsFont");}}/>
+        <Row icon="🖼" label="خلفية التطبيق" sub={BACKGROUNDS.find(b=>b.id===(settings?.bg||"none"))?.label||"بلا خلفية"} onClick={()=>{onClose();setView("custSettingsBg");}}/>
+        <Row icon="🔔" label="نغمة التنبيه" sub={TONES.find(t=>t.id===settings?.defaultTone)?.label||"—"} onClick={()=>{onClose();setView("custSettingsTone");}}/>
         {/* مزيد */}
         <div style={{height:8}}/>
         <SecHead label="مزيد"/>
@@ -1861,6 +1802,7 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
         <Row icon="📱" label="التواصل الاجتماعي" onClick={()=>nav(()=>setView("ownerSocial"))}/>
         <SecHead label="إعدادات التطبيق"/>
         <Row icon="🎨" label="الألوان والثيم" onClick={()=>nav(()=>setView("ownerTheme"))}/>
+        <Row icon="🌙" label="نمط الإضاءة" onClick={()=>nav(()=>setView("ownerDark"))}/>
         <Row icon="🔔" label="النغمات" onClick={()=>nav(()=>setView("ownerTone"))}/>
         <Row icon="🔐" label="رمز الدخول PIN" onClick={()=>nav(()=>setView("ownerPin"))}/>
         <Row icon="❓" label="أسئلة شائعة" onClick={()=>nav(()=>setView("ownerFaq"))}/>
@@ -5645,7 +5587,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{if(backFn){backFn();}else{setView("home");setShowDrawer&&setShowDrawer(true);}}}>← رجوع</button><h2 style={G.ft}>{onlySec?({social:"📱 التواصل",faq:"❓ أسئلة شائعة",theme:"🎨 الألوان والثيم"}[onlySec]||"⚙ الإعدادات"):"⚙ الإعدادات"}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{if(backFn){backFn();}else{setView("home");setShowDrawer&&setShowDrawer(true);}}}>← رجوع</button><h2 style={G.ft}>{onlySec?({social:"📱 التواصل",faq:"❓ أسئلة شائعة",theme:"🎨 الألوان والثيم",dark:"🌙 نمط الإضاءة",font:"🔤 حجم الخط",bg:"🖼 خلفية التطبيق",tone:"🔔 النغمات"}[onlySec]||"⚙ الإعدادات"):"⚙ الإعدادات"}</h2></div>
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
         {SECS.map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
