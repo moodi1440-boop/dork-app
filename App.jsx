@@ -3696,8 +3696,9 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
     try{return localStorage.getItem(`dork_oath_${salon?.id}`)==="1";}catch{return false;}
   });
   const[oathChecked,setOathChecked]=useState(false);
+  const{t}=useTranslation();
 
-  if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={G.ft}>لوحة الصالون</h2></div><div style={G.empty}>الصالون غير موجود</div></div></div>;
+  if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{t("owner_dash.back")}</button><h2 style={G.ft}>{t("owner_dash.page_title")}</h2></div><div style={G.empty}>{t("owner_dash.not_found")}</div></div></div>;
 
   // شاشة القسم — تظهر لمرة واحدة فقط
   if(!oathDone) return(
@@ -3705,8 +3706,8 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       <div style={{maxWidth:460,width:"100%"}}>
         <div style={{textAlign:"center",marginBottom:20}}>
           <div style={{fontSize:40,marginBottom:8}}>📜</div>
-          <div style={{fontSize:20,fontWeight:900,color:"var(--p)",marginBottom:4}}>القسم الشرعي</div>
-          <div style={{fontSize:12,color:"var(--text-muted)"}}>يُعرض لمرة واحدة فقط عند أول دخول</div>
+          <div style={{fontSize:20,fontWeight:900,color:"var(--p)",marginBottom:4}}>{t("owner_dash.oath_title")}</div>
+          <div style={{fontSize:12,color:"var(--text-muted)"}}>{t("owner_dash.oath_subtitle")}</div>
         </div>
         <div style={{background:"rgba(var(--pr),.06)",border:"1.5px solid rgba(var(--pr),.3)",borderRadius:14,padding:"20px 18px",marginBottom:18}}>
           <div style={{fontSize:14,color:"var(--p)",lineHeight:2.1,textAlign:"center",fontWeight:600}}>
@@ -3715,7 +3716,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         </div>
         <label style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:16,cursor:"pointer",padding:"12px 14px",background:"rgba(var(--pr),.05)",borderRadius:10,border:`1.5px solid ${oathChecked?"var(--p)":"var(--border-ui)"}`}}>
           <input type="checkbox" checked={oathChecked} onChange={e=>setOathChecked(e.target.checked)} style={{width:18,height:18,marginTop:2,flexShrink:0,cursor:"pointer"}}/>
-          <span style={{fontSize:13,color:"#fff",lineHeight:1.7}}>أقر بأنني قرأت القسم كاملاً وأقسمت بالله العظيم على الالتزام به</span>
+          <span style={{fontSize:13,color:"#fff",lineHeight:1.7}}>{t("owner_dash.oath_confirm")}</span>
         </label>
         <button
           disabled={!oathChecked}
@@ -3725,7 +3726,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             setOathDone(true);
           }}
           style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:oathChecked?"linear-gradient(135deg,var(--p),var(--pl))":"var(--border-ui)",color:oathChecked?"#000":"#555",fontSize:15,fontWeight:900,cursor:oathChecked?"pointer":"not-allowed",fontFamily:"inherit",transition:"all .3s"}}>
-          قبول ودخول لوحة التحكم
+          {t("owner_dash.oath_enter")}
         </button>
       </div>
     </div>
@@ -3733,7 +3734,9 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
   const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
-  const statusLabel=salon.status==="approved"?"✅ مفعّل":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار موافقة الإدارة";
+  const statusLabel=salon.status==="approved"?t("owner_dash.status_active"):salon.status==="rejected"?t("owner_dash.status_rejected"):t("owner_dash.status_pending");
+  const _dNames=t("owner_dash.days",{returnObjects:true});
+  const _mNames=t("owner_dash.months",{returnObjects:true});
 
   const approvedBookings=salon.bookings.filter(b=>b.status==="approved");
   const totalEarned=approvedBookings.length;
@@ -3757,8 +3760,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
     .sort((a,b)=>(a.time||"").localeCompare(b.time||""))[0];
   const _totalSlots=Math.max((getSlotsForSalon(salon).length)*(salon.barbers?.length||1),1);
   const _occ=Math.min(100,Math.round(_tdApproved.length/_totalSlots*100));
-  const _dNames=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
-  const _mNames=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
   const _dayLabel=`${_dNames[_now.getDay()]}، ${_now.getDate()} ${_mNames[_now.getMonth()]}`;
 
   return(
@@ -3797,20 +3798,20 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{fontSize:14,color:"#fff",fontWeight:700}}>✂ الاسم: <span style={{color:"var(--p)"}}>{salon.name}</span></div>
-              {salon.status==="approved"&&<div style={{background:"rgba(var(--pr),.15)",border:"1px solid var(--p)",borderRadius:8,padding:"4px 12px",fontSize:13,color:"var(--p)",fontWeight:700}}>نشط</div>}
+              <div style={{fontSize:14,color:"#fff",fontWeight:700}}>{t("owner_dash.salon_name")}: <span style={{color:"var(--p)"}}>{salon.name}</span></div>
+              {salon.status==="approved"&&<div style={{background:"rgba(var(--pr),.15)",border:"1px solid var(--p)",borderRadius:8,padding:"4px 12px",fontSize:13,color:"var(--p)",fontWeight:700}}>{t("owner_dash.salon_active")}</div>}
             </div>
             <div style={{fontSize:14,color:"#fff",fontWeight:700}}>⭐ <span style={{color:"var(--p)"}}>{(salon.rating||0).toFixed(1)}</span></div>
           </div>
-          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📞 الجوال: <span style={{color:"var(--p)"}}>{salon.phone||"غير متوفر"}</span></div>
-          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📍 الموقع: <span style={{color:"var(--p)"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
-          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>📅 الانضمام: <span style={{color:"var(--p)"}}>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):"غير متوفر"}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>{t("owner_dash.salon_phone")}: <span style={{color:"var(--p)"}}>{salon.phone||t("owner_dash.not_available")}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>{t("owner_dash.salon_location")}: <span style={{color:"var(--p)"}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
+          <div style={{fontSize:14,color:"#fff",fontWeight:700}}>{t("owner_dash.salon_joined")}: <span style={{color:"var(--p)"}}>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):t("owner_dash.not_available")}</span></div>
         </div>
       </div>
 
       {salon.status!=="approved"&&(
         <div style={{background:"rgba(var(--pr),.07)",border:"1px solid rgba(var(--pr),.25)",borderRadius:10,padding:"10px 12px",marginBottom:10,fontSize:12,color:"var(--pl)"}}>
-          🔔 صالونك في انتظار موافقة الإدارة — سيظهر للعملاء بعد القبول
+          {t("owner_dash.pending_notice")}
         </div>
       )}
 
@@ -3825,19 +3826,19 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           <div style={{background:"rgba(var(--pr),.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(var(--pr),.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.06}}>📅</div>
             <div style={{fontSize:30,fontWeight:900,color:"var(--p)",lineHeight:1}}>{_tdApproved.length}</div>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginTop:5}}>حجز مقبول اليوم</div>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginTop:5}}>{t("owner_dash.today_bookings")}</div>
           </div>
           <div style={{background:"rgba(39,174,96,.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(39,174,96,.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.06}}>💰</div>
             <div style={{fontSize:30,fontWeight:900,color:"#27ae60",lineHeight:1}}>{_tdRevenue}</div>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginTop:5}}>ريال إيراد اليوم</div>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginTop:5}}>{t("owner_dash.today_revenue")}</div>
           </div>
         </div>
 
         {/* شريط الامتلاء */}
         <div style={{marginBottom:_nextBk?14:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <div style={{fontSize:11,color:"#777"}}>امتلاء اليوم</div>
+            <div style={{fontSize:11,color:"#777"}}>{t("owner_dash.occupancy")}</div>
             <div style={{fontSize:12,fontWeight:800,color:"var(--p)"}}>{_occ}%</div>
           </div>
           <div style={{height:7,background:"rgba(255,255,255,.05)",borderRadius:10,overflow:"hidden"}}>
@@ -3850,25 +3851,25 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(var(--pr),.06)",borderRadius:11,padding:"10px 12px",border:"1px dashed rgba(var(--pr),.2)"}}>
             <div style={{width:32,height:32,borderRadius:9,background:"rgba(var(--pr),.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>⏰</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:10,color:"#666",marginBottom:2}}>الحجز القادم</div>
+              <div style={{fontSize:10,color:"#666",marginBottom:2}}>{t("owner_dash.next_booking")}</div>
               <div style={{fontSize:13,fontWeight:700,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                {_nextBk.customerName||_nextBk.customer_name||"عميل"} — {_nextBk.time}
+                {_nextBk.customerName||_nextBk.customer_name||t("owner_dash.customer")} — {_nextBk.time}
               </div>
             </div>
             <div style={{fontSize:11,fontWeight:800,color:"var(--p)",background:"rgba(var(--pr),.12)",padding:"4px 9px",borderRadius:8,flexShrink:0,whiteSpace:"nowrap"}}>
               {(()=>{
                 const[h,m]=(_nextBk.time||"0:0").split(":").map(Number);
                 const diff=h*60+m-_nowMins;
-                if(diff<=0)return"الآن";
-                if(diff>=60)return`${Math.floor(diff/60)}س ${diff%60}د`;
-                return`${diff} دقيقة`;
+                if(diff<=0)return t("owner_dash.now");
+                if(diff>=60)return`${Math.floor(diff/60)}${t("owner_dash.time_hour")} ${diff%60}${t("owner_dash.time_min")}`;
+                return`${diff} ${t("owner_dash.time_mins")}`;
               })()}
             </div>
           </div>
         )}
         {!_nextBk&&(
           <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"center",paddingTop:_tdApproved.length>0?8:0}}>
-            {_tdApproved.length>0?"✓ انتهت جميع حجوزات اليوم":"لا توجد حجوزات مؤكدة لهذا اليوم"}
+            {_tdApproved.length>0?t("owner_dash.no_more_bookings"):t("owner_dash.no_bookings")}
           </div>
         )}
       </div>
@@ -3876,10 +3877,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
-              {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:0},
-              {label:"انتظار",value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
-              {label:"مرفوض",value:_tdRejected.length,color:"#e74c3c",filter:"rejected",delay:160},
-              {label:"الكل",value:_tdBks.length,color:"var(--p)",filter:"all",delay:240},
+              {label:t("owner_dash.filter_approved"),value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:0},
+              {label:t("owner_dash.filter_pending"),value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
+              {label:t("owner_dash.filter_rejected"),value:_tdRejected.length,color:"#e74c3c",filter:"rejected",delay:160},
+              {label:t("owner_dash.filter_all"),value:_tdBks.length,color:"var(--p)",filter:"all",delay:240},
             ].map(({label,value,color,filter,delay})=>{
               const isOpen=activeCard===filter;
               return(
@@ -3902,7 +3903,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           )}
         </>
       )}
-      {ownerTab&&<div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab(null);setShowSalonDrawer(true);}}>← رجوع</button><h2 style={G.ft}>{{messages:"💬 الرسائل",calendar:"🗓 الحجوزات",reviews:"⭐ التقييمات",stats:"📊 الإحصائيات",balance:"💰 الأرباح"}[ownerTab]||""}</h2></div>}
+      {ownerTab&&<div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab(null);setShowSalonDrawer(true);}}>{t("owner_dash.back")}</button><h2 style={G.ft}>{{messages:t("owner_dash.tab_messages"),calendar:t("owner_dash.tab_calendar"),reviews:t("owner_dash.tab_reviews"),stats:t("owner_dash.tab_stats"),balance:t("owner_dash.tab_balance")}[ownerTab]||""}</h2></div>}
       {ownerTab==="messages"&&(
         <MessagesPanel salon={salon} toast$={toast$}/>
       )}
@@ -3912,19 +3913,19 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {ownerTab==="balance"&&(
         <div style={{paddingTop:8}}>
           <div className="balance-tab" style={{background:"linear-gradient(135deg,rgba(var(--pr),.12),rgba(var(--pr),.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(var(--pr),.3)",marginBottom:12}}>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>رصيدك المتاح</div>
-            <div style={{fontSize:32,fontWeight:900,color:"var(--p)",marginBottom:10,transition:"all .3s ease"}}>{balance} <span style={{fontSize:14}}>ريال</span></div>
+            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>{t("owner_dash.balance_title")}</div>
+            <div style={{fontSize:32,fontWeight:900,color:"var(--p)",marginBottom:10,transition:"all .3s ease"}}>{balance} <span style={{fontSize:14}}>{t("owner_dash.balance_unit")}</span></div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <div style={{background:"rgba(39,174,96,.1)",borderRadius:10,padding:"10px",border:"1px solid #27ae6055",transition:"all .3s ease",cursor:"pointer"}}>
-                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>المستحق</div>
-                <div style={{fontSize:16,fontWeight:700,color:"#27ae60"}}>{totalEarned} ر</div>
+                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{t("owner_dash.balance_owed")}</div>
+                <div style={{fontSize:16,fontWeight:700,color:"#27ae60"}}>{totalEarned} {t("owner_dash.balance_unit")}</div>
               </div>
               <div style={{background:"rgba(var(--pr),.1)",borderRadius:10,padding:"10px",border:"1px solid rgba(var(--pr),.3)",transition:"all .3s ease",cursor:"pointer"}}>
-                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>المدفوع</div>
-                <div style={{fontSize:16,fontWeight:700,color:"var(--p)"}}>{totalPaid} ر</div>
+                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{t("owner_dash.balance_paid")}</div>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--p)"}}>{totalPaid} {t("owner_dash.balance_unit")}</div>
               </div>
             </div>
-            {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"10px",fontSize:11,color:"#e74c3c",marginTop:10,textAlign:"center",animation:"fadeInUp .5s ease-out .2s both"}}>⚠ يوجد مبلغ مستحق — يُرجى السداد</div>}
+            {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"10px",fontSize:11,color:"#e74c3c",marginTop:10,textAlign:"center",animation:"fadeInUp .5s ease-out .2s both"}}>{t("owner_dash.balance_warning")}</div>}
           </div>
         </div>
       )}
