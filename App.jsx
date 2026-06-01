@@ -3872,7 +3872,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const _tdBks=salon.bookings.filter(b=>b.date===_td);
   const _tdApproved=_tdBks.filter(b=>b.status==="approved");
   const _tdPending=_tdBks.filter(b=>b.status==="pending");
-  const _tdRejected=_tdBks.filter(b=>b.status==="rejected");
   const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
   const _now=new Date();
   const _nowMins=_now.getHours()*60+_now.getMinutes();
@@ -3884,6 +3883,11 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const _dNames=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
   const _mNames=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
   const _dayLabel=`${_dNames[_now.getDay()]}، ${_now.getDate()} ${_mNames[_now.getMonth()]}`;
+  // ── حسابات إجمالية للبطاقات الأربع ──
+  const _allBks=salon.bookings;
+  const _allApproved=_allBks.filter(b=>b.status==="approved");
+  const _allPending=_allBks.filter(b=>b.status==="pending");
+  const _allRejected=_allBks.filter(b=>b.status==="rejected");
 
   return(
     <div style={G.page}>
@@ -3962,10 +3966,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <div style={{marginBottom:_nextBk?14:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
             <div style={{fontSize:11,color:"#777"}}>امتلاء اليوم</div>
-            <div style={{fontSize:12,fontWeight:800,color:_occ>=80?"#e74c3c":_occ>=50?"var(--p)":"#27ae60"}}>{_occ}%</div>
+            <div style={{fontSize:12,fontWeight:800,color:"var(--p)"}}>{_occ}%</div>
           </div>
           <div style={{height:7,background:"rgba(255,255,255,.05)",borderRadius:10,overflow:"hidden"}}>
-            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center",boxShadow:_occ>0?`0 0 8px ${_occ>=80?"rgba(231,76,60,.5)":_occ>=50?"rgba(var(--pr),.5)":"rgba(39,174,96,.5)"}`:""}}/>
+            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:"linear-gradient(90deg,var(--pd),var(--pl))",borderRadius:10,transformOrigin:"right center",boxShadow:_occ>0?"0 0 8px rgba(var(--pr),.5)":""}}/>
           </div>
         </div>
 
@@ -4000,15 +4004,15 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
-              {label:"الكل",value:_tdBks.length,color:"var(--p)",filter:"all",delay:0},
-              {label:"انتظار",value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
-              {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:160},
-              {label:"مرفوض",value:_tdRejected.length,color:"#e74c3c",filter:"rejected",delay:240}
+              {label:"مقبول",value:_allApproved.length,color:"#27ae60",filter:"approved",delay:0},
+              {label:"انتظار",value:_allPending.length,color:"#f39c12",filter:"pending",delay:80},
+              {label:"مرفوض",value:_allRejected.length,color:"#e74c3c",filter:"rejected",delay:160},
+              {label:"الكل",value:_allBks.length,color:"var(--p)",filter:"all",delay:240},
             ].map(({label,value,color,filter,delay})=>{
               const isOpen=activeCard===filter;
               return(
                 <div key={label} className="stat-card"
-                  onClick={()=>{setActiveCard(c=>c===filter?null:filter);if(filter==="all"||filter==="approved")refreshSalonBookings(salon.id);}}
+                  onClick={()=>{setActiveCard(c=>c===filter?null:filter);refreshSalonBookings(salon.id);}}
                   style={{background:isOpen?`${color}18`:`${color}0f`,borderRadius:isOpen?"13px 13px 0 0":13,padding:"11px 6px",height:68,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:`1.5px solid ${isOpen?`${color}55`:`${color}1a`}`,borderBottom:isOpen?`1.5px solid ${color}55`:"",textAlign:"center",animationDelay:`${delay}ms`,cursor:"pointer",transition:"all .22s ease",boxShadow:isOpen?`0 0 14px ${color}1a`:"none"}}>
                   <div style={{fontSize:22,fontWeight:900,color,marginBottom:2,lineHeight:1}}>{value}</div>
                   <div style={{fontSize:10,color:isOpen?color:"#666",fontWeight:600,marginBottom:3}}>{label}</div>
