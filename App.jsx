@@ -1457,7 +1457,7 @@ export default function App(){
         {view==="ownerLogin"&&<OwnerLogin {...sharedProps}/>}
         {view==="ownerDash"&& <OwnerDash  salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} showSalonDrawer={showSalonDrawer} setShowSalonDrawer={setShowSalonDrawer} {...sharedProps}/>}
         {(view==="ownerInfo"||view==="ownerHours"||view==="ownerServices"||view==="ownerBarbers"||view==="ownerSocial"||view==="ownerTone"||view==="ownerPin")&&<OwnerSettings salon={salons.find(s=>s.id===ownerSession)} setSalons={sharedProps.setSalons} toast$={toast$} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.updateSocial||sharedProps.setSocialLinks} setView={setView} setShowSalonDrawer={setShowSalonDrawer} onlySec={view.replace("owner","").toLowerCase()}/>}
-        {view==="ownerTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>setView("ownerDash")}/>}
+        {view==="ownerTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setView("ownerDash");setShowSalonDrawer(true);}}/>}
         {view==="ownerFaq"&&<OwnerFaqView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
@@ -2683,12 +2683,6 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[monthStats,setMonthStats]=useState({});
   const[yearStats,setYearStats]=useState({});
   const[loadingStats,setLoadingStats]=useState(false);
-  const[showDayPicker,setShowDayPicker]=useState(false);
-  const[showMonthPicker,setShowMonthPicker]=useState(false);
-  const[showYearPicker,setShowYearPicker]=useState(false);
-  const[showBarberDayPicker,setShowBarberDayPicker]=useState(false);
-  const[showBarberMonthPicker,setShowBarberMonthPicker]=useState(false);
-  const[showBarberYearPicker,setShowBarberYearPicker]=useState(false);
 
   const todayBks=salon.bookings.filter(b=>b.date===selectedDate);
   const todayApproved=todayBks.filter(b=>b.status==="approved");
@@ -2737,71 +2731,38 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
 
   return(
     <div style={{paddingTop:4}}>
-      {/* منتقيات اليوم/الشهر/السنة */}
-      <div style={{display:"flex",gap:6,marginBottom:12}}>
-        {/* Day Picker */}
-        <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>setShowDayPicker(!showDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showDayPicker?"var(--p)":"var(--border-ui)"}`,background:showDayPicker?"rgba(var(--pr),.13)":"var(--bg-input)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-            {String(parseInt(selectedDate.split("-")[2])).padStart(2,"0")} 📅
-          </button>
-          {showDayPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--p)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {Array.from({length:31},(_, i)=>{
-                  const day=i+1;
-                  const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-                  const isSel=selectedDate===dateStr;
-                  return(
-                    <button key={day} onClick={()=>{setSelectedDate(dateStr);setShowDayPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"var(--p)":"transparent",color:isSel?"#000":"var(--p)",border:`1px solid ${isSel?"var(--p)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                      {day}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+      {/* منتقي التاريخ — صفوف تسلسلية */}
+      <div style={{background:"var(--surface-1)",borderRadius:12,padding:"10px",border:"1px solid var(--border-ui)",marginBottom:12}}>
+        {/* السنوات */}
+        <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",marginBottom:6,paddingBottom:2}}>
+          {Array.from({length:7},(_,i)=>new Date().getFullYear()-3+i).map(yr=>(
+            <button key={yr} onClick={()=>{setY(yr);const d=parseInt(selectedDate.split("-")[2])||1;setSelectedDate(`${yr}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`);}}
+              style={{flexShrink:0,padding:"5px 10px",borderRadius:8,border:`1.5px solid ${y===yr?"var(--p)":"var(--border-ui)"}`,background:y===yr?"var(--p)":"var(--bg-input)",color:y===yr?"#000":"var(--text-muted)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              {yr}
+            </button>
+          ))}
         </div>
-
-        {/* Month Picker */}
-        <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>setShowMonthPicker(!showMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showMonthPicker?"var(--p)":"var(--border-ui)"}`,background:showMonthPicker?"rgba(var(--pr),.13)":"var(--bg-input)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-            {MONTHS_AR[m]} 📅
-          </button>
-          {showMonthPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--p)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {MONTHS_AR.map((month,idx)=>{
-                  const isSel=m===idx;
-                  return(
-                    <button key={idx} onClick={()=>{setM(idx);const newDate=`${y}-${String(idx+1).padStart(2,"0")}-01`;setSelectedDate(newDate);setShowMonthPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"var(--p)":"transparent",color:isSel?"#000":"var(--p)",border:`1px solid ${isSel?"var(--p)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                      {month}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+        {/* الأشهر */}
+        <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",marginBottom:6,paddingBottom:2}}>
+          {MONTHS_AR.map((mo,idx)=>(
+            <button key={idx} onClick={()=>{setM(idx);const d=parseInt(selectedDate.split("-")[2])||1;setSelectedDate(`${y}-${String(idx+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`);}}
+              style={{flexShrink:0,padding:"5px 8px",borderRadius:8,border:`1.5px solid ${m===idx?"var(--p)":"var(--border-ui)"}`,background:m===idx?"var(--p)":"var(--bg-input)",color:m===idx?"#000":"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              {mo}
+            </button>
+          ))}
         </div>
-
-        {/* Year Picker */}
-        <div style={{flex:1,position:"relative"}}>
-          <button onClick={()=>setShowYearPicker(!showYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showYearPicker?"var(--p)":"var(--border-ui)"}`,background:showYearPicker?"rgba(var(--pr),.13)":"var(--bg-input)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-            {y} 📅
-          </button>
-          {showYearPicker&&(
-            <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--p)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {Array.from({length:10},(_, i)=>y-5+i).map(yr=>{
-                  const isSel=y===yr;
-                  return(
-                    <button key={yr} onClick={()=>{setY(yr);const newDate=`${yr}-${String(m+1).padStart(2,"0")}-01`;setSelectedDate(newDate);setShowYearPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"var(--p)":"transparent",color:isSel?"#000":"var(--p)",border:`1px solid ${isSel?"var(--p)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                      {yr}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+        {/* الأيام */}
+        <div style={{display:"flex",gap:4,overflowX:"auto",scrollbarWidth:"none",paddingBottom:2}}>
+          {Array.from({length:31},(_,i)=>i+1).map(day=>{
+            const ds=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+            const isSel=selectedDate===ds;
+            return(
+              <button key={day} onClick={()=>setSelectedDate(ds)}
+                style={{flexShrink:0,minWidth:30,height:30,borderRadius:8,border:`1.5px solid ${isSel?"var(--p)":"var(--border-ui)"}`,background:isSel?"var(--p)":"var(--bg-input)",color:isSel?"#000":"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                {day}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -2836,71 +2797,31 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
         <div style={{background:"var(--surface-1)",borderRadius:14,padding:"12px",border:"1px solid var(--border-ui)",marginBottom:12}}>
           <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:10}}>👨‍💼 أداء الحلاقين</div>
 
-          {/* منتقيات اليوم/الشهر/السنة للحلاقين */}
-          <div style={{display:"flex",gap:6,marginBottom:10}}>
-            {/* اليوم */}
-            <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberDayPicker(!showBarberDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                {String(barberD).padStart(2,"0")} 📅
-              </button>
-              {showBarberDayPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4}}>
-                    {Array.from({length:31},(_, i)=>{
-                      const day=i+1;
-                      const isSel=barberD===day;
-                      return(
-                        <button key={day} onClick={()=>{setBarberD(day);setShowBarberDayPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"var(--p)":"#0d0d1a",color:isSel?"#000":"var(--p)",border:`1px solid ${isSel?"var(--p)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                          {day}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+          {/* منتقي تاريخ الحلاقين — صفوف تسلسلية */}
+          <div style={{background:"var(--bg-input)",borderRadius:10,padding:"8px",border:"1px solid var(--border-ui)",marginBottom:10}}>
+            <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",marginBottom:5,paddingBottom:2}}>
+              {Array.from({length:7},(_,i)=>new Date().getFullYear()-3+i).map(yr=>(
+                <button key={yr} onClick={()=>setBarberY(yr)}
+                  style={{flexShrink:0,padding:"4px 9px",borderRadius:7,border:`1.5px solid ${barberY===yr?"var(--p)":"var(--border-ui)"}`,background:barberY===yr?"var(--p)":"var(--surface-1)",color:barberY===yr?"#000":"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                  {yr}
+                </button>
+              ))}
             </div>
-
-            {/* الشهر */}
-            <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberMonthPicker(!showBarberMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                {MONTHS_AR[barberM]} 📆
-              </button>
-              {showBarberMonthPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
-                    {MONTHS_AR.map((month,idx)=>{
-                      const isSel=barberM===idx;
-                      return(
-                        <button key={idx} onClick={()=>{setBarberM(idx);setShowBarberMonthPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"var(--p)":"#0d0d1a",color:isSel?"#000":"var(--p)",border:`1px solid ${isSel?"var(--p)":"var(--border-ui)"}`,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                          {month}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+            <div style={{display:"flex",gap:5,overflowX:"auto",scrollbarWidth:"none",marginBottom:5,paddingBottom:2}}>
+              {MONTHS_AR.map((mo,idx)=>(
+                <button key={idx} onClick={()=>setBarberM(idx)}
+                  style={{flexShrink:0,padding:"4px 7px",borderRadius:7,border:`1.5px solid ${barberM===idx?"var(--p)":"var(--border-ui)"}`,background:barberM===idx?"var(--p)":"var(--surface-1)",color:barberM===idx?"#000":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                  {mo}
+                </button>
+              ))}
             </div>
-
-            {/* السنة */}
-            <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberYearPicker(!showBarberYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                {barberY} 📊
-              </button>
-              {showBarberYearPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
-                    {Array.from({length:10},(_, i)=>{
-                      const year=new Date().getFullYear()-5+i;
-                      const isSel=barberY===year;
-                      return(
-                        <button key={year} onClick={()=>{setBarberY(year);setShowBarberYearPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"var(--p)":"#0d0d1a",color:isSel?"#000":"var(--p)",border:`1px solid ${isSel?"var(--p)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                          {year}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+            <div style={{display:"flex",gap:4,overflowX:"auto",scrollbarWidth:"none",paddingBottom:2}}>
+              {Array.from({length:31},(_,i)=>i+1).map(day=>(
+                <button key={day} onClick={()=>setBarberD(day)}
+                  style={{flexShrink:0,minWidth:28,height:28,borderRadius:7,border:`1.5px solid ${barberD===day?"var(--p)":"var(--border-ui)"}`,background:barberD===day?"var(--p)":"var(--surface-1)",color:barberD===day?"#000":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                  {day}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -2932,7 +2853,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
     </div>
   );
 }
-function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved"}){
+function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFilter="approved",dateFilter}){
   const[showWaiting,setShowWaiting]=useState(false);
   const[showAddForm,setShowAddForm]=useState(false);
   const[filter,setFilter]=useState(defaultFilter);
@@ -3029,7 +2950,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
     }
   };
 
-  const allBks=[...salon.bookings].sort((a,b)=>{
+  const allBks=[...salon.bookings].filter(b=>dateFilter?b.date===dateFilter:true).sort((a,b)=>{
     const order={pending:0,approved:1,rejected:2};
     const so=(order[a.status]??1)-(order[b.status]??1);
     if(so!==0)return so;
@@ -3867,11 +3788,13 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
   const[showBalanceModal,setShowBalanceModal]=useState(false);
 
-  // ── حسابات ملخص اليوم (بتوقيت السعودية AST/GMT+3) ──
+  // ── حسابات ملخص اليوم فقط (بتوقيت السعودية AST/GMT+3) ──
+  // تنبيه: البطاقات الأربع تعرض اليوم الحالي فقط — لا تغيّر هذا السلوك
   const _td=getTodayDateInRiyadh();
   const _tdBks=salon.bookings.filter(b=>b.date===_td);
   const _tdApproved=_tdBks.filter(b=>b.status==="approved");
   const _tdPending=_tdBks.filter(b=>b.status==="pending");
+  const _tdRejected=_tdBks.filter(b=>b.status==="rejected");
   const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
   const _now=new Date();
   const _nowMins=_now.getHours()*60+_now.getMinutes();
@@ -3883,11 +3806,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const _dNames=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
   const _mNames=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
   const _dayLabel=`${_dNames[_now.getDay()]}، ${_now.getDate()} ${_mNames[_now.getMonth()]}`;
-  // ── حسابات إجمالية للبطاقات الأربع ──
-  const _allBks=salon.bookings;
-  const _allApproved=_allBks.filter(b=>b.status==="approved");
-  const _allPending=_allBks.filter(b=>b.status==="pending");
-  const _allRejected=_allBks.filter(b=>b.status==="rejected");
 
   return(
     <div style={G.page}>
@@ -4004,15 +3922,15 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
             {[
-              {label:"مقبول",value:_allApproved.length,color:"#27ae60",filter:"approved",delay:0},
-              {label:"انتظار",value:_allPending.length,color:"#f39c12",filter:"pending",delay:80},
-              {label:"مرفوض",value:_allRejected.length,color:"#e74c3c",filter:"rejected",delay:160},
-              {label:"الكل",value:_allBks.length,color:"var(--p)",filter:"all",delay:240},
+              {label:"مقبول",value:_tdApproved.length,color:"#27ae60",filter:"approved",delay:0},
+              {label:"انتظار",value:_tdPending.length,color:"#f39c12",filter:"pending",delay:80},
+              {label:"مرفوض",value:_tdRejected.length,color:"#e74c3c",filter:"rejected",delay:160},
+              {label:"الكل",value:_tdBks.length,color:"var(--p)",filter:"all",delay:240},
             ].map(({label,value,color,filter,delay})=>{
               const isOpen=activeCard===filter;
               return(
                 <div key={label} className="stat-card"
-                  onClick={()=>{setActiveCard(c=>c===filter?null:filter);refreshSalonBookings(salon.id);}}
+                  onClick={()=>{setActiveCard(c=>c===filter?null:filter);if(filter==="all"||filter==="approved")refreshSalonBookings(salon.id);}}
                   style={{background:isOpen?`${color}18`:`${color}0f`,borderRadius:isOpen?"13px 13px 0 0":13,padding:"11px 6px",height:68,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:`1.5px solid ${isOpen?`${color}55`:`${color}1a`}`,borderBottom:isOpen?`1.5px solid ${color}55`:"",textAlign:"center",animationDelay:`${delay}ms`,cursor:"pointer",transition:"all .22s ease",boxShadow:isOpen?`0 0 14px ${color}1a`:"none"}}>
                   <div style={{fontSize:22,fontWeight:900,color,marginBottom:2,lineHeight:1}}>{value}</div>
                   <div style={{fontSize:10,color:isOpen?color:"#666",fontWeight:600,marginBottom:3}}>{label}</div>
@@ -4025,12 +3943,12 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           {/* قائمة الحجوزات المنسدلة */}
           {activeCard&&(
             <div style={{animation:"fadeInUp .3s ease-out",marginBottom:14,border:`1.5px solid ${activeCard==="all"?"var(--p)":activeCard==="pending"?"#f39c12":activeCard==="approved"?"#27ae60":"#e74c3c"}33`,borderTop:"none",borderRadius:"0 0 14px 14px",overflow:"hidden",background:"rgba(255,255,255,.02)"}}>
-              <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings}/>
+              <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings} dateFilter={_td}/>
             </div>
           )}
         </>
       )}
-      {ownerTab&&<div style={G.fh}><button style={G.bb} onClick={()=>setOwnerTab(null)}>← رجوع</button><h2 style={G.ft}>{{messages:"💬 الرسائل",calendar:"🗓 الحجوزات",reviews:"⭐ التقييمات",stats:"📊 الإحصائيات",balance:"💰 الأرباح"}[ownerTab]||""}</h2></div>}
+      {ownerTab&&<div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab(null);setShowSalonDrawer(true);}}>← رجوع</button><h2 style={G.ft}>{{messages:"💬 الرسائل",calendar:"🗓 الحجوزات",reviews:"⭐ التقييمات",stats:"📊 الإحصائيات",balance:"💰 الأرباح"}[ownerTab]||""}</h2></div>}
       {ownerTab==="messages"&&(
         <MessagesPanel salon={salon} toast$={toast$}/>
       )}
@@ -4421,7 +4339,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 
   return(
     <div style={onlySec?G.page:undefined}><div style={onlySec?G.fp:undefined}>
-      {onlySec&&<div style={G.fh}><button style={G.bb} onClick={()=>setView&&setView("ownerDash")}>← رجوع</button><h2 style={G.ft}>{SEC_TITLES[onlySec]||"إعدادات الصالون"}</h2></div>}
+      {onlySec&&<div style={G.fh}><button style={G.bb} onClick={()=>{setView&&setView("ownerDash");setShowSalonDrawer&&setShowSalonDrawer(true);}}>← رجوع</button><h2 style={G.ft}>{SEC_TITLES[onlySec]||"إعدادات الصالون"}</h2></div>}
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
         {[{id:"info",icon:"📋",label:"المعلومات"},{id:"hours",icon:"🕐",label:"الأوقات"},{id:"services",icon:"✂",label:"الخدمات"},{id:"barbers",icon:"💈",label:"الحلاقون"},{id:"tone",icon:"🔔",label:"النغمة"},{id:"social",icon:"📱",label:"التواصل"},{id:"pin",icon:"🔐",label:"PIN"}].map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
@@ -4663,7 +4581,7 @@ function OwnerFaqView({setView,setShowSalonDrawer}){
   const filtered=faqQ.trim()?ALL.filter(x=>x.q.includes(faqQ)||x.a.includes(faqQ)):ALL;
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("ownerDash")}>← رجوع</button><h2 style={G.ft}>❓ أسئلة شائعة</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("ownerDash");setShowSalonDrawer&&setShowSalonDrawer(true);}}>← رجوع</button><h2 style={G.ft}>❓ أسئلة شائعة</h2></div>
       <input value={faqQ} onChange={e=>setFaqQ(e.target.value)} placeholder="🔍 ابحث في الأسئلة..." style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl",marginBottom:12}}/>
       {filtered.length===0&&<div style={G.empty}>لا توجد نتائج</div>}
       {filtered.map((item,i)=>(
