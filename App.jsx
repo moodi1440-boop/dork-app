@@ -3690,9 +3690,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
     try{return localStorage.getItem(`dork_oath_${salon?.id}`)==="1";}catch{return false;}
   });
   const[oathChecked,setOathChecked]=useState(false);
-  const{t}=useTranslation();
+  const{t,i18n}=useTranslation();
+  const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
 
-  if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{t("owner_dash.back")}</button><h2 style={G.ft}>{t("owner_dash.page_title")}</h2></div><div style={G.empty}>{t("owner_dash.not_found")}</div></div></div>;
+  if(!salon)return <div style={{...G.page,direction:dir}}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{t("owner_dash.back")}</button><h2 style={G.ft}>{t("owner_dash.page_title")}</h2></div><div style={G.empty}>{t("owner_dash.not_found")}</div></div></div>;
 
   // شاشة القسم — تظهر لمرة واحدة فقط
   if(!oathDone) return(
@@ -3757,7 +3758,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const _dayLabel=`${_dNames[_now.getDay()]}، ${_now.getDate()} ${_mNames[_now.getMonth()]}`;
 
   return(
-    <div style={G.page}>
+    <div style={{...G.page,direction:dir}}>
       <style>{`
         @keyframes fadeInUp {from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
         @keyframes slideInFromRight {from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
@@ -4519,7 +4520,7 @@ function OwnerLangView({setView,setShowSalonDrawer}){
   return(
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
-        <div style={G.fh}>
+        <div style={{...G.fh,justifyContent:"space-between"}}>
           <button style={G.bb} onClick={()=>{setView("ownerDash");setShowSalonDrawer(true);}}>{t("owner_dash.back")}</button>
           <h2 style={G.ft}>🌐 {t("salon_drawer.language")}</h2>
         </div>
