@@ -1478,7 +1478,10 @@ export default function App(){
         {view==="ownerDash"&& <OwnerDash  salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} showSalonDrawer={showSalonDrawer} setShowSalonDrawer={setShowSalonDrawer} {...sharedProps}/>}
         {(view==="ownerInfo"||view==="ownerHours"||view==="ownerServices"||view==="ownerBarbers"||view==="ownerSocial"||view==="ownerTone"||view==="ownerPin")&&<OwnerSettings salon={salons.find(s=>s.id===ownerSession)} setSalons={sharedProps.setSalons} toast$={toast$} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.updateSocial} setView={setView} setShowSalonDrawer={setShowSalonDrawer} onlySec={view.replace("owner","").toLowerCase()}/>}
         {view==="ownerTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setView("ownerDash");setShowSalonDrawer(true);}}/>}
+        {view==="ownerDark"&&<SettingsView {...sharedProps} onlySec="dark" backFn={()=>{setView("ownerDash");setShowSalonDrawer(true);}}/>}
+        {view==="ownerLang"&&<OwnerLangView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="ownerFaq"&&<OwnerFaqView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
+        {view==="custLang"&&<CustLangView setView={setView} setShowDrawer={setShowDrawer}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
@@ -1682,6 +1685,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <Row icon="🔤" label={t("cust_drawer.font_size")} sub={{sm:t("cust_drawer.font_sm"),md:t("cust_drawer.font_md"),lg:t("cust_drawer.font_lg")}[settings?.fontSize||"md"]} onClick={()=>{onClose();setView("custSettingsFont");}}/>
         <Row icon="🖼" label={t("cust_drawer.background")} sub={BACKGROUNDS.find(b=>b.id===(settings?.bg||"none"))?.label||t("cust_drawer.no_bg")} onClick={()=>{onClose();setView("custSettingsBg");}}/>
         <Row icon="🔔" label={t("cust_drawer.tone")} sub={TONES.find(tn=>tn.id===settings?.defaultTone)?.label||"—"} onClick={()=>{onClose();setView("custSettingsTone");}}/>
+        <Row icon="🌐" label={t("cust_drawer.language")} onClick={()=>{onClose();setView("custLang");}}/>
         {/* مزيد */}
         <div style={{height:8}}/>
         <SecHead label={t("cust_drawer.more")}/>
@@ -1792,18 +1796,9 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
     <>
       {open&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:1100,backdropFilter:"blur(2px)"}}/>}
       <div style={{position:"fixed",top:0,right:0,bottom:0,width:"82%",maxWidth:340,background:"var(--shell-bg)",zIndex:1101,transform:open?"translateX(0)":"translateX(110%)",transition:"transform 0.3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",display:"flex",flexDirection:"column",direction:dir,boxShadow:open?"-4px 0 32px rgba(0,0,0,.6)":"none"}}>
-        <div style={{display:"flex",flexDirection:"column",padding:"16px 20px 12px",borderBottom:"1px solid var(--border-ui)",background:"var(--shell-bg)",position:"sticky",top:0,zIndex:1}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <button onClick={onClose} style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
-            <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>{t("salon_drawer.title")}</span>
-          </div>
-          <div style={{display:"flex",gap:5,justifyContent:"center"}}>
-            {SALON_LANGS.map(l=>(
-              <button key={l} onClick={()=>i18n.changeLanguage(l)} style={{flex:1,padding:"5px 0",borderRadius:8,border:`1.5px solid ${i18n.language===l?"var(--p)":"var(--border-ui)"}`,background:i18n.language===l?"var(--pa15)":"transparent",color:i18n.language===l?"var(--p)":"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all 0.2s"}}>
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 20px 16px",borderBottom:"1px solid var(--border-ui)",background:"var(--shell-bg)",position:"sticky",top:0,zIndex:1}}>
+          <button onClick={onClose} style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+          <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>{t("salon_drawer.title")}</span>
         </div>
         <div style={{height:8}}/>
         <SecHead label={t("salon_drawer.section_operations")}/>
@@ -1822,6 +1817,7 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
         <SecHead label={t("salon_drawer.section_app")}/>
         <Row icon="🎨" label={t("salon_drawer.colors_theme")} onClick={()=>nav(()=>setView("ownerTheme"))}/>
         <Row icon="🌙" label={t("salon_drawer.lighting")} onClick={()=>nav(()=>setView("ownerDark"))}/>
+        <Row icon="🌐" label={t("salon_drawer.language")} onClick={()=>nav(()=>setView("ownerLang"))}/>
         <Row icon="🔔" label={t("salon_drawer.tones")} onClick={()=>nav(()=>setView("ownerTone"))}/>
         <Row icon="🔐" label={t("salon_drawer.pin")} onClick={()=>nav(()=>setView("ownerPin"))}/>
         <Row icon="❓" label={t("salon_drawer.faq")} onClick={()=>nav(()=>setView("ownerFaq"))}/>
@@ -3775,7 +3771,7 @@ function ShareBtn({salon}){
 // ==============================================
 //  OWNER LOGIN + DASHBOARD
 // ==============================================
-function OwnerLogin({salons,setOwnerSession,setView,toast$}){
+function OwnerLogin({salons,setOwnerSession,setOwnerTab,setView,toast$}){
   const{t}=useTranslation();
   const[tab,setTab]=useState("phone");
   const[phone,setPhone]=useState(""); const[err,setErr]=useState("");
@@ -3785,14 +3781,14 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
     if(!s){setErr(t("owner_login.err_not_found"));return;}
     if(s.banned){setErr(t("owner_login.err_banned"));return;}
     if(s.frozen){setErr(t("owner_login.err_frozen"));return;}
-    setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
+    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
   };
   const loginWithPin=()=>{
     const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
     if(!s){setPinErr(t("owner_login.err_pin_wrong"));setPin("");return;}
     if(s.banned){setPinErr(t("owner_login.err_pin_banned"));return;}
     if(s.frozen){setPinErr(t("owner_login.err_pin_frozen"));return;}
-    setOwnerSession(s.id); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
+    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
   };
   return(
     <div style={G.page}><div style={G.fp}>
@@ -4647,6 +4643,87 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 
 // ==============================================
 //  OWNER FAQ VIEW — أسئلة شائعة لصاحب الصالون
+// ==============================================
+// ==============================================
+//  OWNER LANG VIEW - صفحة اختيار اللغة للمالك
+// ==============================================
+function OwnerLangView({setView,setShowSalonDrawer}){
+  const{t,i18n}=useTranslation();
+  const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
+  const LANGS=[
+    {code:'ar',flag:'🇸🇦',label:'العربية',sub:'Arabic'},
+    {code:'en',flag:'🇬🇧',label:'English',sub:'الإنجليزية'},
+    {code:'ur',flag:'🇵🇰',label:'اردو',sub:'Urdu'},
+    {code:'tr',flag:'🇹🇷',label:'Türkçe',sub:'التركية'},
+  ];
+  return(
+    <div style={{...G.page,direction:dir}}>
+      <div style={G.fp}>
+        <div style={G.fh}>
+          <button style={G.bb} onClick={()=>{setView("ownerDash");setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("owner_dash.back")}</button>
+          <h2 style={G.ft}>🌐 {t("salon_drawer.language")}</h2>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,paddingTop:8}}>
+          {LANGS.map(l=>{
+            const active=i18n.language===l.code;
+            return(
+              <button key={l.code} onClick={()=>i18n.changeLanguage(l.code)}
+                style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 18px",borderRadius:14,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa15)":"var(--surface-1)",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s"}}>
+                <span style={{fontSize:28,flexShrink:0}}>{l.flag}</span>
+                <div style={{flex:1,textAlign:dir==="rtl"?"right":"left"}}>
+                  <div style={{fontSize:16,fontWeight:700,color:active?"var(--p)":"var(--text-primary)"}}>{l.label}</div>
+                  <div style={{fontSize:12,color:"var(--text-muted)",marginTop:2}}>{l.sub}</div>
+                </div>
+                {active&&<div style={{width:10,height:10,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+// ==============================================
+//  CUST LANG VIEW - صفحة اختيار اللغة للعميل
+// ==============================================
+function CustLangView({setView,setShowDrawer}){
+  const{t,i18n}=useTranslation();
+  const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
+  const LANGS=[
+    {code:'ar',flag:'🇸🇦',label:'العربية',sub:'Arabic'},
+    {code:'en',flag:'🇬🇧',label:'English',sub:'الإنجليزية'},
+    {code:'ur',flag:'🇵🇰',label:'اردو',sub:'Urdu'},
+    {code:'tr',flag:'🇹🇷',label:'Türkçe',sub:'التركية'},
+  ];
+  return(
+    <div style={{...G.page,direction:dir}}>
+      <div style={G.fp}>
+        <div style={G.fh}>
+          <button style={G.bb} onClick={()=>{setView("custDash");setShowDrawer&&setShowDrawer(true);}}>{t("owner_dash.back")}</button>
+          <h2 style={G.ft}>🌐 {t("cust_drawer.language")}</h2>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,paddingTop:8}}>
+          {LANGS.map(l=>{
+            const active=i18n.language===l.code;
+            return(
+              <button key={l.code} onClick={()=>i18n.changeLanguage(l.code)}
+                style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 18px",borderRadius:14,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa15)":"var(--surface-1)",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s"}}>
+                <span style={{fontSize:28,flexShrink:0}}>{l.flag}</span>
+                <div style={{flex:1,textAlign:dir==="rtl"?"right":"left"}}>
+                  <div style={{fontSize:16,fontWeight:700,color:active?"var(--p)":"var(--text-primary)"}}>{l.label}</div>
+                  <div style={{fontSize:12,color:"var(--text-muted)",marginTop:2}}>{l.sub}</div>
+                </div>
+                {active&&<div style={{width:10,height:10,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+// ==============================================
+//  OWNER FAQ VIEW - أسئلة شائعة لصاحب الصالون
 // ==============================================
 function OwnerFaqView({setView,setShowSalonDrawer}){
   const{t}=useTranslation();
