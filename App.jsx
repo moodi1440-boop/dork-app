@@ -1482,6 +1482,7 @@ export default function App(){
         {view==="ownerLang"&&<OwnerLangView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="ownerFaq"&&<OwnerFaqView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="custLang"&&<CustLangView setView={setView} setShowDrawer={setShowDrawer}/>}
+        {view==="custEditData"&&customer&&<CustEditDataView customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setShowDrawer={setShowDrawer} toast$={toast$}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
@@ -1652,31 +1653,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         {/* حسابي */}
         <div style={{height:8}}/>
         <SecHead label={t("cust_drawer.my_account")}/>
-        <Row icon="✏️" label={t("cust_drawer.edit_data")} chev="edit" onClick={()=>{setEditName(customer.name||"");setEditPhone(customer.phone||"");setEditEmail(customer.email||"");setLocMode("gps");setLocUrl("");toggle("edit");}}/>
-        {exp==="edit"&&(
-          <Panel>
-            <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4}}>{t("cust_drawer.name_label")}</label><input style={inp} value={editName} onChange={e=>setEditName(e.target.value)}/></div>
-            <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4}}>{t("cust_drawer.phone_label")}</label><input style={inp} inputMode="numeric" value={editPhone} onChange={e=>setEditPhone(e.target.value)}/></div>
-            <div style={{marginBottom:10}}><label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4}}>{t("cust_drawer.email_label")}</label><input style={inp} type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)}/></div>
-            {/* موقعي */}
-            <div style={{marginBottom:12,background:"var(--pa08)",borderRadius:10,padding:10,border:"1px solid var(--pa18)"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"var(--p)",marginBottom:8}}>{t("cust_drawer.my_location")}</div>
-              {customer?.locationLat?(
-                <div style={{display:"flex",gap:8}}>
-                  <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={saveLocation}>{t("cust_drawer.update_loc")}</button>
-                  <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={clearLocation}>{t("cust_drawer.delete_loc")}</button>
-                </div>
-              ):(
-                <button style={{...G.detectBtn}} onClick={saveLocation}>{t("cust_drawer.detect_loc")}</button>
-              )}
-            </div>
-            {/* PIN */}
-            <div style={{marginBottom:12,background:"var(--pa08)",borderRadius:10,padding:10,border:"1px solid var(--pa18)"}}>
-              <button style={{width:"100%",padding:"9px",borderRadius:8,border:"1.5px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setEditPinStep("select")}>{t("cust_drawer.change_pin")}</button>
-            </div>
-            <BtnRow><Btn primary label={t("cust_drawer.save")} onClick={saveEdit}/><Btn label={t("cust_drawer.cancel")} onClick={()=>setExp(null)}/></BtnRow>
-          </Panel>
-        )}
+        <Row icon="✏️" label={t("cust_drawer.edit_data")} onClick={()=>{onClose();setView("custEditData");}}/>
         {/* إعدادات التطبيق */}
         <div style={{height:8}}/>
         <SecHead label={t("cust_drawer.settings")}/>
@@ -1779,6 +1756,7 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
   const[showLogout,setShowLogout]=useState(false);
   const{t,i18n}=useTranslation();
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
+  useEffect(()=>{if(!open)setShowLogout(false);},[open]);
   if(!salon)return null;
 
   const nav=(fn)=>{fn();onClose();};
@@ -3819,7 +3797,8 @@ function OwnerLogin({salons,setOwnerSession,setOwnerTab,setView,toast$}){
   );
 }
 function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews,customers=[],socialLinks,setSocialLinks,ownerTab,setOwnerTab,showSalonDrawer,setShowSalonDrawer}){
-  const{t}=useTranslation();
+  const{t,i18n}=useTranslation();
+  const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
   const[activeCard,setActiveCard]=useState(null);
   const[ownerNotifs,setOwnerNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
   const[oathDone,setOathDone]=useState(()=>{
@@ -3891,7 +3870,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const _dayLabel=`${_dNames[_now.getDay()]}، ${_now.getDate()} ${_mNames[_now.getMonth()]}`;
 
   return(
-    <div style={G.page}>
+    <div style={{...G.page,direction:dir}}>
       <style>{`
         @keyframes fadeInUp {from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
         @keyframes slideInFromRight {from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
@@ -4030,6 +4009,12 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             </div>
           )}
         </>
+      )}
+      {ownerTab!==null&&(
+        <div style={G.fh}>
+          <button style={G.bb} onClick={()=>{setShowSalonDrawer(true);setOwnerTab(null);}}>← {t("owner_dash.back")}</button>
+          <h2 style={G.ft}>{ownerTab==="calendar"?t("salon_drawer.bookings"):ownerTab==="messages"?t("salon_drawer.messages"):ownerTab==="reviews"?t("salon_drawer.reviews"):ownerTab==="stats"?t("salon_drawer.stats"):t("salon_drawer.revenue")}</h2>
+        </div>
       )}
       {ownerTab==="messages"&&(
         <MessagesPanel salon={salon} toast$={toast$}/>
@@ -4644,6 +4629,104 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 // ==============================================
 //  OWNER FAQ VIEW — أسئلة شائعة لصاحب الصالون
 // ==============================================
+// ==============================================
+//  OWNER LANG VIEW - صفحة اختيار اللغة للمالك
+// ==============================================
+// ==============================================
+//  CUST EDIT DATA VIEW - صفحة تعديل بيانات العميل
+// ==============================================
+function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setShowDrawer,toast$}){
+  const{t}=useTranslation();
+  const[name,setName]=useState(customer?.name||"");
+  const[phone,setPhone]=useState(customer?.phone||"");
+  const[email,setEmail]=useState(customer?.email||"");
+  const[pinStep,setPinStep]=useState(null);
+  const[pinLen,setPinLen]=useState(4);
+  const[tempPin,setTempPin]=useState("");
+  const[pinConfirm,setPinConfirm]=useState("");
+  const[pinErr,setPinErr]=useState("");
+  const inp={width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
+  const save=async()=>{
+    if(!name.trim())return;
+    try{
+      await sb("customers","PATCH",{name:name.trim(),phone:phone.trim(),email:email.trim()},`?id=eq.${customer.id}`);
+      setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:name.trim(),phone:phone.trim(),email:email.trim()}:c));
+      setCustomerSession(s=>({...s,name:name.trim(),phone:phone.trim(),email:email.trim()}));
+      toast$("✅ "+t("cust_drawer.save"));
+      setView("custDash");setShowDrawer&&setShowDrawer(true);
+    }catch(e){toast$("❌ "+e.message,"err");}
+  };
+  const savePin=async()=>{
+    if(tempPin!==pinConfirm){setPinErr(t("cust_drawer.pin_mismatch"));return;}
+    localStorage.setItem(`dork_customer_pin_${customer.id}`,tempPin);
+    try{await sb("customers","PATCH",{pin:tempPin,pin_length:pinLen},`?id=eq.${customer.id}`);}catch{}
+    toast$("✅ "+t("cust_drawer.pin_success"));setPinStep(null);setTempPin("");setPinConfirm("");setPinErr("");
+  };
+  return(
+    <div style={G.page}><div style={G.fp}>
+      <div style={G.fh}>
+        <button style={G.bb} onClick={()=>{setView("custDash");setShowDrawer&&setShowDrawer(true);}}>← {t("owner_dash.back")}</button>
+        <h2 style={G.ft}>✏️ {t("cust_drawer.edit_data")}</h2>
+      </div>
+      {!pinStep&&(<>
+        <div style={{marginBottom:14}}>
+          <label style={{display:"block",fontSize:12,color:"var(--text-muted)",marginBottom:6}}>{t("cust_drawer.name_label")}</label>
+          <input style={inp} value={name} onChange={e=>setName(e.target.value)}/>
+        </div>
+        <div style={{marginBottom:14}}>
+          <label style={{display:"block",fontSize:12,color:"var(--text-muted)",marginBottom:6}}>{t("cust_drawer.phone_label")}</label>
+          <input style={inp} inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)}/>
+        </div>
+        <div style={{marginBottom:20}}>
+          <label style={{display:"block",fontSize:12,color:"var(--text-muted)",marginBottom:6}}>{t("cust_drawer.email_label")}</label>
+          <input style={inp} type="email" value={email} onChange={e=>setEmail(e.target.value)}/>
+        </div>
+        <button style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",marginBottom:10}} onClick={()=>setPinStep("select")}>{t("cust_drawer.change_pin")}</button>
+        <div style={{display:"flex",gap:10}}>
+          <button style={{flex:1,padding:"13px",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:"inherit"}} onClick={()=>{setView("custDash");setShowDrawer&&setShowDrawer(true);}}>{t("cust_drawer.cancel")}</button>
+          <button style={{flex:1,padding:"13px",borderRadius:12,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:"inherit"}} onClick={save}>{t("cust_drawer.save")}</button>
+        </div>
+      </>)}
+      {pinStep==="select"&&(
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:30,marginBottom:10}}>🔐</div>
+          <div style={{fontSize:16,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>{t("cust_drawer.pin_select_title")}</div>
+          <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:20}}>{t("cust_drawer.pin_select_hint")}</div>
+          <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+            <button style={{flex:1,maxWidth:140,padding:"14px",borderRadius:12,border:`2px solid ${pinLen===4?"var(--p)":"var(--border-ui)"}`,background:pinLen===4?"var(--pa15)":"transparent",color:pinLen===4?"var(--p)":"var(--text-muted)",cursor:"pointer",fontWeight:700,fontSize:15,fontFamily:"inherit"}} onClick={()=>setPinLen(4)}>{t("cust_drawer.pin_4")}</button>
+            <button style={{flex:1,maxWidth:140,padding:"14px",borderRadius:12,border:`2px solid ${pinLen===6?"var(--p)":"var(--border-ui)"}`,background:pinLen===6?"var(--pa15)":"transparent",color:pinLen===6?"var(--p)":"var(--text-muted)",cursor:"pointer",fontWeight:700,fontSize:15,fontFamily:"inherit"}} onClick={()=>setPinLen(6)}>{t("cust_drawer.pin_6")}</button>
+          </div>
+          <div style={{marginTop:16,display:"flex",gap:10}}>
+            <button style={{flex:1,padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>setPinStep(null)}>{t("cust_drawer.cancel")}</button>
+            <button style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>{setPinStep("enter");setTempPin("");}}>{t("cust_drawer.pin_enter")}</button>
+          </div>
+        </div>
+      )}
+      {pinStep==="enter"&&(
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:16,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>{t("cust_drawer.pin_enter")}</div>
+          <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:16}}>{pinLen} {t("cust_drawer.pin_digits_hint")}</div>
+          <input type="password" inputMode="numeric" maxLength={pinLen} value={tempPin} onChange={e=>setTempPin(e.target.value.replace(/\D/g,"").slice(0,pinLen))} style={{...inp,textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:16}}/>
+          <div style={{display:"flex",gap:10}}>
+            <button style={{flex:1,padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>setPinStep("select")}>{t("cust_drawer.cancel")}</button>
+            <button style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>{if(tempPin.length===pinLen)setPinStep("confirm");}}>{t("cust_drawer.pin_enter")}</button>
+          </div>
+        </div>
+      )}
+      {pinStep==="confirm"&&(
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:16,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>{t("cust_drawer.pin_confirm_title")}</div>
+          <input type="password" inputMode="numeric" maxLength={pinLen} value={pinConfirm} onChange={e=>setPinConfirm(e.target.value.replace(/\D/g,"").slice(0,pinLen))} style={{...inp,textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:10}}/>
+          {pinErr&&<div style={{color:"#e74c3c",fontSize:12,marginBottom:10}}>{pinErr}</div>}
+          <div style={{display:"flex",gap:10}}>
+            <button style={{flex:1,padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>setPinStep("enter")}>{t("cust_drawer.cancel")}</button>
+            <button style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={savePin}>{t("cust_drawer.pin_save")}</button>
+          </div>
+        </div>
+      )}
+    </div></div>
+  );
+}
 // ==============================================
 //  OWNER LANG VIEW - صفحة اختيار اللغة للمالك
 // ==============================================
