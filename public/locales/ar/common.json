@@ -1,3 +1,30 @@
 {
-  "_meta": "العربية — اللغة الافتراضية"
+  "salon_drawer": {
+    "title": "القائمة",
+    "section_operations": "التشغيل",
+    "dashboard": "لوحة التحكم",
+    "bookings": "الحجوزات",
+    "messages": "الرسائل",
+    "reviews": "التقييمات",
+    "stats": "الإحصائيات",
+    "revenue": "الأرباح",
+    "section_salon": "إعدادات الصالون",
+    "salon_info": "معلومات الصالون",
+    "working_hours": "أوقات العمل",
+    "services_prices": "الخدمات والأسعار",
+    "barbers": "الحلاقون",
+    "social_media": "التواصل الاجتماعي",
+    "section_app": "إعدادات التطبيق",
+    "colors_theme": "الألوان والثيم",
+    "lighting": "نمط الإضاءة",
+    "tones": "النغمات",
+    "pin": "رمز الدخول PIN",
+    "faq": "أسئلة شائعة",
+    "logout_btn": "تسجيل الخروج",
+    "version": "الإصدار",
+    "logout_title": "تسجيل الخروج",
+    "logout_body": "هل أنت متأكد من رغبتك في الخروج؟",
+    "cancel": "إلغاء",
+    "exit": "خروج"
+  }
 }
