@@ -1483,6 +1483,13 @@ export default function App(){
         {view==="ownerFaq"&&<OwnerFaqView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="custLang"&&<CustLangView setView={setView} setShowDrawer={setShowDrawer}/>}
         {view==="custEditData"&&customer&&<CustEditDataView customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setShowDrawer={setShowDrawer} toast$={toast$}/>}
+        {view==="custSettingsTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
+        {view==="custSettingsDark"&&<SettingsView {...sharedProps} onlySec="dark" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
+        {view==="custSettingsFont"&&<SettingsView {...sharedProps} onlySec="font" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
+        {view==="custSettingsBg"&&<SettingsView {...sharedProps} onlySec="bg" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
+        {view==="custSettingsTone"&&<SettingsView {...sharedProps} onlySec="tone" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
+        {view==="social"&&<SettingsView {...sharedProps} onlySec="social" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
+        {view==="faq"&&<SettingsView {...sharedProps} onlySec="faq" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
@@ -1566,6 +1573,9 @@ function DorkLogoSvg({size=40}){
 function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,setView,setCustDashKey,setCustDashNav,settings,setSettings,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase,toast$,salons,favSet}){
   const{t}=useTranslation();
   const[exp,setExp]=useState(null);
+  const[showLogout,setShowLogout]=useState(false);
+  const[showDel,setShowDel]=useState(false);
+  useEffect(()=>{if(!open){setShowLogout(false);setShowDel(false);}},[open]);
   const[editName,setEditName]=useState("");
   const[editPhone,setEditPhone]=useState("");
   const[editEmail,setEditEmail]=useState("");
@@ -1576,8 +1586,6 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const[editTempPin,setEditTempPin]=useState("");
   const[editPinConfirm,setEditPinConfirm]=useState("");
   const[editPinErr,setEditPinErr]=useState("");
-  const[showDel,setShowDel]=useState(false);
-  const[showLogout,setShowLogout]=useState(false);
   const toggle=(s)=>setExp(e=>e===s?null:s);
   if(!customer)return null;
   const cl=getCustomerClassification(customer);
