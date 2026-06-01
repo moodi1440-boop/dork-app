@@ -1445,7 +1445,7 @@ export default function App(){
       {/* بانر خطأ الاتصال - يظهر فقط عند الخطأ */}
       {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"#3a1a1a",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>❌ خطأ في الاتصال بقاعدة البيانات — تحقق من الاتصال</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
-      {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
+      {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer} showSalonDrawer={showSalonDrawer} setShowSalonDrawer={setShowSalonDrawer}/>}
       <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
       <SalonDrawer open={showSalonDrawer} onClose={()=>setShowSalonDrawer(false)} salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} setView={setView} setOwnerSession={sharedProps.setOwnerSession} settings={sharedProps.settings} setSettings={sharedProps.setSettings} persistUiToSupabase={sharedProps.persistUiToSupabase} toast$={toast$}/>
       <div style={{paddingTop:(view==="entry"||view==="custLogin"||view==="ownerLogin")?0:64}}>
@@ -1837,8 +1837,6 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
     </button>
   );
   const SecHead=({label})=>(<div style={{padding:"10px 20px 5px",fontSize:11,color:"var(--p)",fontWeight:700,letterSpacing:.8,background:"var(--shell-bg)",borderBottom:"1px solid var(--border-ui)"}}>{label}</div>);
-  const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
-  const statusLabel=salon.status==="approved"?"✅ نشط":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار";
   return(
     <>
       {open&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:1100,backdropFilter:"blur(2px)"}}/>}
@@ -1847,18 +1845,7 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
           <button onClick={onClose} style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
           <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>القائمة</span>
         </div>
-        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,var(--surface-1),var(--surface-2))",borderRadius:16,padding:16,border:"1.5px solid var(--p)",position:"relative",boxShadow:"0 4px 16px rgba(var(--pr),.1)"}}>
-          <div style={{position:"absolute",top:12,left:12,background:`${statusColor}22`,border:`1px solid ${statusColor}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:statusColor}}>{statusLabel}</div>
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>✂ الصالون: <span style={{color:"var(--p)"}}>{salon.name}</span></div>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📞 الجوال: <span style={{color:"var(--p)"}}>{salon.phone||"—"}</span></div>
-            <div style={{display:"flex",gap:20}}>
-              <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>⭐ <span style={{color:"var(--p)"}}>{(salon.rating||0).toFixed(1)}</span></div>
-              <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📅 <span style={{color:"var(--p)"}}>{(salon.bookings||[]).filter(b=>b.status==="approved").length} حجز</span></div>
-            </div>
-          </div>
-        </div>
-        <div style={{height:12}}/>
+        <div style={{height:8}}/>
         <SecHead label="التشغيل"/>
         <Row icon="📋" label="لوحة التحكم" active={ownerTab===null} onClick={()=>nav(()=>{setOwnerTab(null);setView("ownerDash");})}/>
         <Row icon="🗓" label="الحجوزات" active={ownerTab==="calendar"} onClick={()=>nav(()=>{setOwnerTab("calendar");setView("ownerDash");})}/>
@@ -1906,7 +1893,7 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
 // ==============================================
 //  TOP BAR - 3 role buttons on the LEFT
 // ==============================================
-function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustomerSession,darkMode,setDarkMode,resetHome,showDrawer,setShowDrawer}){
+function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustomerSession,darkMode,setDarkMode,resetHome,showDrawer,setShowDrawer,showSalonDrawer,setShowSalonDrawer}){
   // للعميل: هيدر مبسط مع زر ≡
   if(customerSession&&!ownerSession){
     return(
@@ -1925,7 +1912,25 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
       </div>
     );
   }
-  // للصالون أو بدون تسجيل: الأزرار الحالية
+  // للمالك: هيدر مبسط مع زر القائمة
+  if(ownerSession&&!customerSession){
+    return(
+      <div style={G.topBar}>
+        {/* LEFT: زر القائمة */}
+        <button onClick={()=>setShowSalonDrawer&&setShowSalonDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showSalonDrawer?"var(--pa15)":"rgba(255,255,255,.05)",border:`1.5px solid ${showSalonDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
+          <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
+          <span style={{display:"block",width:14,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
+          <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
+        </button>
+        {/* RIGHT: شعار */}
+        <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer",marginLeft:8}} onClick={()=>setView&&setView("ownerDash")}>
+          <span style={{fontSize:17,fontWeight:700,fontFamily:"'Cairo',sans-serif",color:"var(--p)",letterSpacing:0.5,lineHeight:1}}>احجز</span>
+          <span style={{fontSize:48,fontWeight:700,fontFamily:"'Cinzel',serif",color:"var(--p)",letterSpacing:2,lineHeight:1}}>DORK</span>
+        </div>
+      </div>
+    );
+  }
+  // بدون تسجيل: أزرار الأدوار
   return(
     <div style={G.topBar}>
       <div style={{display:"flex",gap:5,alignItems:"center"}}>
@@ -3899,14 +3904,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       `}</style>
       <div style={G.fp}>
 
-      {/* ── زر القائمة (هامبرغر) ── */}
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
-        <button onClick={()=>setShowSalonDrawer(true)} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderRadius:10,background:"rgba(var(--pr),.10)",border:"1.5px solid rgba(var(--pr),.3)",cursor:"pointer",fontFamily:"inherit",color:"var(--p)",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>
-          <span style={{fontSize:16}}>☰</span>
-          <span>القائمة</span>
-        </button>
-      </div>
-
       {/* بانر إشعارات الإدارة */}
       {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
         <div key={n.id} className="notif-banner" style={{background:"linear-gradient(135deg,rgba(var(--pr),.12),rgba(var(--pr),.06))",border:"1px solid rgba(var(--pr),.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -4029,6 +4026,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           )}
         </>
       )}
+      {ownerTab&&<div style={G.fh}><button style={G.bb} onClick={()=>setOwnerTab(null)}>← رجوع</button><h2 style={G.ft}>{{messages:"💬 الرسائل",calendar:"🗓 الحجوزات",reviews:"⭐ التقييمات",stats:"📊 الإحصائيات",balance:"💰 الأرباح"}[ownerTab]||""}</h2></div>}
       {ownerTab==="messages"&&(
         <MessagesPanel salon={salon} toast$={toast$}/>
       )}
