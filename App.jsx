@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { useTranslation } from 'react-i18next';
+import { SALON_LANGS } from './src/i18n.js';
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
 const APP_VERSION = "2026.06.01-SD";
@@ -1830,12 +1832,14 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
 // ==============================================
 function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSession,settings,setSettings,persistUiToSupabase,toast$}){
   const[showLogout,setShowLogout]=useState(false);
+  const{t,i18n}=useTranslation();
+  const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
   if(!salon)return null;
 
   const nav=(fn)=>{fn();onClose();};
 
   const Row=({icon,label,active,onClick})=>(
-    <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"13px 20px",background:active?"var(--pa08)":"transparent",border:"none",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",fontFamily:"inherit",color:active?"var(--p)":"var(--text-primary)",WebkitAppearance:"none",appearance:"none",textAlign:"right"}}>
+    <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"13px 20px",background:active?"var(--pa08)":"transparent",border:"none",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",fontFamily:"inherit",color:active?"var(--p)":"var(--text-primary)",WebkitAppearance:"none",appearance:"none",textAlign:dir==="rtl"?"right":"left"}}>
       <span style={{fontSize:16,flexShrink:0}}>{icon}</span>
       <span style={{fontSize:14,fontWeight:active?700:500,flex:1}}>{label}</span>
       {active&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>}
@@ -1843,71 +1847,62 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
   );
   const SecHead=({label})=>(<div style={{padding:"10px 20px 5px",fontSize:11,color:"var(--p)",fontWeight:700,letterSpacing:.8,background:"var(--shell-bg)",borderBottom:"1px solid var(--border-ui)"}}>{label}</div>);
 
-  const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
-  const statusLabel=salon.status==="approved"?"✅ نشط":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار";
-
   return(
     <>
       {open&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:1100,backdropFilter:"blur(2px)"}}/>}
-      <div style={{position:"fixed",top:0,right:0,bottom:0,width:"82%",maxWidth:340,background:"var(--shell-bg)",zIndex:1101,transform:open?"translateX(0)":"translateX(110%)",transition:"transform 0.3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",display:"flex",flexDirection:"column",direction:"rtl",boxShadow:open?"-4px 0 32px rgba(0,0,0,.6)":"none"}}>
-        {/* رأس الـ Drawer */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 20px 16px",borderBottom:"1px solid var(--border-ui)",background:"var(--shell-bg)",position:"sticky",top:0,zIndex:1}}>
-          <button onClick={onClose} style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
-          <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>القائمة</span>
-        </div>
-        {/* بطاقة الصالون */}
-        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,var(--surface-1),var(--surface-2))",borderRadius:16,padding:16,border:"1.5px solid var(--p)",position:"relative",boxShadow:"0 4px 16px rgba(var(--pr),.1)"}}>
-          <div style={{position:"absolute",top:12,left:12,background:`${statusColor}22`,border:`1px solid ${statusColor}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:statusColor}}>{statusLabel}</div>
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>✂ الصالون: <span style={{color:"var(--p)"}}>{salon.name}</span></div>
-            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📞 الجوال: <span style={{color:"var(--p)"}}>{salon.phone||"—"}</span></div>
-            <div style={{display:"flex",gap:20}}>
-              <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>⭐ <span style={{color:"var(--p)"}}>{(salon.rating||0).toFixed(1)}</span></div>
-              <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📅 <span style={{color:"var(--p)"}}>{(salon.bookings||[]).filter(b=>b.status==="approved").length} حجز</span></div>
-            </div>
+      <div style={{position:"fixed",top:0,right:0,bottom:0,width:"82%",maxWidth:340,background:"var(--shell-bg)",zIndex:1101,transform:open?"translateX(0)":"translateX(110%)",transition:"transform 0.3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",display:"flex",flexDirection:"column",direction:dir,boxShadow:open?"-4px 0 32px rgba(0,0,0,.6)":"none"}}>
+        <div style={{display:"flex",flexDirection:"column",padding:"16px 20px 12px",borderBottom:"1px solid var(--border-ui)",background:"var(--shell-bg)",position:"sticky",top:0,zIndex:1}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <button onClick={onClose} style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+            <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>{t("salon_drawer.title")}</span>
+          </div>
+          <div style={{display:"flex",gap:5,justifyContent:"center"}}>
+            {SALON_LANGS.map(l=>(
+              <button key={l} onClick={()=>i18n.changeLanguage(l)} style={{flex:1,padding:"5px 0",borderRadius:8,border:`1.5px solid ${i18n.language===l?"var(--p)":"var(--border-ui)"}`,background:i18n.language===l?"var(--pa15)":"transparent",color:i18n.language===l?"var(--p)":"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all 0.2s"}}>
+                {l.toUpperCase()}
+              </button>
+            ))}
           </div>
         </div>
-        <div style={{height:12}}/>
-        {/* التشغيل */}
-        <SecHead label="التشغيل"/>
-        <Row icon="📋" label="لوحة التحكم" active={ownerTab===null} onClick={()=>nav(()=>{setOwnerTab(null);setView("ownerDash");})}/>
-        <Row icon="🗓" label="الحجوزات" active={ownerTab==="calendar"} onClick={()=>nav(()=>{setOwnerTab("calendar");setView("ownerDash");})}/>
-        <Row icon="💬" label="الرسائل" active={ownerTab==="messages"} onClick={()=>nav(()=>{setOwnerTab("messages");setView("ownerDash");})}/>
-        <Row icon="⭐" label="التقييمات" active={ownerTab==="reviews"} onClick={()=>nav(()=>{setOwnerTab("reviews");setView("ownerDash");})}/>
-        <Row icon="📊" label="الإحصائيات" active={ownerTab==="stats"} onClick={()=>nav(()=>{setOwnerTab("stats");setView("ownerDash");})}/>
-        <Row icon="💰" label="الأرباح" active={ownerTab==="balance"} onClick={()=>nav(()=>{setOwnerTab("balance");setView("ownerDash");})}/>
-        {/* إعدادات الصالون */}
-        <SecHead label="إعدادات الصالون"/>
-        <Row icon="📋" label="معلومات الصالون" onClick={()=>nav(()=>setView("ownerInfo"))}/>
-        <Row icon="🕐" label="أوقات العمل" onClick={()=>nav(()=>setView("ownerHours"))}/>
-        <Row icon="✂" label="الخدمات والأسعار" onClick={()=>nav(()=>setView("ownerServices"))}/>
-        <Row icon="💈" label="الحلاقون" onClick={()=>nav(()=>setView("ownerBarbers"))}/>
-        <Row icon="📱" label="التواصل الاجتماعي" onClick={()=>nav(()=>setView("ownerSocial"))}/>
-        {/* إعدادات التطبيق */}
-        <SecHead label="إعدادات التطبيق"/>
-        <Row icon="🎨" label="الألوان والثيم" onClick={()=>nav(()=>setView("ownerTheme"))}/>
-        <Row icon="🔔" label="النغمات" onClick={()=>nav(()=>setView("ownerTone"))}/>
-        <Row icon="🔐" label="رمز الدخول PIN" onClick={()=>nav(()=>setView("ownerPin"))}/>
-        <Row icon="❓" label="أسئلة شائعة" onClick={()=>nav(()=>setView("ownerFaq"))}/>
-        {/* تسجيل الخروج */}
+        <div style={{height:8}}/>
+        <SecHead label={t("salon_drawer.section_operations")}/>
+        <Row icon="📋" label={t("salon_drawer.dashboard")} active={ownerTab===null} onClick={()=>nav(()=>{setOwnerTab(null);setView("ownerDash");})}/>
+        <Row icon="🗓" label={t("salon_drawer.bookings")} active={ownerTab==="calendar"} onClick={()=>nav(()=>{setOwnerTab("calendar");setView("ownerDash");})}/>
+        <Row icon="💬" label={t("salon_drawer.messages")} active={ownerTab==="messages"} onClick={()=>nav(()=>{setOwnerTab("messages");setView("ownerDash");})}/>
+        <Row icon="⭐" label={t("salon_drawer.reviews")} active={ownerTab==="reviews"} onClick={()=>nav(()=>{setOwnerTab("reviews");setView("ownerDash");})}/>
+        <Row icon="📊" label={t("salon_drawer.stats")} active={ownerTab==="stats"} onClick={()=>nav(()=>{setOwnerTab("stats");setView("ownerDash");})}/>
+        <Row icon="💰" label={t("salon_drawer.revenue")} active={ownerTab==="balance"} onClick={()=>nav(()=>{setOwnerTab("balance");setView("ownerDash");})}/>
+        <SecHead label={t("salon_drawer.section_salon")}/>
+        <Row icon="📋" label={t("salon_drawer.salon_info")} onClick={()=>nav(()=>setView("ownerInfo"))}/>
+        <Row icon="🕐" label={t("salon_drawer.working_hours")} onClick={()=>nav(()=>setView("ownerHours"))}/>
+        <Row icon="✂" label={t("salon_drawer.services_prices")} onClick={()=>nav(()=>setView("ownerServices"))}/>
+        <Row icon="💈" label={t("salon_drawer.barbers")} onClick={()=>nav(()=>setView("ownerBarbers"))}/>
+        <Row icon="📱" label={t("salon_drawer.social_media")} onClick={()=>nav(()=>setView("ownerSocial"))}/>
+        <SecHead label={t("salon_drawer.section_app")}/>
+        <Row icon="🎨" label={t("salon_drawer.colors_theme")} onClick={()=>nav(()=>setView("ownerTheme"))}/>
+        <Row icon="🌙" label={t("salon_drawer.lighting")} onClick={()=>nav(()=>setView("ownerDark"))}/>
+        <Row icon="🔔" label={t("salon_drawer.tones")} onClick={()=>nav(()=>setView("ownerTone"))}/>
+        <Row icon="🔐" label={t("salon_drawer.pin")} onClick={()=>nav(()=>setView("ownerPin"))}/>
+        <Row icon="❓" label={t("salon_drawer.faq")} onClick={()=>nav(()=>setView("ownerFaq"))}/>
+
         <div style={{height:16}}/>
-        <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
-          🚪 تسجيل الخروج
+        <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:dir==="rtl"?"right":"left",WebkitAppearance:"none",appearance:"none"}}>
+          🚪 {t("salon_drawer.logout_btn")}
         </button>
-        <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>الإصدار {APP_VERSION}</div>
+        <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>{t("salon_drawer.version")} {APP_VERSION}</div>
         <div style={{height:40}}/>
       </div>
       {showLogout&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowLogout(false)}>
-          <div style={{width:"100%",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--border-ui)",borderBottom:"none"}} onClick={e=>e.stopPropagation()}>
+          <div style={{width:"100%",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--border-ui)",borderBottom:"none",direction:dir}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
               <div style={{fontSize:36,marginBottom:10}}>🚪</div>
-              <div style={{fontSize:16,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>تسجيل الخروج</div>
-              <div style={{fontSize:12,color:"var(--text-muted)"}}>هل أنت متأكد من رغبتك في الخروج؟</div>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>{t("salon_drawer.logout_title")}</div>
+              <div style={{fontSize:12,color:"var(--text-muted)"}}>{t("salon_drawer.logout_body")}</div>
             </div>
             <div style={{display:"flex",gap:10}}>
-              <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowLogout(false)}>إلغاء</button>
-              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setOwnerSession&&setOwnerSession(null);setView("entry");onClose();}}>خروج</button>
+              <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowLogout(false)}>{t("salon_drawer.cancel")}</button>
+              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setOwnerSession&&setOwnerSession(null);setView("entry");onClose();}}>{t("salon_drawer.exit")}</button>
             </div>
           </div>
         </div>

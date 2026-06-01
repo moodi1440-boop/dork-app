@@ -1,0 +1,30 @@
+{
+  "salon_drawer": {
+    "title": "مینو",
+    "section_operations": "آپریشنز",
+    "dashboard": "ڈیش بورڈ",
+    "bookings": "بکنگز",
+    "messages": "پیغامات",
+    "reviews": "تجائز",
+    "stats": "اعداد و شمار",
+    "revenue": "آمدنی",
+    "section_salon": "سیلون کی ترتیبات",
+    "salon_info": "سیلون کی معلومات",
+    "working_hours": "کام کے اوقات",
+    "services_prices": "خدمات اور قیمتیں",
+    "barbers": "حجام",
+    "social_media": "سوشل میڈیا",
+    "section_app": "ایپ کی ترتیبات",
+    "colors_theme": "رنگ اور تھیم",
+    "lighting": "روشنی کا انداز",
+    "tones": "ٹونز",
+    "pin": "PIN کوڈ",
+    "faq": "عام سوالات",
+    "logout_btn": "لاگ آؤٹ",
+    "version": "ورژن",
+    "logout_title": "لاگ آؤٹ",
+    "logout_body": "کیا آپ واقعی باہر نکلنا چاہتے ہیں؟",
+    "cancel": "منسوخ",
+    "exit": "باہر نکلیں"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "salon_drawer": {
+    "title": "Menü",
+    "section_operations": "İşlemler",
+    "dashboard": "Kontrol Paneli",
+    "bookings": "Rezervasyonlar",
+    "messages": "Mesajlar",
+    "reviews": "Değerlendirmeler",
+    "stats": "İstatistikler",
+    "revenue": "Gelir",
+    "section_salon": "Salon Ayarları",
+    "salon_info": "Salon Bilgisi",
+    "working_hours": "Çalışma Saatleri",
+    "services_prices": "Hizmetler ve Fiyatlar",
+    "barbers": "Berberler",
+    "social_media": "Sosyal Medya",
+    "section_app": "Uygulama Ayarları",
+    "colors_theme": "Renkler ve Tema",
+    "lighting": "Aydınlatma Modu",
+    "tones": "Tonlar",
+    "pin": "PIN Kodu",
+    "faq": "SSS",
+    "logout_btn": "Çıkış Yap",
+    "version": "Sürüm",
+    "logout_title": "Çıkış Yap",
+    "logout_body": "Çıkış yapmak istediğinizden emin misiniz?",
+    "cancel": "İptal",
+    "exit": "Çıkış"
+  }
+}

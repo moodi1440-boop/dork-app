@@ -1,0 +1,30 @@
+{
+  "salon_drawer": {
+    "title": "Menu",
+    "section_operations": "Operations",
+    "dashboard": "Dashboard",
+    "bookings": "Bookings",
+    "messages": "Messages",
+    "reviews": "Reviews",
+    "stats": "Statistics",
+    "revenue": "Revenue",
+    "section_salon": "Salon Settings",
+    "salon_info": "Salon Info",
+    "working_hours": "Working Hours",
+    "services_prices": "Services & Prices",
+    "barbers": "Barbers",
+    "social_media": "Social Media",
+    "section_app": "App Settings",
+    "colors_theme": "Colors & Theme",
+    "lighting": "Lighting Mode",
+    "tones": "Tones",
+    "pin": "PIN Code",
+    "faq": "FAQ",
+    "logout_btn": "Sign Out",
+    "version": "Version",
+    "logout_title": "Sign Out",
+    "logout_body": "Are you sure you want to sign out?",
+    "cancel": "Cancel",
+    "exit": "Exit"
+  }
+}
