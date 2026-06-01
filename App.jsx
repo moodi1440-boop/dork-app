@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 
 // رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.05.30-X";
+const APP_VERSION = "2026.06.01-SD";
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}
@@ -723,6 +723,8 @@ export default function App(){
   const[selSalon,setSelSalon]=useState(null);
   const[toast,setToast]=useState(null);
   const[showDrawer,setShowDrawer]=useState(false);
+  const[showSalonDrawer,setShowSalonDrawer]=useState(false);
+  const[ownerTab,setOwnerTab]=useState(null);
   const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
   const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light"||t==="lgray")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
   const darkMode=themeMode==="dark"||themeMode==="dim";
@@ -1451,6 +1453,8 @@ export default function App(){
     persistUiToSupabase,
     loading,
     showDrawer,setShowDrawer,
+    showSalonDrawer,setShowSalonDrawer,
+    ownerTab,setOwnerTab,
   };
 
   return(
@@ -1462,6 +1466,7 @@ export default function App(){
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
       <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
+      <SalonDrawer open={showSalonDrawer} onClose={()=>setShowSalonDrawer(false)} salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} setView={setView} setOwnerSession={sharedProps.setOwnerSession} settings={sharedProps.settings} setSettings={sharedProps.setSettings} persistUiToSupabase={sharedProps.persistUiToSupabase} toast$={toast$}/>
       <div style={{paddingTop:(view==="entry"||view==="custLogin"||view==="ownerLogin")?0:64}}>
         {view==="entry"&&     <EntryView setView={setView}/>}
         {view==="home"&&      <HomeView {...sharedProps}/>}
@@ -1469,7 +1474,10 @@ export default function App(){
         {view==="book"&&selSalon&&<BookView salon={selSalon} {...sharedProps}/>}
         {view==="salon"&&selSalon&&<SalonPage salon={salons.find(s=>s.id===selSalon.id)||selSalon} {...sharedProps}/>}
         {view==="ownerLogin"&&<OwnerLogin {...sharedProps}/>}
-        {view==="ownerDash"&& <OwnerDash  salon={salons.find(s=>s.id===ownerSession)} {...sharedProps}/>}
+        {view==="ownerDash"&& <OwnerDash  salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} showSalonDrawer={showSalonDrawer} setShowSalonDrawer={setShowSalonDrawer} {...sharedProps}/>}
+        {(view==="ownerInfo"||view==="ownerHours"||view==="ownerServices"||view==="ownerBarbers"||view==="ownerSocial"||view==="ownerTone"||view==="ownerPin")&&<OwnerSettings salon={salons.find(s=>s.id===ownerSession)} setSalons={sharedProps.setSalons} toast$={toast$} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.updateSocial} setView={setView} setShowSalonDrawer={setShowSalonDrawer} onlySec={view.replace("owner","").toLowerCase()}/>}
+        {view==="ownerTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setView("ownerDash");setShowSalonDrawer(true);}}/>}
+        {view==="ownerFaq"&&<OwnerFaqView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
@@ -1818,6 +1826,97 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   );
 }
 // ==============================================
+//  SALON DRAWER — قائمة صاحب الصالون
+// ==============================================
+function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSession,settings,setSettings,persistUiToSupabase,toast$}){
+  const[showLogout,setShowLogout]=useState(false);
+  if(!salon)return null;
+
+  const nav=(fn)=>{fn();onClose();};
+
+  const Row=({icon,label,active,onClick})=>(
+    <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"13px 20px",background:active?"var(--pa08)":"transparent",border:"none",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",fontFamily:"inherit",color:active?"var(--p)":"var(--text-primary)",WebkitAppearance:"none",appearance:"none",textAlign:"right"}}>
+      <span style={{fontSize:16,flexShrink:0}}>{icon}</span>
+      <span style={{fontSize:14,fontWeight:active?700:500,flex:1}}>{label}</span>
+      {active&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>}
+    </button>
+  );
+  const SecHead=({label})=>(<div style={{padding:"10px 20px 5px",fontSize:11,color:"var(--p)",fontWeight:700,letterSpacing:.8,background:"var(--shell-bg)",borderBottom:"1px solid var(--border-ui)"}}>{label}</div>);
+
+  const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
+  const statusLabel=salon.status==="approved"?"✅ نشط":salon.status==="rejected"?"❌ مرفوض":"⏳ انتظار";
+
+  return(
+    <>
+      {open&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:1100,backdropFilter:"blur(2px)"}}/>}
+      <div style={{position:"fixed",top:0,right:0,bottom:0,width:"82%",maxWidth:340,background:"var(--shell-bg)",zIndex:1101,transform:open?"translateX(0)":"translateX(110%)",transition:"transform 0.3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",display:"flex",flexDirection:"column",direction:"rtl",boxShadow:open?"-4px 0 32px rgba(0,0,0,.6)":"none"}}>
+        {/* رأس الـ Drawer */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 20px 16px",borderBottom:"1px solid var(--border-ui)",background:"var(--shell-bg)",position:"sticky",top:0,zIndex:1}}>
+          <button onClick={onClose} style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+          <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>القائمة</span>
+        </div>
+        {/* بطاقة الصالون */}
+        <div style={{margin:"14px 14px 0",background:"linear-gradient(135deg,var(--surface-1),var(--surface-2))",borderRadius:16,padding:16,border:"1.5px solid var(--p)",position:"relative",boxShadow:"0 4px 16px rgba(var(--pr),.1)"}}>
+          <div style={{position:"absolute",top:12,left:12,background:`${statusColor}22`,border:`1px solid ${statusColor}`,borderRadius:6,padding:"4px 10px",fontSize:10,fontWeight:700,color:statusColor}}>{statusLabel}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>✂ الصالون: <span style={{color:"var(--p)"}}>{salon.name}</span></div>
+            <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📞 الجوال: <span style={{color:"var(--p)"}}>{salon.phone||"—"}</span></div>
+            <div style={{display:"flex",gap:20}}>
+              <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>⭐ <span style={{color:"var(--p)"}}>{(salon.rating||0).toFixed(1)}</span></div>
+              <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700}}>📅 <span style={{color:"var(--p)"}}>{(salon.bookings||[]).filter(b=>b.status==="approved").length} حجز</span></div>
+            </div>
+          </div>
+        </div>
+        <div style={{height:12}}/>
+        {/* التشغيل */}
+        <SecHead label="التشغيل"/>
+        <Row icon="📋" label="لوحة التحكم" active={ownerTab===null} onClick={()=>nav(()=>{setOwnerTab(null);setView("ownerDash");})}/>
+        <Row icon="🗓" label="الحجوزات" active={ownerTab==="calendar"} onClick={()=>nav(()=>{setOwnerTab("calendar");setView("ownerDash");})}/>
+        <Row icon="💬" label="الرسائل" active={ownerTab==="messages"} onClick={()=>nav(()=>{setOwnerTab("messages");setView("ownerDash");})}/>
+        <Row icon="⭐" label="التقييمات" active={ownerTab==="reviews"} onClick={()=>nav(()=>{setOwnerTab("reviews");setView("ownerDash");})}/>
+        <Row icon="📊" label="الإحصائيات" active={ownerTab==="stats"} onClick={()=>nav(()=>{setOwnerTab("stats");setView("ownerDash");})}/>
+        <Row icon="💰" label="الأرباح" active={ownerTab==="balance"} onClick={()=>nav(()=>{setOwnerTab("balance");setView("ownerDash");})}/>
+        {/* إعدادات الصالون */}
+        <SecHead label="إعدادات الصالون"/>
+        <Row icon="📋" label="معلومات الصالون" onClick={()=>nav(()=>setView("ownerInfo"))}/>
+        <Row icon="🕐" label="أوقات العمل" onClick={()=>nav(()=>setView("ownerHours"))}/>
+        <Row icon="✂" label="الخدمات والأسعار" onClick={()=>nav(()=>setView("ownerServices"))}/>
+        <Row icon="💈" label="الحلاقون" onClick={()=>nav(()=>setView("ownerBarbers"))}/>
+        <Row icon="📱" label="التواصل الاجتماعي" onClick={()=>nav(()=>setView("ownerSocial"))}/>
+        {/* إعدادات التطبيق */}
+        <SecHead label="إعدادات التطبيق"/>
+        <Row icon="🎨" label="الألوان والثيم" onClick={()=>nav(()=>setView("ownerTheme"))}/>
+        <Row icon="🔔" label="النغمات" onClick={()=>nav(()=>setView("ownerTone"))}/>
+        <Row icon="🔐" label="رمز الدخول PIN" onClick={()=>nav(()=>setView("ownerPin"))}/>
+        <Row icon="❓" label="أسئلة شائعة" onClick={()=>nav(()=>setView("ownerFaq"))}/>
+        {/* تسجيل الخروج */}
+        <div style={{height:16}}/>
+        <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
+          🚪 تسجيل الخروج
+        </button>
+        <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>الإصدار {APP_VERSION}</div>
+        <div style={{height:40}}/>
+      </div>
+      {showLogout&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowLogout(false)}>
+          <div style={{width:"100%",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--border-ui)",borderBottom:"none"}} onClick={e=>e.stopPropagation()}>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{fontSize:36,marginBottom:10}}>🚪</div>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>تسجيل الخروج</div>
+              <div style={{fontSize:12,color:"var(--text-muted)"}}>هل أنت متأكد من رغبتك في الخروج؟</div>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowLogout(false)}>إلغاء</button>
+              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setOwnerSession&&setOwnerSession(null);setView("entry");onClose();}}>خروج</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ==============================================
 // ==============================================
 //  ENTRY VIEW — شاشة اختيار عميل / صالون
 // ==============================================
@@ -1835,7 +1934,7 @@ function EntryView({setView}){
 // ==============================================
 //  TOP BAR - 3 role buttons on the LEFT
 // ==============================================
-function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustomerSession,darkMode,setDarkMode,resetHome,showDrawer,setShowDrawer}){
+function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustomerSession,darkMode,setDarkMode,resetHome,showDrawer,setShowDrawer,showSalonDrawer,setShowSalonDrawer}){
   // للعميل: هيدر مبسط مع زر ≡
   if(customerSession&&!ownerSession){
     return(
@@ -1854,14 +1953,25 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
       </div>
     );
   }
-  // للصالون أو بدون تسجيل: الأزرار الحالية
+  // صاحب الصالون: زر الدرج فقط
+  if(ownerSession) return(
+    <div style={G.topBar}>
+      <button onClick={()=>setShowSalonDrawer&&setShowSalonDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showSalonDrawer?"var(--pa15)":"rgba(255,255,255,.05)",border:`1.5px solid ${showSalonDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
+        <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
+        <span style={{display:"block",width:14,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
+        <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
+      </button>
+      <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>setView("ownerDash")}>
+        <span style={{fontSize:17,fontWeight:700,fontFamily:"'Cairo',sans-serif",color:"var(--p)",letterSpacing:0.5,lineHeight:1}}>احجز</span>
+        <span style={{fontSize:48,fontWeight:700,fontFamily:"'Cinzel',serif",color:"var(--p)",letterSpacing:2,lineHeight:1}}>DORK</span>
+      </div>
+    </div>
+  );
+  // بدون تسجيل: الأزرار الحالية
   return(
     <div style={G.topBar}>
       <div style={{display:"flex",gap:5,alignItems:"center"}}>
-        <button style={{...G.roleBtn,...(ownerSession?G.roleBtnActive:{})}} onClick={()=>setView(ownerSession?"ownerDash":"ownerLogin")}>✂</button>
         <button style={{...G.roleBtn,...(customerSession?G.roleBtnActive:{})}} onClick={()=>setView(customerSession?"custDash":"custLogin")}>👤</button>
-        <button style={G.roleBtn} onClick={()=>setView("settings")}>⚙</button>
-        <button style={{...G.roleBtn,background:"var(--pa12)",border:"1.5px solid var(--pa25)",color:"var(--p)"}} onClick={()=>resetHome&&resetHome()}>🏠</button>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
         <span style={{fontSize:19,fontWeight:900,color:"var(--gold)",letterSpacing:0.5}}>احجز</span>
@@ -3738,8 +3848,7 @@ function OwnerLogin({salons,setOwnerSession,setView,toast$}){
     </div></div>
   );
 }
-function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews,customers=[]}){
-  const[tab,setTab]=useState(null);
+function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews,customers=[],socialLinks,setSocialLinks,ownerTab,setOwnerTab,showSalonDrawer,setShowSalonDrawer}){
   const[activeCard,setActiveCard]=useState(null);
   const[ownerNotifs,setOwnerNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
   const[oathDone,setOathDone]=useState(()=>{
@@ -3829,46 +3938,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       `}</style>
       <div style={G.fp}>
 
-      {/* ── صف أيقونات التبويبات ── */}
-      <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",marginBottom:12,paddingBottom:2}}>
-        <button
-          onClick={()=>{setTab(null);setActiveCard(null);}}
-          style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:tab===null?"rgba(var(--gold-rgb),.13)":"rgba(255,255,255,.04)",border:`1px solid ${tab===null?"rgba(var(--gold-rgb),.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
-          <span style={{fontSize:18}}>📋</span>
-          <span style={{fontSize:8,color:tab===null?"var(--gold)":"#666",fontWeight:tab===null?700:400,whiteSpace:"nowrap"}}>لوحتي</span>
-        </button>
-        {[
-          {id:"messages",icon:"💬",label:"رسائل"},
-          {id:"calendar",icon:"🗓",label:"تقويم"},
-          {id:"reviews",icon:"⭐",label:"تقييمات"},
-          {id:"stats",icon:"📊",label:"إحصائيات"},
-          {id:"balance",icon:"💰",label:"الميزان"},
-          {id:"settings",icon:"⚙",label:"إعدادات"},
-        ].map(({id,icon,label})=>{
-          const isActive=tab===id;
-          const hasBadge=(id==="messages"&&parseInt(localStorage.getItem("dork_notif_count")||"0")>0)||(id==="balance"&&balance>0);
-          return(
-            <button key={id}
-              onClick={()=>{
-                if(id==="messages")localStorage.setItem("dork_notif_count","0");
-                setTab(t=>t===id?null:id);
-                setActiveCard(null);
-              }}
-              style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:isActive?"rgba(var(--gold-rgb),.13)":"rgba(255,255,255,.04)",border:`1px solid ${isActive?"rgba(var(--gold-rgb),.4)":"rgba(255,255,255,.07)"}`,borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,position:"relative",fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
-              <span style={{fontSize:18}}>{icon}</span>
-              <span style={{fontSize:8,color:isActive?"var(--gold)":"#666",fontWeight:isActive?700:400,whiteSpace:"nowrap"}}>{label}</span>
-              {hasBadge&&<div style={{position:"absolute",top:4,right:4,width:6,height:6,borderRadius:"50%",background:"#e74c3c",boxShadow:"0 0 4px #e74c3c"}}/>}
-            </button>
-          );
-        })}
-        <button
-          onClick={()=>{if(window.confirm("هل أنت متأكد من الخروج؟")){setOwnerSession(null);setView("entry");}}}
-          style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,height:68,background:"rgba(231,76,60,.07)",border:"1px solid rgba(231,76,60,.2)",borderRadius:12,padding:"7px 10px",cursor:"pointer",flexShrink:0,fontFamily:"inherit",transition:"all .2s ease",minWidth:48}}>
-          <span style={{fontSize:18}}>🚪</span>
-          <span style={{fontSize:8,color:"#e74c3c",fontWeight:600,whiteSpace:"nowrap"}}>خروج</span>
-        </button>
-      </div>
-
       {/* بانر إشعارات الإدارة */}
       {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
         <div key={n.id} className="notif-banner" style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.12),rgba(var(--gold-rgb),.06))",border:"1px solid rgba(var(--gold-rgb),.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -3878,7 +3947,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       ))}
 
       {/* ── الواجهة الرئيسية (لوحتي) ── */}
-      {tab===null&&(
+      {ownerTab===null&&(
         <>
 
       {/* ── بادج الصالون المحسّن (ثابت في لوحتي فقط) ── */}
@@ -3991,13 +4060,13 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           )}
         </>
       )}
-      {tab==="messages"&&(
+      {ownerTab==="messages"&&(
         <MessagesPanel salon={salon} toast$={toast$}/>
       )}
-      {tab==="calendar"&&<BookingCalendar salon={salon} onUpdate={updateBookingStatus}/>}
-      {tab==="reviews"&&<OwnerReviewsPanel salon={salon} reviews={reviews} setReviews={setReviews} toast$={toast$}/>}
-      {tab==="stats"&&<StatsPanel salon={salon} onUpdate={updateBookingStatus} customers={customers} refreshSalonBookings={refreshSalonBookings}/>}
-      {tab==="balance"&&(
+      {ownerTab==="calendar"&&<BookingCalendar salon={salon} onUpdate={updateBookingStatus}/>}
+      {ownerTab==="reviews"&&<OwnerReviewsPanel salon={salon} reviews={reviews} setReviews={setReviews} toast$={toast$}/>}
+      {ownerTab==="stats"&&<StatsPanel salon={salon} onUpdate={updateBookingStatus} customers={customers} refreshSalonBookings={refreshSalonBookings}/>}
+      {ownerTab==="balance"&&(
         <div style={{paddingTop:8}}>
           <div className="balance-tab" style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.12),rgba(var(--gold-rgb),.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(var(--gold-rgb),.3)",marginBottom:12}}>
             <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>رصيدك المتاح</div>
@@ -4016,7 +4085,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           </div>
         </div>
       )}
-      {tab==="settings"&&<OwnerSettings salon={salon} setSalons={setSalons} toast$={toast$}/>}
     </div></div>
   );
 }
@@ -4328,9 +4396,13 @@ function MessagesPanel({salon,toast$}){
 
 // ==============================================
 
-function OwnerSettings({salon,setSalons,toast$}){
+function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySec,setView,setShowSalonDrawer}){
   const[saving,setSaving]=useState(false);
-  const[sec,setSec]=useState("info");
+  const[sec,setSec]=useState(onlySec||"info");
+  const SEC_TITLES={info:"📋 معلومات الصالون",hours:"🕐 أوقات العمل",services:"✂ الخدمات والأسعار",barbers:"💈 الحلاقون",tone:"🔔 النغمات",social:"📱 التواصل الاجتماعي",pin:"🔐 رمز الدخول PIN"};
+  const[draftSocial,setDraftSocial]=useState({...DEFAULT_SOCIAL_LINKS,...(socialLinks||{})});
+  const[socialSaved,setSocialSaved]=useState(false);
+  const saveSocial=()=>{setSocialLinks&&setSocialLinks(draftSocial);setSocialSaved(true);setTimeout(()=>setSocialSaved(false),2500);};
   const[f,setF]=useState({
     name:salon.name||"",
     phone:salon.phone||"",
@@ -4377,15 +4449,17 @@ function OwnerSettings({salon,setSalons,toast$}){
   const hdr={fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10,paddingBottom:6,borderBottom:"1px solid var(--border-ui)"};
 
   return(
-    <div>
-      <div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
-        {[{id:"info",icon:"📋",label:"المعلومات"},{id:"hours",icon:"🕐",label:"الأوقات"},{id:"services",icon:"✂",label:"الخدمات"},{id:"barbers",icon:"💈",label:"الحلاقون"},{id:"tone",icon:"🔔",label:"النغمة"},{id:"pin",icon:"🔐",label:"PIN"}].map(s=>(
+    <div style={onlySec?G.page:undefined}>
+    <div style={onlySec?G.fp:undefined}>
+      {onlySec&&<div style={G.fh}><button style={G.bb} onClick={()=>{setView("ownerDash");setShowSalonDrawer&&setShowSalonDrawer(true);}}>← رجوع</button><h2 style={G.ft}>{SEC_TITLES[onlySec]||"إعدادات الصالون"}</h2></div>}
+      {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
+        {[{id:"info",icon:"📋",label:"المعلومات"},{id:"hours",icon:"🕐",label:"الأوقات"},{id:"services",icon:"✂",label:"الخدمات"},{id:"barbers",icon:"💈",label:"الحلاقون"},{id:"tone",icon:"🔔",label:"النغمة"},{id:"social",icon:"📱",label:"التواصل"},{id:"pin",icon:"🔐",label:"PIN"}].map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
             style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"var(--border-ui)"}`,background:sec===s.id?"var(--pa12)":"#1a1a2e",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
             {s.icon} {s.label}
           </button>
         ))}
-      </div>
+      </div>}
 
       {sec==="info"&&<div style={box}>
         <div style={hdr}>📋 المعلومات الأساسية</div>
@@ -4553,10 +4627,49 @@ function OwnerSettings({salon,setSalons,toast$}){
         )}
       </div>}
 
-      <button style={{...G.sub,marginTop:4,opacity:saving?0.7:1}} onClick={save} disabled={saving}>
+      {sec!=="social"&&sec!=="pin"&&<button style={{...G.sub,marginTop:4,opacity:saving?0.7:1}} onClick={save} disabled={saving}>
         {saving?"⏳ جاري الحفظ...":"💾 حفظ التعديلات"}
-      </button>
+      </button>}
     </div>
+    </div>
+  );
+}
+
+// ==============================================
+//  OWNER FAQ VIEW — أسئلة شائعة لصاحب الصالون
+// ==============================================
+function OwnerFaqView({setView,setShowSalonDrawer}){
+  const[faqQ,setFaqQ]=useState("");
+  const ALL=[
+    {q:"كيف أقبل أو أرفض الحجوزات؟",a:"من لوحة التحكم، اضغط على أي بطاقة حجوزات (انتظار / مقبول...) لعرض القائمة، ثم اختر قبول أو رفض لكل حجز. يتم إشعار العميل فوراً."},
+    {q:"ما معنى الميزان والأرباح؟",a:"كل حجز مكتمل (مقبول) يُحتسب ريالاً واحداً عمولة لدورك. الميزان = إجمالي الحجوزات المكتملة مطروحاً منها ما تم دفعه. تواصل مع الإدارة للتسوية."},
+    {q:"لماذا لا يظهر صالوني للعملاء؟",a:"يجب أن تكون حالة الصالون مفعّلة ✅. هذه الحالة تمنحها إدارة دورك عند مراجعة حسابك. تواصل مع الدعم إذا كان صالونك لا يزال في وضع الانتظار ⏳."},
+    {q:"كيف أضيف حلاقاً جديداً؟",a:"من قائمة الدرج (≡) ← الحلاقون ← أدخل اسم الحلاق ثم اضغط + إضافة. يمكنك تحديد وقت دوامه وإضافة صورته."},
+    {q:"كيف أغيّر أوقات عمل الصالون؟",a:"من قائمة الدرج (≡) ← أوقات العمل. اختر وردية واحدة أو ورديتين (صباحية + مسائية) وحدد الأوقات ثم احفظ."},
+    {q:"هل يمكن إضافة خدمات وتعديل الأسعار؟",a:"نعم. من قائمة الدرج (≡) ← الخدمات والأسعار. يمكنك إضافة خدمة جديدة أو اختيار خدمة جاهزة وتحديد سعرها."},
+    {q:"كيف أرد على تقييم عميل؟",a:"من قائمة الدرج (≡) ← التقييمات. اضغط على أي تقييم، اكتب ردّك ثم اضغط حفظ الرد. ردّك سيظهر للعملاء تحت التقييم."},
+    {q:"ما الفرق بين الحجوزات اليومية وتقويم الحجوزات؟",a:"لوحة التحكم تعرض ملخص اليوم الحالي فقط (مقبول / انتظار / مرفوض). أما تقويم الحجوزات (🗓 الحجوزات) فيعرض جميع الحجوزات عبر التقويم الشهري."},
+    {q:"كيف أغيّر نغمة التنبيه عند وصول حجز جديد؟",a:"من قائمة الدرج (≡) ← النغمات. اختر النغمة التي تريدها (اضغط عليها للمعاينة) ثم احفظ."},
+    {q:"كيف أغيّر رمز PIN لحساب الصالون؟",a:"من قائمة الدرج (≡) ← رمز الدخول PIN ← تغيير رمز PIN. اختر 4 أو 6 أرقام وأدخلهم مرتين للتأكيد."},
+    {q:"كيف أضيف معلومات التواصل الاجتماعي؟",a:"من قائمة الدرج (≡) ← التواصل الاجتماعي. أدخل حساباتك (واتساب، تويتر، تيليغرام، إيميل) ثم فعّل خيار 'إظهار للعملاء' واحفظ."},
+    {q:"كيف أغيّر لون واجهة التطبيق؟",a:"من قائمة الدرج (≡) ← الألوان والثيم. اختر من 8 ألوان متاحة. التغيير يسري على الفور."},
+    {q:"ما هو القسم الشرعي الذي يظهر عند أول دخول؟",a:"هو تعهد شرفي بالالتزام بدفع عمولة دورك (1 ريال لكل حجز مكتمل). يظهر مرة واحدة فقط عند أول تسجيل دخول للصالون."},
+    {q:"كيف أعدّل معلومات الصالون (الاسم، الجوال، العنوان)؟",a:"من قائمة الدرج (≡) ← معلومات الصالون. عدّل الحقول التي تريد ثم اضغط حفظ التعديلات."},
+    {q:"هل يمكنني تتبع إحصائيات الصالون؟",a:"نعم. من قائمة الدرج (≡) ← الإحصائيات. تعرض بيانات تفصيلية للحجوزات والإيرادات والأداء."},
+  ];
+  const filtered=faqQ.trim()?ALL.filter(f=>(f.q+f.a).includes(faqQ.trim())):ALL;
+  const box={background:"var(--surface-1)",borderRadius:13,padding:14,border:"1px solid var(--border-ui)",marginBottom:10};
+  const hdr={fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10,paddingBottom:6,borderBottom:"1px solid var(--border-ui)"};
+  const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
+  return(
+    <div style={G.page}><div style={G.fp}>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("ownerDash");setShowSalonDrawer&&setShowSalonDrawer(true);}}>← رجوع</button><h2 style={G.ft}>❓ أسئلة شائعة</h2></div>
+      <div style={box}>
+        <div style={hdr}>❓ أسئلة صاحب الصالون</div>
+        <input value={faqQ} onChange={e=>setFaqQ(e.target.value)} placeholder="🔍 ابحث في الأسئلة..." style={{...inp,marginBottom:12}}/>
+        {filtered.length===0?<div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center",padding:"16px 0"}}>لا توجد نتائج</div>:filtered.map(({q,a},i)=>(<FAQItem key={i} q={q} a={a}/>))}
+      </div>
+    </div></div>
   );
 }
 
@@ -5564,8 +5677,9 @@ function InlineStarRating({rated,comment,onRate}){
   );
 }
 
-function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase}){
-  const[sec,setSec]=useState("theme");
+function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocialLinks,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase,setShowDrawer,onlySec,backFn}){
+  const[sec,setSec]=useState(onlySec||"theme");
+  const[faqQ,setFaqQ]=useState("");
   const SECS=[
     {id:"theme",icon:"🎨",label:"الألوان"},
     {id:"bg",   icon:"🖼",label:"الخلفية"},
@@ -5607,15 +5721,15 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← رجوع</button><h2 style={G.ft}>⚙ الإعدادات</h2></div>
-      <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{if(backFn){backFn();}else{setView("home");setShowDrawer&&setShowDrawer(true);}}}>← رجوع</button><h2 style={G.ft}>{onlySec?({social:"📱 التواصل",faq:"❓ أسئلة شائعة",theme:"🎨 الألوان والثيم"}[onlySec]||"⚙ الإعدادات"):"⚙ الإعدادات"}</h2></div>
+      {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
         {SECS.map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
             style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"var(--border-ui)"}`,background:sec===s.id?"var(--pa12)":"#1a1a2e",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
             {s.icon} {s.label}
           </button>
         ))}
-      </div>
+      </div>}
 
       {sec==="theme"&&<div style={box}>
         <div style={hdr}>🎨 لون واجهة التطبيق</div>
