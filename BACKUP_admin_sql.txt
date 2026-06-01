@@ -1,0 +1,141 @@
+================================================================
+        ملفات SQL الإدارة (Admin Migrations) — نسخة احتياطية
+        التاريخ: 2026-06-01
+        المسار: /admin/*.sql
+================================================================
+
+[1] admin-features-migration.sql  ← ميزات الإدارة
+[2] fcm-tokens-migration.sql      ← جدول إشعارات FCM
+[3] fix-rls-policies.sql          ← إصلاح سياسات الأمان
+[4] realtime-settings-migration.sql ← تفعيل Realtime
+
+
+----------------------------------------------------------------
+[1] admin/admin-features-migration.sql
+    الوظيفة: إضافة أعمدة للعملاء (ملاحظات + حظر) وتفعيل Realtime
+----------------------------------------------------------------
+
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS admin_notes text default '';
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS blocked boolean default false;
+ALTER PUBLICATION supabase_realtime ADD TABLE salons;
+
+
+----------------------------------------------------------------
+[2] admin/fcm-tokens-migration.sql
+    الوظيفة: إنشاء جدول FCM tokens وجدول سجلات الإشعارات
+----------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS fcm_tokens (
+  id              bigserial primary key,
+  user_type       text not null,
+  user_id         bigint not null,
+  device_token    text not null unique,
+  device_name     text,
+  is_active       boolean default true,
+  last_used_at    timestamptz default now(),
+  created_at      timestamptz default now(),
+  updated_at      timestamptz default now()
+);
+
+CREATE INDEX IF NOT EXISTS fcm_tokens_user_type_id_idx ON fcm_tokens(user_type, user_id);
+CREATE INDEX IF NOT EXISTS fcm_tokens_device_token_idx ON fcm_tokens(device_token);
+CREATE INDEX IF NOT EXISTS fcm_tokens_is_active_idx ON fcm_tokens(is_active);
+
+ALTER TABLE fcm_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anon_insert"       ON fcm_tokens FOR INSERT WITH CHECK (true);
+CREATE POLICY "anon_update_own"   ON fcm_tokens FOR UPDATE USING (true);
+CREATE POLICY "anon_delete_own"   ON fcm_tokens FOR DELETE USING (true);
+CREATE POLICY "anon_select_active" ON fcm_tokens FOR SELECT USING (is_active = true);
+CREATE POLICY "service_role_all"  ON fcm_tokens FOR ALL TO service_role USING (true);
+
+ALTER PUBLICATION supabase_realtime ADD TABLE fcm_tokens;
+
+CREATE TABLE IF NOT EXISTS notification_logs (
+  id              bigserial primary key,
+  notification_id bigint references notifications(id) on delete cascade,
+  fcm_token_id    bigint references fcm_tokens(id) on delete cascade,
+  user_type       text not null,
+  user_id         bigint not null,
+  status          text default 'sent',
+  error_message   text,
+  sent_at         timestamptz default now()
+);
+
+CREATE INDEX IF NOT EXISTS notification_logs_notification_id_idx ON notification_logs(notification_id);
+CREATE INDEX IF NOT EXISTS notification_logs_user_type_id_idx ON notification_logs(user_type, user_id);
+
+ALTER TABLE notification_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "service_role_all" ON notification_logs FOR ALL TO service_role USING (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE notification_logs;
+
+
+----------------------------------------------------------------
+[3] admin/fix-rls-policies.sql
+    الوظيفة: إصلاح سياسات القراءة العامة لجميع الجداول
+----------------------------------------------------------------
+
+ALTER TABLE salons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon_read" ON salons;
+CREATE POLICY "anon_read" ON salons FOR SELECT USING (true);
+DROP POLICY IF EXISTS "service_role_all" ON salons;
+CREATE POLICY "service_role_all" ON salons FOR ALL TO service_role USING (true);
+
+ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon_read" ON bookings;
+CREATE POLICY "anon_read" ON bookings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "anon_insert" ON bookings;
+CREATE POLICY "anon_insert" ON bookings FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "anon_update" ON bookings;
+CREATE POLICY "anon_update" ON bookings FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "service_role_all" ON bookings;
+CREATE POLICY "service_role_all" ON bookings FOR ALL TO service_role USING (true);
+
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon_read" ON customers;
+CREATE POLICY "anon_read" ON customers FOR SELECT USING (true);
+DROP POLICY IF EXISTS "anon_insert" ON customers;
+CREATE POLICY "anon_insert" ON customers FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "anon_update" ON customers;
+CREATE POLICY "anon_update" ON customers FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "service_role_all" ON customers;
+CREATE POLICY "service_role_all" ON customers FOR ALL TO service_role USING (true);
+
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon_read" ON reviews;
+CREATE POLICY "anon_read" ON reviews FOR SELECT USING (true);
+DROP POLICY IF EXISTS "anon_insert" ON reviews;
+CREATE POLICY "anon_insert" ON reviews FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "anon_update" ON reviews;
+CREATE POLICY "anon_update" ON reviews FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "service_role_all" ON reviews;
+CREATE POLICY "service_role_all" ON reviews FOR ALL TO service_role USING (true);
+
+ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon_read" ON app_settings;
+CREATE POLICY "anon_read" ON app_settings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "anon_insert" ON app_settings;
+CREATE POLICY "anon_insert" ON app_settings FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "anon_update" ON app_settings;
+CREATE POLICY "anon_update" ON app_settings FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "service_role_all" ON app_settings;
+CREATE POLICY "service_role_all" ON app_settings FOR ALL TO service_role USING (true);
+
+
+----------------------------------------------------------------
+[4] admin/realtime-settings-migration.sql
+    الوظيفة: تفعيل Realtime على جدول إعدادات التطبيق
+----------------------------------------------------------------
+
+ALTER PUBLICATION supabase_realtime ADD TABLE app_settings;
+
+
+================================================================
+        ترتيب التطبيق عند الاستعادة
+================================================================
+
+١. [2] fcm-tokens-migration.sql    ← أولاً (ينشئ الجداول)
+٢. [3] fix-rls-policies.sql        ← ثانياً (يضبط الأمان)
+٣. [1] admin-features-migration.sql ← ثالثاً (يضيف الأعمدة)
+٤. [4] realtime-settings-migration.sql ← أخيراً
+
+================================================================

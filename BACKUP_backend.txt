@@ -1,0 +1,274 @@
+================================================================
+        ملفات الخلفية (Backend) — نسخة احتياطية
+        التاريخ: 2026-06-01
+        الإصدار: 2026.06.01-SV
+================================================================
+
+هذا الملف يحتوي:
+  [1] api/supabase.js          ← الاتصال بقاعدة البيانات
+  [2] src/utils/realtimeSync.js ← المزامنة الفورية
+  [3] public/service-worker.js  ← Service Worker الأساسي
+  [4] public/firebase-messaging-sw.js ← Service Worker للإشعارات
+
+================================================================
+
+
+----------------------------------------------------------------
+[1] api/supabase.js
+    الوظيفة: الاتصال بـ Supabase (قاعدة البيانات)
+    مهم جداً: يحتوي URL وmفتاح الـ API
+----------------------------------------------------------------
+
+import { createClient } from "@supabase/supabase-js";
+
+const SUPABASE_URL = "https://ywrlhvzfefvyogfxfdhl.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cmxodnpmZWZ2eW9nZnhmZGhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTQzMjUzNzUsImV4cCI6MTczMjA1MTM3NX0.W1ZjFBm9rPyT_GYF8jR3D7UE-D7O0OhI5_0fkp3A0Uo";
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+
+----------------------------------------------------------------
+[2] src/utils/realtimeSync.js
+    الوظيفة: المزامنة الفورية للحجوزات والإشعارات
+----------------------------------------------------------------
+
+/**
+ * Realtime Filtering + Delta Sync - OPTIMIZED & PRODUCTION-READY
+ */
+
+import { supabase } from "../../api/supabase";
+
+export const realtimeManager = {
+  subscriptions: {},
+
+  subscribeSalonBookings(salonId, callback) {
+    const channelName = `bookings-salon-${salonId}`;
+    if (this.subscriptions[channelName]) {
+      this.unsubscribe(channelName);
+    }
+    const subscription = supabase
+      .channel(channelName)
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "bookings",
+        filter: `salon_id=eq.${salonId}`,
+      }, callback)
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") console.log(`✅ Realtime: مشترك في حجوزات الصالون ${salonId}`);
+        else if (status === "CHANNEL_ERROR") console.error(`❌ خطأ في الاشتراك لـ salon ${salonId}`);
+      });
+    this.subscriptions[channelName] = subscription;
+    return subscription;
+  },
+
+  subscribeCustomerBookings(customerId, callback) {
+    const channelName = `bookings-customer-${customerId}`;
+    if (this.subscriptions[channelName]) this.unsubscribe(channelName);
+    const subscription = supabase
+      .channel(channelName)
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "bookings",
+        filter: `customer_id=eq.${customerId}`,
+      }, callback)
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") console.log(`✅ Realtime: مشترك في حجوزات العميل ${customerId}`);
+      });
+    this.subscriptions[channelName] = subscription;
+  },
+
+  subscribeSalonReviews(salonId, callback) {
+    const channelName = `reviews-salon-${salonId}`;
+    if (this.subscriptions[channelName]) this.unsubscribe(channelName);
+    const subscription = supabase
+      .channel(channelName)
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "reviews",
+        filter: `salon_id=eq.${salonId}`,
+      }, callback)
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") console.log(`✅ Realtime: مشترك في تقييمات الصالون ${salonId}`);
+      });
+    this.subscriptions[channelName] = subscription;
+  },
+
+  subscribeNotifications(userId, userType, callback) {
+    const channelName = `notifications-${userType}-${userId}`;
+    if (this.subscriptions[channelName]) this.unsubscribe(channelName);
+    const subscription = supabase
+      .channel(channelName)
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "notifications",
+        filter: `target_type=eq.${userType}|target_id=eq.${userId}`,
+      }, callback)
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") console.log(`✅ Realtime: مشترك في إشعارات ${userType} ${userId}`);
+      });
+    this.subscriptions[channelName] = subscription;
+  },
+
+  unsubscribe(channelName) {
+    if (this.subscriptions[channelName]) {
+      supabase.removeChannel(this.subscriptions[channelName]);
+      delete this.subscriptions[channelName];
+    }
+  },
+
+  unsubscribeAll() {
+    Object.keys(this.subscriptions).forEach((channelName) => this.unsubscribe(channelName));
+  },
+};
+
+export async function deltaFetchSalonBookings(salonId, sb) {
+  const key = `bookings-salon-${salonId}`;
+  const lastSync = localStorage.getItem(`sync_${key}`) ||
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const now = new Date().toISOString();
+  try {
+    const data = await sb("bookings", "GET", null,
+      `?select=id,customer_id,date,status,updated_at&salon_id=eq.${salonId}&updated_at=gt.${encodeURIComponent(lastSync)}&limit=1000`);
+    localStorage.setItem(`sync_${key}`, now);
+    return { data, syncTime: now };
+  } catch (error) {
+    return { data: [], error, syncTime: null };
+  }
+}
+
+export async function deltaFetchCustomerBookings(customerId, sb) {
+  const key = `bookings-customer-${customerId}`;
+  const lastSync = localStorage.getItem(`sync_${key}`) ||
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const now = new Date().toISOString();
+  try {
+    const data = await sb("bookings", "GET", null,
+      `?select=id,salon_id,date,status,updated_at&customer_id=eq.${customerId}&updated_at=gt.${encodeURIComponent(lastSync)}&limit=500`);
+    localStorage.setItem(`sync_${key}`, now);
+    return { data, syncTime: now };
+  } catch (error) {
+    return { data: [], error, syncTime: null };
+  }
+}
+
+export function clearSyncData(key) { localStorage.removeItem(`sync_${key}`); }
+export function clearAllSyncData() {
+  Object.keys(localStorage).filter(k => k.startsWith("sync_")).forEach(k => localStorage.removeItem(k));
+}
+
+
+----------------------------------------------------------------
+[3] public/service-worker.js
+    الوظيفة: Service Worker الأساسي للـ PWA والإشعارات
+----------------------------------------------------------------
+
+const CACHE_NAME = 'dork-app-v1';
+
+self.addEventListener('install', (event) => { event.waitUntil(self.skipWaiting()); });
+self.addEventListener('activate', (event) => { event.waitUntil(self.clients.claim()); });
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  try {
+    const data = event.data.json();
+    const { notification, data: messageData } = data;
+    if (!notification) return;
+    const title = notification.title || 'إشعار جديد';
+    const options = {
+      body: notification.body || '',
+      icon: '/favicon.ico', badge: '/favicon.ico',
+      tag: messageData?.booking_id || 'notification',
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+      data: messageData || {},
+    };
+    event.waitUntil(self.registration.showNotification(title, options));
+  } catch (error) {
+    console.error('Error handling push notification:', error);
+  }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const booking_id = event.notification.data?.booking_id;
+  const targetUrl = booking_id ? `/bookings/${booking_id}` : '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === targetUrl && 'focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(targetUrl);
+    })
+  );
+});
+
+self.addEventListener('notificationclose', (event) => {
+  console.log('Notification closed:', event.notification.tag);
+});
+
+
+----------------------------------------------------------------
+[4] public/firebase-messaging-sw.js
+    الوظيفة: Service Worker للإشعارات عبر Firebase (FCM)
+    ملاحظة: يعمل حتى لو كان التطبيق مغلقاً
+----------------------------------------------------------------
+
+const CACHE_NAME = 'dork-app-v2';
+
+self.addEventListener('install', (event) => { event.waitUntil(self.skipWaiting()); });
+self.addEventListener('activate', (event) => { event.waitUntil(self.clients.claim()); });
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  let title = 'إشعار جديد';
+  let options = {
+    body: '', icon: '/favicon.ico', badge: '/favicon.ico',
+    tag: 'notification-' + Date.now(),
+    requireInteraction: true,
+    vibrate: [200, 100, 200, 100, 200],
+    data: {},
+  };
+  try {
+    const payload = event.data.json();
+    if (payload.notification) {
+      title = payload.notification.title || title;
+      options.body = payload.notification.body || '';
+    }
+    if (payload.data) {
+      options.data = payload.data;
+      options.tag = payload.data.type + '-' + (payload.data.booking_id || Date.now());
+    }
+    if (payload.webpush?.notification) {
+      title = payload.webpush.notification.title || title;
+      options.body = payload.webpush.notification.body || options.body;
+    }
+  } catch (e) {
+    try { options.body = event.data.text(); } catch (_) {}
+  }
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const urlToOpen = new URL('/', self.location.origin).href;
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      return clients.openWindow(urlToOpen);
+    })
+  );
+});
+
+self.addEventListener('notificationclose', (event) => {});
+
+
+================================================================
+        ملاحظة للاستعادة
+================================================================
+
+إذا احتجت استعادة هذه الملفات:
+
+١. api/supabase.js          →  انسخ القسم [1] لملف api/supabase.js
+٢. src/utils/realtimeSync.js →  انسخ القسم [2] لملف src/utils/realtimeSync.js
+٣. public/service-worker.js  →  انسخ القسم [3] لملف public/service-worker.js
+٤. public/firebase-messaging-sw.js → انسخ القسم [4]
+
+================================================================
