@@ -3,8 +3,26 @@ import { createClient } from "@supabase/supabase-js";
 import { useTranslation } from 'react-i18next';
 import { SALON_LANGS } from './src/i18n.js';
 
-// رقم الإصدار — يتغيّر مع كل نشر للتأكد أن التحديث وصل فعلاً
-const APP_VERSION = "2026.06.01-SV";
+// رقم الإصدار — يُحقن تلقائياً من vite عند كل build
+const APP_VERSION = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "dev";
+
+// تحديث تلقائي عند وجود إصدار جديد
+(()=>{
+  try{
+    const stored=localStorage.getItem("dork_app_version");
+    if(stored && stored!==APP_VERSION){
+      localStorage.setItem("dork_app_version",APP_VERSION);
+      // مسح كاش Service Worker ثم إعادة التحميل
+      if("caches" in window){
+        caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).then(()=>window.location.reload(true));
+      } else {
+        window.location.reload(true);
+      }
+    } else {
+      localStorage.setItem("dork_app_version",APP_VERSION);
+    }
+  }catch{}
+})();
 
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}

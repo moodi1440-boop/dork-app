@@ -5,6 +5,9 @@ export default defineConfig({
   plugins: [react()],
   root: '.',
   publicDir: 'public',
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 600,
