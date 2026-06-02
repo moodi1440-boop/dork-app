@@ -2406,16 +2406,10 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
   return(
     <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid var(--border-ui)",padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
       {/* Header Row - VIP Name + Rating */}
-      <div style={{display:"flex",gap:8,alignItems:"flex-start",justifyContent:"space-between"}}>
-        {/* VIP Name Box + Status Badge */}
-        <div style={{display:"flex",flexDirection:"column",gap:6,flex:1}}>
-          <div style={{background:"rgba(var(--pr),.08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:10,padding:"8px 14px",boxShadow:"0 2px 12px rgba(var(--pr),.12)"}}>
-            <div style={{fontSize:14,fontWeight:800,color:"var(--p)",letterSpacing:.5}}>{salon.name}</div>
-          </div>
-          <span style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:700,color:isOpenNow?"#27ae60":"#e74c3c",background:isOpenNow?"rgba(39,174,96,.1)":"rgba(231,76,60,.1)",border:`1px solid ${isOpenNow?"rgba(39,174,96,.3)":"rgba(231,76,60,.3)"}`,borderRadius:20,padding:"3px 10px",alignSelf:"flex-start"}}>
-            <span style={{fontSize:7}}>●</span>
-            {isOpenNow?t("salon_card.open"):t("salon_card.closed")}
-          </span>
+      <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
+        {/* VIP Name Box */}
+        <div style={{background:"rgba(var(--pr),.08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:10,padding:"8px 14px",boxShadow:"0 2px 12px rgba(var(--pr),.12)",flex:1}}>
+          <div style={{fontSize:14,fontWeight:800,color:"var(--p)",letterSpacing:.5}}>{salon.name}</div>
         </div>
 
         {/* Rating on Right - Clickable */}
