@@ -5558,11 +5558,11 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         </div>
       ))}
 
-      <div style={{...G.tabRow,flexWrap:"nowrap"}}>
+      {!sectionMode&&<div style={{...G.tabRow,flexWrap:"nowrap"}}>
         <button style={{...G.tabBtn,...(tab==="favs"?G.tabOn:{})}} onClick={()=>setTab("favs")}>{t("cust_dash.tab_favs")} {favSalons.length>0&&<span style={G.notifDot}>{favSalons.length}</span>}</button>
         <button style={{...G.tabBtn,...(tab==="hist"?G.tabOn:{})}} onClick={()=>setTab("hist")}>{t("cust_dash.tab_hist")}</button>
         <button style={{...G.tabBtn,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>{t("cust_dash.tab_settings")}</button>
-      </div>
+      </div>}
 
       {/* المفضلة */}
       {tab==="favs"&&<>
