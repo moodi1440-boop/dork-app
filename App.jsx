@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useTranslation } from 'react-i18next';
-import { SALON_LANGS } from './src/i18n.js';
+import { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار — يُحقن تلقائياً من vite عند كل build
 const APP_VERSION = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "dev";
@@ -4750,15 +4750,16 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
 // ==============================================
 //  OWNER LANG VIEW - صفحة اختيار اللغة للمالك
 // ==============================================
+const ALL_LANG_INFO=[
+  {code:'ar',flag:'🇸🇦',label:'العربية',sub:'Arabic'},
+  {code:'en',flag:'🇬🇧',label:'English',sub:'الإنجليزية'},
+  {code:'ur',flag:'🇵🇰',label:'اردو',sub:'Urdu'},
+  {code:'tr',flag:'🇹🇷',label:'Türkçe',sub:'التركية'},
+];
 function OwnerLangView({setView,setShowSalonDrawer}){
   const{t,i18n}=useTranslation();
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
-  const LANGS=[
-    {code:'ar',flag:'🇸🇦',label:'العربية',sub:'Arabic'},
-    {code:'en',flag:'🇬🇧',label:'English',sub:'الإنجليزية'},
-    {code:'ur',flag:'🇵🇰',label:'اردو',sub:'Urdu'},
-    {code:'tr',flag:'🇹🇷',label:'Türkçe',sub:'التركية'},
-  ];
+  const LANGS=ALL_LANG_INFO.filter(l=>SALON_LANGS.includes(l.code));
   return(
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
@@ -4792,12 +4793,7 @@ function OwnerLangView({setView,setShowSalonDrawer}){
 function CustLangView({setView,setShowDrawer}){
   const{t,i18n}=useTranslation();
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
-  const LANGS=[
-    {code:'ar',flag:'🇸🇦',label:'العربية',sub:'Arabic'},
-    {code:'en',flag:'🇬🇧',label:'English',sub:'الإنجليزية'},
-    {code:'ur',flag:'🇵🇰',label:'اردو',sub:'Urdu'},
-    {code:'tr',flag:'🇹🇷',label:'Türkçe',sub:'التركية'},
-  ];
+  const LANGS=ALL_LANG_INFO.filter(l=>CLIENT_LANGS.includes(l.code));
   return(
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
@@ -5493,7 +5489,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer(true);}}>{t("cust_dash.back")}</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:t("cust_dash.title")}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"var(--text-muted)",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>{t("cust_dash.exit")}</button>}</div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{if(sectionMode){setTab("settings");}else{setView("home");setShowDrawer(true);}}}>{t("cust_dash.back")}</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:t("cust_dash.title")}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"var(--text-muted)",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>{t("cust_dash.exit")}</button>}</div>
 
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
       {!sectionMode&&showLocPrompt&&!customer?.locationLat&&(
@@ -5548,11 +5544,11 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         </div>
       ))}
 
-      {!sectionMode&&<div style={{...G.tabRow,flexWrap:"nowrap"}}>
+      <div style={{...G.tabRow,flexWrap:"nowrap"}}>
         <button style={{...G.tabBtn,...(tab==="favs"?G.tabOn:{})}} onClick={()=>setTab("favs")}>{t("cust_dash.tab_favs")} {favSalons.length>0&&<span style={G.notifDot}>{favSalons.length}</span>}</button>
         <button style={{...G.tabBtn,...(tab==="hist"?G.tabOn:{})}} onClick={()=>setTab("hist")}>{t("cust_dash.tab_hist")}</button>
         <button style={{...G.tabBtn,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>{t("cust_dash.tab_settings")}</button>
-      </div>}
+      </div>
 
       {/* المفضلة */}
       {tab==="favs"&&<>
