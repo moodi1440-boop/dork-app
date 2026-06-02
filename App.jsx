@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useTranslation } from 'react-i18next';
-import { SALON_LANGS } from './src/i18n.js';
+import { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار — يُحقن تلقائياً من vite عند كل build
 const APP_VERSION = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "dev";
@@ -4750,15 +4750,16 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
 // ==============================================
 //  OWNER LANG VIEW - صفحة اختيار اللغة للمالك
 // ==============================================
+const ALL_LANG_INFO=[
+  {code:'ar',flag:'🇸🇦',label:'العربية',sub:'Arabic'},
+  {code:'en',flag:'🇬🇧',label:'English',sub:'الإنجليزية'},
+  {code:'ur',flag:'🇵🇰',label:'اردو',sub:'Urdu'},
+  {code:'tr',flag:'🇹🇷',label:'Türkçe',sub:'التركية'},
+];
 function OwnerLangView({setView,setShowSalonDrawer}){
   const{t,i18n}=useTranslation();
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
-  const LANGS=[
-    {code:'ar',flag:'🇸🇦',label:'العربية',sub:'Arabic'},
-    {code:'en',flag:'🇬🇧',label:'English',sub:'الإنجليزية'},
-    {code:'ur',flag:'🇵🇰',label:'اردو',sub:'Urdu'},
-    {code:'tr',flag:'🇹🇷',label:'Türkçe',sub:'التركية'},
-  ];
+  const LANGS=ALL_LANG_INFO.filter(l=>SALON_LANGS.includes(l.code));
   return(
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
@@ -4792,12 +4793,7 @@ function OwnerLangView({setView,setShowSalonDrawer}){
 function CustLangView({setView,setShowDrawer}){
   const{t,i18n}=useTranslation();
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
-  const LANGS=[
-    {code:'ar',flag:'🇸🇦',label:'العربية',sub:'Arabic'},
-    {code:'en',flag:'🇬🇧',label:'English',sub:'الإنجليزية'},
-    {code:'ur',flag:'🇵🇰',label:'اردو',sub:'Urdu'},
-    {code:'tr',flag:'🇹🇷',label:'Türkçe',sub:'التركية'},
-  ];
+  const LANGS=ALL_LANG_INFO.filter(l=>CLIENT_LANGS.includes(l.code));
   return(
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
