@@ -2457,7 +2457,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       {/* Header Row - VIP Name + Rating */}
       <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between",marginTop:activePromo?4:0}}>
         {/* VIP Name Box */}
-        <div style={{background:"rgba(var(--pr),.15)",border:"1px solid rgba(var(--pr),.5)",borderRadius:10,padding:"8px 14px",boxShadow:"0 2px 12px rgba(var(--pr),.15)",alignSelf:"flex-start"}}>
+        <div style={{background:"rgba(var(--pr),.5)",border:"1px solid rgba(var(--pr),.7)",borderRadius:10,padding:"8px 14px",boxShadow:"0 2px 12px rgba(var(--pr),.25)",alignSelf:"flex-start"}}>
           <div style={{fontSize:14,fontWeight:800,color:"var(--p)",letterSpacing:.5}}>{salon.name}</div>
         </div>
 
