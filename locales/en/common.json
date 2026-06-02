@@ -600,7 +600,9 @@
       "coral": "Coral",
       "fuchsia": "Fuchsia",
       "wine": "Wine",
-      "forest": "Forest"
+      "forest": "Forest",
+      "lime": "Lime",
+      "sky": "Sky"
     },
     "font_header": "🔤 Font Size",
     "font_hint": "Choose a font size that suits you",
