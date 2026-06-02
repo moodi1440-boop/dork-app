@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import HttpBackend from 'i18next-http-backend';
 
-export const CLIENT_LANGS = ['ar', 'en'];
+export const CLIENT_LANGS = ['ar', 'en', 'ur', 'tr'];
 export const SALON_LANGS  = ['ar', 'en', 'ur', 'tr'];
 
 i18n

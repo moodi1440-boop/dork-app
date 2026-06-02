@@ -600,7 +600,9 @@
       "coral": "Mercan",
       "fuchsia": "Fuşya",
       "wine": "Bordo",
-      "forest": "Orman"
+      "forest": "Orman",
+      "lime": "Limon Yeşili",
+      "sky": "Gök Mavisi"
     },
     "font_header": "🔤 Yazı Tipi Boyutu",
     "font_hint": "Size uygun bir yazı tipi boyutu seçin",

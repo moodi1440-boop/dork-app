@@ -322,6 +322,8 @@ const THEMES = {
   fuchsia:   {primary:"#d946ef", light:"#e879f9", dark:"#a21caf", lightest:"#f5d0fe", rgb:"217,70,239"},
   wine:      {primary:"#9f1239", light:"#e11d48", dark:"#881337", lightest:"#fda4af", rgb:"159,18,57"},
   forest:    {primary:"#15803d", light:"#22c55e", dark:"#166534", lightest:"#86efac", rgb:"21,128,61"},
+  lime:      {primary:"#65a30d", light:"#84cc16", dark:"#3f6212", lightest:"#d9f99d", rgb:"101,163,13"},
+  sky:       {primary:"#0284c7", light:"#38bdf8", dark:"#075985", lightest:"#bae6fd", rgb:"2,132,199"},
 };
 
 const BACKGROUNDS=[
@@ -1643,7 +1645,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
     r.setProperty("--gold",t.primary);r.setProperty("--gold-rgb",t.rgb);
     setSettings(s=>({...s,theme:id}));persistUiToSupabase&&persistUiToSupabase({theme:id});
   };
-  const THEME_OPT=[{id:"gold",l:"ذهبي",c:"#d4a017",e:"✨"},{id:"emerald",l:"زمردي",c:"#10b981",e:"🌿"},{id:"sapphire",l:"ياقوتي",c:"#3b82f6",e:"💎"},{id:"royalBlue",l:"ملكي",c:"#1e3a8a",e:"👑"},{id:"bronze",l:"برونزي",c:"#8b5a2b",e:"🏺"},{id:"rose",l:"وردي",c:"#ec4899",e:"🌸"},{id:"violet",l:"بنفسجي",c:"#8b5cf6",e:"🔮"},{id:"crimson",l:"قرمزي",c:"#ef4444",e:"🔴"},{id:"teal",l:"فيروزي",c:"#0d9488",e:"🩵"},{id:"coral",l:"مرجاني",c:"#f97316",e:"🪸"},{id:"fuchsia",l:"فوشيا",c:"#d946ef",e:"🌺"},{id:"wine",l:"خمري",c:"#9f1239",e:"🍷"},{id:"forest",l:"غابة",c:"#15803d",e:"🌲"}];
+  const THEME_OPT=[{id:"gold",l:"ذهبي",c:"#d4a017",e:"✨"},{id:"emerald",l:"زمردي",c:"#10b981",e:"🌿"},{id:"sapphire",l:"ياقوتي",c:"#3b82f6",e:"💎"},{id:"royalBlue",l:"ملكي",c:"#1e3a8a",e:"👑"},{id:"bronze",l:"برونزي",c:"#8b5a2b",e:"🏺"},{id:"rose",l:"وردي",c:"#ec4899",e:"🌸"},{id:"violet",l:"بنفسجي",c:"#8b5cf6",e:"🔮"},{id:"crimson",l:"قرمزي",c:"#ef4444",e:"🔴"},{id:"teal",l:"فيروزي",c:"#0d9488",e:"🩵"},{id:"coral",l:"مرجاني",c:"#f97316",e:"🪸"},{id:"fuchsia",l:"فوشيا",c:"#d946ef",e:"🌺"},{id:"wine",l:"خمري",c:"#9f1239",e:"🍷"},{id:"forest",l:"غابة",c:"#15803d",e:"🌲"},{id:"lime",l:"ليموني",c:"#65a30d",e:"🍃"},{id:"sky",l:"سماوي",c:"#0284c7",e:"🌊"}];
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   const Row=({icon,label,sub,chev,onClick,danger,itemId})=>{
     const isActive=itemId&&activeDrawerItem===itemId;
@@ -5908,6 +5910,8 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
     {id:"fuchsia",  label:t("settings.themes.fuchsia"),  color:"#d946ef",    emoji:"🌺"},
     {id:"wine",     label:t("settings.themes.wine"),     color:"#9f1239",    emoji:"🍷"},
     {id:"forest",   label:t("settings.themes.forest"),   color:"#15803d",    emoji:"🌲"},
+    {id:"lime",     label:t("settings.themes.lime"),     color:"#65a30d",    emoji:"🍃"},
+    {id:"sky",      label:t("settings.themes.sky"),      color:"#0284c7",    emoji:"🌊"},
   ];
   const applyTheme=(id)=>{
     const t=THEMES[id]||THEMES.gold;
@@ -6207,7 +6211,7 @@ const G={
   toggleOn:{background:"var(--pa12)",border:"1.5px solid var(--p)",color:"var(--p)"},
 
   section:{padding:"10px 14px 0"},
-  badge:{background:"var(--p)",color:"#000",padding:"2px 9px",borderRadius:20,fontSize:11,fontWeight:700},
+  badge:{background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",padding:"2px 9px",borderRadius:20,fontSize:11,fontWeight:700},
   empty:{textAlign:"center",color:"var(--text-muted)",padding:"36px 0",fontSize:13},
 
   card:{background:"var(--surface-1)",borderRadius:14,padding:13,border:"1px solid var(--border-ui)",boxShadow:"0 4px 16px rgba(0,0,0,.3)"},
