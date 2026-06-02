@@ -4689,7 +4689,7 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}>
-        <button style={G.bb} onClick={()=>{setView("custDash");setShowDrawer&&setShowDrawer(true);}}>← {t("owner_dash.back")}</button>
+        <button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>← {t("owner_dash.back")}</button>
         <h2 style={G.ft}>✏️ {t("cust_drawer.edit_data")}</h2>
       </div>
       {!pinStep&&(<>
@@ -4707,7 +4707,7 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
         </div>
         <button style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",marginBottom:10}} onClick={()=>setPinStep("select")}>{t("cust_drawer.change_pin")}</button>
         <div style={{display:"flex",gap:10}}>
-          <button style={{flex:1,padding:"13px",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:"inherit"}} onClick={()=>{setView("custDash");setShowDrawer&&setShowDrawer(true);}}>{t("cust_drawer.cancel")}</button>
+          <button style={{flex:1,padding:"13px",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:"inherit"}} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>{t("cust_drawer.cancel")}</button>
           <button style={{flex:1,padding:"13px",borderRadius:12,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:"inherit"}} onClick={save}>{t("cust_drawer.save")}</button>
         </div>
       </>)}
@@ -4802,7 +4802,7 @@ function CustLangView({setView,setShowDrawer}){
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>{setView("custDash");setShowDrawer&&setShowDrawer(true);}}>{t("owner_dash.back")}</button>
+          <button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>{t("owner_dash.back")}</button>
           <h2 style={G.ft}>🌐 {t("cust_drawer.language")}</h2>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,paddingTop:8}}>
