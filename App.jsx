@@ -1908,8 +1908,8 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
       </button>
       <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>setView("ownerDash")}>
-        <span style={{fontSize:17,fontWeight:700,fontFamily:"'Cairo',sans-serif",color:"var(--p)",letterSpacing:0.5,lineHeight:1}}>احجز</span>
-        <span style={{fontSize:48,fontWeight:700,fontFamily:"'Cinzel',serif",color:"var(--p)",letterSpacing:2,lineHeight:1}}>DORK</span>
+        <span style={{fontSize:19,fontWeight:900,color:"var(--gold)",letterSpacing:0.5}}>احجز</span>
+        <span style={{fontSize:32,fontWeight:900,color:"var(--gold)",letterSpacing:1}}>DORK</span>
       </div>
     </div>
   );
