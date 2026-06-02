@@ -5493,7 +5493,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer(true);}}>{t("cust_dash.back")}</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:t("cust_dash.title")}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"var(--text-muted)",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>{t("cust_dash.exit")}</button>}</div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{if(sectionMode){setTab("settings");}else{setView("home");setShowDrawer(true);}}}>{t("cust_dash.back")}</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:t("cust_dash.title")}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"var(--text-muted)",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>{t("cust_dash.exit")}</button>}</div>
 
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
       {!sectionMode&&showLocPrompt&&!customer?.locationLat&&(
@@ -5548,11 +5548,11 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         </div>
       ))}
 
-      {!sectionMode&&<div style={{...G.tabRow,flexWrap:"nowrap"}}>
+      <div style={{...G.tabRow,flexWrap:"nowrap"}}>
         <button style={{...G.tabBtn,...(tab==="favs"?G.tabOn:{})}} onClick={()=>setTab("favs")}>{t("cust_dash.tab_favs")} {favSalons.length>0&&<span style={G.notifDot}>{favSalons.length}</span>}</button>
         <button style={{...G.tabBtn,...(tab==="hist"?G.tabOn:{})}} onClick={()=>setTab("hist")}>{t("cust_dash.tab_hist")}</button>
         <button style={{...G.tabBtn,...(tab==="settings"?G.tabOn:{})}} onClick={()=>setTab("settings")}>{t("cust_dash.tab_settings")}</button>
-      </div>}
+      </div>
 
       {/* المفضلة */}
       {tab==="favs"&&<>
