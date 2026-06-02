@@ -907,6 +907,8 @@ export default function App(){
     r.setProperty("--grad", `linear-gradient(135deg,${t.primary},${t.light})`);
     r.setProperty("--grad2",`linear-gradient(135deg,${t.light},${t.primary})`);
     r.setProperty("--p-text","#000000");
+    r.setProperty("--gold",   t.primary);
+    r.setProperty("--gold-rgb",t.rgb);
   },[settings.theme,themeMode]);
 
   const saveAppSettings=useCallback(async(social,uiPatch)=>{
@@ -1633,6 +1635,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
     r.setProperty("--p",t.primary);r.setProperty("--pl",t.light);r.setProperty("--pd",t.dark);r.setProperty("--pll",t.lightest);r.setProperty("--pr",t.rgb);
     ["5","07","08","12","15","18","2","25","3","4"].forEach(a=>{const pct=a==="4"?.45:a==="3"?.3:a==="25"?.25:a==="2"?.2:a==="18"?.18:a==="15"?.15:a==="12"?.12:a==="08"?.08:a==="07"?.07:.05;r.setProperty(`--pa${a}`,`rgba(${t.rgb},${pct})`);});
     r.setProperty("--grad",`linear-gradient(135deg,${t.primary},${t.light})`);r.setProperty("--grad2",`linear-gradient(135deg,${t.light},${t.primary})`);
+    r.setProperty("--gold",t.primary);r.setProperty("--gold-rgb",t.rgb);
     setSettings(s=>({...s,theme:id}));persistUiToSupabase&&persistUiToSupabase({theme:id});
   };
   const THEME_OPT=[{id:"gold",l:"ذهبي",c:"#d4a017",e:"✨"},{id:"emerald",l:"زمردي",c:"#10b981",e:"🌿"},{id:"sapphire",l:"ياقوتي",c:"#3b82f6",e:"💎"},{id:"royalBlue",l:"ملكي",c:"#1e3a8a",e:"👑"},{id:"bronze",l:"برونزي",c:"#8b5a2b",e:"🏺"},{id:"rose",l:"وردي",c:"#ec4899",e:"🌸"},{id:"violet",l:"بنفسجي",c:"#8b5cf6",e:"🔮"},{id:"crimson",l:"قرمزي",c:"#ef4444",e:"🔴"}];
@@ -1916,7 +1919,7 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
           <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
-          <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
+          <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,var(--pll) 0%,var(--p) 50%,var(--pd) 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
         </div>
       </div>
     );
@@ -1931,7 +1934,7 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
       </button>
       <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>setView("ownerDash")}>
         <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
-        <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
+        <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,var(--pll) 0%,var(--p) 50%,var(--pd) 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
       </div>
     </div>
   );
@@ -1943,7 +1946,7 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
       </div>
       <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
         <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
-        <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
+        <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,var(--pll) 0%,var(--p) 50%,var(--pd) 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
       </div>
     </div>
   );
