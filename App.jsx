@@ -1915,8 +1915,8 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         </button>
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-          <span style={{fontSize:19,fontWeight:900,color:"var(--gold)",letterSpacing:0.5}}>احجز</span>
-          <span style={{fontSize:32,fontWeight:900,color:"var(--gold)",letterSpacing:1}}>DORK</span>
+          <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
+          <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
         </div>
       </div>
     );
@@ -1930,8 +1930,8 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
       </button>
       <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>setView("ownerDash")}>
-        <span style={{fontSize:19,fontWeight:900,color:"var(--gold)",letterSpacing:0.5}}>احجز</span>
-        <span style={{fontSize:32,fontWeight:900,color:"var(--gold)",letterSpacing:1}}>DORK</span>
+        <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
+        <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
       </div>
     </div>
   );
@@ -1942,8 +1942,8 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         <button style={{...G.roleBtn,...(customerSession?G.roleBtnActive:{})}} onClick={()=>setView(customerSession?"custDash":"custLogin")}>👤</button>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-        <span style={{fontSize:19,fontWeight:900,color:"var(--gold)",letterSpacing:0.5}}>احجز</span>
-        <span style={{fontSize:32,fontWeight:900,color:"var(--gold)",letterSpacing:1}}>DORK</span>
+        <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
+        <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,#fdf6e3 0%,#d4af37 50%,#8b6e22 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
       </div>
     </div>
   );
