@@ -317,6 +317,11 @@ const THEMES = {
   rose:      {primary:"#ec4899", light:"#f472b6", dark:"#9d174d", lightest:"#f9a8d4", rgb:"236,72,153"},
   violet:    {primary:"#8b5cf6", light:"#a78bfa", dark:"#5b21b6", lightest:"#c4b5fd", rgb:"139,92,246"},
   crimson:   {primary:"#ef4444", light:"#f87171", dark:"#991b1b", lightest:"#fca5a5", rgb:"239,68,68"},
+  teal:      {primary:"#0d9488", light:"#14b8a6", dark:"#0f766e", lightest:"#5eead4", rgb:"13,148,136"},
+  coral:     {primary:"#f97316", light:"#fb923c", dark:"#c2410c", lightest:"#fed7aa", rgb:"249,115,22"},
+  fuchsia:   {primary:"#d946ef", light:"#e879f9", dark:"#a21caf", lightest:"#f5d0fe", rgb:"217,70,239"},
+  wine:      {primary:"#9f1239", light:"#e11d48", dark:"#881337", lightest:"#fda4af", rgb:"159,18,57"},
+  forest:    {primary:"#15803d", light:"#22c55e", dark:"#166534", lightest:"#86efac", rgb:"21,128,61"},
 };
 
 const BACKGROUNDS=[
@@ -1638,7 +1643,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
     r.setProperty("--gold",t.primary);r.setProperty("--gold-rgb",t.rgb);
     setSettings(s=>({...s,theme:id}));persistUiToSupabase&&persistUiToSupabase({theme:id});
   };
-  const THEME_OPT=[{id:"gold",l:"ذهبي",c:"#d4a017",e:"✨"},{id:"emerald",l:"زمردي",c:"#10b981",e:"🌿"},{id:"sapphire",l:"ياقوتي",c:"#3b82f6",e:"💎"},{id:"royalBlue",l:"ملكي",c:"#1e3a8a",e:"👑"},{id:"bronze",l:"برونزي",c:"#8b5a2b",e:"🏺"},{id:"rose",l:"وردي",c:"#ec4899",e:"🌸"},{id:"violet",l:"بنفسجي",c:"#8b5cf6",e:"🔮"},{id:"crimson",l:"قرمزي",c:"#ef4444",e:"🔴"}];
+  const THEME_OPT=[{id:"gold",l:"ذهبي",c:"#d4a017",e:"✨"},{id:"emerald",l:"زمردي",c:"#10b981",e:"🌿"},{id:"sapphire",l:"ياقوتي",c:"#3b82f6",e:"💎"},{id:"royalBlue",l:"ملكي",c:"#1e3a8a",e:"👑"},{id:"bronze",l:"برونزي",c:"#8b5a2b",e:"🏺"},{id:"rose",l:"وردي",c:"#ec4899",e:"🌸"},{id:"violet",l:"بنفسجي",c:"#8b5cf6",e:"🔮"},{id:"crimson",l:"قرمزي",c:"#ef4444",e:"🔴"},{id:"teal",l:"فيروزي",c:"#0d9488",e:"🩵"},{id:"coral",l:"مرجاني",c:"#f97316",e:"🪸"},{id:"fuchsia",l:"فوشيا",c:"#d946ef",e:"🌺"},{id:"wine",l:"خمري",c:"#9f1239",e:"🍷"},{id:"forest",l:"غابة",c:"#15803d",e:"🌲"}];
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   const Row=({icon,label,sub,chev,onClick,danger,itemId})=>{
     const isActive=itemId&&activeDrawerItem===itemId;
@@ -1912,9 +1917,9 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
       <div style={G.topBar}>
         {/* LEFT: زر القائمة */}
         <button onClick={()=>setShowDrawer&&setShowDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showDrawer?"var(--pa15)":"rgba(255,255,255,.05)",border:`1.5px solid ${showDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
-          <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
-          <span style={{display:"block",width:14,height:2,background:showDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
-          <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
+          <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
+          <span style={{display:"block",width:14,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
+          <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
         </button>
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
@@ -1928,9 +1933,9 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
   if(ownerSession) return(
     <div style={G.topBar}>
       <button onClick={()=>setShowSalonDrawer&&setShowSalonDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showSalonDrawer?"var(--pa15)":"rgba(255,255,255,.05)",border:`1.5px solid ${showSalonDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
-        <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
-        <span style={{display:"block",width:14,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
-        <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"#aaa",borderRadius:2,transition:"all 0.2s"}}/>
+        <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
+        <span style={{display:"block",width:14,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
+        <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
       </button>
       <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>setView("ownerDash")}>
         <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
@@ -5898,6 +5903,11 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
     {id:"rose",     label:t("settings.themes.rose"),     color:"#ec4899",    emoji:"🌸"},
     {id:"violet",   label:t("settings.themes.violet"),   color:"#8b5cf6",    emoji:"🔮"},
     {id:"crimson",  label:t("settings.themes.crimson"),  color:"#ef4444",    emoji:"🔴"},
+    {id:"teal",     label:t("settings.themes.teal"),     color:"#0d9488",    emoji:"🩵"},
+    {id:"coral",    label:t("settings.themes.coral"),    color:"#f97316",    emoji:"🪸"},
+    {id:"fuchsia",  label:t("settings.themes.fuchsia"),  color:"#d946ef",    emoji:"🌺"},
+    {id:"wine",     label:t("settings.themes.wine"),     color:"#9f1239",    emoji:"🍷"},
+    {id:"forest",   label:t("settings.themes.forest"),   color:"#15803d",    emoji:"🌲"},
   ];
   const applyTheme=(id)=>{
     const t=THEMES[id]||THEMES.gold;
@@ -5909,6 +5919,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
     });
     r.setProperty("--grad",`linear-gradient(135deg,${t.primary},${t.light})`);
     r.setProperty("--grad2",`linear-gradient(135deg,${t.light},${t.primary})`);
+    r.setProperty("--gold",t.primary);r.setProperty("--gold-rgb",t.rgb);
     setSettings(s=>({...s,theme:id}));
     persistUiToSupabase&&persistUiToSupabase({theme:id});
   };
