@@ -735,6 +735,7 @@ export default function App(){
   });
   const[customers,setCustomers]=useState([]);
   const[reviews,setReviews]=useState([]);
+  const[promotions,setPromotions]=useState([]);
   const[extraLoc,setExtraLoc]=useState(()=>{
     try{
       localStorage.removeItem("bbv6_loc");
@@ -990,6 +991,7 @@ export default function App(){
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
       const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
+      const promoRows = await sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]);
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
         salon.bookings = bookingRows
@@ -1014,6 +1016,7 @@ export default function App(){
       try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsWithBookings));}catch{}
       setCustomers(custRows.map(toAppCustomer));
       setReviews(reviewRows||[]);
+      setPromotions(promoRows||[]);
       setDbError(null);
     } catch(e) {
       console.error(e);
@@ -1085,6 +1088,14 @@ export default function App(){
     }catch{}
   },[]);
 
+  // جلب العروض النشطة فقط
+  const pollPromotions=useCallback(async()=>{
+    try{
+      const rows=await sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200");
+      setPromotions(rows||[]);
+    }catch{}
+  },[]);
+
   useEffect(()=>{
     // حجوزات — لحظي في كل الاتجاهات (عميل ↔ صالون)
     const bookingChannel=supabase.channel('realtime-bookings')
@@ -1126,13 +1137,21 @@ export default function App(){
       })
       .subscribe();
 
+    // عروض — تحديث لحظي
+    const promoChannel=supabase.channel('realtime-promotions')
+      .on('postgres_changes',{event:'*',schema:'public',table:'promotions'},()=>{
+        pollPromotions();
+      })
+      .subscribe();
+
     return()=>{
       supabase.removeChannel(bookingChannel);
       supabase.removeChannel(notifChannel);
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(reviewsChannel);
+      supabase.removeChannel(promoChannel);
     };
-  },[loadAppSettings,pollBookings,pollReviews]);
+  },[loadAppSettings,pollBookings,pollReviews,pollPromotions]);
 
   useEffect(()=>{
     if(!customerSession?.id)return;
@@ -1197,9 +1216,9 @@ export default function App(){
 
   // Polling — fallback للـ Realtime كل 10 ثواني
   useEffect(()=>{
-    const id=setInterval(()=>{pollBookings();pollReviews();},10000);
+    const id=setInterval(()=>{pollBookings();pollReviews();pollPromotions();},10000);
     return()=>clearInterval(id);
-  },[pollBookings,pollReviews]);
+  },[pollBookings,pollReviews,pollPromotions]);
 
   // إشعار التذكير التلقائي + طلب التقييم
   useEffect(()=>{
@@ -1484,6 +1503,7 @@ export default function App(){
     showDrawer,setShowDrawer,
     showSalonDrawer,setShowSalonDrawer,
     ownerTab,setOwnerTab,
+    promotions,setPromotions,pollPromotions,
   };
 
   return(
@@ -1826,6 +1846,7 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
         <Row icon="⭐" label={t("salon_drawer.reviews")} active={ownerTab==="reviews"} onClick={()=>nav(()=>{setOwnerTab("reviews");setView("ownerDash");})}/>
         <Row icon="📊" label={t("salon_drawer.stats")} active={ownerTab==="stats"} onClick={()=>nav(()=>{setOwnerTab("stats");setView("ownerDash");})}/>
         <Row icon="💰" label={t("salon_drawer.revenue")} active={ownerTab==="balance"} onClick={()=>nav(()=>{setOwnerTab("balance");setView("ownerDash");})}/>
+        <Row icon="🔥" label="إرسال عرض" active={ownerTab==="promo"} onClick={()=>nav(()=>{setOwnerTab("promo");setView("ownerDash");})}/>
         <SecHead label={t("salon_drawer.section_salon")}/>
         <Row icon="📋" label={t("salon_drawer.salon_info")} onClick={()=>nav(()=>setView("ownerInfo"))}/>
         <Row icon="🕐" label={t("salon_drawer.working_hours")} onClick={()=>nav(()=>setView("ownerHours"))}/>
@@ -1872,6 +1893,8 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
 // ==============================================
 function EntryView({setView}){
   const[showLang,setShowLang]=useState(false);
+  const[logoLoaded,setLogoLoaded]=useState(false);
+  const LOGO_PLACEHOLDER="data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAACQAwCdASoUAA0APzmGuVOvKSWisAgB4CcJYgCw7CFT4rqfPwwAAP7ZEa95QUaqWzCM0vMrT3vd7rt/PCpeS2iuqpAAAA==";
   const{t,i18n}=useTranslation();
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
   const LANGS=[
@@ -1901,7 +1924,10 @@ function EntryView({setView}){
           </div>
         )}
       </div>
-      <img src="/logo.png" alt="DORK" style={{width:"82%",maxWidth:320,objectFit:"contain"}}/>
+      <div style={{position:"relative",width:"82%",maxWidth:320}}>
+        <img src={LOGO_PLACEHOLDER} alt="" aria-hidden="true" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"contain",filter:"blur(12px)",transform:"scale(1.05)",opacity:logoLoaded?0:1,transition:"opacity 0.5s ease",pointerEvents:"none"}}/>
+        <img src="/logo.webp" alt="DORK" style={{width:"100%",objectFit:"contain",opacity:logoLoaded?1:0,transition:"opacity 0.5s ease"}} onLoad={()=>setLogoLoaded(true)}/>
+      </div>
       <div style={{width:"100%",maxWidth:340,display:"flex",flexDirection:"column",gap:16}}>
         <button onClick={()=>setView("ownerLogin")} style={{width:"100%",padding:"17px 0",borderRadius:14,border:"2px solid var(--p)",background:"transparent",color:"var(--p)",fontSize:18,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>{t("entry.salon_btn")}</button>
         <button onClick={()=>setView("custLogin")} style={{width:"100%",padding:"17px 0",borderRadius:14,border:"2px solid var(--p)",background:"rgba(var(--pr),.12)",color:"var(--p)",fontSize:18,fontWeight:700,fontFamily:"'Cairo',sans-serif",cursor:"pointer",letterSpacing:.5,WebkitAppearance:"none",appearance:"none"}}>{t("entry.client_btn")}</button>
@@ -2105,9 +2131,10 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 // ==============================================
 //  HOME
 // ==============================================
-function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing,loading}){
+function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing,loading,promotions}){
   const{t}=useTranslation();
   const[urgentMode,setUrgentMode]=useState(false);
+  const[promoMode,setPromoMode]=useState(false);
   const[showSearch,setShowSearch]=useState(false);
   const[showRegionSelect,setShowRegionSelect]=useState(false);
 
@@ -2160,9 +2187,11 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   };
 
   // ترتيب الأقرب
+  const activeSalonPromoIds=new Set((promotions||[]).filter(p=>p.status==="active").map(p=>String(p.salon_id)));
   const savedLoc=(customer?.locationLat&&customer?.locationLng)?{lat:customer.locationLat,lng:customer.locationLng}:null;
   const sortedSalons=(()=>{
     let list=urgentMode?displaySalons.filter(isOpenNow):displaySalons;
+    if(promoMode)list=list.filter(s=>activeSalonPromoIds.has(String(s.id)));
     // ترتيب بزر "أقرب" (GPS لحظي)
     if(sortBy==="nearest"&&userLoc){
       return[...list].sort((a,b)=>{
@@ -2250,6 +2279,12 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           </button>
         )}
 
+        {/* زر العروض */}
+        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:promoMode?"rgba(231,76,60,.25)":"var(--surface-2)",border:`1.5px solid ${promoMode?"#e74c3c":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s",flexDirection:"column",gap:2}} onClick={()=>{setPromoMode(p=>!p);setShowSearch(false);setShowRegionSelect(false);setSortBy("");}} title="العروض">
+          <span>🔥</span>
+          <span style={{fontSize:9,color:promoMode?"#e74c3c":"var(--text-muted)"}}>عروض</span>
+        </button>
+
         {/* الفلاتر الأخرى */}
         {[
           ["nearest","📍",t("home.sort_nearest")],
@@ -2289,7 +2324,9 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           :sortedSalons.length===0
             ?<div style={G.empty}>{urgentMode?t("home.no_salons_open"):t("home.no_salons")}</div>
             :<div style={{display:"flex",flexDirection:"column",gap:11,animation:"fadeInCards .4s ease-out"}}>
-              {sortedSalons.map(s=>(
+              {sortedSalons.map(s=>{
+                const activePromo=(promotions||[]).find(p=>String(p.salon_id)===String(s.id)&&p.status==="active")||null;
+                return(
                 <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
                   realRating={getRealRating(s.id)}
                   reviewCount={getReviewCount(s.id)}
@@ -2299,9 +2336,10 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
                   isOpenNow={isOpenNow(s)}
                   inCompare={compareSalons.some(x=>x.id===s.id)}
                   onCompare={()=>toggleCompare(s)}
+                  activePromo={activePromo}
                   onViewReviews={()=>{setSelSalon(s);setView("salonReviews");}}
                   onBook={()=>{setSelSalon(s);setView("book");}}/>
-              ))}
+              );})}
             </div>
         }
       </div>
@@ -2385,8 +2423,9 @@ function SalonReviewsView({salon,reviews,setView}){
   );
 }
 
-function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare}){
+function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare,activePromo}){
   const{t}=useTranslation();
+  const[showPromoPopup,setShowPromoPopup]=useState(false);
   const displayRating=realRating||salon.rating||"5.0";
 
   let distance=null;
@@ -2403,12 +2442,22 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
     </div>
   );
 
+  const promoBorder=activePromo?(inCompare?"2px solid var(--p)":"2px solid #e74c3c"):inCompare?"2px solid var(--p)":"1px solid var(--border-ui)";
+  const promoShadow=activePromo?"0 4px 20px rgba(231,76,60,.2)":"0 4px 16px rgba(0,0,0,.3)";
+
   return(
-    <div style={{...G.card,border:inCompare?"2px solid var(--p)":"1px solid var(--border-ui)",padding:"16px",display:"flex",flexDirection:"column",gap:"12px"}}>
+    <>
+    <div style={{...G.card,border:promoBorder,padding:"16px",display:"flex",flexDirection:"column",gap:"12px",boxShadow:promoShadow,position:"relative"}}>
+      {/* بادج العرض */}
+      {activePromo&&(
+        <button onClick={()=>setShowPromoPopup(true)} style={{position:"absolute",top:-10,right:14,background:"linear-gradient(135deg,#c0392b,#e74c3c)",border:"none",borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,color:"#fff",cursor:"pointer",zIndex:2,display:"flex",alignItems:"center",gap:4,boxShadow:"0 2px 8px rgba(231,76,60,.4)",fontFamily:"'Cairo',sans-serif"}}>
+          🔥 عرض
+        </button>
+      )}
       {/* Header Row - VIP Name + Rating */}
-      <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
+      <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between",marginTop:activePromo?4:0}}>
         {/* VIP Name Box */}
-        <div style={{background:"rgba(var(--pr),.08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:10,padding:"8px 14px",boxShadow:"0 2px 12px rgba(var(--pr),.12)",flex:1}}>
+        <div style={{background:"rgba(var(--pr),.15)",border:"1px solid rgba(var(--pr),.5)",borderRadius:10,padding:"8px 14px",boxShadow:"0 2px 12px rgba(var(--pr),.15)",alignSelf:"flex-start"}}>
           <div style={{fontSize:14,fontWeight:800,color:"var(--p)",letterSpacing:.5}}>{salon.name}</div>
         </div>
 
@@ -2464,6 +2513,35 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
         </button>
       </div>
     </div>
+
+    {/* popup العرض */}
+    {showPromoPopup&&activePromo&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:2000,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowPromoPopup(false)}>
+        <div style={{width:"100%",maxWidth:480,margin:"0 auto",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 20px 36px",border:"1.5px solid rgba(231,76,60,.4)",borderBottom:"none",direction:"rtl"}} onClick={e=>e.stopPropagation()}>
+          <div style={{textAlign:"center",marginBottom:16}}>
+            <div style={{fontSize:32,marginBottom:8}}>🔥</div>
+            <div style={{fontSize:16,fontWeight:800,color:"#e74c3c",marginBottom:6}}>عرض خاص من {salon.name}</div>
+            <div style={{fontSize:13,color:"var(--text-muted)",lineHeight:1.7,padding:"0 8px"}}>{activePromo.promo_text}</div>
+          </div>
+          {activePromo.discount_code&&(
+            <div style={{background:"rgba(231,76,60,.1)",border:"1.5px dashed rgba(231,76,60,.4)",borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}>
+              <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>كود الخصم</div>
+              <div style={{fontSize:18,fontWeight:900,color:"#e74c3c",letterSpacing:2}}>{activePromo.discount_code}</div>
+            </div>
+          )}
+          {activePromo.ends_at&&(
+            <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"center",marginBottom:14}}>
+              ⏳ ينتهي العرض: {new Date(activePromo.ends_at).toLocaleDateString("ar-SA")}
+            </div>
+          )}
+          <div style={{display:"flex",gap:10}}>
+            <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none"}} onClick={()=>{setShowPromoPopup(false);onBook();}}>احجز الآن</button>
+            <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setShowPromoPopup(false)}>إغلاق</button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
@@ -4039,7 +4117,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {ownerTab!==null&&(
         <div style={G.fh}>
           <button style={G.bb} onClick={()=>{setShowSalonDrawer(true);setOwnerTab(null);}}>← {t("owner_dash.back")}</button>
-          <h2 style={G.ft}>{ownerTab==="calendar"?t("salon_drawer.bookings"):ownerTab==="messages"?t("salon_drawer.messages"):ownerTab==="reviews"?t("salon_drawer.reviews"):ownerTab==="stats"?t("salon_drawer.stats"):t("salon_drawer.revenue")}</h2>
+          <h2 style={G.ft}>{ownerTab==="calendar"?t("salon_drawer.bookings"):ownerTab==="messages"?t("salon_drawer.messages"):ownerTab==="reviews"?t("salon_drawer.reviews"):ownerTab==="stats"?t("salon_drawer.stats"):ownerTab==="promo"?"🔥 إرسال عرض":t("salon_drawer.revenue")}</h2>
         </div>
       )}
       {ownerTab==="messages"&&(
@@ -4048,6 +4126,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {ownerTab==="calendar"&&<BookingCalendar salon={salon} onUpdate={updateBookingStatus}/>}
       {ownerTab==="reviews"&&<OwnerReviewsPanel salon={salon} reviews={reviews} setReviews={setReviews} toast$={toast$}/>}
       {ownerTab==="stats"&&<StatsPanel salon={salon} onUpdate={updateBookingStatus} customers={customers} refreshSalonBookings={refreshSalonBookings}/>}
+      {ownerTab==="promo"&&<PromoPanel salon={salon} customers={customers} toast$={toast$}/>}
       {ownerTab==="balance"&&(
         <div style={{paddingTop:8}}>
           <div className="balance-tab" style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.12),rgba(var(--gold-rgb),.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(var(--gold-rgb),.3)",marginBottom:12}}>
@@ -4295,6 +4374,211 @@ function BookingCalendar({salon,onUpdate}){
           }
         </>
       )}
+    </div>
+  );
+}
+
+// ==============================================
+//  PROMO PANEL - لوحة العروض الترويجية للصالون
+// ==============================================
+function PromoPanel({salon,customers,toast$}){
+  const PACKAGES=[
+    {id:"bronze",label:"برونز 🥉",color:"#cd7f32",bg:"rgba(205,127,50,.1)",border:"rgba(205,127,50,.4)",desc:"إشعار push لعملاء التطبيق",pricePerWeek:20},
+    {id:"silver",label:"فضي 🥈",color:"#9e9e9e",bg:"rgba(158,158,158,.1)",border:"rgba(158,158,158,.4)",desc:"بادج 🔥 + إطار ملون في بطاقتك",pricePerWeek:40},
+    {id:"gold",label:"ذهبي 🥇",color:"#d4a017",bg:"rgba(212,160,23,.1)",border:"rgba(212,160,23,.4)",desc:"رسائل WhatsApp لعملائك المختارين",pricePerWeek:null},
+  ];
+  const DURATION_OPTIONS=[
+    {days:7,label:"أسبوع"},
+    {days:14,label:"أسبوعان"},
+    {days:30,label:"شهر"},
+  ];
+  const CUSTOMER_GROUPS=[
+    {key:"last80",label:"آخر 80 عميل"},
+    {key:"top50",label:"أكثر 50 زيارة"},
+    {key:"last30",label:"آخر 30 عميل"},
+  ];
+  const WHATSAPP_RATE=0.10;
+
+  const[pkg,setPkg]=useState("silver");
+  const[durationDays,setDurationDays]=useState(7);
+  const[promoText,setPromoText]=useState("");
+  const[discountCode,setDiscountCode]=useState("");
+  const[customerGroup,setCustomerGroup]=useState("last80");
+  const[saving,setSaving]=useState(false);
+  const[myPromos,setMyPromos]=useState([]);
+  const[loadingPromos,setLoadingPromos]=useState(true);
+
+  const selectedPkg=PACKAGES.find(p=>p.id===pkg);
+  const selectedGroup=CUSTOMER_GROUPS.find(g=>g.key===customerGroup);
+  const salonCustomers=customers.filter(c=>(c.history||[]).some(h=>String(h.salonId)===String(salon.id)));
+  const customerCount=customerGroup==="last80"?Math.min(salonCustomers.length,80):customerGroup==="top50"?Math.min(salonCustomers.length,50):Math.min(salonCustomers.length,30);
+  const totalPrice=pkg==="gold"?Math.ceil(customerCount*WHATSAPP_RATE):selectedPkg.pricePerWeek*(durationDays/7);
+
+  useEffect(()=>{
+    if(!salon?.id)return;
+    sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=10`)
+      .then(rows=>setMyPromos(rows||[]))
+      .catch(()=>{})
+      .finally(()=>setLoadingPromos(false));
+  },[salon?.id]);
+
+  const submitPromo=async()=>{
+    if(!promoText.trim()){toast$("❌ أدخل نص العرض","err");return;}
+    setSaving(true);
+    try{
+      const now=new Date();
+      const ends=new Date(now);ends.setDate(ends.getDate()+durationDays);
+      const inserted=await sb("promotions","POST",{
+        salon_id:salon.id,
+        package:pkg,
+        promo_text:promoText.trim(),
+        customer_count:pkg==="gold"?customerCount:null,
+        duration_days:durationDays,
+        price:totalPrice,
+        status:"pending",
+        discount_code:discountCode.trim()||null,
+        ends_at:ends.toISOString(),
+      },"");
+      toast$("✅ تم إرسال طلب العرض - في انتظار موافقة الإدارة");
+      setPromoText("");setDiscountCode("");
+      const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=10`).catch(()=>[]);
+      setMyPromos(rows||[]);
+    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
+    finally{setSaving(false);}
+  };
+
+  const cancelPromo=async(promoId)=>{
+    try{
+      await sb("promotions","PATCH",{status:"cancelled"},`?id=eq.${promoId}`);
+      setMyPromos(p=>p.map(x=>x.id===promoId?{...x,status:"cancelled"}:x));
+      toast$("تم إلغاء العرض");
+    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
+  };
+
+  const pkgColor=(p)=>PACKAGES.find(x=>x.id===p)?.color||"var(--text-muted)";
+  const statusLabel=(s)=>s==="active"?"✅ نشط":s==="pending"?"⏳ قيد المراجعة":s==="expired"?"⌛ منتهي":"❌ ملغي";
+  const statusColor=(s)=>s==="active"?"#27ae60":s==="pending"?"#f39c12":s==="expired"?"#666":"#e74c3c";
+
+  return(
+    <div style={{paddingTop:8}}>
+      {/* عروضي السابقة */}
+      {!loadingPromos&&myPromos.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8}}>عروضي</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {myPromos.map(pr=>(
+              <div key={pr.id} style={{background:"var(--surface-1)",border:`1px solid ${pkgColor(pr.package)}33`,borderRadius:12,padding:"10px 12px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <span style={{fontSize:12,fontWeight:700,color:pkgColor(pr.package)}}>{PACKAGES.find(p=>p.id===pr.package)?.label||pr.package}</span>
+                  <span style={{fontSize:11,fontWeight:700,color:statusColor(pr.status)}}>{statusLabel(pr.status)}</span>
+                </div>
+                <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{pr.promo_text}</div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:10,color:"#666"}}>
+                  <span>{pr.price} ريال</span>
+                  {pr.ends_at&&<span>ينتهي: {new Date(pr.ends_at).toLocaleDateString("ar-SA")}</span>}
+                </div>
+                {(pr.status==="pending"||pr.status==="active")&&(
+                  <button onClick={()=>cancelPromo(pr.id)} style={{marginTop:6,background:"transparent",border:"1px solid #e74c3c",color:"#e74c3c",borderRadius:8,padding:"3px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>إلغاء</button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* إنشاء عرض جديد */}
+      <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10}}>إنشاء عرض جديد</div>
+
+      {/* اختيار الباقة */}
+      <div style={{marginBottom:14}}>
+        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>اختر الباقة</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {PACKAGES.map(p=>(
+            <button key={p.id} onClick={()=>setPkg(p.id)} style={{background:pkg===p.id?p.bg:"var(--surface-1)",border:`1.5px solid ${pkg===p.id?p.color:p.border}`,borderRadius:12,padding:"12px 14px",textAlign:"right",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10,WebkitAppearance:"none"}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:pkg===p.id?p.color:"var(--text-primary)",marginBottom:3}}>{p.label}</div>
+                <div style={{fontSize:11,color:"var(--text-muted)"}}>{p.desc}</div>
+                <div style={{fontSize:11,color:p.color,fontWeight:600,marginTop:3}}>
+                  {p.pricePerWeek?`${p.pricePerWeek} ريال/أسبوع`:"يُحسب حسب العملاء"}
+                </div>
+              </div>
+              <div style={{width:20,height:20,borderRadius:"50%",border:`2px solid ${p.color}`,background:pkg===p.id?p.color:"transparent",flexShrink:0}}/>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* مدة العرض (للبرونز والفضي فقط) */}
+      {pkg!=="gold"&&(
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>مدة العرض</div>
+          <div style={{display:"flex",gap:8}}>
+            {DURATION_OPTIONS.map(d=>(
+              <button key={d.days} onClick={()=>setDurationDays(d.days)} style={{flex:1,padding:"10px 0",borderRadius:10,border:`1.5px solid ${durationDays===d.days?"var(--p)":"var(--border-ui)"}`,background:durationDays===d.days?"var(--pa12)":"var(--surface-1)",color:durationDays===d.days?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600}}>
+                {d.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* اختيار المجموعة (للذهبي فقط) */}
+      {pkg==="gold"&&(
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>استهداف العملاء</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {CUSTOMER_GROUPS.map(g=>(
+              <button key={g.key} onClick={()=>setCustomerGroup(g.key)} style={{padding:"10px 14px",borderRadius:10,border:`1.5px solid ${customerGroup===g.key?"#d4a017":"var(--border-ui)"}`,background:customerGroup===g.key?"rgba(212,160,23,.1)":"var(--surface-1)",color:customerGroup===g.key?"#d4a017":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:600,textAlign:"right",WebkitAppearance:"none"}}>
+                {g.label} <span style={{fontSize:10,opacity:.7}}>({customerGroup===g.key?customerCount:"-"} عميل)</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* نص العرض */}
+      <div style={{marginBottom:12}}>
+        <label style={{display:"block",fontSize:11,color:"var(--text-muted)",marginBottom:5}}>نص العرض</label>
+        <textarea value={promoText} onChange={e=>setPromoText(e.target.value)} placeholder="مثال: خصم 20% على قصة الشعر طوال هذا الأسبوع!" maxLength={200} rows={3} style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",direction:"rtl",boxSizing:"border-box"}}/>
+        <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3,textAlign:"left"}}>{promoText.length}/200</div>
+      </div>
+
+      {/* كود الخصم (اختياري) */}
+      <div style={{marginBottom:14}}>
+        <label style={{display:"block",fontSize:11,color:"var(--text-muted)",marginBottom:5}}>كود الخصم <span style={{opacity:.6}}>(اختياري)</span></label>
+        <input value={discountCode} onChange={e=>setDiscountCode(e.target.value.toUpperCase())} placeholder="مثال: DORK20" maxLength={20} style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"ltr",textAlign:"left",boxSizing:"border-box"}}/>
+      </div>
+
+      {/* ملخص السعر */}
+      <div style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.1),rgba(var(--gold-rgb),.06))",border:"1.5px solid rgba(var(--gold-rgb),.3)",borderRadius:12,padding:"12px 14px",marginBottom:16}}>
+        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>ملخص الطلب</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+          <span style={{fontSize:12,color:"var(--text-muted)"}}>الباقة</span>
+          <span style={{fontSize:12,fontWeight:700,color:selectedPkg.color}}>{selectedPkg.label}</span>
+        </div>
+        {pkg==="gold"&&(
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+            <span style={{fontSize:12,color:"var(--text-muted)"}}>عدد العملاء</span>
+            <span style={{fontSize:12,fontWeight:700,color:"var(--text-primary)"}}>{customerCount} عميل</span>
+          </div>
+        )}
+        {pkg!=="gold"&&(
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+            <span style={{fontSize:12,color:"var(--text-muted)"}}>المدة</span>
+            <span style={{fontSize:12,fontWeight:700,color:"var(--text-primary)"}}>{DURATION_OPTIONS.find(d=>d.days===durationDays)?.label}</span>
+          </div>
+        )}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,borderTop:"1px solid rgba(var(--gold-rgb),.15)",marginTop:8}}>
+          <span style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>الإجمالي</span>
+          <span style={{fontSize:18,fontWeight:900,color:"var(--gold)"}}>{totalPrice} ريال</span>
+        </div>
+        <div style={{fontSize:10,color:"var(--text-muted)",marginTop:6,textAlign:"center"}}>سيتم إضافة خاصية الدفع قريباً — حالياً يُرسل طلبك للإدارة</div>
+      </div>
+
+      {/* زر الإرسال */}
+      <button onClick={submitPromo} disabled={saving||!promoText.trim()} style={{width:"100%",background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",border:"none",borderRadius:12,padding:"14px",fontSize:14,fontWeight:700,cursor:saving||!promoText.trim()?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving||!promoText.trim()?.6:1}}>
+        {saving?"جاري الإرسال...":"🔥 إرسال طلب العرض"}
+      </button>
     </div>
   );
 }
@@ -5889,7 +6173,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
     {id:"danger",icon:"⚠", label:t("settings.sec_danger")},
   ];
   const THEME_OPTIONS=[
-    {id:"gold",     label:t("settings.themes.gold"),     color:"var(--gold)",emoji:"✨"},
+    {id:"gold",     label:t("settings.themes.gold"),     color:"#d4a017",    emoji:"✨"},
     {id:"emerald",  label:t("settings.themes.emerald"),  color:"#10b981",    emoji:"🌿"},
     {id:"sapphire", label:t("settings.themes.sapphire"), color:"#3b82f6",    emoji:"💎"},
     {id:"royalBlue",label:t("settings.themes.royalBlue"),color:"#1e3a8a",    emoji:"👑"},
