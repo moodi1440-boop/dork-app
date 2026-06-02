@@ -739,6 +739,7 @@ export default function App(){
   const[view,setView]=useState(()=>{try{const o=localStorage.getItem("dork_owner");const c=localStorage.getItem("dork_customer");if(o)return"ownerDash";if(c)return"home";return"entry";}catch{return"entry";}});
   const[custDashKey,setCustDashKey]=useState(0);
   const[custDashNav,setCustDashNav]=useState({tab:"settings",section:false});
+  const[activeDrawerItem,setActiveDrawerItem]=useState(null);
   const[selSalon,setSelSalon]=useState(null);
   const[toast,setToast]=useState(null);
   const[showDrawer,setShowDrawer]=useState(false);
@@ -1484,7 +1485,7 @@ export default function App(){
       {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"#3a1a1a",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>❌ خطأ في الاتصال بقاعدة البيانات — تحقق من الاتصال</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
-      <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
+      <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} activeDrawerItem={activeDrawerItem} setActiveDrawerItem={setActiveDrawerItem} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
       <SalonDrawer open={showSalonDrawer} onClose={()=>setShowSalonDrawer(false)} salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} setView={setView} setOwnerSession={sharedProps.setOwnerSession} settings={sharedProps.settings} setSettings={sharedProps.setSettings} persistUiToSupabase={sharedProps.persistUiToSupabase} toast$={toast$}/>
       <div style={{paddingTop:(view==="entry"||view==="custLogin"||view==="ownerLogin")?0:64}}>
         {view==="entry"&&     <EntryView setView={setView}/>}
@@ -1501,13 +1502,13 @@ export default function App(){
         {view==="ownerFaq"&&<OwnerFaqView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="custLang"&&<CustLangView setView={setView} setShowDrawer={setShowDrawer}/>}
         {view==="custEditData"&&customer&&<CustEditDataView customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setShowDrawer={setShowDrawer} toast$={toast$}/>}
-        {view==="custSettingsTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
-        {view==="custSettingsDark"&&<SettingsView {...sharedProps} onlySec="dark" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
-        {view==="custSettingsFont"&&<SettingsView {...sharedProps} onlySec="font" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
-        {view==="custSettingsBg"&&<SettingsView {...sharedProps} onlySec="bg" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
-        {view==="custSettingsTone"&&<SettingsView {...sharedProps} onlySec="tone" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
-        {view==="social"&&<SettingsView {...sharedProps} onlySec="social" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
-        {view==="faq"&&<SettingsView {...sharedProps} onlySec="faq" backFn={()=>{setView("custDash");setShowDrawer(true);}}/>}
+        {view==="custSettingsTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="custSettingsDark"&&<SettingsView {...sharedProps} onlySec="dark" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="custSettingsFont"&&<SettingsView {...sharedProps} onlySec="font" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="custSettingsBg"&&<SettingsView {...sharedProps} onlySec="bg" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="custSettingsTone"&&<SettingsView {...sharedProps} onlySec="tone" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="social"&&<SettingsView {...sharedProps} onlySec="social" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="faq"&&<SettingsView {...sharedProps} onlySec="faq" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
@@ -1588,7 +1589,7 @@ function DorkLogoSvg({size=40}){
 // ==============================================
 //  CUSTOMER DRAWER — القائمة الجانبية للعميل
 // ==============================================
-function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,setView,setCustDashKey,setCustDashNav,settings,setSettings,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase,toast$,salons,favSet}){
+function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,setView,setCustDashKey,setCustDashNav,activeDrawerItem,setActiveDrawerItem,settings,setSettings,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase,toast$,salons,favSet}){
   const{t}=useTranslation();
   const[exp,setExp]=useState(null);
   const[showLogout,setShowLogout]=useState(false);
@@ -1636,15 +1637,18 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   };
   const THEME_OPT=[{id:"gold",l:"ذهبي",c:"#d4a017",e:"✨"},{id:"emerald",l:"زمردي",c:"#10b981",e:"🌿"},{id:"sapphire",l:"ياقوتي",c:"#3b82f6",e:"💎"},{id:"royalBlue",l:"ملكي",c:"#1e3a8a",e:"👑"},{id:"bronze",l:"برونزي",c:"#8b5a2b",e:"🏺"},{id:"rose",l:"وردي",c:"#ec4899",e:"🌸"},{id:"violet",l:"بنفسجي",c:"#8b5cf6",e:"🔮"},{id:"crimson",l:"قرمزي",c:"#ef4444",e:"🔴"}];
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
-  const Row=({icon,label,sub,chev,onClick,danger})=>(
-    <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 20px",background:"transparent",border:"none",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",fontFamily:"inherit",color:danger?"#e74c3c":"var(--text-primary)",WebkitAppearance:"none",appearance:"none",textAlign:"right"}}>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
-        <span style={{fontSize:15,fontWeight:600}}>{icon} {label}</span>
-        {sub&&<span style={{fontSize:11,color:"var(--text-muted)"}}>{sub}</span>}
-      </div>
-      {chev&&<span style={{color:exp===chev?"var(--p)":"var(--text-muted)",fontSize:14,transform:exp===chev?"rotate(90deg)":"rotate(-90deg)",transition:"transform 0.2s"}}>‹</span>}
-    </button>
-  );
+  const Row=({icon,label,sub,chev,onClick,danger,itemId})=>{
+    const isActive=itemId&&activeDrawerItem===itemId;
+    return(
+      <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 20px",background:isActive?"var(--pa12)":"transparent",border:"none",borderBottom:"1px solid var(--border-ui)",borderRight:isActive?"3px solid var(--p)":"3px solid transparent",cursor:"pointer",fontFamily:"inherit",color:danger?"#e74c3c":isActive?"var(--p)":"var(--text-primary)",WebkitAppearance:"none",appearance:"none",textAlign:"right"}}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
+          <span style={{fontSize:15,fontWeight:isActive?700:600}}>{icon} {label}</span>
+          {sub&&<span style={{fontSize:11,color:isActive?"var(--p)":"var(--text-muted)"}}>{sub}</span>}
+        </div>
+        {chev&&<span style={{color:exp===chev?"var(--p)":"var(--text-muted)",fontSize:14,transform:exp===chev?"rotate(90deg)":"rotate(-90deg)",transition:"transform 0.2s"}}>‹</span>}
+      </button>
+    );
+  };
   const SecHead=({label})=>(<div style={{padding:"10px 20px 5px",fontSize:12,color:"var(--p)",fontWeight:700,letterSpacing:.8,background:"var(--shell-bg)",borderBottom:"1px solid var(--border-ui)",textTransform:"uppercase"}}>{label}</div>);
   const Panel=({children})=>(<div style={{background:"var(--surface-1)",padding:"14px 18px",borderBottom:"1px solid var(--border-ui)"}}>{children}</div>);
   const BtnRow=({children})=>(<div style={{display:"flex",gap:8,marginTop:8}}>{children}</div>);
@@ -1671,29 +1675,29 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <div style={{height:12}}/>
         {/* التنقل */}
         <SecHead label={t("cust_drawer.nav")}/>
-        <Row icon="🔔" label={t("cust_drawer.notifications")} onClick={()=>{setCustDashNav({tab:"notif",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
-        <Row icon="📅" label={t("cust_drawer.my_bookings")} onClick={()=>{setCustDashNav({tab:"hist",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
-        <Row icon="❤️" label={t("cust_drawer.favorites")} onClick={()=>{setCustDashNav({tab:"favs",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
-        <Row icon="📊" label={t("cust_drawer.attendance")} onClick={()=>{setCustDashNav({tab:"attend",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
-        <Row icon="⏰" label={t("cust_drawer.reminders")} onClick={()=>{setCustDashNav({tab:"remind",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
+        <Row icon="🔔" label={t("cust_drawer.notifications")} itemId="notif" onClick={()=>{setActiveDrawerItem("notif");setCustDashNav({tab:"notif",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
+        <Row icon="📅" label={t("cust_drawer.my_bookings")} itemId="hist" onClick={()=>{setActiveDrawerItem("hist");setCustDashNav({tab:"hist",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
+        <Row icon="❤️" label={t("cust_drawer.favorites")} itemId="favs" onClick={()=>{setActiveDrawerItem("favs");setCustDashNav({tab:"favs",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
+        <Row icon="📊" label={t("cust_drawer.attendance")} itemId="attend" onClick={()=>{setActiveDrawerItem("attend");setCustDashNav({tab:"attend",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
+        <Row icon="⏰" label={t("cust_drawer.reminders")} itemId="remind" onClick={()=>{setActiveDrawerItem("remind");setCustDashNav({tab:"remind",section:true});setCustDashKey(k=>k+1);onClose();setView("custDash");}}/>
         {/* حسابي */}
         <div style={{height:8}}/>
         <SecHead label={t("cust_drawer.my_account")}/>
-        <Row icon="✏️" label={t("cust_drawer.edit_data")} onClick={()=>{onClose();setView("custEditData");}}/>
+        <Row icon="✏️" label={t("cust_drawer.edit_data")} itemId="custEditData" onClick={()=>{setActiveDrawerItem("custEditData");onClose();setView("custEditData");}}/>
         {/* إعدادات التطبيق */}
         <div style={{height:8}}/>
         <SecHead label={t("cust_drawer.settings")}/>
-        <Row icon="🎨" label={t("cust_drawer.colors")} sub={THEME_OPT.find(th=>th.id===settings?.theme)?.l||t("cust_drawer.colors")} onClick={()=>{onClose();setView("custSettingsTheme");}}/>
-        <Row icon="🌙" label={t("cust_drawer.lighting")} sub={themeMode==="dark"?t("cust_drawer.dark_mode"):themeMode==="dim"?t("cust_drawer.dim_mode"):t("cust_drawer.light_mode")} onClick={()=>{onClose();setView("custSettingsDark");}}/>
-        <Row icon="🔤" label={t("cust_drawer.font_size")} sub={{sm:t("cust_drawer.font_sm"),md:t("cust_drawer.font_md"),lg:t("cust_drawer.font_lg")}[settings?.fontSize||"md"]} onClick={()=>{onClose();setView("custSettingsFont");}}/>
-        <Row icon="🖼" label={t("cust_drawer.background")} sub={t("settings.bgs."+(settings?.bg||"none"))} onClick={()=>{onClose();setView("custSettingsBg");}}/>
-        <Row icon="🔔" label={t("cust_drawer.tone")} sub={TONES.find(tn=>tn.id===settings?.defaultTone)?.label||"—"} onClick={()=>{onClose();setView("custSettingsTone");}}/>
-        <Row icon="🌐" label={t("cust_drawer.language")} onClick={()=>{onClose();setView("custLang");}}/>
+        <Row icon="🎨" label={t("cust_drawer.colors")} sub={THEME_OPT.find(th=>th.id===settings?.theme)?.l||t("cust_drawer.colors")} itemId="custSettingsTheme" onClick={()=>{setActiveDrawerItem("custSettingsTheme");onClose();setView("custSettingsTheme");}}/>
+        <Row icon="🌙" label={t("cust_drawer.lighting")} sub={themeMode==="dark"?t("cust_drawer.dark_mode"):themeMode==="dim"?t("cust_drawer.dim_mode"):t("cust_drawer.light_mode")} itemId="custSettingsDark" onClick={()=>{setActiveDrawerItem("custSettingsDark");onClose();setView("custSettingsDark");}}/>
+        <Row icon="🔤" label={t("cust_drawer.font_size")} sub={{sm:t("cust_drawer.font_sm"),md:t("cust_drawer.font_md"),lg:t("cust_drawer.font_lg")}[settings?.fontSize||"md"]} itemId="custSettingsFont" onClick={()=>{setActiveDrawerItem("custSettingsFont");onClose();setView("custSettingsFont");}}/>
+        <Row icon="🖼" label={t("cust_drawer.background")} sub={t("settings.bgs."+(settings?.bg||"none"))} itemId="custSettingsBg" onClick={()=>{setActiveDrawerItem("custSettingsBg");onClose();setView("custSettingsBg");}}/>
+        <Row icon="🔔" label={t("cust_drawer.tone")} sub={TONES.find(tn=>tn.id===settings?.defaultTone)?.label||"—"} itemId="custSettingsTone" onClick={()=>{setActiveDrawerItem("custSettingsTone");onClose();setView("custSettingsTone");}}/>
+        <Row icon="🌐" label={t("cust_drawer.language")} itemId="custLang" onClick={()=>{setActiveDrawerItem("custLang");onClose();setView("custLang");}}/>
         {/* مزيد */}
         <div style={{height:8}}/>
         <SecHead label={t("cust_drawer.more")}/>
-        <Row icon="📱" label={t("cust_drawer.social")} onClick={()=>{onClose();setView("social");}}/>
-        <Row icon="❓" label={t("cust_drawer.faq")} onClick={()=>{onClose();setView("faq");}}/>
+        <Row icon="📱" label={t("cust_drawer.social")} itemId="social" onClick={()=>{setActiveDrawerItem("social");onClose();setView("social");}}/>
+        <Row icon="❓" label={t("cust_drawer.faq")} itemId="faq" onClick={()=>{setActiveDrawerItem("faq");onClose();setView("faq");}}/>
         {/* الخروج والحذف */}
         <div style={{height:16}}/>
         <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
@@ -4673,7 +4677,7 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
       setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:name.trim(),phone:phone.trim(),email:email.trim()}:c));
       setCustomerSession(s=>({...s,name:name.trim(),phone:phone.trim(),email:email.trim()}));
       toast$("✅ "+t("cust_drawer.save"));
-      setView("custDash");setShowDrawer&&setShowDrawer(true);
+      setView("home");setShowDrawer&&setShowDrawer(true);
     }catch(e){toast$("❌ "+e.message,"err");}
   };
   const savePin=async()=>{
@@ -5489,7 +5493,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{if(sectionMode){setTab("settings");}else{setView("home");setShowDrawer(true);}}}>{t("cust_dash.back")}</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:t("cust_dash.title")}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"var(--text-muted)",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>{t("cust_dash.exit")}</button>}</div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer(true);}}>{t("cust_dash.back")}</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:t("cust_dash.title")}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"var(--text-muted)",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>{t("cust_dash.exit")}</button>}</div>
 
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
       {!sectionMode&&showLocPrompt&&!customer?.locationLat&&(
