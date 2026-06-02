@@ -595,7 +595,12 @@
       "bronze": "Bronz",
       "rose": "Gül",
       "violet": "Mor",
-      "crimson": "Kırmızı"
+      "crimson": "Kırmızı",
+      "teal": "Teal",
+      "coral": "Mercan",
+      "fuchsia": "Fuşya",
+      "wine": "Bordo",
+      "forest": "Orman"
     },
     "font_header": "🔤 Yazı Tipi Boyutu",
     "font_hint": "Size uygun bir yazı tipi boyutu seçin",
