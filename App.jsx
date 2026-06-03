@@ -4252,6 +4252,7 @@ function PromoPanel({salon,customers,toast$}){
   const[codeInput,setCodeInput]=useState("");
   const[codeApplied,setCodeApplied]=useState(false);
   const[codeError,setCodeError]=useState("");
+  const[waCredits,setWaCredits]=useState(null);
   const[customerGroup,setCustomerGroup]=useState("last80");
   const[saving,setSaving]=useState(false);
   const[showPayment,setShowPayment]=useState(false);
@@ -4281,9 +4282,19 @@ function PromoPanel({salon,customers,toast$}){
     if(!c){setCodeError("أدخل الكود أولاً");return;}
     setCheckingCode(true);
     try{
-      const rows=await sb("promo_codes","GET",null,`?code=eq.${c}&active=eq.true&select=id,code,active`);
-      if(rows&&rows.length>0){setCodeApplied(true);setDiscountCode(c);setCodeError("");}
-      else{setCodeError("الكود غير صحيح أو منتهي");setCodeApplied(false);}
+      const rows=await sb("promo_codes","GET",null,`?code=eq.${c}&active=eq.true&select=id,code,active,code_type,wa_credits,expires_at,max_uses,used_count`);
+      if(!rows||rows.length===0){setCodeError("الكود غير صحيح أو منتهي");setCodeApplied(false);return;}
+      const row=rows[0];
+      // تحقق من انتهاء الصلاحية
+      if(row.expires_at&&new Date(row.expires_at)<new Date()){setCodeError("انتهت صلاحية هذا الكود");setCodeApplied(false);return;}
+      // تحقق من عدد الاستخدامات
+      if(row.max_uses!==null&&row.used_count>=row.max_uses){setCodeError("تم استخدام هذا الكود بالكامل");setCodeApplied(false);return;}
+      // تحقق من نوع الكود مع الباقة
+      if(row.code_type==="whatsapp"&&pkg!=="gold"){setCodeError("هذا الكود لباقة WhatsApp فقط");setCodeApplied(false);return;}
+      if(row.code_type==="app"&&pkg==="gold"){setCodeError("هذا الكود لباقات التطبيق فقط (برونز أو فضي)");setCodeApplied(false);return;}
+      // كود WhatsApp يحدد عدد عملاء مجانيين
+      if(row.code_type==="whatsapp"&&row.wa_credits){setWaCredits(row.wa_credits);}
+      setCodeApplied(true);setDiscountCode(c);setCodeError("");
     }catch{setCodeError("تعذر التحقق من الكود، حاول مرة أخرى");}
     finally{setCheckingCode(false);}
   };
@@ -4340,7 +4351,7 @@ function PromoPanel({salon,customers,toast$}){
 
   const goNext=()=>{if(canNext&&wizStep<TOTAL_STEPS)setWizStep(s=>s+1);};
   const goBack=()=>{if(wizStep>1)setWizStep(s=>s-1);};
-  const reset=()=>{setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setCodeError("");setWizStep(1);};
+  const reset=()=>{setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setCodeError("");setWaCredits(null);setWizStep(1);};
 
   /* مؤشر التقدم */
   const Progress=()=>(
