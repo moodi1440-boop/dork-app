@@ -4311,7 +4311,9 @@ function PromoPanel({salon,customers,toast$}){
         setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);
       }else{
         setPendingPromoId(inserted[0]?.id||null);
-        setShowPayment(true);
+        window.open(PAYMENT_LINK,"_blank");
+        setShowPayment(false);
+        toast$("✅ تم إرسال الطلب، أكمل الدفع لتفعيل العرض");
       }
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
     finally{setSaving(false);}
@@ -4550,10 +4552,9 @@ function PromoPanel({salon,customers,toast$}){
           </div>
 
           {/* زر الإرسال */}
-          <button onClick={submitPromo} disabled={saving} style={{width:"100%",background:saving?"var(--border-ui)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving?"#555":"#fff",border:"none",borderRadius:14,padding:"16px",fontSize:15,fontWeight:800,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:8,transition:"all .2s"}}>
-            {saving?"⏳ جاري الإرسال...":totalPrice===0?"🔥 إرسال العرض مجاناً":"🔥 إرسال العرض"}
+          <button onClick={()=>totalPrice===0?submitPromo():setShowPayment(true)} disabled={saving} style={{width:"100%",background:saving?"var(--border-ui)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving?"#555":"#fff",border:"none",borderRadius:14,padding:"16px",fontSize:15,fontWeight:800,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:8,transition:"all .2s"}}>
+            {saving?"⏳ جاري الإرسال...":totalPrice===0?"🔥 إرسال العرض مجاناً":"💳 ادفع لإرسال"}
           </button>
-          {totalPrice>0&&<div style={{fontSize:10,color:"var(--text-muted)",textAlign:"center",marginBottom:4}}>سيظهر رابط الدفع بعد الإرسال</div>}
         </div>
       )}
 
@@ -4584,8 +4585,10 @@ function PromoPanel({salon,customers,toast$}){
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",marginBottom:6}}>أكمل الدفع لتفعيل العرض</div>
               <div style={{fontSize:13,color:"var(--text-muted)"}}>الإجمالي: <strong style={{color:"var(--gold)"}}>{basePrice} ريال</strong></div>
             </div>
-            <button onClick={()=>{window.open(PAYMENT_LINK,"_blank");}} style={{width:"100%",background:"var(--grad)",color:"#000",border:"none",borderRadius:12,padding:"14px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>الدفع الآن 💳</button>
-            <div style={{fontSize:10,color:"var(--text-muted)",textAlign:"center",marginBottom:14}}>بعد الدفع ستُفعَّل العرض خلال دقائق</div>
+            <button onClick={submitPromo} disabled={saving} style={{width:"100%",background:saving?"var(--border-ui)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving?"#555":"#fff",border:"none",borderRadius:12,padding:"14px",fontSize:15,fontWeight:800,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:10}}>
+              {saving?"⏳ جاري المعالجة...":"💳 ادفع الآن"}
+            </button>
+            <div style={{fontSize:10,color:"var(--text-muted)",textAlign:"center",marginBottom:14}}>بعد إتمام الدفع سيُفعَّل عرضك تلقائياً</div>
             <button onClick={()=>setShowPayment(false)} style={{width:"100%",background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",borderRadius:12,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>لاحقاً</button>
           </div>
         </div>
