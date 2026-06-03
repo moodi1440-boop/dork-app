@@ -4269,7 +4269,6 @@ function PromoPanel({salon,customers,toast$}){
   const[waCredits,setWaCredits]=useState(null);
   const[customerGroup,setCustomerGroup]=useState("last80");
   const[saving,setSaving]=useState(false);
-  const[showPayment,setShowPayment]=useState(false);
   const[pendingPromoId,setPendingPromoId]=useState(null);
   const[myPromos,setMyPromos]=useState([]);
   const[loadingPromos,setLoadingPromos]=useState(true);
@@ -4569,8 +4568,8 @@ function PromoPanel({salon,customers,toast$}){
           </div>
 
           {/* كود الخصم */}
-          <div style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>🎟 كود الخصم</div>
+          <div style={{background:"var(--surface-1)",border:`1px solid ${codeApplied?"#27ae60":"var(--border-ui)"}`,borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>🎟 كود الخصم <span style={{color:"#e74c3c",fontWeight:700}}>*مطلوب</span></div>
             <div style={{display:"flex",gap:8}}>
               <input value={codeInput} onChange={e=>{setCodeInput(e.target.value.toUpperCase());setCodeApplied(false);setCodeError("");}} placeholder="أدخل الكود" maxLength={20} disabled={codeApplied} style={{flex:1,padding:"10px 12px",borderRadius:9,border:`1.5px solid ${codeApplied?"#27ae60":codeError?"#e74c3c":"var(--border-ui)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"ltr",textAlign:"center",boxSizing:"border-box",letterSpacing:2}}/>
               <button onClick={codeApplied?()=>{setCodeApplied(false);setCodeInput("");setDiscountCode("");setCodeError("");}:applyCode} disabled={checkingCode} style={{padding:"10px 16px",borderRadius:9,border:"none",background:codeApplied?"rgba(39,174,96,.15)":"var(--pa15)",color:codeApplied?"#27ae60":"var(--p)",cursor:checkingCode?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,flexShrink:0,WebkitAppearance:"none",appearance:"none"}}>
@@ -4582,8 +4581,13 @@ function PromoPanel({salon,customers,toast$}){
           </div>
 
           {/* زر الإرسال */}
-          <button onClick={()=>totalPrice===0?submitPromo():setShowPayment(true)} disabled={saving} style={{width:"100%",background:saving?"var(--border-ui)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving?"#555":"#fff",border:"none",borderRadius:14,padding:"16px",fontSize:15,fontWeight:800,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:8,transition:"all .2s"}}>
-            {saving?"⏳ جاري الإرسال...":totalPrice===0?"🔥 إرسال العرض مجاناً":"💳 ادفع لإرسال"}
+          {!codeApplied&&(
+            <div style={{background:"rgba(231,76,60,.08)",border:"1px solid rgba(231,76,60,.25)",borderRadius:10,padding:"10px 14px",marginBottom:10,fontSize:11,color:"#e74c3c",textAlign:"center",fontWeight:600}}>
+              🎟 أدخل كود الخصم لتفعيل الإرسال
+            </div>
+          )}
+          <button onClick={submitPromo} disabled={saving||!codeApplied} style={{width:"100%",background:saving||!codeApplied?"var(--surface-1)":totalPrice===0?"linear-gradient(135deg,#27ae60,#2ecc71)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving||!codeApplied?"var(--text-muted)":"#fff",border:codeApplied?"none":"1.5px solid var(--border-ui)",borderRadius:14,padding:"16px",fontSize:15,fontWeight:800,cursor:saving||!codeApplied?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:8,transition:"all .2s"}}>
+            {saving?"⏳ جاري الإرسال...":codeApplied?"🚀 إرسال العرض":"🔒 يلزم كود خصم"}
           </button>
         </div>
       )}
@@ -4606,23 +4610,6 @@ function PromoPanel({salon,customers,toast$}){
         )}
       </div>
 
-      {/* ─── نافذة الدفع ─── */}
-      {showPayment&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:2000,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowPayment(false)}>
-          <div style={{width:"100%",maxWidth:480,margin:"0 auto",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 20px 40px",border:"1.5px solid rgba(var(--gold-rgb),.3)",borderBottom:"none",direction:"rtl"}} onClick={e=>e.stopPropagation()}>
-            <div style={{textAlign:"center",marginBottom:20}}>
-              <div style={{fontSize:36,marginBottom:8}}>💳</div>
-              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",marginBottom:6}}>أكمل الدفع لتفعيل العرض</div>
-              <div style={{fontSize:13,color:"var(--text-muted)"}}>الإجمالي: <strong style={{color:"var(--gold)"}}>{basePrice} ريال</strong></div>
-            </div>
-            <button onClick={submitPromo} disabled={saving} style={{width:"100%",background:saving?"var(--border-ui)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving?"#555":"#fff",border:"none",borderRadius:12,padding:"14px",fontSize:15,fontWeight:800,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:10}}>
-              {saving?"⏳ جاري المعالجة...":"💳 ادفع الآن"}
-            </button>
-            <div style={{fontSize:10,color:"var(--text-muted)",textAlign:"center",marginBottom:14}}>بعد إتمام الدفع سيُفعَّل عرضك تلقائياً</div>
-            <button onClick={()=>setShowPayment(false)} style={{width:"100%",background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",borderRadius:12,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>لاحقاً</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
