@@ -3862,19 +3862,19 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <>
 
       {/* ── بادج الصالون المحسّن (ثابت في لوحتي فقط) ── */}
-      <div style={{background:"rgba(19,19,31,0.85)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderRadius:16,padding:16,border:"1.5px solid rgba(var(--pr),.35)",marginBottom:12,boxShadow:"0 4px 16px rgba(var(--pr),.08)"}}>
+      <div style={{background:"rgba(var(--pr),.18)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderRadius:16,padding:16,border:"1.5px solid rgba(var(--pr),.45)",marginBottom:12,boxShadow:"0 4px 20px rgba(var(--pr),.12)"}}>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <div style={{fontSize:15,color:"var(--p)",fontWeight:800}}>✂ {salon.name}</div>
-              {salon.status==="approved"&&<div style={{background:"rgba(var(--pr),.12)",border:"1px solid rgba(var(--pr),.4)",borderRadius:8,padding:"3px 10px",fontSize:12,color:"var(--p)",fontWeight:700}}>{t("owner_dash.salon_active")}</div>}
+              {salon.status==="approved"&&<div style={{background:"rgba(var(--pr),.2)",border:"1px solid rgba(var(--pr),.5)",borderRadius:8,padding:"3px 10px",fontSize:12,color:"var(--p)",fontWeight:700}}>{t("owner_dash.salon_active")}</div>}
             </div>
             <div style={{fontSize:14,fontWeight:800,color:"#f0b429"}}>⭐ {(salon.rating||0).toFixed(1)}</div>
           </div>
-          <div style={{height:1,background:"rgba(var(--pr),.15)"}}/>
-          <div style={{fontSize:12,color:"var(--text-muted)"}}>📞 <span style={{color:"var(--text-primary)",fontWeight:600}}>{salon.phone||t("owner_dash.not_available")}</span></div>
-          <div style={{fontSize:12,color:"var(--text-muted)"}}>📍 <span style={{color:"var(--text-primary)",fontWeight:600}}>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</span></div>
-          <div style={{fontSize:12,color:"var(--text-muted)"}}>📅 <span style={{color:"var(--text-primary)",fontWeight:600}}>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):t("owner_dash.not_available")}</span></div>
+          <div style={{height:1,background:"rgba(var(--pr),.3)"}}/>
+          <div style={{fontSize:12,color:"var(--p)",fontWeight:600}}>📞 {salon.phone||t("owner_dash.not_available")}</div>
+          <div style={{fontSize:12,color:"var(--p)",fontWeight:600}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
+          <div style={{fontSize:12,color:"var(--p)",fontWeight:600}}>📅 {salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):t("owner_dash.not_available")}</div>
         </div>
       </div>
 
