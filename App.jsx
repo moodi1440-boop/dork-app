@@ -203,7 +203,6 @@ function toAppSalon(row) {
     closedDays: row.closed_days || [],
     slotMin: row.slot_min || 40,
     password: row.password || "",
-    oathDone: row.oath_done || false,
     cancellationWindow: row.cancellation_window || 2,
     createdAt: row.created_at,
     bookings: [],
@@ -983,7 +982,7 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
       const [salonRows, bookingRows, custRows] = await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,oath_done,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
+        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000"),
         sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&limit=500"),
       ]);
@@ -2704,40 +2703,6 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
 // ==============================================
 //  TERMS VIEW
 // ==============================================
-function TermsView({onAccept}){
-  const{t,i18n}=useTranslation();
-  const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
-  const[checked,setChecked]=useState(false);
-  const items=t("terms.items",{returnObjects:true});
-  return(
-    <div style={{minHeight:"100vh",background:"var(--bg-input)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:"'Cairo',sans-serif",direction:dir}}>
-      <div style={{maxWidth:480,width:"100%"}}>
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:50,marginBottom:8}}>✂</div>
-          <div style={{fontSize:28,fontWeight:900,color:"var(--p,#d4a017)",letterSpacing:2}}>دورك</div>
-          <div style={{fontSize:13,color:"var(--text-muted)",marginTop:4}}>{t("terms.subtitle")}</div>
-        </div>
-        <div style={{background:"var(--surface-1)",borderRadius:16,padding:20,border:"1px solid var(--border-ui)",marginBottom:16,maxHeight:300,overflowY:"auto"}}>
-          {Array.isArray(items)&&items.map(({title,content})=>(
-            <div key={title} style={{marginBottom:14}}>
-              <div style={{fontSize:13,fontWeight:700,color:"var(--p,#d4a017)",marginBottom:4}}>{title}</div>
-              <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.7}}>{content}</div>
-            </div>
-          ))}
-        </div>
-        <label style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,cursor:"pointer",padding:"12px 16px",background:"var(--surface-1)",borderRadius:10,border:`1.5px solid ${checked?"var(--p,#d4a017)":"var(--border-ui)"}`}}>
-          <input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)} style={{width:18,height:18,cursor:"pointer"}}/>
-          <span style={{fontSize:13,color:"var(--text-primary)",fontWeight:600}}>{t("terms.agree")}</span>
-        </label>
-        <button style={{width:"100%",padding:14,borderRadius:12,border:"none",background:checked?"linear-gradient(135deg,var(--p,#d4a017),var(--pl,#f0c040))":"var(--border-ui)",color:checked?"#000":"#555",fontSize:15,fontWeight:900,cursor:checked?"pointer":"not-allowed",fontFamily:"inherit"}}
-          disabled={!checked} onClick={onAccept}>
-          {t("terms.enter")}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarned=0,totalPaid=0}){
   const{t}=useTranslation();
   const _months=t("owner_dash.months",{returnObjects:true});
@@ -4543,116 +4508,6 @@ function PromoPanel({salon,customers,toast$}){
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ==============================================
-//  ADMIN CODES PANEL - إدارة أكواد الخصم
-// ==============================================
-const ADMIN_PIN="9999";
-function AdminCodesPanel({toast$}){
-  const[pin,setPin]=useState("");
-  const[unlocked,setUnlocked]=useState(false);
-  const[pinErr,setPinErr]=useState(false);
-  const[codes,setCodes]=useState([]);
-  const[loading,setLoading]=useState(false);
-  const[newCode,setNewCode]=useState("");
-  const[saving,setSaving]=useState(false);
-
-  const checkPin=()=>{
-    if(pin===ADMIN_PIN){setUnlocked(true);setPinErr(false);}
-    else{setPinErr(true);}
-  };
-
-  const loadCodes=useCallback(async()=>{
-    setLoading(true);
-    try{
-      const rows=await sb("promo_codes","GET",null,"?select=id,code,active,created_at&order=created_at.desc&limit=50");
-      setCodes(rows||[]);
-    }catch{toast$("❌ تعذر تحميل الأكواد","err");}
-    finally{setLoading(false);}
-  },[]);
-
-  useEffect(()=>{if(unlocked)loadCodes();},[unlocked,loadCodes]);
-
-  const genRandom=()=>{
-    const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let r="";
-    for(let i=0;i<8;i++)r+=chars[Math.floor(Math.random()*chars.length)];
-    setNewCode(r);
-  };
-
-  const addCode=async()=>{
-    const c=newCode.trim().toUpperCase();
-    if(!c){toast$("❌ أدخل الكود","err");return;}
-    setSaving(true);
-    try{
-      await sb("promo_codes","POST",{code:c,active:true},"");
-      toast$("✅ تم إضافة الكود");
-      setNewCode("");
-      loadCodes();
-    }catch(e){toast$("❌ "+e.message,"err");}
-    finally{setSaving(false);}
-  };
-
-  const toggleCode=async(id,active)=>{
-    try{
-      await sb("promo_codes","PATCH",{active:!active},`?id=eq.${id}`);
-      setCodes(p=>p.map(x=>x.id===id?{...x,active:!active}:x));
-    }catch(e){toast$("❌ "+e.message,"err");}
-  };
-
-  const deleteCode=async(id)=>{
-    try{
-      await sb("promo_codes","DELETE",null,`?id=eq.${id}`);
-      setCodes(p=>p.filter(x=>x.id!==id));
-      toast$("تم حذف الكود");
-    }catch(e){toast$("❌ "+e.message,"err");}
-  };
-
-  if(!unlocked)return(
-    <div style={{paddingTop:24,display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
-      <div style={{fontSize:36}}>🔐</div>
-      <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)"}}>أدخل رمز المشرف</div>
-      <input type="password" value={pin} onChange={e=>{setPin(e.target.value);setPinErr(false);}} onKeyDown={e=>e.key==="Enter"&&checkPin()} placeholder="••••" maxLength={10} style={{padding:"12px 20px",borderRadius:10,border:`1.5px solid ${pinErr?"#e74c3c":"var(--border-ui)"}`,background:"var(--surface-1)",color:"var(--text-primary)",fontSize:20,textAlign:"center",fontFamily:"inherit",outline:"none",width:160,letterSpacing:6,boxSizing:"border-box"}}/>
-      {pinErr&&<div style={{fontSize:12,color:"#e74c3c"}}>رمز غير صحيح</div>}
-      <button onClick={checkPin} style={{padding:"12px 32px",borderRadius:10,border:"none",background:"var(--grad)",color:"#000",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>دخول</button>
-    </div>
-  );
-
-  return(
-    <div style={{paddingTop:8}}>
-      {/* إضافة كود جديد */}
-      <div style={{background:"var(--surface-1)",border:"1.5px solid var(--border-ui)",borderRadius:12,padding:"12px 14px",marginBottom:16}}>
-        <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10}}>إضافة كود جديد</div>
-        <div style={{display:"flex",gap:8,marginBottom:8}}>
-          <input value={newCode} onChange={e=>setNewCode(e.target.value.toUpperCase())} placeholder="اكتب الكود" maxLength={20} style={{flex:1,padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:14,fontFamily:"inherit",outline:"none",direction:"ltr",textAlign:"center",letterSpacing:2,boxSizing:"border-box"}}/>
-          <button onClick={genRandom} style={{padding:"10px 14px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",flexShrink:0}}>🎲 عشوائي</button>
-        </div>
-        <button onClick={addCode} disabled={saving||!newCode.trim()} style={{width:"100%",padding:"11px",borderRadius:10,border:"none",background:"var(--grad)",color:"#000",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving||!newCode.trim()?0.6:1}}>
-          {saving?"جاري الحفظ...":"+ إضافة الكود"}
-        </button>
-      </div>
-
-      {/* قائمة الأكواد */}
-      <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10}}>الأكواد المتاحة ({codes.length})</div>
-      {loading&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:16}}>جاري التحميل...</div>}
-      {!loading&&codes.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:16}}>لا توجد أكواد بعد</div>}
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {codes.map(c=>(
-          <div key={c.id} style={{background:"var(--surface-1)",border:`1.5px solid ${c.active?"rgba(39,174,96,.3)":"rgba(231,76,60,.2)"}`,borderRadius:10,padding:"10px 12px",display:"flex",alignItems:"center",gap:10}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:800,letterSpacing:2,color:c.active?"#27ae60":"var(--text-muted)",direction:"ltr",fontFamily:"monospace"}}>{c.code}</div>
-              <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2}}>{new Date(c.created_at).toLocaleDateString("ar-SA")}</div>
-            </div>
-            <button onClick={()=>toggleCode(c.id,c.active)} style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${c.active?"#27ae60":"#f39c12"}`,background:"transparent",color:c.active?"#27ae60":"#f39c12",cursor:"pointer",fontSize:11,fontFamily:"inherit",flexShrink:0}}>
-              {c.active?"إلغاء تفعيل":"تفعيل"}
-            </button>
-            <button onClick={()=>deleteCode(c.id)} style={{padding:"5px 8px",borderRadius:7,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontFamily:"inherit",flexShrink:0}}>🗑</button>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
