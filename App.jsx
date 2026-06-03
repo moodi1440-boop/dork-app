@@ -2309,32 +2309,44 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       <div style={{padding:"10px 14px 80px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <span style={{fontSize:15,fontWeight:700,color:"var(--text-primary)"}}>
-            {urgentMode?t("home.open_now"):t("home.available_salons")}
+            {promoMode?"🔥 العروض النشطة":urgentMode?t("home.open_now"):t("home.available_salons")}
           </span>
           <span style={G.badge}>{sortedSalons.length}</span>
         </div>
+        {promoMode&&savedLoc&&<div style={{fontSize:11,color:"var(--p)",fontWeight:600,marginBottom:8}}>📍 مرتبة من الأقرب إليك</div>}
         {loading&&sortedSalons.length===0
           ?null
-          :sortedSalons.length===0
-            ?<div style={G.empty}>{urgentMode?t("home.no_salons_open"):t("home.no_salons")}</div>
-            :<div style={{display:"flex",flexDirection:"column",gap:11,animation:"fadeInCards .4s ease-out"}}>
-              {sortedSalons.map(s=>{
-                const activePromo=(promotions||[]).find(p=>String(p.salon_id)===String(s.id)&&p.status==="active")||null;
-                return(
-                <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
-                  realRating={getRealRating(s.id)}
-                  reviewCount={getReviewCount(s.id)}
-                  userLoc={userLoc}
-                  getSalonCoords={getSalonCoords}
-                  haversine={haversine}
-                  isOpenNow={isOpenNow(s)}
-                  inCompare={compareSalons.some(x=>x.id===s.id)}
-                  onCompare={()=>toggleCompare(s)}
-                  activePromo={activePromo}
-                  onViewReviews={()=>{setSelSalon(s);setView("salonReviews");}}
-                  onBook={()=>{setSelSalon(s);setView("book");}}/>
-              );})}
-            </div>
+          :promoMode&&!savedLoc&&!userLoc
+            ?<div style={{textAlign:"center",padding:"40px 20px",background:"var(--surface-1)",borderRadius:16,border:"1px solid var(--border-ui)"}}>
+               <div style={{fontSize:36,marginBottom:12}}>📍</div>
+               <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>أضف موقعك لمشاهدة العروض القريبة</div>
+               <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:16}}>نعرض لك العروض من الأقرب إليك تلقائياً</div>
+               <button onClick={()=>setView("custSettings")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"var(--p)",color:"#000",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>← الإعدادات</button>
+             </div>
+            :sortedSalons.length===0
+              ?<div style={G.empty}>{promoMode?"لا توجد عروض نشطة الآن":urgentMode?t("home.no_salons_open"):t("home.no_salons")}</div>
+              :<div style={{display:"flex",flexDirection:"column",gap:11,animation:"fadeInCards .4s ease-out"}}>
+                {sortedSalons.map(s=>{
+                  const activePromo=(promotions||[]).find(p=>String(p.salon_id)===String(s.id)&&p.status==="active")||null;
+                  const loc=savedLoc||userLoc;
+                  const coords=getSalonCoords(s);
+                  const distKm=promoMode&&loc&&coords?Math.round(haversine(loc.lat,loc.lng,coords.lat,coords.lng)*10)/10:null;
+                  return(
+                  <SalonCard key={s.id} salon={s} fav={favSet.has(s.id)} onFav={()=>toggleFav(s.id)}
+                    realRating={getRealRating(s.id)}
+                    reviewCount={getReviewCount(s.id)}
+                    userLoc={userLoc}
+                    getSalonCoords={getSalonCoords}
+                    haversine={haversine}
+                    isOpenNow={isOpenNow(s)}
+                    inCompare={compareSalons.some(x=>x.id===s.id)}
+                    onCompare={()=>toggleCompare(s)}
+                    activePromo={activePromo}
+                    distKm={distKm}
+                    onViewReviews={()=>{setSelSalon(s);setView("salonReviews");}}
+                    onBook={()=>{setSelSalon(s);setView("book");}}/>
+                );})}
+              </div>
         }
       </div>
 
@@ -2417,7 +2429,7 @@ function SalonReviewsView({salon,reviews,setView}){
   );
 }
 
-function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare,activePromo}){
+function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare,activePromo,distKm}){
   const{t}=useTranslation();
   const[showPromoPopup,setShowPromoPopup]=useState(false);
   const displayRating=realRating||salon.rating||"5.0";
@@ -2455,8 +2467,10 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       </div>
 
       {/* Location Row */}
-      <div style={{fontSize:10,color:"var(--text-muted)"}}>
-        📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</div>
+      <div style={{fontSize:10,color:"var(--text-muted)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span>📍 {salon.gov||salon.region}{salon.village?` - ${salon.village}`:""}</span>
+        {distKm!==null&&<span style={{fontSize:11,fontWeight:700,color:"var(--p)",background:"rgba(var(--pr),.12)",padding:"2px 8px",borderRadius:10}}>📍 {distKm} كم</span>}
+      </div>
 
       {/* Hours & Wait Time */}
       <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:11,color:"var(--text-muted)"}}>
