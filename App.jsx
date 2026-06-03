@@ -4333,10 +4333,41 @@ function PromoPanel({salon,customers,toast$}){
   const statusColor=(s)=>s==="active"?"#27ae60":s==="pending"?"#f39c12":s==="expired"?"#666":"#e74c3c";
   const PAYMENT_LINK="https://payment.dork-app.com/checkout";
 
-  const Step=({n,label})=>(
-    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-      <div style={{width:22,height:22,borderRadius:"50%",background:"var(--pa15)",border:"1.5px solid rgba(var(--gold-rgb),.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:"var(--p)",flexShrink:0}}>{n}</div>
-      <div style={{fontSize:12,fontWeight:700,color:"var(--text-muted)"}}>{label}</div>
+  const[wizStep,setWizStep]=useState(1);
+  const TOTAL_STEPS=4;
+  const stepLabels=["الباقة",pkg==="gold"?"العملاء":"المدة","النص","التأكيد"];
+
+  const canNext=wizStep===1?!!pkg:wizStep===2?true:wizStep===3?!!promoText.trim():false;
+
+  const goNext=()=>{if(canNext&&wizStep<TOTAL_STEPS)setWizStep(s=>s+1);};
+  const goBack=()=>{if(wizStep>1)setWizStep(s=>s-1);};
+  const reset=()=>{setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setCodeError("");setWizStep(1);};
+
+  /* مؤشر التقدم */
+  const Progress=()=>(
+    <div style={{marginBottom:20}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:0,marginBottom:8}}>
+        {Array.from({length:TOTAL_STEPS},(_,i)=>{
+          const n=i+1;
+          const done=n<wizStep;
+          const active=n===wizStep;
+          return(
+            <React.Fragment key={n}>
+              <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,transition:"all .3s",
+                background:done?"var(--p)":active?"var(--pa15)":"var(--surface-1)",
+                border:`2px solid ${done||active?"var(--p)":"var(--border-ui)"}`,
+                color:done?"#000":active?"var(--p)":"var(--text-muted)",
+                boxShadow:active?"0 0 0 3px rgba(var(--gold-rgb),.15)":"none"}}>
+                {done?"✓":n}
+              </div>
+              {n<TOTAL_STEPS&&<div style={{flex:1,height:2,background:done?"var(--p)":"var(--border-ui)",transition:"all .3s",maxWidth:32}}/>}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div style={{textAlign:"center",fontSize:11,color:"var(--text-muted)",fontWeight:600}}>
+        {stepLabels[wizStep-1]}
+      </div>
     </div>
   );
 
@@ -4368,81 +4399,93 @@ function PromoPanel({salon,customers,toast$}){
         </div>
       )}
 
-      <div style={{fontSize:13,fontWeight:800,color:"var(--p)",marginBottom:16,paddingBottom:10,borderBottom:"1px solid var(--border-ui)"}}>إنشاء عرض جديد</div>
+      {/* ─── Wizard ─── */}
+      <div style={{fontSize:13,fontWeight:800,color:"var(--p)",marginBottom:14,paddingBottom:10,borderBottom:"1px solid var(--border-ui)"}}>إنشاء عرض جديد</div>
 
-      {/* ─── ① الباقة ─── */}
-      <Step n="①" label="اختر الباقة"/>
-      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
-        {PACKAGES.map(p=>{
-          const sel=pkg===p.id;
-          return(
-            <button key={p.id} onClick={()=>{setPkg(p.id);if(p.id!=="gold")setDurationDays(7);}} style={{background:sel?p.bg:"var(--surface-1)",border:`1.5px solid ${sel?p.color:p.border}`,borderRadius:14,padding:"13px 14px",textAlign:"right",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <div style={{width:40,height:40,borderRadius:10,background:sel?`${p.bg}`:p.bg,border:`1.5px solid ${p.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{p.icon}</div>
-                <div style={{flex:1}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                    <span style={{fontSize:14,fontWeight:800,color:sel?p.color:"var(--text-primary)"}}>{p.label}</span>
-                    <span style={{fontSize:14}}>{p.medal}</span>
+      <Progress/>
+
+      {/* ── الخطوة 1: الباقة ── */}
+      {wizStep===1&&(
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {PACKAGES.map(p=>{
+            const sel=pkg===p.id;
+            return(
+              <button key={p.id} onClick={()=>{setPkg(p.id);if(p.id!=="gold")setDurationDays(7);}} style={{background:sel?p.bg:"var(--surface-1)",border:`2px solid ${sel?p.color:p.border}`,borderRadius:16,padding:"14px",textAlign:"right",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s",boxShadow:sel?`0 4px 16px ${p.color}22`:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:44,height:44,borderRadius:12,background:p.bg,border:`1.5px solid ${p.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{p.icon}</div>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                      <span style={{fontSize:15,fontWeight:800,color:sel?p.color:"var(--text-primary)"}}>{p.label}</span>
+                      <span>{p.medal}</span>
+                    </div>
+                    <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.5,marginBottom:5}}>{p.service}</div>
+                    <div style={{display:"inline-block",background:sel?`${p.color}22`:"rgba(255,255,255,.04)",border:`1px solid ${p.color}44`,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,color:p.color}}>
+                      {p.prices?`${p.prices[1]}ر — ${p.prices[3]}ر — ${p.prices[7]}ر`:"0.1 ريال / عميل"}
+                    </div>
                   </div>
-                  <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4,lineHeight:1.5}}>{p.service}</div>
-                  <div style={{fontSize:11,fontWeight:700,color:p.color}}>
-                    {p.prices?`يوم ${p.prices[1]}ر · 3أيام ${p.prices[3]}ر · أسبوع ${p.prices[7]}ر`:`0.1 ريال / عميل`}
+                  <div style={{width:22,height:22,borderRadius:"50%",border:`2.5px solid ${p.color}`,background:sel?p.color:"transparent",flexShrink:0,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    {sel&&<span style={{fontSize:10,color:"#000",fontWeight:900}}>✓</span>}
                   </div>
                 </div>
-                <div style={{width:20,height:20,borderRadius:"50%",border:`2px solid ${p.color}`,background:sel?p.color:"transparent",flexShrink:0,transition:"all .2s"}}/>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      {pkg&&<>
-        {/* ─── ② المدة / الاستهداف ─── */}
-        {pkg!=="gold"?(
-          <div style={{marginBottom:20}}>
-            <Step n="②" label="مدة العرض"/>
-            <div style={{display:"flex",gap:8}}>
+      {/* ── الخطوة 2: المدة أو الاستهداف ── */}
+      {wizStep===2&&(
+        pkg!=="gold"?(
+          <div>
+            <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12,textAlign:"center"}}>اختر مدة بث العرض</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {DURATIONS.map(d=>{
                 const sel=durationDays===d.days;
+                const p=selectedPkg;
                 return(
-                  <button key={d.days} onClick={()=>setDurationDays(d.days)} style={{flex:1,padding:"10px 0",borderRadius:10,border:`1.5px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa12)":"var(--surface-1)",color:sel?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,transition:"all .2s",WebkitAppearance:"none",appearance:"none"}}>
-                    {d.label}
+                  <button key={d.days} onClick={()=>setDurationDays(d.days)} style={{padding:"16px",borderRadius:14,border:`2px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa12)":"var(--surface-1)",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s",display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:sel?"0 4px 14px rgba(var(--gold-rgb),.12)":"none"}}>
+                    <span style={{fontSize:14,fontWeight:700,color:sel?"var(--p)":"var(--text-muted)"}}>{d.label}</span>
+                    <span style={{fontSize:16,fontWeight:900,color:sel?"var(--p)":"var(--text-muted)"}}>{p?.prices[d.days]} ر</span>
                   </button>
                 );
               })}
             </div>
           </div>
         ):(
-          <div style={{marginBottom:20}}>
-            <Step n="②" label="استهداف العملاء"/>
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          <div>
+            <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12,textAlign:"center"}}>من تريد استهدافه؟</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {CUSTOMER_GROUPS.map(g=>{
                 const sel=customerGroup===g.key;
                 const cnt=sel?customerCount:Math.min(salonCustomers.length,g.max);
                 return(
-                  <button key={g.key} onClick={()=>setCustomerGroup(g.key)} style={{padding:"11px 14px",borderRadius:10,border:`1.5px solid ${sel?"#d4a017":"var(--border-ui)"}`,background:sel?"rgba(212,160,23,.1)":"var(--surface-1)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:sel?700:500,textAlign:"right",WebkitAppearance:"none",appearance:"none",transition:"all .2s",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{color:sel?"#d4a017":"var(--text-muted)"}}>{g.label}</span>
-                    <span style={{fontSize:11,color:sel?"#d4a017":"#666",background:sel?"rgba(212,160,23,.15)":"rgba(255,255,255,.05)",padding:"2px 8px",borderRadius:20}}>{cnt} عميل</span>
+                  <button key={g.key} onClick={()=>setCustomerGroup(g.key)} style={{padding:"16px",borderRadius:14,border:`2px solid ${sel?"#d4a017":"var(--border-ui)"}`,background:sel?"rgba(212,160,23,.1)":"var(--surface-1)",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s",display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:sel?"0 4px 14px rgba(212,160,23,.12)":"none"}}>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:sel?"#d4a017":"var(--text-primary)",marginBottom:3}}>{g.label}</div>
+                      <div style={{fontSize:11,color:"var(--text-muted)"}}>التكلفة: <span style={{color:sel?"#d4a017":"var(--text-muted)",fontWeight:700}}>{parseFloat((cnt*WHATSAPP_RATE).toFixed(2))} ريال</span></div>
+                    </div>
+                    <div style={{background:sel?"rgba(212,160,23,.15)":"rgba(255,255,255,.04)",border:`1px solid ${sel?"#d4a017":"var(--border-ui)"}`,borderRadius:20,padding:"4px 12px",fontSize:13,fontWeight:800,color:sel?"#d4a017":"var(--text-muted)"}}>{cnt} عميل</div>
                   </button>
                 );
               })}
             </div>
           </div>
-        )}
+        )
+      )}
 
-        {/* ─── ③ نص العرض ─── */}
-        <div style={{marginBottom:20}}>
-          <Step n="③" label="نص العرض"/>
-          <div style={{display:"flex",gap:6,marginBottom:10,background:"var(--surface-1)",borderRadius:10,padding:4,border:"1px solid var(--border-ui)"}}>
-            <button onClick={()=>setUseTemplate(true)} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:useTemplate?"var(--pa15)":"transparent",color:useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,transition:"all .2s",WebkitAppearance:"none",appearance:"none"}}>بطاقة جاهزة</button>
-            <button onClick={()=>setUseTemplate(false)} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:!useTemplate?"var(--pa15)":"transparent",color:!useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,transition:"all .2s",WebkitAppearance:"none",appearance:"none"}}>اكتب بنفسك</button>
+      {/* ── الخطوة 3: نص العرض ── */}
+      {wizStep===3&&(
+        <div>
+          <div style={{display:"flex",gap:6,marginBottom:12,background:"var(--surface-1)",borderRadius:10,padding:4,border:"1px solid var(--border-ui)"}}>
+            <button onClick={()=>setUseTemplate(true)} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:useTemplate?"var(--pa15)":"transparent",color:useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>بطاقة جاهزة</button>
+            <button onClick={()=>setUseTemplate(false)} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:!useTemplate?"var(--pa15)":"transparent",color:!useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>اكتب بنفسك</button>
           </div>
           {useTemplate?(
-            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {TEMPLATES.map(tmpl=>{
                 const sel=selectedTemplate===tmpl;
                 return(
-                  <button key={tmpl} onClick={()=>setSelectedTemplate(tmpl)} style={{padding:"11px 12px",borderRadius:10,border:`1.5px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa08)":"var(--surface-1)",color:sel?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",textAlign:"right",lineHeight:1.6,WebkitAppearance:"none",appearance:"none",transition:"all .15s"}}>
+                  <button key={tmpl} onClick={()=>setSelectedTemplate(tmpl)} style={{padding:"13px 14px",borderRadius:12,border:`2px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa08)":"var(--surface-1)",color:sel?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",textAlign:"right",lineHeight:1.7,WebkitAppearance:"none",appearance:"none",transition:"all .15s",boxShadow:sel?"0 4px 14px rgba(var(--gold-rgb),.1)":"none"}}>
                     {tmpl}
                   </button>
                 );
@@ -4450,67 +4493,90 @@ function PromoPanel({salon,customers,toast$}){
             </div>
           ):(
             <>
-              <textarea value={customText} onChange={e=>setCustomText(e.target.value)} placeholder="اكتب نص عرضك هنا..." maxLength={200} rows={3} style={{width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",direction:"rtl",boxSizing:"border-box"}}/>
-              <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3,textAlign:"left"}}>{customText.length}/200</div>
+              <textarea value={customText} onChange={e=>setCustomText(e.target.value)} placeholder="اكتب نص عرضك هنا..." maxLength={200} rows={4} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",direction:"rtl",boxSizing:"border-box"}}/>
+              <div style={{fontSize:10,color:"var(--text-muted)",marginTop:4,textAlign:"left"}}>{customText.length}/200</div>
             </>
           )}
         </div>
+      )}
 
-        {/* ─── كود الخصم ─── */}
-        <div style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 14px",marginBottom:16}}>
-          <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>🎟 كود الخصم <span style={{opacity:.6}}>(اختياري — يجعل العرض مجانياً)</span></div>
-          <div style={{display:"flex",gap:8}}>
-            <input value={codeInput} onChange={e=>{setCodeInput(e.target.value.toUpperCase());setCodeApplied(false);setCodeError("");}} placeholder="أدخل الكود" maxLength={20} disabled={codeApplied} style={{flex:1,padding:"10px 12px",borderRadius:9,border:`1.5px solid ${codeApplied?"#27ae60":codeError?"#e74c3c":"var(--border-ui)"}`,background:"var(--surface-1)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"ltr",textAlign:"center",boxSizing:"border-box",letterSpacing:2}}/>
-            <button onClick={codeApplied?()=>{setCodeApplied(false);setCodeInput("");setDiscountCode("");setCodeError("");}:applyCode} disabled={checkingCode} style={{padding:"10px 16px",borderRadius:9,border:"none",background:codeApplied?"rgba(39,174,96,.15)":"var(--pa15)",color:codeApplied?"#27ae60":"var(--p)",cursor:checkingCode?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,flexShrink:0,WebkitAppearance:"none",appearance:"none"}}>
-              {checkingCode?"...":codeApplied?"✅ مفعّل":"تطبيق"}
-            </button>
-          </div>
-          {codeError&&<div style={{fontSize:11,color:"#e74c3c",marginTop:4}}>{codeError}</div>}
-          {codeApplied&&<div style={{fontSize:11,color:"#27ae60",marginTop:4}}>✅ العرض مجاني!</div>}
-        </div>
-
-        {/* ─── ملخص السعر ─── */}
-        <div style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.1),rgba(var(--gold-rgb),.05))",border:"1.5px solid rgba(var(--gold-rgb),.3)",borderRadius:14,padding:"14px",marginBottom:16}}>
-          <div style={{fontSize:12,fontWeight:800,color:"var(--p)",marginBottom:12}}>ملخص الطلب</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:12,color:"var(--text-muted)"}}>الباقة</span>
-              <span style={{fontSize:12,fontWeight:700,color:selectedPkg.color}}>{selectedPkg.label} {selectedPkg.medal}</span>
+      {/* ── الخطوة 4: التأكيد ── */}
+      {wizStep===4&&selectedPkg&&(
+        <div>
+          {/* ملخص */}
+          <div style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.1),rgba(var(--gold-rgb),.04))",border:"1.5px solid rgba(var(--gold-rgb),.3)",borderRadius:16,padding:16,marginBottom:14}}>
+            <div style={{fontSize:12,fontWeight:800,color:"var(--p)",marginBottom:12}}>ملخص الطلب</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:12,color:"var(--text-muted)"}}>الباقة</span>
+                <span style={{fontSize:13,fontWeight:800,color:selectedPkg.color}}>{selectedPkg.label} {selectedPkg.medal}</span>
+              </div>
+              {pkg==="gold"?(
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:12,color:"var(--text-muted)"}}>الحساب</span>
+                  <span style={{fontSize:12,fontWeight:700}}>{customerCount} عميل × {WHATSAPP_RATE} ر = <span style={{color:"var(--gold)"}}>{basePrice} ر</span></span>
+                </div>
+              ):(
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:12,color:"var(--text-muted)"}}>المدة</span>
+                  <span style={{fontSize:12,fontWeight:700}}>{DURATIONS.find(d=>d.days===durationDays)?.label}</span>
+                </div>
+              )}
+              <div style={{background:"var(--surface-1)",borderRadius:10,padding:"10px 12px",border:"1px solid var(--border-ui)"}}>
+                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>نص العرض</div>
+                <div style={{fontSize:12,color:"var(--text-primary)",lineHeight:1.6}}>{promoText}</div>
+              </div>
+              {codeApplied&&(
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:12,color:"#27ae60"}}>كود ({discountCode})</span>
+                  <span style={{fontSize:12,fontWeight:700,color:"#27ae60"}}>- {basePrice} ريال</span>
+                </div>
+              )}
             </div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:12,color:"var(--text-muted)"}}>الخدمة</span>
-              <span style={{fontSize:11,color:"var(--text-primary)",textAlign:"left",maxWidth:"60%"}}>{selectedPkg.service}</span>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid rgba(var(--gold-rgb),.2)",marginTop:12}}>
+              <span style={{fontSize:14,fontWeight:700}}>الإجمالي</span>
+              <span style={{fontSize:26,fontWeight:900,color:totalPrice===0?"#27ae60":"var(--gold)"}}>{totalPrice} <span style={{fontSize:13}}>ريال</span></span>
             </div>
-            {pkg==="gold"?(
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:12,color:"var(--text-muted)"}}>الحساب</span>
-                <span style={{fontSize:12,fontWeight:700}}>{customerCount} عميل × {WHATSAPP_RATE} ر = <span style={{color:"var(--gold)"}}>{basePrice} ر</span></span>
-              </div>
-            ):(
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:12,color:"var(--text-muted)"}}>المدة</span>
-                <span style={{fontSize:12,fontWeight:700}}>{DURATIONS.find(d=>d.days===durationDays)?.label}</span>
-              </div>
-            )}
-            {codeApplied&&(
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:12,color:"#27ae60"}}>كود ({discountCode})</span>
-                <span style={{fontSize:12,fontWeight:700,color:"#27ae60"}}>- {basePrice} ريال</span>
-              </div>
-            )}
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:10,borderTop:"1px solid rgba(var(--gold-rgb),.2)",marginTop:10}}>
-            <span style={{fontSize:14,fontWeight:700}}>الإجمالي</span>
-            <span style={{fontSize:24,fontWeight:900,color:totalPrice===0?"#27ae60":"var(--gold)"}}>{totalPrice} <span style={{fontSize:13}}>ريال</span></span>
-          </div>
-        </div>
 
-        {/* ─── زر الإرسال ─── */}
-        <button onClick={submitPromo} disabled={saving||!promoText.trim()} style={{width:"100%",background:saving||!promoText.trim()?"var(--border-ui)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving||!promoText.trim()?"#555":"#fff",border:"none",borderRadius:12,padding:"15px",fontSize:14,fontWeight:800,cursor:saving||!promoText.trim()?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:8,transition:"all .2s"}}>
-          {saving?"⏳ جاري الإرسال...":totalPrice===0?"🔥 إرسال العرض مجاناً":"🔥 إرسال العرض"}
-        </button>
-        {totalPrice>0&&<div style={{fontSize:10,color:"var(--text-muted)",textAlign:"center",marginBottom:8}}>سيظهر رابط الدفع بعد الإرسال</div>}
-      </>}
+          {/* كود الخصم */}
+          <div style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>🎟 كود الخصم <span style={{opacity:.6}}>(اختياري — يجعل العرض مجانياً)</span></div>
+            <div style={{display:"flex",gap:8}}>
+              <input value={codeInput} onChange={e=>{setCodeInput(e.target.value.toUpperCase());setCodeApplied(false);setCodeError("");}} placeholder="أدخل الكود" maxLength={20} disabled={codeApplied} style={{flex:1,padding:"10px 12px",borderRadius:9,border:`1.5px solid ${codeApplied?"#27ae60":codeError?"#e74c3c":"var(--border-ui)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"ltr",textAlign:"center",boxSizing:"border-box",letterSpacing:2}}/>
+              <button onClick={codeApplied?()=>{setCodeApplied(false);setCodeInput("");setDiscountCode("");setCodeError("");}:applyCode} disabled={checkingCode} style={{padding:"10px 16px",borderRadius:9,border:"none",background:codeApplied?"rgba(39,174,96,.15)":"var(--pa15)",color:codeApplied?"#27ae60":"var(--p)",cursor:checkingCode?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,flexShrink:0,WebkitAppearance:"none",appearance:"none"}}>
+                {checkingCode?"...":codeApplied?"✅ مفعّل":"تطبيق"}
+              </button>
+            </div>
+            {codeError&&<div style={{fontSize:11,color:"#e74c3c",marginTop:4}}>{codeError}</div>}
+            {codeApplied&&<div style={{fontSize:11,color:"#27ae60",marginTop:4}}>✅ العرض مجاني!</div>}
+          </div>
+
+          {/* زر الإرسال */}
+          <button onClick={submitPromo} disabled={saving} style={{width:"100%",background:saving?"var(--border-ui)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving?"#555":"#fff",border:"none",borderRadius:14,padding:"16px",fontSize:15,fontWeight:800,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:8,transition:"all .2s"}}>
+            {saving?"⏳ جاري الإرسال...":totalPrice===0?"🔥 إرسال العرض مجاناً":"🔥 إرسال العرض"}
+          </button>
+          {totalPrice>0&&<div style={{fontSize:10,color:"var(--text-muted)",textAlign:"center",marginBottom:4}}>سيظهر رابط الدفع بعد الإرسال</div>}
+        </div>
+      )}
+
+      {/* ─── أزرار التنقل ─── */}
+      <div style={{display:"flex",gap:10,marginTop:20}}>
+        {wizStep>1?(
+          <button onClick={goBack} style={{flex:1,padding:"13px 0",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>
+            → رجوع
+          </button>
+        ):(
+          <button onClick={reset} style={{flex:1,padding:"13px 0",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>
+            مسح
+          </button>
+        )}
+        {wizStep<TOTAL_STEPS&&(
+          <button onClick={goNext} disabled={!canNext} style={{flex:2,padding:"13px 0",borderRadius:12,border:"none",background:canNext?"var(--pa15)":"var(--surface-1)",color:canNext?"var(--p)":"var(--text-muted)",cursor:canNext?"pointer":"not-allowed",fontSize:13,fontWeight:800,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s"}}>
+            التالي ←
+          </button>
+        )}
+      </div>
 
       {/* ─── نافذة الدفع ─── */}
       {showPayment&&(
@@ -4521,9 +4587,7 @@ function PromoPanel({salon,customers,toast$}){
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",marginBottom:6}}>أكمل الدفع لتفعيل العرض</div>
               <div style={{fontSize:13,color:"var(--text-muted)"}}>الإجمالي: <strong style={{color:"var(--gold)"}}>{basePrice} ريال</strong></div>
             </div>
-            <button onClick={()=>{window.open(PAYMENT_LINK,"_blank");}} style={{width:"100%",background:"var(--grad)",color:"#000",border:"none",borderRadius:12,padding:"14px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>
-              الدفع الآن 💳
-            </button>
+            <button onClick={()=>{window.open(PAYMENT_LINK,"_blank");}} style={{width:"100%",background:"var(--grad)",color:"#000",border:"none",borderRadius:12,padding:"14px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:10}}>الدفع الآن 💳</button>
             <div style={{fontSize:10,color:"var(--text-muted)",textAlign:"center",marginBottom:14}}>بعد الدفع ستُفعَّل العرض خلال دقائق</div>
             <button onClick={()=>setShowPayment(false)} style={{width:"100%",background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",borderRadius:12,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>لاحقاً</button>
           </div>
