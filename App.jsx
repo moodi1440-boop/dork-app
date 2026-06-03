@@ -1841,7 +1841,6 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
         <Row icon="💬" label={t("salon_drawer.messages")} active={ownerTab==="messages"} onClick={()=>nav(()=>{setOwnerTab("messages");setView("ownerDash");})}/>
         <Row icon="⭐" label={t("salon_drawer.reviews")} active={ownerTab==="reviews"} onClick={()=>nav(()=>{setOwnerTab("reviews");setView("ownerDash");})}/>
         <Row icon="📊" label={t("salon_drawer.stats")} active={ownerTab==="stats"} onClick={()=>nav(()=>{setOwnerTab("stats");setView("ownerDash");})}/>
-        <Row icon="💰" label={t("salon_drawer.revenue")} active={ownerTab==="balance"} onClick={()=>nav(()=>{setOwnerTab("balance");setView("ownerDash");})}/>
         <Row icon="🔥" label="إرسال عرض" active={ownerTab==="promo"} onClick={()=>nav(()=>{setOwnerTab("promo");setView("ownerDash");})}/>
         <SecHead label={t("salon_drawer.section_salon")}/>
         <Row icon="📋" label={t("salon_drawer.salon_info")} onClick={()=>nav(()=>setView("ownerInfo"))}/>
@@ -2739,15 +2738,12 @@ function TermsView({onAccept}){
   );
 }
 
-function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
+function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarned=0,totalPaid=0}){
   const{t}=useTranslation();
   const _months=t("owner_dash.months",{returnObjects:true});
   const[selectedDate,setSelectedDate]=useState(getTodayDateInRiyadh());
   const[m,setM]=useState(new Date().getMonth());
   const[y,setY]=useState(new Date().getFullYear());
-  const[barberD,setBarberD]=useState(parseInt(getTodayDateInRiyadh().split("-")[2]));
-  const[barberM,setBarberM]=useState(new Date().getMonth());
-  const[barberY,setBarberY]=useState(new Date().getFullYear());
   const[selectedBarber,setSelectedBarber]=useState(null);
   const[dayStats,setDayStats]=useState({});
   const[monthStats,setMonthStats]=useState({});
@@ -2756,9 +2752,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
   const[showDayPicker,setShowDayPicker]=useState(false);
   const[showMonthPicker,setShowMonthPicker]=useState(false);
   const[showYearPicker,setShowYearPicker]=useState(false);
-  const[showBarberDayPicker,setShowBarberDayPicker]=useState(false);
-  const[showBarberMonthPicker,setShowBarberMonthPicker]=useState(false);
-  const[showBarberYearPicker,setShowBarberYearPicker]=useState(false);
+  const balance=totalEarned-totalPaid;
 
   const todayBks=salon.bookings.filter(b=>b.date===selectedDate);
   const todayApproved=todayBks.filter(b=>b.status==="approved");
@@ -2769,15 +2763,14 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
     if(!salon.barbers?.length)return;
     setLoadingStats(true);
     try{
-      const barberDateStr=`${barberY}-${String(barberM+1).padStart(2,"0")}-${String(barberD).padStart(2,"0")}`;
-      const mm=String(barberM+1).padStart(2,"0");
-      const dim=new Date(barberY,barberM+1,0).getDate();
-      const startM=`${barberY}-${mm}-01`;
-      const endM=`${barberY}-${mm}-${String(dim).padStart(2,"0")}`;
+      const mm=String(m+1).padStart(2,"0");
+      const dim=new Date(y,m+1,0).getDate();
+      const startM=`${y}-${mm}-01`;
+      const endM=`${y}-${mm}-${String(dim).padStart(2,"0")}`;
       const[dayR,monthR,yearR]=await Promise.all([
-        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=eq.${barberDateStr}&limit=100`),
+        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=eq.${selectedDate}&limit=100`),
         sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${startM}&date=lte.${endM}&limit=100`),
-        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${barberY}-01-01&date=lte.${barberY}-12-31&limit=100`)
+        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${y}-01-01&date=lte.${y}-12-31&limit=100`)
       ]);
       const grp=(rows)=>{const s={};if(Array.isArray(rows))for(const r of rows){const bid=r.barber_id||"any";if(!s[bid])s[bid]={count:0,revenue:0};s[bid].count++;s[bid].revenue+=(r.total||0);}return s;};
       setDayStats(grp(dayR));
@@ -2785,7 +2778,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
       setYearStats(grp(yearR));
     }catch(e){console.warn("barber stats error:",e);}
     setLoadingStats(false);
-  },[salon.id,salon.barbers?.length,barberD,barberM,barberY]);
+  },[salon.id,salon.barbers?.length,selectedDate,m,y]);
 
   useEffect(()=>{loadBarberStats();},[loadBarberStats]);
 
@@ -2906,74 +2899,6 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
         <div style={{background:"var(--surface-1)",borderRadius:14,padding:"12px",border:"1px solid var(--border-ui)",marginBottom:12}}>
           <div style={{fontSize:13,fontWeight:700,color:"var(--gold)",marginBottom:10}}>{t("owner_dash.stats_barbers_title")}</div>
 
-          {/* منتقيات اليوم/الشهر/السنة للحلاقين */}
-          <div style={{display:"flex",gap:6,marginBottom:10}}>
-            {/* اليوم */}
-            <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberDayPicker(!showBarberDayPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showBarberDayPicker?"var(--gold)":"var(--border-ui)"}`,background:showBarberDayPicker?"rgba(var(--gold-rgb),.13)":"var(--bg-input)",color:"var(--gold)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                {String(barberD).padStart(2,"0")} 📅
-              </button>
-              {showBarberDayPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4}}>
-                    {Array.from({length:31},(_, i)=>{
-                      const day=i+1;
-                      const isSel=barberD===day;
-                      return(
-                        <button key={day} onClick={()=>{setBarberD(day);setShowBarberDayPicker(false);}} style={{padding:"6px 0",borderRadius:8,background:isSel?"var(--gold)":"transparent",color:isSel?"#000":"var(--gold)",border:`1px solid ${isSel?"var(--gold)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                          {day}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* الشهر */}
-            <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberMonthPicker(!showBarberMonthPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showBarberMonthPicker?"var(--gold)":"var(--border-ui)"}`,background:showBarberMonthPicker?"rgba(var(--gold-rgb),.13)":"var(--bg-input)",color:"var(--gold)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                {_months[barberM]} 📆
-              </button>
-              {showBarberMonthPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
-                    {_months.map((month,idx)=>{
-                      const isSel=barberM===idx;
-                      return(
-                        <button key={idx} onClick={()=>{setBarberM(idx);setShowBarberMonthPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"var(--gold)":"transparent",color:isSel?"#000":"var(--gold)",border:`1px solid ${isSel?"var(--gold)":"var(--border-ui)"}`,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                          {month}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* السنة */}
-            <div style={{flex:1,position:"relative"}}>
-              <button onClick={()=>setShowBarberYearPicker(!showBarberYearPicker)} style={{width:"100%",padding:"8px",borderRadius:10,border:`1.5px solid ${showBarberYearPicker?"var(--gold)":"var(--border-ui)"}`,background:showBarberYearPicker?"rgba(var(--gold-rgb),.13)":"var(--bg-input)",color:"var(--gold)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                {barberY} 📊
-              </button>
-              {showBarberYearPicker&&(
-                <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:10,padding:8,maxHeight:200,overflowY:"auto",zIndex:10,marginTop:4}}>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
-                    {Array.from({length:10},(_, i)=>{
-                      const year=new Date().getFullYear()-5+i;
-                      const isSel=barberY===year;
-                      return(
-                        <button key={year} onClick={()=>{setBarberY(year);setShowBarberYearPicker(false);}} style={{padding:"8px 0",borderRadius:8,background:isSel?"var(--gold)":"transparent",color:isSel?"#000":"var(--gold)",border:`1px solid ${isSel?"var(--gold)":"var(--border-ui)"}`,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                          {year}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
           {loadingStats&&<div style={{textAlign:"center",padding:"8px",color:"var(--text-muted)",fontSize:11}}>{t("owner_dash.stats_loading")}</div>}
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {salon.barbers.map(barber=>{
@@ -2999,6 +2924,23 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings}){
           </div>
         </div>
       )}
+
+      {/* الأرباح */}
+      <div className="balance-tab" style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.12),rgba(var(--gold-rgb),.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(var(--gold-rgb),.3)",marginTop:8}}>
+        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>{t("owner_dash.balance_title")}</div>
+        <div style={{fontSize:32,fontWeight:900,color:"var(--gold)",marginBottom:10}}>{balance} <span style={{fontSize:14}}>{t("owner_dash.balance_unit")}</span></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div style={{background:"rgba(39,174,96,.1)",borderRadius:10,padding:"10px",border:"1px solid #27ae6055"}}>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{t("owner_dash.balance_owed")}</div>
+            <div style={{fontSize:16,fontWeight:700,color:"#27ae60"}}>{totalEarned} ر</div>
+          </div>
+          <div style={{background:"rgba(var(--gold-rgb),.1)",borderRadius:10,padding:"10px",border:"1px solid rgba(var(--gold-rgb),.3)"}}>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{t("owner_dash.balance_paid")}</div>
+            <div style={{fontSize:16,fontWeight:700,color:"var(--gold)"}}>{totalPaid} ر</div>
+          </div>
+        </div>
+        {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"10px",fontSize:11,color:"#e74c3c",marginTop:10,textAlign:"center"}}>{t("owner_dash.balance_warning")}</div>}
+      </div>
     </div>
   );
 }
@@ -3904,7 +3846,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const totalPaid=salon.totalPaid||0;
   const balance=totalEarned-totalPaid;
 
-  const[showBalanceModal,setShowBalanceModal]=useState(false);
 
   // ── حسابات ملخص اليوم (بتوقيت السعودية AST/GMT+3) ──
   const _td=getTodayDateInRiyadh();
@@ -4069,7 +4010,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {ownerTab!==null&&(
         <div style={G.fh}>
           <button style={G.bb} onClick={()=>{setShowSalonDrawer(true);setOwnerTab(null);}}>← {t("owner_dash.back")}</button>
-          <h2 style={G.ft}>{ownerTab==="calendar"?t("salon_drawer.bookings"):ownerTab==="messages"?t("salon_drawer.messages"):ownerTab==="reviews"?t("salon_drawer.reviews"):ownerTab==="stats"?t("salon_drawer.stats"):ownerTab==="promo"?"🔥 إرسال عرض":t("salon_drawer.revenue")}</h2>
+          <h2 style={G.ft}>{ownerTab==="calendar"?t("salon_drawer.bookings"):ownerTab==="messages"?t("salon_drawer.messages"):ownerTab==="reviews"?t("salon_drawer.reviews"):ownerTab==="stats"?t("salon_drawer.stats"):"🔥 إرسال عرض"}</h2>
         </div>
       )}
       {ownerTab==="messages"&&(
@@ -4077,27 +4018,8 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       )}
       {ownerTab==="calendar"&&<BookingCalendar salon={salon} onUpdate={updateBookingStatus}/>}
       {ownerTab==="reviews"&&<OwnerReviewsPanel salon={salon} reviews={reviews} setReviews={setReviews} toast$={toast$}/>}
-      {ownerTab==="stats"&&<StatsPanel salon={salon} onUpdate={updateBookingStatus} customers={customers} refreshSalonBookings={refreshSalonBookings}/>}
+      {ownerTab==="stats"&&<StatsPanel salon={salon} onUpdate={updateBookingStatus} customers={customers} refreshSalonBookings={refreshSalonBookings} totalEarned={totalEarned} totalPaid={totalPaid}/>}
       {ownerTab==="promo"&&<PromoPanel salon={salon} customers={customers} toast$={toast$}/>}
-      {ownerTab==="balance"&&(
-        <div style={{paddingTop:8}}>
-          <div className="balance-tab" style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.12),rgba(var(--gold-rgb),.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(var(--gold-rgb),.3)",marginBottom:12}}>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>{t("owner_dash.balance_title")}</div>
-            <div style={{fontSize:32,fontWeight:900,color:"var(--gold)",marginBottom:10,transition:"all .3s ease"}}>{balance} <span style={{fontSize:14}}>{t("owner_dash.balance_unit")}</span></div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <div style={{background:"rgba(39,174,96,.1)",borderRadius:10,padding:"10px",border:"1px solid #27ae6055",transition:"all .3s ease",cursor:"pointer"}}>
-                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{t("owner_dash.balance_owed")}</div>
-                <div style={{fontSize:16,fontWeight:700,color:"#27ae60"}}>{totalEarned} ر</div>
-              </div>
-              <div style={{background:"rgba(var(--gold-rgb),.1)",borderRadius:10,padding:"10px",border:"1px solid rgba(var(--gold-rgb),.3)",transition:"all .3s ease",cursor:"pointer"}}>
-                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{t("owner_dash.balance_paid")}</div>
-                <div style={{fontSize:16,fontWeight:700,color:"var(--gold)"}}>{totalPaid} ر</div>
-              </div>
-            </div>
-            {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"10px",fontSize:11,color:"#e74c3c",marginTop:10,textAlign:"center",animation:"fadeInUp .5s ease-out .2s both"}}>{t("owner_dash.balance_warning")}</div>}
-          </div>
-        </div>
-      )}
     </div></div>
   );
 }
