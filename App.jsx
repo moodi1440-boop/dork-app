@@ -2143,10 +2143,10 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   };
 
   const detectUserLoc=()=>{
-    if(!navigator.geolocation){alert("⚠ المتصفح لا يدعم تحديد الموقع");return;}
+    if(!navigator.geolocation){toast$&&toast$("❌ المتصفح لا يدعم تحديد الموقع","warn");return;}
     navigator.geolocation.getCurrentPosition(
       p=>{setUserLoc({lat:p.coords.latitude,lng:p.coords.longitude});setSortBy("nearest");toast$&&toast$("✅ تم تحديد موقعك");},
-      err=>{let m="تعذّر تحديد موقعك";if(err.code===1)m="🚫 رفضت إذن الموقع";alert(m);},
+      err=>{let m="❌ تعذّر تحديد موقعك";if(err.code===1)m="🚫 رُفض إذن الموقع — يمكنك حفظه من إعداداتك";toast$&&toast$(m,"warn");},
       {enableHighAccuracy:true,timeout:15000,maximumAge:0}
     );
   };
@@ -2287,7 +2287,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           ["priceHigh","💰",t("home.sort_price_high")],
           ["priceLow","🪙",t("home.sort_price_low")],
         ].map(([k,ic,l])=>(
-          <button key={k} style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:sortBy===k?"var(--pa3)":"var(--surface-2)",border:`1.5px solid ${sortBy===k?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s",flexDirection:"column",gap:2}} onClick={()=>{if(sortBy===k){setSortBy("");}else{setShowSearch(false);setShowRegionSelect(false);if(k==="nearest"&&!userLoc){detectUserLoc();return;}setSortBy(k);}}} title={l}>
+          <button key={k} style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:sortBy===k?"var(--pa3)":"var(--surface-2)",border:`1.5px solid ${sortBy===k?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s",flexDirection:"column",gap:2}} onClick={()=>{if(sortBy===k){setSortBy("");}else{setShowSearch(false);setShowRegionSelect(false);if(k==="nearest"&&!userLoc){if(savedLoc){setUserLoc(savedLoc);setSortBy(k);return;}detectUserLoc();return;}setSortBy(k);}}} title={l}>
             <span>{ic}</span>
             <span style={{fontSize:9,color:"var(--text-muted)"}}>{l}</span>
           </button>
@@ -4368,7 +4368,7 @@ function PromoPanel({salon,customers,toast$}){
 
   const deletePromo=async(promoId)=>{
     try{
-      await sb("promotions","DELETE",null,`?id=eq.${promoId}`);
+      await sb("promotions","PATCH",{status:"cancelled"},`?id=eq.${promoId}`);
       setMyPromos(p=>p.filter(x=>x.id!==promoId));
       toast$("تم حذف العرض");
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
@@ -4652,6 +4652,10 @@ function PromoPanel({salon,customers,toast$}){
           )}
           <button onClick={submitPromo} disabled={saving||!codeApplied} style={{width:"100%",background:saving||!codeApplied?"var(--surface-1)":totalPrice===0?"linear-gradient(135deg,#27ae60,#2ecc71)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving||!codeApplied?"var(--text-muted)":"#fff",border:codeApplied?"none":"1.5px solid var(--border-ui)",borderRadius:14,padding:"16px",fontSize:15,fontWeight:800,cursor:saving||!codeApplied?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:8,transition:"all .2s"}}>
             {saving?"⏳ جاري الإرسال...":codeApplied?"🚀 إرسال العرض":"🔒 يلزم كود خصم"}
+          </button>
+          <button disabled style={{width:"100%",background:"var(--surface-1)",color:"var(--text-muted)",border:"1.5px solid var(--border-ui)",borderRadius:14,padding:"13px",fontSize:13,fontWeight:700,cursor:"not-allowed",fontFamily:"inherit",marginBottom:4,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:.6}}>
+            <span>💳 ادفع وأرسل</span>
+            <span style={{fontSize:10,background:"rgba(255,255,255,.08)",padding:"2px 8px",borderRadius:8}}>قريباً 🔒</span>
           </button>
         </div>
       )}
@@ -5051,6 +5055,26 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
   const[pinConfirm,setPinConfirm]=useState("");
   const[pinErr,setPinErr]=useState("");
   const inp={width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
+  const saveLocation=()=>{
+    if(!navigator.geolocation){toast$&&toast$("❌ المتصفح لا يدعم تحديد الموقع","err");return;}
+    navigator.geolocation.getCurrentPosition(async(p)=>{
+      const lat=p.coords.latitude,lng=p.coords.longitude;
+      try{
+        await sb("customers","PATCH",{location_lat:lat,location_lng:lng},`?id=eq.${customer.id}`);
+        setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));
+        setCustomerSession(s=>({...s,locationLat:lat,locationLng:lng}));
+        toast$&&toast$("✅ تم حفظ موقعك");
+      }catch{toast$&&toast$("❌ فشل حفظ الموقع","err");}
+    },()=>{toast$&&toast$("🚫 رُفض إذن الموقع","warn");},{enableHighAccuracy:true,timeout:15000});
+  };
+  const clearLocation=async()=>{
+    try{
+      await sb("customers","PATCH",{location_lat:null,location_lng:null},`?id=eq.${customer.id}`);
+      setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:null,locationLng:null}:c));
+      setCustomerSession(s=>({...s,locationLat:null,locationLng:null}));
+      toast$&&toast$("✅ تم حذف الموقع");
+    }catch{toast$&&toast$("❌ فشل حذف الموقع","err");}
+  };
   const save=async()=>{
     if(!name.trim())return;
     try{
@@ -5082,9 +5106,27 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
           <label style={{display:"block",fontSize:12,color:"var(--text-muted)",marginBottom:6}}>{t("cust_drawer.phone_label")}</label>
           <input style={inp} inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)}/>
         </div>
-        <div style={{marginBottom:20}}>
+        <div style={{marginBottom:14}}>
           <label style={{display:"block",fontSize:12,color:"var(--text-muted)",marginBottom:6}}>{t("cust_drawer.email_label")}</label>
           <input style={inp} type="email" value={email} onChange={e=>setEmail(e.target.value)}/>
+        </div>
+        {/* موقعي المحفوظ */}
+        <div style={{background:"rgba(var(--pr),.06)",borderRadius:12,padding:14,border:"1px solid rgba(var(--pr),.2)",marginBottom:16}}>
+          <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8}}>📍 موقعي المحفوظ</div>
+          {customer?.locationLat&&customer?.locationLng?(
+            <>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10}}>✅ موقع محفوظ — تظهر الصالونات الأقرب إليك تلقائياً</div>
+              <div style={{display:"flex",gap:8}}>
+                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={saveLocation}>🔄 تحديث الموقع</button>
+                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={clearLocation}>🗑 حذف الموقع</button>
+              </div>
+            </>
+          ):(
+            <>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10}}>لا يوجد موقع محفوظ — احفظ موقعك لترى الصالونات الأقرب تلقائياً</div>
+              <button style={{width:"100%",padding:"10px",borderRadius:8,background:"transparent",border:"1.5px dashed rgba(var(--pr),.4)",color:"var(--p)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit"}} onClick={saveLocation}>📍 حفظ موقعي الحالي</button>
+            </>
+          )}
         </div>
         <button style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",marginBottom:10}} onClick={()=>setPinStep("select")}>{t("cust_drawer.change_pin")}</button>
         <div style={{display:"flex",gap:10}}>
