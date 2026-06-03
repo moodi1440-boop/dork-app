@@ -2433,6 +2433,17 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
   const{t}=useTranslation();
   const[showPromoPopup,setShowPromoPopup]=useState(false);
   const[codeCopied,setCodeCopied]=useState(false);
+  const[promoCountdown,setPromoCountdown]=useState(null);
+  useEffect(()=>{
+    if(!showPromoPopup||!activePromo?.ends_at){setPromoCountdown(null);return;}
+    const calc=()=>{
+      const ms=Math.max(0,new Date(activePromo.ends_at)-Date.now());
+      setPromoCountdown({d:Math.floor(ms/86400000),h:Math.floor((ms%86400000)/3600000),m:Math.floor((ms%3600000)/60000),s:Math.floor((ms%60000)/1000)});
+    };
+    calc();
+    const id=setInterval(calc,1000);
+    return()=>clearInterval(id);
+  },[showPromoPopup,activePromo?.ends_at]);
   const displayRating=realRating||salon.rating||"5.0";
 
   let distance=null;
@@ -2521,28 +2532,43 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       </div>
     </div>
 
-    {/* popup العرض */}
+    {/* popup العرض - كوبون */}
     {showPromoPopup&&activePromo&&(
-      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:2000,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowPromoPopup(false)}>
-        <div style={{width:"100%",maxWidth:480,margin:"0 auto",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 20px 36px",border:"1.5px solid rgba(231,76,60,.4)",borderBottom:"none",direction:"rtl"}} onClick={e=>e.stopPropagation()}>
-          <div style={{textAlign:"center",marginBottom:16}}>
-            <div style={{fontSize:32,marginBottom:8}}>🔥</div>
-            <div style={{fontSize:16,fontWeight:800,color:"#e74c3c",marginBottom:6}}>عرض خاص من {salon.name}</div>
-            <div style={{fontSize:13,color:"var(--text-muted)",lineHeight:1.7,padding:"0 8px"}}>{activePromo.promo_text}</div>
-          </div>
-          {activePromo.ends_at&&(()=>{
-            const ms=new Date(activePromo.ends_at)-Date.now();
-            const hrs=Math.max(0,Math.ceil(ms/3600000));
-            const urgent=ms>0&&hrs<=24;
-            return(
-              <div style={{fontSize:11,color:urgent?"#e67e22":"var(--text-muted)",textAlign:"center",marginBottom:14,fontWeight:urgent?700:400}}>
-                {urgent?`⚡ ينتهي خلال ${hrs} ساعة`:`⏳ ينتهي: ${new Date(activePromo.ends_at).toLocaleDateString("ar-SA")}`}
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 18px"}} onClick={()=>setShowPromoPopup(false)}>
+        <div style={{width:"100%",maxWidth:400,direction:"rtl"}} onClick={e=>e.stopPropagation()}>
+          {/* جزء علوي البطاقة */}
+          <div style={{background:"linear-gradient(145deg,var(--surface-2),rgba(var(--pr),.07))",borderRadius:"22px 22px 0 0",padding:"26px 20px 18px",border:"1.5px solid rgba(var(--pr),.4)",borderBottom:"none",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:-50,right:-50,width:130,height:130,background:"radial-gradient(circle,rgba(var(--pr),.18) 0%,transparent 70%)",pointerEvents:"none"}}/>
+            <div style={{position:"absolute",top:-50,left:-50,width:130,height:130,background:"radial-gradient(circle,rgba(var(--pr),.18) 0%,transparent 70%)",pointerEvents:"none"}}/>
+            {/* 🔥 bounce */}
+            <div className="promo-fire-anim" style={{textAlign:"center",fontSize:56,lineHeight:1,marginBottom:10}}>🔥</div>
+            {/* اسم الصالون */}
+            <div style={{textAlign:"center",fontSize:12,color:"var(--text-muted)",marginBottom:3}}>عرض خاص من</div>
+            <div style={{textAlign:"center",fontSize:21,fontWeight:900,color:"var(--p)",marginBottom:14,letterSpacing:.3}}>{salon.name}</div>
+            {/* نص العرض */}
+            <div style={{background:"rgba(var(--pr),.07)",border:"1px dashed rgba(var(--pr),.3)",borderRadius:12,padding:"12px 16px",textAlign:"center",fontSize:13,color:"var(--text-primary)",lineHeight:1.8,marginBottom:14}}>{activePromo.promo_text}</div>
+            {/* عداد تنازلي */}
+            {promoCountdown&&(
+              <div style={{display:"flex",gap:6,justifyContent:"center"}}>
+                {[{v:promoCountdown.d,l:"يوم"},{v:promoCountdown.h,l:"ساعة"},{v:promoCountdown.m,l:"دقيقة"},{v:promoCountdown.s,l:"ثانية"}].map(({v,l})=>(
+                  <div key={l} style={{flex:1,textAlign:"center",background:"var(--surface-1)",borderRadius:10,padding:"8px 4px",border:"1.5px solid rgba(var(--pr),.3)"}}>
+                    <div style={{fontSize:20,fontWeight:900,color:"var(--p)",lineHeight:1}}>{String(v).padStart(2,"0")}</div>
+                    <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3}}>{l}</div>
+                  </div>
+                ))}
               </div>
-            );
-          })()}
-          <div style={{display:"flex",gap:10}}>
-            <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none"}} onClick={()=>{setShowPromoPopup(false);onBook();}}>احجز الآن</button>
-            <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setShowPromoPopup(false)}>إغلاق</button>
+            )}
+          </div>
+          {/* خط مقطع - ticket style */}
+          <div style={{position:"relative",height:20,background:"linear-gradient(145deg,var(--surface-2),rgba(var(--pr),.07))",borderLeft:"1.5px solid rgba(var(--pr),.4)",borderRight:"1.5px solid rgba(var(--pr),.4)"}}>
+            <div style={{position:"absolute",left:-12,top:"50%",transform:"translateY(-50%)",width:24,height:24,borderRadius:"50%",background:"rgba(0,0,0,.88)"}}/>
+            <div style={{position:"absolute",right:-12,top:"50%",transform:"translateY(-50%)",width:24,height:24,borderRadius:"50%",background:"rgba(0,0,0,.88)"}}/>
+            <div style={{position:"absolute",top:"50%",right:20,left:20,height:0,borderTop:"1.5px dashed rgba(var(--pr),.3)"}}/>
+          </div>
+          {/* جزء سفلي الأزرار */}
+          <div style={{background:"linear-gradient(145deg,var(--surface-2),rgba(var(--pr),.07))",borderRadius:"0 0 22px 22px",padding:"16px 20px 22px",border:"1.5px solid rgba(var(--pr),.4)",borderTop:"none"}}>
+            <button className="promo-book-glow" style={{width:"100%",background:"var(--grad)",color:"#000",padding:"14px",borderRadius:14,fontWeight:900,fontSize:14,cursor:"pointer",fontFamily:"inherit",border:"none",marginBottom:10}} onClick={()=>{setShowPromoPopup(false);onBook();}}>احجز الآن</button>
+            <button style={{width:"100%",background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"11px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setShowPromoPopup(false)}>إغلاق</button>
           </div>
         </div>
       </div>
@@ -4251,16 +4277,9 @@ function PromoPanel({salon,customers,toast$}){
   ];
   const DURATIONS=[{days:1,label:"يوم واحد"},{days:3,label:"3 أيام"},{days:7,label:"أسبوع"}];
   const CUSTOMER_GROUPS=[
-    {key:"last80",label:"آخر 80 عميل",max:80},
-    {key:"top50",label:"الأكثر زيارة",max:50},
-    {key:"last30",label:"آخر 30 عميل",max:30},
-  ];
-  const TEMPLATES=[
-    "خصم 20% على قصة الشعر طوال فترة العرض 🎉",
-    "تسريح مجاني مع كل حجز للفترة المحدودة ✂",
-    "الحجز الثاني بنصف السعر 💈",
-    "قصة شعر + لحية بسعر قصة واحدة فقط ⚡",
-    "خصم خاص 30% على الحلاقة الكاملة 🔥",
+    {key:"recent",label:"آخر العملاء الذين زاروا الصالون",subtitle:"العملاء الذين زاروك مؤخراً"},
+    {key:"frequent",label:"أكثر العملاء زيارة للصالون",subtitle:"العملاء الذين يترددون عليك باستمرار"},
+    {key:"all",label:"جميع العملاء",subtitle:"جميع من حجز عبر التطبيق"},
   ];
   const WHATSAPP_RATE=0.10;
   const[pkg,setPkg]=useState(null);
@@ -4274,17 +4293,29 @@ function PromoPanel({salon,customers,toast$}){
   const[codeError,setCodeError]=useState("");
   const[waCredits,setWaCredits]=useState(null);
   const[appliedCodeRow,setAppliedCodeRow]=useState(null);
-  const[customerGroup,setCustomerGroup]=useState("last80");
+  const[customerGroup,setCustomerGroup]=useState("recent");
+  const[targetCount,setTargetCount]=useState(null);
+  const[templateType,setTemplateType]=useState("discount");
+  const[tmplService1,setTmplService1]=useState("");
+  const[tmplService2,setTmplService2]=useState("");
+  const[tmplPercent,setTmplPercent]=useState(20);
   const[saving,setSaving]=useState(false);
   const[myPromos,setMyPromos]=useState([]);
   const[loadingPromos,setLoadingPromos]=useState(true);
 
   const selectedPkg=PACKAGES.find(p=>p.id===pkg);
   const salonCustomers=customers.filter(c=>(c.history||[]).some(h=>String(h.salonId)===String(salon.id)));
-  const grpMax=CUSTOMER_GROUPS.find(g=>g.key===customerGroup)?.max||80;
-  const customerCount=Math.min(salonCustomers.length,grpMax);
-  const effectiveCustomerCount=waCredits?Math.min(customerCount,waCredits):customerCount;
-  const promoText=useTemplate?selectedTemplate:customText;
+  const totalCustomers=salonCustomers.length;
+  const minCount=Math.max(1,Math.floor(totalCustomers*0.3));
+  const effectiveTarget=targetCount===null?minCount:Math.max(minCount,Math.min(totalCustomers,targetCount));
+  const effectiveCustomerCount=waCredits?Math.min(effectiveTarget,waCredits):effectiveTarget;
+  const smartTemplate=
+    templateType==="discount"&&tmplService1&&tmplPercent?`خصم ${tmplPercent}% على ${tmplService1} 🎉`:
+    templateType==="free"&&tmplService1?`احصل على ${tmplService1} مجاناً مع كل حجز ✂`:
+    templateType==="double"&&tmplService1&&tmplService2?`${tmplService1} + ${tmplService2} بسعر خدمة واحدة فقط ⚡`:
+    templateType==="second"&&tmplPercent?`احجز ثانية واحصل على خصم ${tmplPercent}% 💈`:
+    "";
+  const promoText=useTemplate?smartTemplate:customText;
   const basePrice=!selectedPkg?0:pkg==="gold"
     ? parseFloat((effectiveCustomerCount*WHATSAPP_RATE).toFixed(2))
     : (selectedPkg.prices[durationDays]||0);
@@ -4330,8 +4361,8 @@ function PromoPanel({salon,customers,toast$}){
   const submitPromo=async()=>{
     if(!pkg){toast$("❌ اختر الباقة","err");return;}
     if(!promoText.trim()){toast$("❌ اختر نص العرض أو اكتبه","err");return;}
-    if(myPromos.some(p=>p.status==="active")){
-      toast$("❌ لديك عرض نشط بالفعل، ألغِه أولاً","err");return;
+    if(myPromos.some(p=>p.status==="active"&&p.package===pkg)){
+      toast$("❌ لديك عرض نشط من هذه الباقة، ألغِه أولاً","err");return;
     }
     setSaving(true);
     try{
@@ -4355,7 +4386,7 @@ function PromoPanel({salon,customers,toast$}){
       toast$("✅ تم إرسال العرض وتفعيله!");
       const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=10`).catch(()=>[]);
       setMyPromos(rows||[]);
-      setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setAppliedCodeRow(null);
+      setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setAppliedCodeRow(null);setTemplateType("discount");setTmplService1("");setTmplService2("");setTmplPercent(20);setTargetCount(null);
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
     finally{setSaving(false);}
   };
@@ -4395,13 +4426,11 @@ function PromoPanel({salon,customers,toast$}){
       setWizStep(s=>s-1);
     }
   };
-  const reset=()=>{setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setCodeError("");setWaCredits(null);setAppliedCodeRow(null);setWizStep(1);};
+  const reset=()=>{setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setCodeError("");setWaCredits(null);setAppliedCodeRow(null);setWizStep(1);setTemplateType("discount");setTmplService1("");setTmplService2("");setTmplPercent(20);setTargetCount(null);};
   const renewPromo=(pr)=>{
     setPkg(pr.package);
     if(pr.package!=="gold")setDurationDays(pr.duration_days||7);
-    const tmpl=TEMPLATES.find(t=>t===pr.promo_text);
-    if(tmpl){setUseTemplate(true);setSelectedTemplate(tmpl);}
-    else{setUseTemplate(false);setCustomText(pr.promo_text||"");}
+    setUseTemplate(false);setCustomText(pr.promo_text||"");
     setCodeInput("");setCodeApplied(false);setDiscountCode("");setCodeError("");setAppliedCodeRow(null);
     setWizStep(2);
   };
@@ -4516,9 +4545,6 @@ function PromoPanel({salon,customers,toast$}){
                       <span>{p.medal}</span>
                     </div>
                     <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.5,marginBottom:5}}>{p.service}</div>
-                    <div style={{display:"inline-block",background:sel?`${p.color}22`:"rgba(255,255,255,.04)",border:`1px solid ${p.color}44`,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,color:p.color}}>
-                      {p.prices?`${p.prices[1]}ر — ${p.prices[3]}ر — ${p.prices[7]}ر`:"0.1 ريال / عميل"}
-                    </div>
                   </div>
                   <div style={{width:22,height:22,borderRadius:"50%",border:`2.5px solid ${p.color}`,background:sel?p.color:"transparent",flexShrink:0,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center"}}>
                     {sel&&<span style={{fontSize:10,color:"#000",fontWeight:900}}>✓</span>}
@@ -4550,21 +4576,45 @@ function PromoPanel({salon,customers,toast$}){
           </div>
         ):(
           <div>
-            <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12,textAlign:"center"}}>من تريد استهدافه؟</div>
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {/* إجمالي العملاء */}
+            <div style={{textAlign:"center",marginBottom:6}}>
+              <button onClick={()=>setTargetCount(totalCustomers)} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",display:"inline-block"}}>
+                <div style={{fontSize:34,fontWeight:900,color:"#d4a017",lineHeight:1}}>{totalCustomers}</div>
+                <div style={{fontSize:11,color:"var(--text-muted)",marginTop:3}}>إجمالي عملائك عبر التطبيق ↑</div>
+              </button>
+            </div>
+            {/* رسالة تحفيزية */}
+            <div style={{background:"rgba(212,160,23,.06)",border:"1px solid rgba(212,160,23,.2)",borderRadius:10,padding:"9px 12px",fontSize:11,color:"var(--text-muted)",lineHeight:1.7,marginBottom:14,textAlign:"center"}}>
+              💡 كلما حجز عملاؤك عبر التطبيق زاد الرقم — وزادت قدرتك على استهدافهم في عروضك القادمة
+            </div>
+            {/* فئات الاستهداف */}
+            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8,textAlign:"center"}}>اختر الفئة المستهدفة</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
               {CUSTOMER_GROUPS.map(g=>{
                 const sel=customerGroup===g.key;
-                const cnt=sel?customerCount:Math.min(salonCustomers.length,g.max);
                 return(
-                  <button key={g.key} onClick={()=>setCustomerGroup(g.key)} style={{padding:"16px",borderRadius:14,border:`2px solid ${sel?"#d4a017":"var(--border-ui)"}`,background:sel?"rgba(212,160,23,.1)":"var(--surface-1)",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s",display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:sel?"0 4px 14px rgba(212,160,23,.12)":"none"}}>
+                  <button key={g.key} onClick={()=>setCustomerGroup(g.key)} style={{padding:"13px 16px",borderRadius:14,border:`2px solid ${sel?"#d4a017":"var(--border-ui)"}`,background:sel?"rgba(212,160,23,.08)":"var(--surface-1)",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s",display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:sel?"0 4px 14px rgba(212,160,23,.1)":"none"}}>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:13,fontWeight:700,color:sel?"#d4a017":"var(--text-primary)",marginBottom:3}}>{g.label}</div>
-                      <div style={{fontSize:11,color:"var(--text-muted)"}}>التكلفة: <span style={{color:sel?"#d4a017":"var(--text-muted)",fontWeight:700}}>{parseFloat((cnt*WHATSAPP_RATE).toFixed(2))} ريال</span></div>
+                      <div style={{fontSize:12,fontWeight:700,color:sel?"#d4a017":"var(--text-primary)",marginBottom:2}}>{g.label}</div>
+                      <div style={{fontSize:11,color:"var(--text-muted)"}}>{g.subtitle}</div>
                     </div>
-                    <div style={{background:sel?"rgba(212,160,23,.15)":"rgba(255,255,255,.04)",border:`1px solid ${sel?"#d4a017":"var(--border-ui)"}`,borderRadius:20,padding:"4px 12px",fontSize:13,fontWeight:800,color:sel?"#d4a017":"var(--text-muted)"}}>{cnt} عميل</div>
+                    <div style={{width:20,height:20,borderRadius:"50%",border:`2.5px solid #d4a017`,background:sel?"#d4a017":"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {sel&&<span style={{fontSize:9,color:"#000",fontWeight:900}}>✓</span>}
+                    </div>
                   </button>
                 );
               })}
+            </div>
+            {/* عداد العملاء */}
+            <div style={{background:"rgba(212,160,23,.06)",border:"1.5px solid rgba(212,160,23,.3)",borderRadius:14,padding:"14px"}}>
+              <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"center",marginBottom:10}}>عدد العملاء المستهدفين</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:20,marginBottom:8}}>
+                <button onClick={()=>setTargetCount(t=>Math.max(minCount,(t??effectiveTarget)-1))} style={{width:38,height:38,borderRadius:"50%",border:"2px solid rgba(212,160,23,.5)",background:"rgba(212,160,23,.1)",color:"#d4a017",fontSize:22,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",flexShrink:0}}>−</button>
+                <div style={{fontSize:34,fontWeight:900,color:"#d4a017",minWidth:60,textAlign:"center"}}>{effectiveTarget}</div>
+                <button onClick={()=>setTargetCount(t=>Math.min(totalCustomers,(t??effectiveTarget)+1))} style={{width:38,height:38,borderRadius:"50%",border:"2px solid rgba(212,160,23,.5)",background:"rgba(212,160,23,.1)",color:"#d4a017",fontSize:22,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",flexShrink:0}}>+</button>
+              </div>
+              <div style={{fontSize:10,color:"var(--text-muted)",textAlign:"center",marginBottom:4}}>الحد الأدنى: {minCount} عميل (30% من عملائك)</div>
+              <div style={{fontSize:13,fontWeight:800,color:"#d4a017",textAlign:"center"}}>التكلفة: {parseFloat((effectiveCustomerCount*WHATSAPP_RATE).toFixed(2))} ريال</div>
             </div>
           </div>
         )
@@ -4573,26 +4623,100 @@ function PromoPanel({salon,customers,toast$}){
       {/* ── الخطوة 3: نص العرض ── */}
       {wizStep===3&&(
         <div>
-          <div style={{display:"flex",gap:6,marginBottom:12,background:"var(--surface-1)",borderRadius:10,padding:4,border:"1px solid var(--border-ui)"}}>
-            <button onClick={()=>setUseTemplate(true)} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:useTemplate?"var(--pa15)":"transparent",color:useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>بطاقة جاهزة</button>
-            <button onClick={()=>setUseTemplate(false)} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:!useTemplate?"var(--pa15)":"transparent",color:!useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>اكتب بنفسك</button>
+          <div style={{display:"flex",gap:6,marginBottom:14,background:"var(--surface-1)",borderRadius:10,padding:4,border:"1px solid var(--border-ui)"}}>
+            <button onClick={()=>setUseTemplate(true)} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:useTemplate?"var(--pa15)":"transparent",color:useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>قالب جاهز</button>
+            <button onClick={()=>setUseTemplate(false)} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:!useTemplate?"var(--pa15)":"transparent",color:!useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>نص مخصص</button>
           </div>
           {useTemplate?(
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {TEMPLATES.map(tmpl=>{
-                const sel=selectedTemplate===tmpl;
-                return(
-                  <button key={tmpl} onClick={()=>setSelectedTemplate(tmpl)} style={{padding:"13px 14px",borderRadius:12,border:`2px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa08)":"var(--surface-1)",color:sel?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",textAlign:"right",lineHeight:1.7,WebkitAppearance:"none",appearance:"none",transition:"all .15s",boxShadow:sel?"0 4px 14px rgba(var(--gold-rgb),.1)":"none"}}>
-                    {tmpl}
-                  </button>
-                );
-              })}
+            <div>
+              {/* أنواع القوالب */}
+              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
+                {[
+                  {id:"discount",icon:"🏷",label:"خصم نسبي",desc:"خصم % على خدمة محددة"},
+                  {id:"free",icon:"🎁",label:"خدمة مجانية",desc:"خدمة مجانية مع كل حجز"},
+                  {id:"double",icon:"✌️",label:"باقة مزدوجة",desc:"خدمتان بسعر خدمة واحدة"},
+                  {id:"second",icon:"🔄",label:"الحجز الثاني",desc:"خصم على حجزك القادم"},
+                ].map(tp=>{
+                  const sel=templateType===tp.id;
+                  return(
+                    <button key={tp.id} onClick={()=>{setTemplateType(tp.id);setTmplService1("");setTmplService2("");}} style={{padding:"12px 14px",borderRadius:12,border:`2px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa08)":"var(--surface-1)",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .15s",display:"flex",alignItems:"center",gap:12,textAlign:"right",boxShadow:sel?"0 4px 14px rgba(var(--gold-rgb),.1)":"none"}}>
+                      <span style={{fontSize:22,flexShrink:0}}>{tp.icon}</span>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:13,fontWeight:700,color:sel?"var(--p)":"var(--text-primary)",marginBottom:2}}>{tp.label}</div>
+                        <div style={{fontSize:11,color:"var(--text-muted)"}}>{tp.desc}</div>
+                      </div>
+                      <div style={{width:20,height:20,borderRadius:"50%",border:`2.5px solid var(--p)`,background:sel?"var(--p)":"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        {sel&&<span style={{fontSize:9,color:"#000",fontWeight:900}}>✓</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* مدخلات القالب */}
+              <div style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+                {(templateType==="discount"||templateType==="second")&&(
+                  <div style={{marginBottom:10}}>
+                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>نسبة الخصم %</div>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <button onClick={()=>setTmplPercent(p=>Math.max(1,p-5))} style={{width:34,height:34,borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:16,fontFamily:"inherit"}}>−</button>
+                      <div style={{flex:1,textAlign:"center",fontSize:22,fontWeight:900,color:"var(--p)"}}>{tmplPercent}%</div>
+                      <button onClick={()=>setTmplPercent(p=>Math.min(99,p+5))} style={{width:34,height:34,borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:16,fontFamily:"inherit"}}>+</button>
+                    </div>
+                  </div>
+                )}
+                {(templateType==="discount"||templateType==="free"||templateType==="double")&&(
+                  <div style={{marginBottom:templateType==="double"?10:0}}>
+                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>{templateType==="double"?"الخدمة الأولى":"الخدمة"}</div>
+                    <select value={tmplService1} onChange={e=>setTmplService1(e.target.value)} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:tmplService1?"var(--text-primary)":"var(--text-muted)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl"}}>
+                      <option value="">اختر الخدمة</option>
+                      {(salon.services||[]).map(s=><option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                )}
+                {templateType==="double"&&(
+                  <div>
+                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>الخدمة الثانية</div>
+                    <select value={tmplService2} onChange={e=>setTmplService2(e.target.value)} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:tmplService2?"var(--text-primary)":"var(--text-muted)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl"}}>
+                      <option value="">اختر الخدمة</option>
+                      {(salon.services||[]).map(s=><option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+              {/* معاينة */}
+              {smartTemplate&&(
+                <div style={{background:"rgba(var(--gold-rgb),.06)",border:"1px dashed rgba(var(--gold-rgb),.35)",borderRadius:10,padding:"10px 14px"}}>
+                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>معاينة النص:</div>
+                  <div style={{fontSize:13,color:"var(--text-primary)",lineHeight:1.7}}>{smartTemplate}</div>
+                </div>
+              )}
             </div>
           ):(
-            <>
-              <textarea value={customText} onChange={e=>setCustomText(e.target.value)} placeholder="اكتب نص عرضك هنا..." maxLength={200} rows={4} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",direction:"rtl",boxSizing:"border-box"}}/>
-              <div style={{fontSize:10,color:"var(--text-muted)",marginTop:4,textAlign:"left"}}>{customText.length}/200</div>
-            </>
+            <div>
+              <div style={{background:"rgba(var(--gold-rgb),.06)",border:"1px solid rgba(var(--gold-rgb),.2)",borderRadius:10,padding:"9px 12px",fontSize:11,color:"var(--text-muted)",lineHeight:1.7,marginBottom:12}}>
+                💡 اكتب عرضاً واضحاً: الخدمة، الخصم، والمدة. اجعله موجزاً وجذاباً
+              </div>
+              {(salon.services||[]).length>0&&(
+                <div style={{marginBottom:10}}>
+                  <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>أضف خدمة (اختياري)</div>
+                  <select value={tmplService1} onChange={e=>{setTmplService1(e.target.value);if(e.target.value)setCustomText(t=>t?t+" "+e.target.value:e.target.value);}} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:tmplService1?"var(--text-primary)":"var(--text-muted)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl"}}>
+                    <option value="">--</option>
+                    {(salon.services||[]).map(s=><option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
+              <textarea value={customText} onChange={e=>setCustomText(e.target.value)} placeholder="اكتب نص عرضك هنا..." rows={4} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",direction:"rtl",boxSizing:"border-box",marginBottom:6}}/>
+              {customText&&(
+                <div style={{background:"rgba(var(--gold-rgb),.06)",border:"1px dashed rgba(var(--gold-rgb),.35)",borderRadius:10,padding:"10px 14px"}}>
+                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>معاينة:</div>
+                  <div style={{fontSize:13,color:"var(--text-primary)",lineHeight:1.7}}>
+                    {customText.split(/(\d+%?)/).map((part,i)=>
+                      /^\d+%?$/.test(part)?<span key={i} style={{color:"var(--p)",fontWeight:800}}>{part}</span>:<span key={i}>{part}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -6605,6 +6729,10 @@ const CSS=`
   button:active{opacity:.82;}
   @keyframes promoPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(231,76,60,.5);}60%{transform:scale(1.06);box-shadow:0 0 0 7px rgba(231,76,60,0);}}
   .promo-badge-anim{animation:promoPulse 1.8s ease-in-out infinite;}
+  @keyframes promoBounce{0%,100%{transform:scale(1) rotate(-6deg);}50%{transform:scale(1.28) rotate(6deg);}}
+  .promo-fire-anim{animation:promoBounce 1.1s ease-in-out infinite;display:inline-block;}
+  @keyframes promoGlow{0%,100%{box-shadow:0 4px 18px rgba(var(--pr),.35);}50%{box-shadow:0 4px 32px rgba(var(--pr),.65),0 0 0 5px rgba(var(--pr),.12);}}
+  .promo-book-glow{animation:promoGlow 1.8s ease-in-out infinite;}
 `;
 
 const G={
