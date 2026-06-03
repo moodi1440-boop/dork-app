@@ -4296,11 +4296,9 @@ function PromoPanel({salon,customers,toast$}){
     if(!c){setCodeError("أدخل الكود أولاً");return;}
     setCheckingCode(true);
     try{
-      const rows=await sb("promo_codes","GET",null,`?code=eq.${c}&active=eq.true&select=id,code,active,code_type,wa_credits,starts_at,expires_at,max_uses,used_count`);
+      const rows=await sb("promo_codes","GET",null,`?code=eq.${c}&active=eq.true&select=id,code,active,code_type,wa_credits,duration_days,expires_at,max_uses,used_count`);
       if(!rows||rows.length===0){setCodeError("الكود غير صحيح أو منتهي");setCodeApplied(false);return;}
       const row=rows[0];
-      // تحقق من تاريخ البداية
-      if(row.starts_at&&new Date(row.starts_at)>new Date()){setCodeError("هذا الكود لم يبدأ بعد");setCodeApplied(false);return;}
       // تحقق من انتهاء الصلاحية
       if(row.expires_at&&new Date(row.expires_at)<new Date()){setCodeError("انتهت صلاحية هذا الكود");setCodeApplied(false);return;}
       // تحقق من عدد الاستخدامات
@@ -4308,6 +4306,11 @@ function PromoPanel({salon,customers,toast$}){
       // تحقق من نوع الكود مع الباقة
       if(row.code_type==="whatsapp"&&pkg!=="gold"){setCodeError("هذا الكود لباقة WhatsApp فقط");setCodeApplied(false);return;}
       if(row.code_type==="app"&&pkg==="gold"){setCodeError("هذا الكود لباقات التطبيق فقط (برونز أو فضي)");setCodeApplied(false);return;}
+      // بدء العداد: إذا الكود له مدة ولم يُفعَّل بعد، سجّل تاريخ انتهاء الصلاحية الآن
+      if(row.duration_days&&!row.expires_at){
+        const exp=new Date(Date.now()+row.duration_days*86400000).toISOString();
+        await sb("promo_codes","PATCH",{expires_at:exp},`?id=eq.${row.id}`).catch(()=>{});
+      }
       // كود WhatsApp يحدد عدد عملاء مجانيين
       if(row.code_type==="whatsapp"&&row.wa_credits){setWaCredits(row.wa_credits);}
       setCodeApplied(true);setDiscountCode(c);setCodeError("");

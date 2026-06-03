@@ -10,7 +10,7 @@ interface PromoCode {
   note: string | null;
   max_uses: number | null;
   used_count: number;
-  starts_at: string | null;
+  duration_days: number | null;
   expires_at: string | null;
   code_type: "app" | "whatsapp";
   wa_credits: number | null;
@@ -30,7 +30,6 @@ const genWa  = () => `WA-${genRandom()}`;
 function getStatus(c: PromoCode): "pending" | "unused" | "used" | "expired" {
   const now = new Date();
   if (!c.active || (!!c.expires_at && new Date(c.expires_at) < now) || (c.max_uses !== null && c.used_count >= c.max_uses)) return "expired";
-  if (c.starts_at && new Date(c.starts_at) > now) return "pending";
   if (c.used_count > 0) return "used";
   return "unused";
 }
@@ -43,18 +42,13 @@ const STATUS_CFG = {
 };
 
 function buildWaMsg(c: PromoCode) {
-  const credits = c.wa_credits ? `\n📲 ${c.wa_credits} رسالة WhatsApp مجانية` : "";
-  const expiry  = c.expires_at ? `\n⏳ صالح حتى: ${new Date(c.expires_at).toLocaleDateString("ar-SA")}` : "";
-  const type    = c.code_type === "app" ? "كود تطبيق دورك المجاني" : "كود WhatsApp في تطبيق دورك";
-  return `مرحباً 👋\nهذا ${type}:\n\n🎟 ${c.code}${credits}${expiry}\n\nاستخدمه في تطبيق دورك عند إرسال عرضك ✅`;
+  const credits  = c.wa_credits ? `\n📲 ${c.wa_credits} رسالة WhatsApp مجانية` : "";
+  const duration = c.duration_days ? `\n⏱ صالح ${c.duration_days} يوم من أول استخدام` : "";
+  const type     = c.code_type === "app" ? "كود تطبيق دورك المجاني" : "كود WhatsApp في تطبيق دورك";
+  return `مرحباً 👋\nهذا ${type}:\n\n🎟 ${c.code}${credits}${duration}\n\nاستخدمه في تطبيق دورك عند إرسال عرضك ✅`;
 }
 
 function fmt(d: string) { return new Date(d).toLocaleDateString("ar-SA"); }
-
-function defaultExpiry(days = 30) {
-  const d = new Date(); d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
-}
 
 export default function PromoCodesPage() {
   const [codes, setCodes]         = useState<PromoCode[]>([]);
@@ -66,19 +60,18 @@ export default function PromoCodesPage() {
   const [copied, setCopied]       = useState<string | null>(null);
 
   // حقول النموذج
-  const [fCode,    setFCode]    = useState("");
-  const [fNote,    setFNote]    = useState("");
-  const [fMaxUses, setFMaxUses] = useState("1");
-  const [fStart,   setFStart]   = useState("");
-  const [fExpiry,  setFExpiry]  = useState(defaultExpiry(30));
-  const [fWaCred,  setFWaCred]  = useState("20");
-  const [fPhone,   setFPhone]   = useState("");
+  const [fCode,     setFCode]     = useState("");
+  const [fNote,     setFNote]     = useState("");
+  const [fMaxUses,  setFMaxUses]  = useState("1");
+  const [fDuration, setFDuration] = useState("30");
+  const [fWaCred,   setFWaCred]   = useState("20");
+  const [fPhone,    setFPhone]    = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     const { data } = await sb
       .from("promo_codes")
-      .select("id,code,active,created_at,note,max_uses,used_count,starts_at,expires_at,code_type,wa_credits,used_by_salon_id,recipient_phone")
+      .select("id,code,active,created_at,note,max_uses,used_count,duration_days,expires_at,code_type,wa_credits,used_by_salon_id,recipient_phone")
       .order("created_at", { ascending: false })
       .limit(200);
     setCodes((data ?? []) as PromoCode[]);
@@ -89,7 +82,7 @@ export default function PromoCodesPage() {
 
   const resetForm = () => {
     setFCode(tab === "app" ? genApp() : genWa());
-    setFNote(""); setFMaxUses("1"); setFStart(""); setFExpiry(defaultExpiry(30));
+    setFNote(""); setFMaxUses("1"); setFDuration("30");
     setFWaCred("20"); setFPhone(""); setError("");
   };
 
@@ -104,8 +97,8 @@ export default function PromoCodesPage() {
       code_type: tab,
       note: fNote.trim() || null,
       max_uses: parseInt(fMaxUses) || 1,
-      starts_at: fStart ? new Date(fStart).toISOString() : null,
-      expires_at: fExpiry ? new Date(fExpiry).toISOString() : null,
+      duration_days: parseInt(fDuration) || 30,
+      expires_at: null,
       recipient_phone: fPhone.trim() || null,
       wa_credits: tab === "whatsapp" ? (parseInt(fWaCred) || 20) : null,
     };
@@ -202,18 +195,19 @@ export default function PromoCodesPage() {
                 <input type="number" value={fMaxUses} onChange={e => setFMaxUses(e.target.value)} min="1"
                   className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
               </div>
-              {/* يبدأ في */}
+              {/* مدة الكود */}
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">يبدأ في (اختياري)</label>
-                <input type="date" value={fStart} onChange={e => setFStart(e.target.value)}
-                  className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
+                <label className="text-xs text-gray-500 mb-1 block">المدة من أول استخدام</label>
+                <select value={fDuration} onChange={e => setFDuration(e.target.value)}
+                  className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold">
+                  <option value="3">3 أيام</option>
+                  <option value="7">7 أيام</option>
+                  <option value="14">14 يوم</option>
+                  <option value="30">30 يوم</option>
+                  <option value="60">60 يوم</option>
+                  <option value="90">90 يوم</option>
+                </select>
               </div>
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">ينتهي في</label>
-              <input type="date" value={fExpiry} onChange={e => setFExpiry(e.target.value)}
-                className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
             </div>
 
             {/* حقول WhatsApp فقط */}
@@ -281,8 +275,10 @@ export default function PromoCodesPage() {
                     <div className="flex items-center gap-3 flex-wrap">
                       {c.note && <span className="text-xs text-gray-400">📋 {c.note}</span>}
                       {c.wa_credits && <span className="text-xs text-green-400">📲 {c.wa_credits} عميل</span>}
-                      {c.starts_at && <span className="text-xs text-yellow-500">▶ {fmt(c.starts_at)}</span>}
-                      {c.expires_at && <span className="text-xs text-gray-500">⏳ {fmt(c.expires_at)}</span>}
+                      {c.duration_days && !c.expires_at && (
+                        <span className="text-xs text-yellow-500">⏱ {c.duration_days} يوم من الاستخدام</span>
+                      )}
+                      {c.expires_at && <span className="text-xs text-gray-500">⏳ ينتهي {fmt(c.expires_at)}</span>}
                       {c.used_count > 0 && (
                         <span className="text-xs text-blue-400">
                           ✓ {c.used_count}/{c.max_uses ?? "∞"} استخدام
