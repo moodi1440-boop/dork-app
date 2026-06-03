@@ -4240,10 +4240,10 @@ function BookingCalendar({salon,onUpdate}){
 function PromoPanel({salon,customers,toast$}){
   const PACKAGES=[
     {id:"bronze",label:"برونز",medal:"🥉",color:"#cd7f32",bg:"rgba(205,127,50,.08)",border:"rgba(205,127,50,.4)",
-     icon:"🔔",service:"إشعار push لجميع عملاء التطبيق",
+     icon:"🔔",service:"إشعار push يذهب لعملائك فقط الذين فعّلوا الإشعارات في التطبيق",
      prices:{1:5,3:12,7:20}},
     {id:"silver",label:"فضي",medal:"🥈",color:"#9e9e9e",bg:"rgba(158,158,158,.08)",border:"rgba(158,158,158,.4)",
-     icon:"🔥",service:"بادج 🔥 + إطار ملون في بطاقتك على الصفحة الرئيسية",
+     icon:"🔥",service:"العرض يظهر في بطاقة صالونك في الصفحة الرئيسية يشاهده جميع العملاء",
      prices:{1:10,3:25,7:40}},
     {id:"gold",label:"ذهبي",medal:"🥇",color:"#d4a017",bg:"rgba(212,160,23,.08)",border:"rgba(212,160,23,.4)",
      icon:"💬",service:"رسائل WhatsApp مباشرة لعملائك",
@@ -4292,8 +4292,10 @@ function PromoPanel({salon,customers,toast$}){
 
   useEffect(()=>{
     if(!salon?.id)return;
-    sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=10`)
-      .then(rows=>setMyPromos(rows||[])).catch(()=>{}).finally(()=>setLoadingPromos(false));
+    const deletedKey=`dork_del_promos_${salon.id}`;
+    const deletedIds=new Set(JSON.parse(localStorage.getItem(deletedKey)||"[]"));
+    sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=20`)
+      .then(rows=>setMyPromos((rows||[]).filter(r=>!deletedIds.has(r.id)))).catch(()=>{}).finally(()=>setLoadingPromos(false));
   },[salon?.id]);
 
   const[checkingCode,setCheckingCode]=useState(false);
@@ -4367,11 +4369,13 @@ function PromoPanel({salon,customers,toast$}){
   };
 
   const deletePromo=async(promoId)=>{
-    try{
-      await sb("promotions","PATCH",{status:"cancelled"},`?id=eq.${promoId}`);
-      setMyPromos(p=>p.filter(x=>x.id!==promoId));
-      toast$("تم حذف العرض");
-    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
+    const deletedKey=`dork_del_promos_${salon.id}`;
+    try{await sb("promotions","PATCH",{status:"cancelled"},`?id=eq.${promoId}`);}catch{}
+    const ids=new Set(JSON.parse(localStorage.getItem(deletedKey)||"[]"));
+    ids.add(promoId);
+    localStorage.setItem(deletedKey,JSON.stringify([...ids]));
+    setMyPromos(p=>p.filter(x=>x.id!==promoId));
+    toast$("تم حذف العرض");
   };
 
   const pkgColor=(p)=>PACKAGES.find(x=>x.id===p)?.color||"var(--text-muted)";
@@ -4479,9 +4483,10 @@ function PromoPanel({salon,customers,toast$}){
                   {isPending&&(
                     <button onClick={()=>deletePromo(pr.id)} style={{flex:1,background:"rgba(231,76,60,.1)",border:"1px solid rgba(231,76,60,.4)",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>🗑 حذف</button>
                   )}
-                  {(pr.status==="expired"||pr.status==="cancelled")&&(
-                    <button onClick={()=>renewPromo(pr)} style={{flex:1,background:"var(--pa12)",border:"1px solid rgba(var(--pr),.3)",color:"var(--p)",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>تجديد العرض ↩</button>
-                  )}
+                  {(pr.status==="expired"||pr.status==="cancelled")&&(<>
+                    <button onClick={()=>renewPromo(pr)} style={{flex:2,background:"var(--pa12)",border:"1px solid rgba(var(--pr),.3)",color:"var(--p)",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>تجديد العرض ↩</button>
+                    <button onClick={()=>deletePromo(pr.id)} style={{flex:1,background:"transparent",border:"1px solid rgba(231,76,60,.35)",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>🗑</button>
+                  </>)}
                 </div>
               </div>
               );
@@ -4633,7 +4638,7 @@ function PromoPanel({salon,customers,toast$}){
 
           {/* كود الخصم */}
           <div style={{background:"var(--surface-1)",border:`1px solid ${codeApplied?"#27ae60":"var(--border-ui)"}`,borderRadius:12,padding:"12px 14px",marginBottom:14}}>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>🎟 كود الخصم <span style={{color:"#e74c3c",fontWeight:700}}>*مطلوب</span></div>
+            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>🎟 كود الخصم</div>
             <div style={{display:"flex",gap:8}}>
               <input value={codeInput} onChange={e=>{setCodeInput(e.target.value.toUpperCase());setCodeApplied(false);setCodeError("");}} placeholder="أدخل الكود" maxLength={20} disabled={codeApplied} style={{flex:1,padding:"10px 12px",borderRadius:9,border:`1.5px solid ${codeApplied?"#27ae60":codeError?"#e74c3c":"var(--border-ui)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"ltr",textAlign:"center",boxSizing:"border-box",letterSpacing:2}}/>
               <button onClick={codeApplied?()=>{setCodeApplied(false);setCodeInput("");setDiscountCode("");setCodeError("");setAppliedCodeRow(null);}:applyCode} disabled={checkingCode} style={{padding:"10px 16px",borderRadius:9,border:"none",background:codeApplied?"rgba(39,174,96,.15)":"var(--pa15)",color:codeApplied?"#27ae60":"var(--p)",cursor:checkingCode?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,flexShrink:0,WebkitAppearance:"none",appearance:"none"}}>
@@ -4651,7 +4656,7 @@ function PromoPanel({salon,customers,toast$}){
             </div>
           )}
           <button onClick={submitPromo} disabled={saving||!codeApplied} style={{width:"100%",background:saving||!codeApplied?"var(--surface-1)":totalPrice===0?"linear-gradient(135deg,#27ae60,#2ecc71)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving||!codeApplied?"var(--text-muted)":"#fff",border:codeApplied?"none":"1.5px solid var(--border-ui)",borderRadius:14,padding:"16px",fontSize:15,fontWeight:800,cursor:saving||!codeApplied?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:8,transition:"all .2s"}}>
-            {saving?"⏳ جاري الإرسال...":codeApplied?"🚀 إرسال العرض":"🔒 يلزم كود خصم"}
+            {saving?"⏳ جاري الإرسال...":codeApplied?"🚀 إرسال العرض":"أدخل كود الخصم أولاً"}
           </button>
           <button disabled style={{width:"100%",background:"var(--surface-1)",color:"var(--text-muted)",border:"1.5px solid var(--border-ui)",borderRadius:14,padding:"13px",fontSize:13,fontWeight:700,cursor:"not-allowed",fontFamily:"inherit",marginBottom:4,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:.6}}>
             <span>💳 ادفع وأرسل</span>
