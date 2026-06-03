@@ -10,6 +10,7 @@ interface PromoCode {
   note: string | null;
   max_uses: number | null;
   used_count: number;
+  starts_at: string | null;
   expires_at: string | null;
   code_type: "app" | "whatsapp";
   wa_credits: number | null;
@@ -26,21 +27,19 @@ function genRandom(len = 7) {
 const genApp = () => `APP-${genRandom()}`;
 const genWa  = () => `WA-${genRandom()}`;
 
-function getStatus(c: PromoCode): "unused" | "used" | "expired" {
+function getStatus(c: PromoCode): "pending" | "unused" | "used" | "expired" {
   const now = new Date();
-  const isExpired =
-    !c.active ||
-    (!!c.expires_at && new Date(c.expires_at) < now) ||
-    (c.max_uses !== null && c.used_count >= c.max_uses);
-  if (isExpired) return "expired";
+  if (!c.active || (!!c.expires_at && new Date(c.expires_at) < now) || (c.max_uses !== null && c.used_count >= c.max_uses)) return "expired";
+  if (c.starts_at && new Date(c.starts_at) > now) return "pending";
   if (c.used_count > 0) return "used";
   return "unused";
 }
 
 const STATUS_CFG = {
-  unused:  { dot: "⚫", label: "لم يُستخدم", cls: "bg-gray-700/30 text-gray-400",  border: "border-gray-700/40" },
-  used:    { dot: "🟢", label: "مفعّل",      cls: "bg-green-500/10 text-green-400", border: "border-green-500/20" },
-  expired: { dot: "🔴", label: "منتهي",      cls: "bg-red-500/10 text-red-400",    border: "border-red-500/20"   },
+  pending: { dot: "🟡", label: "لم يبدأ بعد", cls: "bg-yellow-500/10 text-yellow-400", border: "border-yellow-500/20" },
+  unused:  { dot: "⚫", label: "لم يُستخدم",  cls: "bg-gray-700/30 text-gray-400",     border: "border-gray-700/40"  },
+  used:    { dot: "🟢", label: "مفعّل",        cls: "bg-green-500/10 text-green-400",   border: "border-green-500/20" },
+  expired: { dot: "🔴", label: "منتهي",        cls: "bg-red-500/10 text-red-400",       border: "border-red-500/20"   },
 };
 
 function buildWaMsg(c: PromoCode) {
@@ -70,6 +69,7 @@ export default function PromoCodesPage() {
   const [fCode,    setFCode]    = useState("");
   const [fNote,    setFNote]    = useState("");
   const [fMaxUses, setFMaxUses] = useState("1");
+  const [fStart,   setFStart]   = useState("");
   const [fExpiry,  setFExpiry]  = useState(defaultExpiry(30));
   const [fWaCred,  setFWaCred]  = useState("20");
   const [fPhone,   setFPhone]   = useState("");
@@ -78,7 +78,7 @@ export default function PromoCodesPage() {
     setLoading(true);
     const { data } = await sb
       .from("promo_codes")
-      .select("id,code,active,created_at,note,max_uses,used_count,expires_at,code_type,wa_credits,used_by_salon_id,recipient_phone")
+      .select("id,code,active,created_at,note,max_uses,used_count,starts_at,expires_at,code_type,wa_credits,used_by_salon_id,recipient_phone")
       .order("created_at", { ascending: false })
       .limit(200);
     setCodes((data ?? []) as PromoCode[]);
@@ -89,7 +89,7 @@ export default function PromoCodesPage() {
 
   const resetForm = () => {
     setFCode(tab === "app" ? genApp() : genWa());
-    setFNote(""); setFMaxUses("1"); setFExpiry(defaultExpiry(30));
+    setFNote(""); setFMaxUses("1"); setFStart(""); setFExpiry(defaultExpiry(30));
     setFWaCred("20"); setFPhone(""); setError("");
   };
 
@@ -104,6 +104,7 @@ export default function PromoCodesPage() {
       code_type: tab,
       note: fNote.trim() || null,
       max_uses: parseInt(fMaxUses) || 1,
+      starts_at: fStart ? new Date(fStart).toISOString() : null,
       expires_at: fExpiry ? new Date(fExpiry).toISOString() : null,
       recipient_phone: fPhone.trim() || null,
       wa_credits: tab === "whatsapp" ? (parseInt(fWaCred) || 20) : null,
@@ -201,13 +202,18 @@ export default function PromoCodesPage() {
                 <input type="number" value={fMaxUses} onChange={e => setFMaxUses(e.target.value)} min="1"
                   className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
               </div>
-
-              {/* تاريخ الانتهاء */}
+              {/* يبدأ في */}
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">ينتهي في</label>
-                <input type="date" value={fExpiry} onChange={e => setFExpiry(e.target.value)}
+                <label className="text-xs text-gray-500 mb-1 block">يبدأ في (اختياري)</label>
+                <input type="date" value={fStart} onChange={e => setFStart(e.target.value)}
                   className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
               </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">ينتهي في</label>
+              <input type="date" value={fExpiry} onChange={e => setFExpiry(e.target.value)}
+                className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
             </div>
 
             {/* حقول WhatsApp فقط */}
@@ -275,6 +281,7 @@ export default function PromoCodesPage() {
                     <div className="flex items-center gap-3 flex-wrap">
                       {c.note && <span className="text-xs text-gray-400">📋 {c.note}</span>}
                       {c.wa_credits && <span className="text-xs text-green-400">📲 {c.wa_credits} عميل</span>}
+                      {c.starts_at && <span className="text-xs text-yellow-500">▶ {fmt(c.starts_at)}</span>}
                       {c.expires_at && <span className="text-xs text-gray-500">⏳ {fmt(c.expires_at)}</span>}
                       {c.used_count > 0 && (
                         <span className="text-xs text-blue-400">
