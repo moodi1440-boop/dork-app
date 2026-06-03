@@ -1,23 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-const LOYALTY_DEFAULTS = { enabled: false, hidden: false, pointsPerBooking: 10, minRedeemPoints: 50, redeemValue: 5 };
-const SOCIAL_DEFAULTS  = { email: "", twitter: "", whatsapp: "", telegram: "", telegramUser: "", enabled: false, customFields: [] };
+const LOYALTY_DEFAULTS    = { enabled: false, hidden: false, pointsPerBooking: 10, minRedeemPoints: 50, redeemValue: 5 };
+const SOCIAL_DEFAULTS     = { email: "", twitter: "", whatsapp: "", telegram: "", telegramUser: "", enabled: false, customFields: [] };
+const APPEARANCE_DEFAULTS = { theme: "gold", themeMode: "dark", fontSize: "md", bg: "none" };
 
 export async function GET() {
   const sb = createAdminClient();
 
-  // قراءة إعدادات التطبيق من جدول app_settings الموجود (loyalty_settings, social_links)
-  const { data: appRows } = await sb.from("app_settings").select("loyalty_settings,social_links").order("id", { ascending: true }).limit(1);
+  // قراءة إعدادات التطبيق من جدول app_settings الموجود
+  const { data: appRows } = await sb.from("app_settings").select("loyalty_settings,social_links,ui_settings").order("id", { ascending: true }).limit(1);
   const appRow = appRows?.[0] as Record<string, string> | undefined;
 
-  let loyalty = { ...LOYALTY_DEFAULTS };
-  let social  = { ...SOCIAL_DEFAULTS };
+  let loyalty    = { ...LOYALTY_DEFAULTS };
+  let social     = { ...SOCIAL_DEFAULTS };
+  let appearance = { ...APPEARANCE_DEFAULTS };
   if (appRow?.loyalty_settings) {
     try { loyalty = { ...loyalty, ...JSON.parse(appRow.loyalty_settings) }; } catch {}
   }
   if (appRow?.social_links) {
     try { social = { ...social, ...JSON.parse(appRow.social_links) }; } catch {}
+  }
+  if (appRow?.ui_settings) {
+    try { appearance = { ...appearance, ...JSON.parse(appRow.ui_settings) }; } catch {}
   }
 
   // قراءة إعدادات الإدارة من admin_config (pinned, week_salon)
@@ -25,7 +30,7 @@ export async function GET() {
   const pinned    = configRows?.find((r: Record<string, unknown>) => r.key === "pinned")?.value ?? [];
   const week_salon = configRows?.find((r: Record<string, unknown>) => r.key === "week_salon")?.value ?? null;
 
-  return NextResponse.json({ loyalty, social, pinned, week_salon });
+  return NextResponse.json({ loyalty, social, appearance, pinned, week_salon });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -37,8 +42,9 @@ export async function PATCH(req: NextRequest) {
     const { data: existingRows } = await sb.from("app_settings").select("id").order("id", { ascending: true }).limit(1);
     const existingId = (existingRows?.[0] as Record<string, unknown>)?.id;
     const patch: Record<string, string> = {};
-    if ("loyalty" in body) patch.loyalty_settings = JSON.stringify(body.loyalty);
-    if ("social"  in body) patch.social_links      = JSON.stringify(body.social);
+    if ("loyalty"    in body) patch.loyalty_settings = JSON.stringify(body.loyalty);
+    if ("social"     in body) patch.social_links      = JSON.stringify(body.social);
+    if ("appearance" in body) patch.ui_settings        = JSON.stringify(body.appearance);
 
     if (existingId) {
       const { error } = await sb.from("app_settings").update(patch).eq("id", existingId);

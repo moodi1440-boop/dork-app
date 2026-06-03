@@ -11,6 +11,9 @@ interface SocialLinks {
   telegramUser: string; enabled: boolean;
   customFields: Array<{ label: string; value: string }>;
 }
+interface AppearanceSettings {
+  theme: string; themeMode: string; fontSize: string; bg: string;
+}
 
 const DEFAULT_LOYALTY: LoyaltySettings = {
   enabled: false, hidden: false, pointsPerBooking: 10, minRedeemPoints: 50, redeemValue: 5,
@@ -18,12 +21,39 @@ const DEFAULT_LOYALTY: LoyaltySettings = {
 const DEFAULT_SOCIAL: SocialLinks = {
   email: "", twitter: "", whatsapp: "", telegram: "", telegramUser: "", enabled: false, customFields: [],
 };
+const DEFAULT_APPEARANCE: AppearanceSettings = {
+  theme: "gold", themeMode: "dark", fontSize: "md", bg: "none",
+};
+
+const THEMES = [
+  { id: "gold",      label: "ذهبي",     color: "#d4af37" }, { id: "emerald",   label: "زمردي",    color: "#2ecc71" },
+  { id: "sapphire",  label: "ياقوتي",   color: "#3498db" }, { id: "royalBlue", label: "أزرق ملكي",color: "#4169e1" },
+  { id: "bronze",    label: "برونزي",   color: "#cd7f32" }, { id: "rose",      label: "وردي",     color: "#e91e8c" },
+  { id: "violet",    label: "بنفسجي",   color: "#8e44ad" }, { id: "crimson",   label: "قرمزي",    color: "#dc143c" },
+  { id: "teal",      label: "فيروزي",   color: "#1abc9c" }, { id: "coral",     label: "مرجاني",   color: "#ff6b6b" },
+  { id: "fuchsia",   label: "فوشيا",    color: "#ff00ff" }, { id: "wine",      label: "عنابي",    color: "#722f37" },
+  { id: "forest",    label: "غابي",     color: "#228b22" }, { id: "lime",      label: "ليموني",   color: "#32cd32" },
+  { id: "sky",       label: "سماوي",    color: "#87ceeb" },
+];
+const BACKGROUNDS = [
+  { id: "none",       label: "⬛ بلا" },    { id: "stars",  label: "⭐ نجوم" },
+  { id: "grid",       label: "⊞ شبكة" },   { id: "waves",  label: "〜 أمواج" },
+  { id: "marble",     label: "🪨 رخام" },   { id: "circuit",label: "⚡ دوائر" },
+  { id: "royal",      label: "👑 ملكي" },   { id: "tech",   label: "🤖 تقني" },
+  { id: "goldMarble", label: "✨ رخام ذهبي" },
+];
+const FONT_SIZES = [{ id: "sm", label: "صغير" }, { id: "md", label: "متوسط" }, { id: "lg", label: "كبير" }];
+const THEME_MODES = [
+  { id: "dark",  label: "🌙 داكن" }, { id: "dim",   label: "⬛ رمادي داكن" },
+  { id: "lgray", label: "🔘 رمادي فاتح" }, { id: "light", label: "☀️ فاتح" },
+];
 
 export default function SettingsPage() {
-  const [tab,     setTab]     = useState("loyalty");
-  const [loyalty, setLoyalty] = useState<LoyaltySettings>(DEFAULT_LOYALTY);
-  const [social,  setSocial]  = useState<SocialLinks>(DEFAULT_SOCIAL);
-  const [loading, setLoading] = useState(true);
+  const [tab,        setTab]        = useState("loyalty");
+  const [loyalty,    setLoyalty]    = useState<LoyaltySettings>(DEFAULT_LOYALTY);
+  const [social,     setSocial]     = useState<SocialLinks>(DEFAULT_SOCIAL);
+  const [appearance, setAppearance] = useState<AppearanceSettings>(DEFAULT_APPEARANCE);
+  const [loading,    setLoading]    = useState(true);
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [newField, setNewField] = useState({ label: "", value: "" });
@@ -32,8 +62,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetch("/api/settings").then((r) => r.json()).then((s) => {
-      if (s.loyalty) setLoyalty({ ...DEFAULT_LOYALTY, ...s.loyalty });
-      if (s.social)  setSocial({ ...DEFAULT_SOCIAL, ...s.social });
+      if (s.loyalty)    setLoyalty({ ...DEFAULT_LOYALTY, ...s.loyalty });
+      if (s.social)     setSocial({ ...DEFAULT_SOCIAL, ...s.social });
+      if (s.appearance) setAppearance({ ...DEFAULT_APPEARANCE, ...s.appearance });
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -43,7 +74,7 @@ export default function SettingsPage() {
     await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loyalty, social }),
+      body: JSON.stringify({ loyalty, social, appearance }),
     });
     setSaving(false);
     setSaved(true);
@@ -63,7 +94,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="flex gap-2 mb-6 flex-wrap">
-        {[{ id: "loyalty", label: "🎁 نقاط الولاء" }, { id: "social", label: "📱 التواصل الاجتماعي" }, { id: "password", label: "🔑 كلمة المرور" }].map((t) => (
+        {[{ id: "loyalty", label: "🎁 نقاط الولاء" }, { id: "social", label: "📱 التواصل" }, { id: "appearance", label: "🎨 المظهر" }, { id: "password", label: "🔑 كلمة المرور" }].map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${tab === t.id ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-400 hover:border-gold/20"}`}>
             {t.label}
@@ -178,6 +209,69 @@ export default function SettingsPage() {
                   className="flex-1 bg-[#0d0d1a] border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
                 <button onClick={() => { if (newField.label) { setSocial((p) => ({ ...p, customFields: [...p.customFields, newField] })); setNewField({ label: "", value: "" }); }}}
                   className="px-3 py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-xs font-bold hover:bg-gold/20 transition-colors">➕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "appearance" && (
+        <div className="space-y-5">
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <h2 className="text-base font-bold text-white mb-1">🎨 الثيم الافتراضي للتطبيق</h2>
+            <p className="text-xs text-gray-500 mb-5">يُطبّق على المستخدمين الجدد وكإعداد افتراضي للتطبيق</p>
+
+            {/* الألوان */}
+            <div className="mb-5">
+              <label className="block text-xs text-gray-400 mb-3 font-semibold">🎨 لون الثيم</label>
+              <div className="flex flex-wrap gap-2">
+                {THEMES.map((t) => (
+                  <button key={t.id} onClick={() => setAppearance((p) => ({ ...p, theme: t.id }))}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all ${appearance.theme === t.id ? "border-white/40 text-white" : "border-border text-gray-500 hover:border-gray-500"}`}
+                    style={appearance.theme === t.id ? { background: t.color + "22", borderColor: t.color + "88" } : {}}>
+                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: t.color }} />
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* وضع الإضاءة */}
+            <div className="mb-5">
+              <label className="block text-xs text-gray-400 mb-3 font-semibold">🌙 وضع الإضاءة</label>
+              <div className="flex flex-wrap gap-2">
+                {THEME_MODES.map((m) => (
+                  <button key={m.id} onClick={() => setAppearance((p) => ({ ...p, themeMode: m.id }))}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${appearance.themeMode === m.id ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500 hover:border-gray-500"}`}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* حجم الخط */}
+            <div className="mb-5">
+              <label className="block text-xs text-gray-400 mb-3 font-semibold">🔤 حجم الخط الافتراضي</label>
+              <div className="flex gap-3">
+                {FONT_SIZES.map((f) => (
+                  <button key={f.id} onClick={() => setAppearance((p) => ({ ...p, fontSize: f.id }))}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${appearance.fontSize === f.id ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500"}`}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* الخلفية */}
+            <div>
+              <label className="block text-xs text-gray-400 mb-3 font-semibold">🖼️ خلفية التطبيق</label>
+              <div className="flex flex-wrap gap-2">
+                {BACKGROUNDS.map((b) => (
+                  <button key={b.id} onClick={() => setAppearance((p) => ({ ...p, bg: b.id }))}
+                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${appearance.bg === b.id ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500 hover:border-gray-500"}`}>
+                    {b.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>

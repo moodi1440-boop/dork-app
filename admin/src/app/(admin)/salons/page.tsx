@@ -11,10 +11,21 @@ interface Salon {
   barbers: Array<{ name: string; photo?: string }>;
   shift_enabled: boolean; work_start: string; work_end: string;
   shift1_start: string; shift1_end: string; shift2_start: string; shift2_end: string;
+  tone: string;
+  social: { enabled: boolean; email: string; whatsapp: string; twitter: string; telegramUser: string };
   bookings: Array<{ status: string; total?: number }>;
 }
 
 const DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const TONE_OPTIONS = [
+  { id: "scissors",   label: "✂️ مقص" },  { id: "razor",    label: "🪒 موس" },
+  { id: "bell",       label: "🔔 جرس" },  { id: "cash",     label: "💵 كاشير" },
+  { id: "welcome",    label: "🎵 ترحيب" },{ id: "chime3",   label: "🎐 رنين" },
+  { id: "alert",      label: "⚠️ تنبيه" },{ id: "classic",  label: "📯 كلاسيكي" },
+  { id: "barberpole", label: "💈 حلاقة" },{ id: "fanfare",  label: "🎺 احتفال" },
+  { id: "vip",        label: "👑 VIP" },
+];
+const DEFAULT_SOCIAL = { enabled: false, email: "", whatsapp: "", twitter: "", telegramUser: "" };
 const STATUSES = [
   { value: "all", label: "الكل" },
   { value: "pending", label: "تنتظر مراجعة" },
@@ -98,6 +109,8 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
     work_start: salon.work_start ?? "09:00", work_end: salon.work_end ?? "22:00",
     shift1_start: salon.shift1_start ?? "08:00", shift1_end: salon.shift1_end ?? "13:00",
     shift2_start: salon.shift2_start ?? "16:00", shift2_end: salon.shift2_end ?? "23:00",
+    tone: salon.tone ?? "bell",
+    social: { ...DEFAULT_SOCIAL, ...(salon.social ?? {}) },
   });
   const [saving, setSaving] = useState(false);
   const [newSvc, setNewSvc] = useState("");
@@ -120,6 +133,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
           work_start: f.work_start, work_end: f.work_end,
           shift1_start: f.shift1_start, shift1_end: f.shift1_end,
           shift2_start: f.shift2_start, shift2_end: f.shift2_end,
+          tone: f.tone, social: f.social,
         }),
       });
       onSave({ ...salon, ...f });
@@ -128,8 +142,9 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
   };
 
   const tabs = [
-    { id: "info", label: "المعلومات" }, { id: "hours", label: "الأوقات" },
-    { id: "services", label: "الخدمات" }, { id: "barbers", label: "الحلاقون" },
+    { id: "info",     label: "المعلومات" }, { id: "hours",   label: "الأوقات" },
+    { id: "services", label: "الخدمات"  }, { id: "barbers", label: "الحلاقون" },
+    { id: "social",   label: "التواصل"  },
   ];
 
   return (
@@ -193,6 +208,17 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                     <button key={m} onClick={() => upd("slot_min", m)}
                       className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${f.slot_min === m ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500"}`}>
                       {m} د
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-2 font-semibold">🔔 نغمة التنبيه</label>
+                <div className="flex flex-wrap gap-2">
+                  {TONE_OPTIONS.map((t) => (
+                    <button key={t.id} onClick={() => upd("tone", t.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${f.tone === t.id ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500 hover:border-gray-500"}`}>
+                      {t.label}
                     </button>
                   ))}
                 </div>
@@ -279,6 +305,35 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
             </div>
           )}
 
+          {sec === "social" && (
+            <div className="space-y-4">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <div className="text-sm text-white font-semibold">إظهار روابط التواصل للعملاء</div>
+                  <div className="text-xs text-gray-500">تظهر في صفحة الصالون</div>
+                </div>
+                <div onClick={() => upd("social", { ...f.social, enabled: !f.social.enabled })}
+                  className={`w-12 h-6 rounded-full transition-all cursor-pointer relative ${f.social.enabled ? "bg-gold" : "bg-gray-700"}`}>
+                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${f.social.enabled ? "right-1" : "left-1"}`} />
+                </div>
+              </label>
+              {[
+                { key: "email",       label: "📧 البريد الإلكتروني", placeholder: "info@salon.com" },
+                { key: "whatsapp",    label: "💬 واتساب",             placeholder: "966501234567" },
+                { key: "twitter",     label: "🐦 تويتر / X",          placeholder: "@salon" },
+                { key: "telegramUser",label: "📱 تيليجرام",           placeholder: "@salon" },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key}>
+                  <label className="block text-xs text-gray-400 mb-1 font-semibold">{label}</label>
+                  <input value={(f.social as Record<string, unknown>)[key] as string ?? ""}
+                    onChange={(e) => upd("social", { ...f.social, [key]: e.target.value })}
+                    placeholder={placeholder}
+                    className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gold" />
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex gap-3 mt-6 pt-4 border-t border-border">
             <button onClick={save} disabled={saving}
               className="flex-1 bg-gold/10 border border-gold/30 text-gold py-2.5 rounded-xl font-bold text-sm hover:bg-gold/20 transition-colors disabled:opacity-50">
@@ -309,7 +364,7 @@ export default function SalonsPage() {
     try {
       let query = sb
         .from("salons")
-        .select("id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,bookings")
+        .select("id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,bookings")
         .order("id", { ascending: false });
 
       if (status && status !== "all") query = query.eq("status", status);
