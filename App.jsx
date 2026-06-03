@@ -2720,6 +2720,9 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
   const balance=totalEarned-totalPaid;
 
   const todayBks=salon.bookings.filter(b=>b.date===selectedDate);
+  const salonDayRevenue=Object.values(dayStats).reduce((s,b)=>s+b.revenue,0);
+  const salonMonthRevenue=Object.values(monthStats).reduce((s,b)=>s+b.revenue,0);
+  const salonYearRevenue=Object.values(yearStats).reduce((s,b)=>s+b.revenue,0);
   const todayApproved=todayBks.filter(b=>b.status==="approved");
   const todayPending=todayBks.filter(b=>b.status==="pending");
   const todayRejected=todayBks.filter(b=>b.status==="rejected");
@@ -2765,6 +2768,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
 
   return(
     <div style={{paddingTop:4}}>
+      <div style={{fontSize:13,fontWeight:800,color:"var(--p)",marginBottom:8}}>📅 الحجوزات</div>
       {/* منتقيات اليوم/الشهر/السنة */}
       <div style={{display:"flex",gap:6,marginBottom:12}}>
         {/* Day Picker */}
@@ -2865,24 +2869,17 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
           <div style={{fontSize:13,fontWeight:700,color:"var(--gold)",marginBottom:10}}>{t("owner_dash.stats_barbers_title")}</div>
 
           {loadingStats&&<div style={{textAlign:"center",padding:"8px",color:"var(--text-muted)",fontSize:11}}>{t("owner_dash.stats_loading")}</div>}
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {salon.barbers.map(barber=>{
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            {salon.barbers.map((barber,idx)=>{
               const stats=getBarberStats(barber.id);
+              const palette=[["#3498db22","#3498db44","#3498db"],["#9b59b622","#9b59b644","#9b59b6"],["#1abc9c22","#1abc9c44","#1abc9c"],["#e67e2222","#e67e2244","#e67e22"],["#e91e6322","#e91e6344","#e91e63"],["#00bcd422","#00bcd444","#00bcd4"]];
+              const[bg,border,text]=palette[idx%palette.length];
               return(
-                <div key={barber.id} style={{background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:"1px solid var(--border-ui)",transition:"all .2s"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-                      <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,var(--gold),var(--pl))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>✂</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)"}}>{barber.name||barber.barber_name||t("owner_dash.no_name")}</div>
-                        <div style={{fontSize:10,color:"var(--text-muted)"}}>{stats.dayCount} {t("owner_dash.booking_unit")}</div>
-                      </div>
-                    </div>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:13,fontWeight:900,color:"var(--gold)"}}>{stats.dayRevenue}</div>
-                      <div style={{fontSize:9,color:"var(--text-muted)"}}>{t("owner_dash.balance_unit")}</div>
-                    </div>
-                  </div>
+                <div key={barber.id} style={{background:bg,borderRadius:10,padding:"8px",textAlign:"center",border:`1px solid ${border}`}}>
+                  <div style={{fontSize:11,fontWeight:700,color:text,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>✂ {barber.name||barber.barber_name||t("owner_dash.no_name")}</div>
+                  <div style={{fontSize:18,fontWeight:900,color:text}}>{stats.dayCount}</div>
+                  <div style={{fontSize:9,color:"var(--text-muted)"}}>{t("owner_dash.booking_unit")}</div>
+                  <div style={{fontSize:11,fontWeight:700,color:text,marginTop:4}}>{stats.dayRevenue} ر</div>
                 </div>
               );
             })}
@@ -2891,20 +2888,20 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
       )}
 
       {/* الأرباح */}
-      <div className="balance-tab" style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.12),rgba(var(--gold-rgb),.06))",borderRadius:14,padding:16,border:"1.5px solid rgba(var(--gold-rgb),.3)",marginTop:8}}>
-        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>{t("owner_dash.balance_title")}</div>
-        <div style={{fontSize:32,fontWeight:900,color:"var(--gold)",marginBottom:10}}>{balance} <span style={{fontSize:14}}>{t("owner_dash.balance_unit")}</span></div>
+      <div style={{fontSize:13,fontWeight:800,color:"var(--p)",marginTop:12,marginBottom:8}}>💰 الأرباح</div>
+      <div className="balance-tab" style={{background:"rgba(var(--pr),.15)",borderRadius:14,padding:16,border:"1.5px solid rgba(var(--pr),.35)"}}>
+        <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:8}}>أرباح الصالون</div>
+        <div style={{fontSize:32,fontWeight:900,color:"var(--p)",marginBottom:10}}>{salonDayRevenue} <span style={{fontSize:14}}>ريال</span></div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <div style={{background:"rgba(39,174,96,.1)",borderRadius:10,padding:"10px",border:"1px solid #27ae6055"}}>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{t("owner_dash.balance_owed")}</div>
-            <div style={{fontSize:16,fontWeight:700,color:"#27ae60"}}>{totalEarned} ر</div>
+          <div style={{background:"rgba(var(--pr),.12)",borderRadius:10,padding:"10px",border:"1px solid rgba(var(--pr),.25)"}}>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>إيراد الشهر</div>
+            <div style={{fontSize:16,fontWeight:700,color:"var(--p)"}}>{salonMonthRevenue} ر</div>
           </div>
-          <div style={{background:"rgba(var(--gold-rgb),.1)",borderRadius:10,padding:"10px",border:"1px solid rgba(var(--gold-rgb),.3)"}}>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{t("owner_dash.balance_paid")}</div>
-            <div style={{fontSize:16,fontWeight:700,color:"var(--gold)"}}>{totalPaid} ر</div>
+          <div style={{background:"rgba(var(--pr),.12)",borderRadius:10,padding:"10px",border:"1px solid rgba(var(--pr),.25)"}}>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>إيراد السنة</div>
+            <div style={{fontSize:16,fontWeight:700,color:"var(--p)"}}>{salonYearRevenue} ر</div>
           </div>
         </div>
-        {balance>0&&<div style={{background:"rgba(231,76,60,.1)",border:"1px solid #e74c3c55",borderRadius:8,padding:"10px",fontSize:11,color:"#e74c3c",marginTop:10,textAlign:"center"}}>{t("owner_dash.balance_warning")}</div>}
       </div>
     </div>
   );
