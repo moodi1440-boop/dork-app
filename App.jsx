@@ -3885,47 +3885,47 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       )}
 
       {/* ── بطاقة ملخص اليوم ── */}
-      <div className="today-card" style={{background:"linear-gradient(145deg,#16112a,#0e0e1e)",borderRadius:18,padding:"16px",marginBottom:12,border:"1px solid rgba(var(--gold-rgb),.2)",boxShadow:"0 0 30px rgba(var(--gold-rgb),.06),inset 0 1px 0 rgba(var(--gold-rgb),.08)"}}>
+      <div className="today-card" style={{background:"rgba(var(--pr),.20)",borderRadius:18,padding:"16px",marginBottom:12,border:"1.5px solid rgba(var(--pr),.60)",boxShadow:"0 4px 20px rgba(var(--pr),.12)"}}>
 
         {/* التاريخ */}
-        <div style={{fontSize:13,fontWeight:700,color:"var(--gold)",marginBottom:14}}>🌅 {_dayLabel}</div>
+        <div style={{fontSize:14,fontWeight:800,color:"var(--p)",marginBottom:14}}>🌅 {_dayLabel}</div>
 
         {/* حجوزات اليوم + إيراد اليوم */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-          <div style={{background:"rgba(var(--gold-rgb),.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(var(--gold-rgb),.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.06}}>📅</div>
-            <div style={{fontSize:30,fontWeight:900,color:"var(--gold)",lineHeight:1}}>{_tdApproved.length}</div>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginTop:5}}>{t("owner_dash.today_bookings")}</div>
+          <div style={{background:"rgba(var(--pr),.15)",borderRadius:13,padding:"13px",border:"1px solid rgba(var(--pr),.35)",textAlign:"center",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.08}}>📅</div>
+            <div style={{fontSize:32,fontWeight:900,color:"var(--p)",lineHeight:1}}>{_tdApproved.length}</div>
+            <div style={{fontSize:11,fontWeight:700,color:"var(--p)",marginTop:5,opacity:.8}}>{t("owner_dash.today_bookings")}</div>
           </div>
-          <div style={{background:"rgba(39,174,96,.07)",borderRadius:13,padding:"13px",border:"1px solid rgba(39,174,96,.15)",textAlign:"center",position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.06}}>💰</div>
-            <div style={{fontSize:30,fontWeight:900,color:"#27ae60",lineHeight:1}}>{_tdRevenue}</div>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginTop:5}}>{t("owner_dash.today_revenue")}</div>
+          <div style={{background:"rgba(39,174,96,.12)",borderRadius:13,padding:"13px",border:"1px solid rgba(39,174,96,.35)",textAlign:"center",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.08}}>💰</div>
+            <div style={{fontSize:32,fontWeight:900,color:"#27ae60",lineHeight:1}}>{_tdRevenue}</div>
+            <div style={{fontSize:11,fontWeight:700,color:"#27ae60",marginTop:5,opacity:.9}}>{t("owner_dash.today_revenue")}</div>
           </div>
         </div>
 
         {/* شريط الامتلاء */}
         <div style={{marginBottom:_nextBk?14:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <div style={{fontSize:11,color:"#777"}}>{t("owner_dash.occupancy")}</div>
-            <div style={{fontSize:12,fontWeight:800,color:_occ>=80?"#e74c3c":_occ>=50?"var(--gold)":"#27ae60"}}>{_occ}%</div>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",opacity:.8}}>{t("owner_dash.occupancy")}</div>
+            <div style={{fontSize:13,fontWeight:900,color:_occ>=80?"#e74c3c":_occ>=50?"var(--p)":"#27ae60"}}>{_occ}%</div>
           </div>
-          <div style={{height:7,background:"rgba(255,255,255,.05)",borderRadius:10,overflow:"hidden"}}>
-            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center",boxShadow:_occ>0?`0 0 8px ${_occ>=80?"rgba(231,76,60,.5)":_occ>=50?"rgba(var(--gold-rgb),.5)":"rgba(39,174,96,.5)"}`:""}}/>
+          <div style={{height:7,background:"rgba(var(--pr),.15)",borderRadius:10,overflow:"hidden"}}>
+            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center",boxShadow:_occ>0?`0 0 8px ${_occ>=80?"rgba(231,76,60,.5)":_occ>=50?"rgba(var(--pr),.5)":"rgba(39,174,96,.5)"}`:""}}/>
           </div>
         </div>
 
         {/* الحجز القادم */}
         {_nextBk&&(
-          <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(var(--gold-rgb),.06)",borderRadius:11,padding:"10px 12px",border:"1px dashed rgba(var(--gold-rgb),.2)"}}>
-            <div style={{width:32,height:32,borderRadius:9,background:"rgba(var(--gold-rgb),.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>⏰</div>
+          <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(var(--pr),.15)",borderRadius:11,padding:"10px 12px",border:"1px solid rgba(var(--pr),.3)"}}>
+            <div style={{width:32,height:32,borderRadius:9,background:"rgba(var(--pr),.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>⏰</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:10,color:"#666",marginBottom:2}}>{t("owner_dash.next_booking")}</div>
-              <div style={{fontSize:13,fontWeight:700,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+              <div style={{fontSize:11,color:"var(--p)",opacity:.7,marginBottom:2}}>{t("owner_dash.next_booking")}</div>
+              <div style={{fontSize:13,fontWeight:800,color:"var(--p)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                 {_nextBk.customerName||_nextBk.customer_name||t("owner_dash.customer")} — {_nextBk.time}
               </div>
             </div>
-            <div style={{fontSize:11,fontWeight:800,color:"var(--gold)",background:"rgba(var(--gold-rgb),.12)",padding:"4px 9px",borderRadius:8,flexShrink:0,whiteSpace:"nowrap"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"var(--p)",background:"rgba(var(--pr),.2)",padding:"4px 9px",borderRadius:8,flexShrink:0,whiteSpace:"nowrap"}}>
               {(()=>{
                 const[h,m]=(_nextBk.time||"0:0").split(":").map(Number);
                 const diff=h*60+m-_nowMins;
@@ -3937,7 +3937,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           </div>
         )}
         {!_nextBk&&(
-          <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"center",paddingTop:_tdApproved.length>0?8:0}}>
+          <div style={{fontSize:12,fontWeight:700,color:"var(--p)",textAlign:"center",opacity:.7,paddingTop:_tdApproved.length>0?8:0}}>
             {_tdApproved.length>0?t("owner_dash.no_more_bookings"):t("owner_dash.no_bookings")}
           </div>
         )}
