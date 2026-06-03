@@ -27,7 +27,7 @@ function genRandom(len = 7) {
 const genApp = () => `APP-${genRandom()}`;
 const genWa  = () => `WA-${genRandom()}`;
 
-function getStatus(c: PromoCode): "pending" | "unused" | "used" | "expired" {
+function getStatus(c: PromoCode): "unused" | "used" | "expired" {
   const now = new Date();
   if (!c.active || (!!c.expires_at && new Date(c.expires_at) < now) || (c.max_uses !== null && c.used_count >= c.max_uses)) return "expired";
   if (c.used_count > 0) return "used";
@@ -35,14 +35,13 @@ function getStatus(c: PromoCode): "pending" | "unused" | "used" | "expired" {
 }
 
 const STATUS_CFG = {
-  pending: { dot: "🟡", label: "لم يبدأ بعد", cls: "bg-yellow-500/10 text-yellow-400", border: "border-yellow-500/20" },
-  unused:  { dot: "⚫", label: "لم يُستخدم",  cls: "bg-gray-700/30 text-gray-400",     border: "border-gray-700/40"  },
-  used:    { dot: "🟢", label: "مفعّل",        cls: "bg-green-500/10 text-green-400",   border: "border-green-500/20" },
-  expired: { dot: "🔴", label: "منتهي",        cls: "bg-red-500/10 text-red-400",       border: "border-red-500/20"   },
+  unused:  { dot: "⚫", label: "لم يُستخدم",  cls: "bg-gray-700/30 text-gray-400",   border: "border-gray-700/40"  },
+  used:    { dot: "🟢", label: "مفعّل",        cls: "bg-green-500/10 text-green-400", border: "border-green-500/20" },
+  expired: { dot: "🔴", label: "منتهي",        cls: "bg-red-500/10 text-red-400",     border: "border-red-500/20"   },
 };
 
 function buildWaMsg(c: PromoCode) {
-  const credits  = c.wa_credits ? `\n📲 ${c.wa_credits} رسالة WhatsApp مجانية` : "";
+  const credits  = c.wa_credits   ? `\n📲 ${c.wa_credits} رسالة WhatsApp مجانية` : "";
   const duration = c.duration_days ? `\n⏱ صالح ${c.duration_days} يوم من أول استخدام` : "";
   const type     = c.code_type === "app" ? "كود تطبيق دورك المجاني" : "كود WhatsApp في تطبيق دورك";
   return `مرحباً 👋\nهذا ${type}:\n\n🎟 ${c.code}${credits}${duration}\n\nاستخدمه في تطبيق دورك عند إرسال عرضك ✅`;
@@ -50,10 +49,19 @@ function buildWaMsg(c: PromoCode) {
 
 function fmt(d: string) { return new Date(d).toLocaleDateString("ar-SA"); }
 
+function activatedAt(c: PromoCode): string | null {
+  if (!c.expires_at || !c.duration_days) return null;
+  const exp = new Date(c.expires_at).getTime();
+  return fmt(new Date(exp - c.duration_days * 86400000).toISOString());
+}
+
+type FilterType = "all" | "unused" | "used" | "expired";
+
 export default function PromoCodesPage() {
   const [codes, setCodes]         = useState<PromoCode[]>([]);
   const [loading, setLoading]     = useState(true);
   const [tab, setTab]             = useState<"app" | "whatsapp">("app");
+  const [filter, setFilter]       = useState<FilterType>("all");
   const [showForm, setShowForm]   = useState(false);
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState("");
@@ -62,6 +70,7 @@ export default function PromoCodesPage() {
   // حقول النموذج
   const [fCode,     setFCode]     = useState("");
   const [fNote,     setFNote]     = useState("");
+  const [fCount,    setFCount]    = useState("1");
   const [fMaxUses,  setFMaxUses]  = useState("1");
   const [fDuration, setFDuration] = useState("30");
   const [fWaCred,   setFWaCred]   = useState("20");
@@ -82,17 +91,17 @@ export default function PromoCodesPage() {
 
   const resetForm = () => {
     setFCode(tab === "app" ? genApp() : genWa());
-    setFNote(""); setFMaxUses("1"); setFDuration("30");
+    setFNote(""); setFCount("1"); setFMaxUses("1"); setFDuration("30");
     setFWaCred("20"); setFPhone(""); setError("");
   };
 
   useEffect(() => { if (showForm) resetForm(); }, [showForm, tab]);
 
   const save = async () => {
-    if (!fCode.trim()) { setError("الكود مطلوب"); return; }
     setSaving(true); setError("");
-    const payload: Record<string, unknown> = {
-      code: fCode.trim().toUpperCase(),
+    const count = Math.min(Math.max(parseInt(fCount) || 1, 1), 50);
+    const rows = Array.from({ length: count }, () => ({
+      code: count === 1 ? fCode.trim().toUpperCase() : (tab === "app" ? genApp() : genWa()),
       active: true,
       code_type: tab,
       note: fNote.trim() || null,
@@ -101,8 +110,8 @@ export default function PromoCodesPage() {
       expires_at: null,
       recipient_phone: fPhone.trim() || null,
       wa_credits: tab === "whatsapp" ? (parseInt(fWaCred) || 20) : null,
-    };
-    const { error: err } = await sb.from("promo_codes").insert(payload);
+    }));
+    const { error: err } = await sb.from("promo_codes").insert(rows);
     if (err) { setError(err.message); }
     else { setShowForm(false); load(); }
     setSaving(false);
@@ -111,6 +120,13 @@ export default function PromoCodesPage() {
   const toggle = async (id: string, active: boolean) => {
     await sb.from("promo_codes").update({ active: !active }).eq("id", id);
     setCodes(p => p.map(x => x.id === id ? { ...x, active: !active } : x));
+  };
+
+  const renew = async (c: PromoCode) => {
+    if (!c.duration_days) return;
+    const newExp = new Date(Date.now() + c.duration_days * 86400000).toISOString();
+    await sb.from("promo_codes").update({ expires_at: newExp, active: true }).eq("id", c.id);
+    setCodes(p => p.map(x => x.id === c.id ? { ...x, expires_at: newExp, active: true } : x));
   };
 
   const del = async (id: string) => {
@@ -131,9 +147,18 @@ export default function PromoCodesPage() {
     window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
   };
 
-  const filtered = codes.filter(c => c.code_type === tab);
-  const appCount = codes.filter(c => c.code_type === "app" && getStatus(c) === "unused").length;
-  const waCount  = codes.filter(c => c.code_type === "whatsapp" && getStatus(c) === "unused").length;
+  const byTab    = codes.filter(c => c.code_type === tab);
+  const filtered = filter === "all" ? byTab : byTab.filter(c => getStatus(c) === filter);
+
+  const counts = {
+    all:     byTab.length,
+    unused:  byTab.filter(c => getStatus(c) === "unused").length,
+    used:    byTab.filter(c => getStatus(c) === "used").length,
+    expired: byTab.filter(c => getStatus(c) === "expired").length,
+  };
+
+  const appCount = codes.filter(c => c.code_type === "app"       && getStatus(c) === "unused").length;
+  const waCount  = codes.filter(c => c.code_type === "whatsapp"  && getStatus(c) === "unused").length;
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl mx-auto" dir="rtl">
@@ -146,9 +171,9 @@ export default function PromoCodesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-5">
+      <div className="flex gap-2 mb-4 flex-wrap">
         {(["app", "whatsapp"] as const).map(t => (
-          <button key={t} onClick={() => { setTab(t); setShowForm(false); }}
+          <button key={t} onClick={() => { setTab(t); setShowForm(false); setFilter("all"); }}
             className={`px-5 py-2 rounded-xl text-sm font-bold transition-all border ${
               tab === t
                 ? t === "app"
@@ -165,6 +190,22 @@ export default function PromoCodesPage() {
         </button>
       </div>
 
+      {/* فلتر الحالة */}
+      <div className="flex gap-1.5 mb-5 flex-wrap">
+        {(["all", "unused", "used", "expired"] as FilterType[]).map(f => {
+          const labels: Record<FilterType, string> = { all: "الكل", unused: "لم يُستخدم", used: "مفعّل", expired: "منتهي" };
+          const active = filter === f;
+          return (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`px-3 py-1 rounded-lg text-xs font-bold border transition-all ${
+                active ? "bg-white/10 border-white/20 text-white" : "border-border text-gray-500 hover:text-gray-300"
+              }`}>
+              {labels[f]} <span className="opacity-60">({counts[f]})</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* نموذج الإنشاء */}
       {showForm && (
         <div className="bg-card border border-border rounded-2xl p-5 mb-5">
@@ -172,26 +213,51 @@ export default function PromoCodesPage() {
             {tab === "app" ? "📱 كود تطبيق جديد" : "💬 كود WhatsApp جديد"}
           </h2>
           <div className="space-y-3">
-            {/* الكود */}
-            <div className="flex gap-2">
-              <input value={fCode} onChange={e => setFCode(e.target.value.toUpperCase())}
-                className="flex-1 bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white tracking-widest font-mono text-center focus:outline-none focus:border-gold"
-                maxLength={20} placeholder="الكود" />
-              <button onClick={() => setFCode(tab === "app" ? genApp() : genWa())}
-                className="px-4 py-2.5 border border-border text-gray-400 rounded-xl text-sm hover:text-white hover:border-gold/40 transition-colors">
-                🎲
-              </button>
+            {/* عدد الأكواد */}
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">عدد الأكواد للتوليد</label>
+              <div className="flex gap-1.5 flex-wrap">
+                {["1","3","5","10","20"].map(n => (
+                  <button key={n} onClick={() => setFCount(n)}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold border transition-all ${
+                      fCount === n ? "bg-gold/15 border-gold/40 text-gold" : "border-border text-gray-400 hover:text-white"
+                    }`}>
+                    {n}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* الكود — يظهر فقط لو كود واحد */}
+            {fCount === "1" && (
+              <div className="flex gap-2">
+                <input value={fCode} onChange={e => setFCode(e.target.value.toUpperCase())}
+                  className="flex-1 bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white tracking-widest font-mono text-center focus:outline-none focus:border-gold"
+                  maxLength={20} placeholder="الكود" />
+                <button onClick={() => setFCode(tab === "app" ? genApp() : genWa())}
+                  className="px-4 py-2.5 border border-border text-gray-400 rounded-xl text-sm hover:text-white hover:border-gold/40 transition-colors">
+                  🎲
+                </button>
+              </div>
+            )}
+            {parseInt(fCount) > 1 && (
+              <p className="text-xs text-gray-500 bg-white/5 rounded-xl px-4 py-2.5">
+                سيتم توليد <span className="text-gold font-bold">{fCount}</span> أكواد عشوائية تلقائياً
+              </p>
+            )}
 
             {/* اسم الصالون */}
             <input value={fNote} onChange={e => setFNote(e.target.value)}
-              placeholder="اسم الصالون (ملاحظة)"
+              placeholder="اسم الصالون (ملاحظة اختيارية)"
               className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
 
             <div className="grid grid-cols-2 gap-3">
-              {/* عدد الاستخدامات */}
+              {/* الحد الأقصى للاستخدام */}
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">عدد الاستخدامات</label>
+                <label className="text-xs text-gray-500 mb-1 block">
+                  الحد الأقصى للاستخدام
+                  <span className="text-gray-600 mr-1">(لكل كود)</span>
+                </label>
                 <input type="number" value={fMaxUses} onChange={e => setFMaxUses(e.target.value)} min="1"
                   className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
               </div>
@@ -242,7 +308,11 @@ export default function PromoCodesPage() {
 
             <button onClick={save} disabled={saving}
               className="w-full py-3 rounded-xl font-bold text-sm bg-gold/10 border border-gold/30 text-gold hover:bg-gold/20 transition-colors disabled:opacity-40">
-              {saving ? "⏳ جاري الحفظ..." : "✅ إنشاء الكود"}
+              {saving
+                ? "⏳ جاري الحفظ..."
+                : parseInt(fCount) > 1
+                  ? `✅ إنشاء ${fCount} أكواد`
+                  : "✅ إنشاء الكود"}
             </button>
           </div>
         </div>
@@ -253,64 +323,90 @@ export default function PromoCodesPage() {
         <div className="text-center py-16 text-gold animate-pulse">جاري التحميل...</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
-          لا توجد أكواد {tab === "app" ? "تطبيق" : "واتساب"} بعد
+          لا توجد أكواد {filter !== "all" ? `بحالة "${filter === "unused" ? "لم تُستخدم" : filter === "used" ? "مفعّلة" : "منتهية"}"` : ""}
         </div>
       ) : (
         <div className="space-y-2">
           {filtered.map(c => {
-            const st = getStatus(c);
+            const st  = getStatus(c);
             const cfg = STATUS_CFG[st];
+            const act = activatedAt(c);
             return (
               <div key={c.id}
                 className={`bg-card border rounded-xl px-4 py-3 transition-all ${cfg.border} ${st === "expired" ? "opacity-60" : ""}`}>
-                <div className="flex items-center gap-3">
-                  {/* الكود */}
+                <div className="flex items-start gap-3">
+                  {/* بيانات الكود */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
+                    {/* السطر الأول: الكود + الحالة */}
+                    <div className="flex items-center gap-2 mb-1">
                       <span className="font-mono text-base font-black tracking-widest text-white">{c.code}</span>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.cls}`}>
                         {cfg.dot} {cfg.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 flex-wrap">
+
+                    {/* السطر الثاني: الملاحظات */}
+                    <div className="flex items-center gap-3 flex-wrap mb-1">
                       {c.note && <span className="text-xs text-gray-400">📋 {c.note}</span>}
-                      {c.wa_credits && <span className="text-xs text-green-400">📲 {c.wa_credits} عميل</span>}
+                      {c.wa_credits && <span className="text-xs text-green-400">📲 {c.wa_credits} عميل WA</span>}
+                      {c.recipient_phone && (
+                        <span className="text-xs text-gray-500 font-mono">{c.recipient_phone}</span>
+                      )}
+                    </div>
+
+                    {/* السطر الثالث: الاستخدامات + التواريخ */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {/* عداد الاستخدامات دائماً ظاهر */}
+                      <span className={`text-xs font-bold ${c.used_count > 0 ? "text-blue-400" : "text-gray-500"}`}>
+                        {c.used_count}/{c.max_uses ?? "∞"} استخدام
+                      </span>
+                      {/* المدة أو تاريخ الانتهاء */}
                       {c.duration_days && !c.expires_at && (
                         <span className="text-xs text-yellow-500">⏱ {c.duration_days} يوم من الاستخدام</span>
                       )}
-                      {c.expires_at && <span className="text-xs text-gray-500">⏳ ينتهي {fmt(c.expires_at)}</span>}
-                      {c.used_count > 0 && (
-                        <span className="text-xs text-blue-400">
-                          ✓ {c.used_count}/{c.max_uses ?? "∞"} استخدام
+                      {act && (
+                        <span className="text-xs text-blue-300">▶ بدأ {act}</span>
+                      )}
+                      {c.expires_at && (
+                        <span className={`text-xs ${st === "expired" ? "text-red-400" : "text-gray-500"}`}>
+                          ⏳ ينتهي {fmt(c.expires_at)}
                         </span>
                       )}
                     </div>
                   </div>
 
                   {/* أزرار */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button onClick={() => copyCode(c.code)}
-                      className="text-xs px-2.5 py-1.5 rounded-lg border border-blue-500/20 text-blue-400 hover:bg-blue-500/10 transition-colors">
-                      {copied === c.code ? "✓" : "نسخ"}
-                    </button>
-                    {c.recipient_phone && (
+                  <div className="flex flex-col gap-1.5 shrink-0 items-end">
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => copyCode(c.code)}
+                        className="text-xs px-2.5 py-1.5 rounded-lg border border-blue-500/20 text-blue-400 hover:bg-blue-500/10 transition-colors">
+                        {copied === c.code ? "✓" : "نسخ"}
+                      </button>
                       <button onClick={() => sendWa(c)}
                         className="text-xs px-2.5 py-1.5 rounded-lg border border-green-500/20 text-green-400 hover:bg-green-500/10 transition-colors">
                         📲
                       </button>
-                    )}
-                    <button onClick={() => toggle(c.id, c.active)}
-                      className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
-                        c.active
-                          ? "border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
-                          : "border-green-500/30 text-green-400 hover:bg-green-500/10"
-                      }`}>
-                      {c.active ? "تعطيل" : "تفعيل"}
-                    </button>
-                    <button onClick={() => del(c.id)}
-                      className="text-xs px-2.5 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors">
-                      🗑
-                    </button>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {st === "expired" && c.duration_days && (
+                        <button onClick={() => renew(c)}
+                          className="text-xs px-2.5 py-1.5 rounded-lg border border-blue-500/20 text-blue-300 hover:bg-blue-500/10 transition-colors">
+                          🔄 تجديد
+                        </button>
+                      )}
+                      <button onClick={() => toggle(c.id, c.active)}
+                        className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
+                          c.active
+                            ? "border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
+                            : "border-green-500/30 text-green-400 hover:bg-green-500/10"
+                        }`}>
+                        {c.active ? "تعطيل" : "تفعيل"}
+                      </button>
+                      <button onClick={() => del(c.id)}
+                        className="text-xs px-2.5 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors">
+                        🗑
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
