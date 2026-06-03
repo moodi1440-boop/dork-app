@@ -1817,10 +1817,10 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
   const nav=(fn)=>{fn();onClose();};
 
   const Row=({icon,label,active,onClick})=>(
-    <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"13px 20px",background:active?"var(--pa08)":"transparent",border:"none",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",fontFamily:"inherit",color:active?"var(--p)":"var(--text-primary)",WebkitAppearance:"none",appearance:"none",textAlign:dir==="rtl"?"right":"left"}}>
+    <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"13px 20px",background:active?"rgba(var(--pr),.15)":"transparent",border:"none",borderBottom:"1px solid var(--border-ui)",borderRight:active?`3px solid var(--p)`:"3px solid transparent",cursor:"pointer",fontFamily:"inherit",color:active?"var(--p)":"var(--text-primary)",WebkitAppearance:"none",appearance:"none",textAlign:dir==="rtl"?"right":"left",transition:"all .2s"}}>
       <span style={{fontSize:16,flexShrink:0}}>{icon}</span>
-      <span style={{fontSize:14,fontWeight:active?700:500,flex:1}}>{label}</span>
-      {active&&<div style={{width:6,height:6,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>}
+      <span style={{fontSize:14,fontWeight:active?800:500,flex:1}}>{label}</span>
+      {active&&<div style={{width:8,height:8,borderRadius:"50%",background:"var(--p)",flexShrink:0,boxShadow:"0 0 6px var(--p)"}}/>}
     </button>
   );
   const SecHead=({label})=>(<div style={{padding:"10px 20px 5px",fontSize:11,color:"var(--p)",fontWeight:700,letterSpacing:.8,background:"var(--shell-bg)",borderBottom:"1px solid var(--border-ui)"}}>{label}</div>);
@@ -3974,7 +3974,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       )}
       {ownerTab!==null&&(
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>{setShowSalonDrawer(true);setOwnerTab(null);}}>← {t("owner_dash.back")}</button>
+          <button style={G.bb} onClick={()=>setShowSalonDrawer(true)}>← {t("owner_dash.back")}</button>
           <h2 style={G.ft}>{ownerTab==="calendar"?t("salon_drawer.bookings"):ownerTab==="messages"?t("salon_drawer.messages"):ownerTab==="reviews"?t("salon_drawer.reviews"):ownerTab==="stats"?t("salon_drawer.stats"):"🔥 إرسال عرض"}</h2>
         </div>
       )}
