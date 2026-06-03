@@ -2432,6 +2432,7 @@ function SalonReviewsView({salon,reviews,setView}){
 function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,userLoc,getSalonCoords,haversine,isOpenNow,inCompare,onCompare,activePromo,distKm}){
   const{t}=useTranslation();
   const[showPromoPopup,setShowPromoPopup]=useState(false);
+  const[codeCopied,setCodeCopied]=useState(false);
   const displayRating=realRating||salon.rating||"5.0";
 
   let distance=null;
@@ -2525,15 +2526,25 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           </div>
           {activePromo.discount_code&&(
             <div style={{background:"rgba(231,76,60,.1)",border:"1.5px dashed rgba(231,76,60,.4)",borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}>
-              <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>كود الخصم</div>
-              <div style={{fontSize:18,fontWeight:900,color:"#e74c3c",letterSpacing:2}}>{activePromo.discount_code}</div>
+              <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>كود الخصم</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+                <div style={{fontSize:20,fontWeight:900,color:"#e74c3c",letterSpacing:3}}>{activePromo.discount_code}</div>
+                <button onClick={()=>{navigator.clipboard.writeText(activePromo.discount_code).catch(()=>{});setCodeCopied(true);setTimeout(()=>setCodeCopied(false),2000);}} style={{background:codeCopied?"rgba(39,174,96,.15)":"rgba(231,76,60,.15)",border:`1px solid ${codeCopied?"#27ae60":"rgba(231,76,60,.4)"}`,color:codeCopied?"#27ae60":"#e74c3c",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>
+                  {codeCopied?"✅ تم النسخ":"نسخ"}
+                </button>
+              </div>
             </div>
           )}
-          {activePromo.ends_at&&(
-            <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"center",marginBottom:14}}>
-              ⏳ ينتهي العرض: {new Date(activePromo.ends_at).toLocaleDateString("ar-SA")}
-            </div>
-          )}
+          {activePromo.ends_at&&(()=>{
+            const ms=new Date(activePromo.ends_at)-Date.now();
+            const hrs=Math.max(0,Math.ceil(ms/3600000));
+            const urgent=ms>0&&hrs<=24;
+            return(
+              <div style={{fontSize:11,color:urgent?"#e67e22":"var(--text-muted)",textAlign:"center",marginBottom:14,fontWeight:urgent?700:400}}>
+                {urgent?`⚡ ينتهي خلال ${hrs} ساعة`:`⏳ ينتهي: ${new Date(activePromo.ends_at).toLocaleDateString("ar-SA")}`}
+              </div>
+            );
+          })()}
           <div style={{display:"flex",gap:10}}>
             <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none"}} onClick={()=>{setShowPromoPopup(false);onBook();}}>احجز الآن</button>
             <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setShowPromoPopup(false)}>إغلاق</button>
@@ -4267,6 +4278,7 @@ function PromoPanel({salon,customers,toast$}){
   const[codeApplied,setCodeApplied]=useState(false);
   const[codeError,setCodeError]=useState("");
   const[waCredits,setWaCredits]=useState(null);
+  const[appliedCodeRow,setAppliedCodeRow]=useState(null);
   const[customerGroup,setCustomerGroup]=useState("last80");
   const[saving,setSaving]=useState(false);
   const[myPromos,setMyPromos]=useState([]);
@@ -4276,9 +4288,10 @@ function PromoPanel({salon,customers,toast$}){
   const salonCustomers=customers.filter(c=>(c.history||[]).some(h=>String(h.salonId)===String(salon.id)));
   const grpMax=CUSTOMER_GROUPS.find(g=>g.key===customerGroup)?.max||80;
   const customerCount=Math.min(salonCustomers.length,grpMax);
+  const effectiveCustomerCount=waCredits?Math.min(customerCount,waCredits):customerCount;
   const promoText=useTemplate?selectedTemplate:customText;
   const basePrice=!selectedPkg?0:pkg==="gold"
-    ? parseFloat((customerCount*WHATSAPP_RATE).toFixed(2))
+    ? parseFloat((effectiveCustomerCount*WHATSAPP_RATE).toFixed(2))
     : (selectedPkg.prices[durationDays]||0);
   const totalPrice=codeApplied?0:basePrice;
 
@@ -4311,6 +4324,7 @@ function PromoPanel({salon,customers,toast$}){
       }
       // كود WhatsApp يحدد عدد عملاء مجانيين
       if(row.code_type==="whatsapp"&&row.wa_credits){setWaCredits(row.wa_credits);}
+      setAppliedCodeRow(row);
       setCodeApplied(true);setDiscountCode(c);setCodeError("");
     }catch{setCodeError("تعذر التحقق من الكود، حاول مرة أخرى");}
     finally{setCheckingCode(false);}
@@ -4319,23 +4333,32 @@ function PromoPanel({salon,customers,toast$}){
   const submitPromo=async()=>{
     if(!pkg){toast$("❌ اختر الباقة","err");return;}
     if(!promoText.trim()){toast$("❌ اختر نص العرض أو اكتبه","err");return;}
+    if(myPromos.some(p=>p.status==="active")){
+      toast$("❌ لديك عرض نشط بالفعل، ألغِه أولاً","err");return;
+    }
     setSaving(true);
     try{
       const now=new Date();
       const ends=new Date(now);ends.setDate(ends.getDate()+(pkg==="gold"?7:durationDays));
       await sb("promotions","POST",{
         salon_id:salon.id,package:pkg,promo_text:promoText.trim(),
-        customer_count:pkg==="gold"?customerCount:null,
+        customer_count:pkg==="gold"?effectiveCustomerCount:null,
         duration_days:pkg==="gold"?7:durationDays,
-        price:basePrice,
+        price:totalPrice,
         status:"active",
         discount_code:discountCode||null,
         ends_at:ends.toISOString(),
       },"");
+      if(appliedCodeRow?.id){
+        await sb("promo_codes","PATCH",
+          {used_count:(appliedCodeRow.used_count||0)+1},
+          `?id=eq.${appliedCodeRow.id}`
+        ).catch(()=>{});
+      }
       toast$("✅ تم إرسال العرض وتفعيله!");
       const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=10`).catch(()=>[]);
       setMyPromos(rows||[]);
-      setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");
+      setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setAppliedCodeRow(null);
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
     finally{setSaving(false);}
   };
@@ -4359,8 +4382,22 @@ function PromoPanel({salon,customers,toast$}){
   const canNext=wizStep===1?!!pkg:wizStep===2?true:wizStep===3?!!promoText.trim():false;
 
   const goNext=()=>{if(canNext&&wizStep<TOTAL_STEPS)setWizStep(s=>s+1);};
-  const goBack=()=>{if(wizStep>1)setWizStep(s=>s-1);};
-  const reset=()=>{setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setCodeError("");setWaCredits(null);setWizStep(1);};
+  const goBack=()=>{
+    if(wizStep>1){
+      if(wizStep===4){setCodeApplied(false);setCodeInput("");setDiscountCode("");setCodeError("");setAppliedCodeRow(null);}
+      setWizStep(s=>s-1);
+    }
+  };
+  const reset=()=>{setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setCodeError("");setWaCredits(null);setAppliedCodeRow(null);setWizStep(1);};
+  const renewPromo=(pr)=>{
+    setPkg(pr.package);
+    if(pr.package!=="gold")setDurationDays(pr.duration_days||7);
+    const tmpl=TEMPLATES.find(t=>t===pr.promo_text);
+    if(tmpl){setUseTemplate(true);setSelectedTemplate(tmpl);}
+    else{setUseTemplate(false);setCustomText(pr.promo_text||"");}
+    setCodeInput("");setCodeApplied(false);setDiscountCode("");setCodeError("");setAppliedCodeRow(null);
+    setWizStep(2);
+  };
 
   /* مؤشر التقدم */
   const Progress=()=>(
@@ -4397,22 +4434,40 @@ function PromoPanel({salon,customers,toast$}){
         <div style={{marginBottom:20}}>
           <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8}}>عروضي</div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {myPromos.map(pr=>(
-              <div key={pr.id} style={{background:"var(--surface-1)",border:`1.5px solid ${pkgColor(pr.package)}44`,borderRadius:12,padding:"10px 12px"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                  <span style={{fontSize:12,fontWeight:700,color:pkgColor(pr.package)}}>{PACKAGES.find(p=>p.id===pr.package)?.label||pr.package} {PACKAGES.find(p=>p.id===pr.package)?.medal}</span>
-                  <span style={{fontSize:11,fontWeight:700,color:statusColor(pr.status)}}>{statusLabel(pr.status)}</span>
+            {myPromos.map(pr=>{
+              const pkgInfo=PACKAGES.find(p=>p.id===pr.package);
+              const ms=pr.ends_at?new Date(pr.ends_at)-Date.now():null;
+              const hrsLeft=ms!==null?Math.max(0,Math.ceil(ms/3600000)):null;
+              const urgent=hrsLeft!==null&&hrsLeft<=24&&pr.status==="active";
+              return(
+              <div key={pr.id} style={{background:"var(--surface-1)",border:`1.5px solid ${urgent?"#e67e22":pkgColor(pr.package)}44`,borderRadius:12,padding:"12px 14px",transition:"border .3s"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:800,color:pkgColor(pr.package)}}>{pkgInfo?.label} {pkgInfo?.medal}</div>
+                    <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2}}>
+                      {pr.package==="gold"?`${pr.customer_count||"--"} عميل`:`${pr.duration_days||7} يوم`}
+                      {" · "}<span style={{color:pr.price===0?"#27ae60":"var(--text-muted)"}}>{pr.price===0?"مجاني":`${pr.price} ريال`}</span>
+                    </div>
+                  </div>
+                  <span style={{fontSize:10,fontWeight:700,color:statusColor(pr.status),background:`${statusColor(pr.status)}18`,padding:"3px 9px",borderRadius:20}}>{statusLabel(pr.status)}</span>
                 </div>
-                <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4,lineHeight:1.5}}>{pr.promo_text}</div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#666"}}>
-                  <span>{pr.price} ريال</span>
-                  {pr.ends_at&&<span>ينتهي: {new Date(pr.ends_at).toLocaleDateString("ar-SA")}</span>}
-                </div>
-                {(pr.status==="pending"||pr.status==="active")&&(
-                  <button onClick={()=>cancelPromo(pr.id)} style={{marginTop:6,background:"transparent",border:"1px solid #e74c3c",color:"#e74c3c",borderRadius:8,padding:"3px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>إلغاء</button>
+                <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.6,padding:"8px 10px",background:"rgba(255,255,255,.03)",borderRadius:8,marginBottom:8}}>{pr.promo_text}</div>
+                {pr.ends_at&&(
+                  <div style={{fontSize:10,color:urgent?"#e67e22":"var(--text-muted)",marginBottom:8,fontWeight:urgent?700:400}}>
+                    {urgent?`⚡ ينتهي خلال ${hrsLeft} ساعة`:pr.status==="active"?`⏳ ينتهي: ${new Date(pr.ends_at).toLocaleDateString("ar-SA")}`:`انتهى: ${new Date(pr.ends_at).toLocaleDateString("ar-SA")}`}
+                  </div>
                 )}
+                <div style={{display:"flex",gap:6}}>
+                  {pr.status==="active"&&(
+                    <button onClick={()=>cancelPromo(pr.id)} style={{flex:1,background:"transparent",border:"1px solid #e74c3c44",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>إلغاء العرض</button>
+                  )}
+                  {(pr.status==="expired"||pr.status==="cancelled")&&(
+                    <button onClick={()=>renewPromo(pr)} style={{flex:1,background:"var(--pa12)",border:"1px solid rgba(var(--pr),.3)",color:"var(--p)",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>تجديد العرض ↩</button>
+                  )}
+                </div>
               </div>
-            ))}
+              );
+            })}
           </div>
           <div style={{height:1,background:"var(--border-ui)",margin:"16px 0"}}/>
         </div>
