@@ -4588,7 +4588,7 @@ function PromoPanel({salon,customers,toast$}){
               {pkg==="gold"?(
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <span style={{fontSize:12,color:"var(--text-muted)"}}>الحساب</span>
-                  <span style={{fontSize:12,fontWeight:700}}>{customerCount} عميل × {WHATSAPP_RATE} ر = <span style={{color:"var(--gold)"}}>{basePrice} ر</span></span>
+                  <span style={{fontSize:12,fontWeight:700}}>{effectiveCustomerCount} عميل × {WHATSAPP_RATE} ر = <span style={{color:"var(--gold)"}}>{basePrice} ر</span></span>
                 </div>
               ):(
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -4618,7 +4618,7 @@ function PromoPanel({salon,customers,toast$}){
             <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>🎟 كود الخصم <span style={{color:"#e74c3c",fontWeight:700}}>*مطلوب</span></div>
             <div style={{display:"flex",gap:8}}>
               <input value={codeInput} onChange={e=>{setCodeInput(e.target.value.toUpperCase());setCodeApplied(false);setCodeError("");}} placeholder="أدخل الكود" maxLength={20} disabled={codeApplied} style={{flex:1,padding:"10px 12px",borderRadius:9,border:`1.5px solid ${codeApplied?"#27ae60":codeError?"#e74c3c":"var(--border-ui)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"ltr",textAlign:"center",boxSizing:"border-box",letterSpacing:2}}/>
-              <button onClick={codeApplied?()=>{setCodeApplied(false);setCodeInput("");setDiscountCode("");setCodeError("");}:applyCode} disabled={checkingCode} style={{padding:"10px 16px",borderRadius:9,border:"none",background:codeApplied?"rgba(39,174,96,.15)":"var(--pa15)",color:codeApplied?"#27ae60":"var(--p)",cursor:checkingCode?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,flexShrink:0,WebkitAppearance:"none",appearance:"none"}}>
+              <button onClick={codeApplied?()=>{setCodeApplied(false);setCodeInput("");setDiscountCode("");setCodeError("");setAppliedCodeRow(null);}:applyCode} disabled={checkingCode} style={{padding:"10px 16px",borderRadius:9,border:"none",background:codeApplied?"rgba(39,174,96,.15)":"var(--pa15)",color:codeApplied?"#27ae60":"var(--p)",cursor:checkingCode?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,flexShrink:0,WebkitAppearance:"none",appearance:"none"}}>
                 {checkingCode?"...":codeApplied?"✅ مفعّل":"تطبيق"}
               </button>
             </div>

@@ -100,6 +100,7 @@ export default function PromoCodesPage() {
   const save = async () => {
     setSaving(true); setError("");
     const count = Math.min(Math.max(parseInt(fCount) || 1, 1), 50);
+    if (count === 1 && !fCode.trim()) { setError("الكود لا يمكن أن يكون فارغاً"); setSaving(false); return; }
     const rows = Array.from({ length: count }, () => ({
       code: count === 1 ? fCode.trim().toUpperCase() : (tab === "app" ? genApp() : genWa()),
       active: true,
@@ -143,6 +144,7 @@ export default function PromoCodesPage() {
 
   const sendWa = (c: PromoCode) => {
     const phone = c.recipient_phone?.replace(/\D/g, "") || "";
+    if (!phone) { alert("لم يُسجَّل رقم جوال لهذا الكود"); return; }
     const msg   = encodeURIComponent(buildWaMsg(c));
     window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
   };
