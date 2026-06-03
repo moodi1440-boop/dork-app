@@ -2457,10 +2457,16 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
     <div style={{...G.card,border:promoBorder,padding:"16px",display:"flex",flexDirection:"column",gap:"12px",boxShadow:promoShadow}}>
       {/* Header Row: الاسم يسار + التقييم يمين */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-        <button onClick={activePromo?()=>setShowPromoPopup(true):undefined} style={{background:"var(--pa08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:20,padding:"5px 14px",display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0,cursor:activePromo?"pointer":"default",fontFamily:"'Cairo',sans-serif"}}>
-          <span style={{fontSize:13,fontWeight:800,color:"var(--p)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{salon.name}</span>
-          {activePromo&&<span style={{fontSize:12,flexShrink:0}}>🔥</span>}
-        </button>
+        <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0}}>
+          <button style={{background:"var(--pa08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:20,padding:"5px 14px",display:"flex",alignItems:"center",flex:1,minWidth:0,cursor:"default",fontFamily:"'Cairo',sans-serif",overflow:"hidden"}}>
+            <span style={{fontSize:13,fontWeight:800,color:"var(--p)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{salon.name}</span>
+          </button>
+          {activePromo&&(
+            <button onClick={()=>setShowPromoPopup(true)} className="promo-badge-anim" style={{background:"rgba(231,76,60,.15)",border:"1.5px solid rgba(231,76,60,.55)",color:"#e74c3c",borderRadius:16,padding:"4px 10px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",flexShrink:0,whiteSpace:"nowrap"}}>
+              🔥 عرض
+            </button>
+          )}
+        </div>
         <button onClick={onViewReviews} style={{border:"1.5px solid rgba(var(--gold-rgb),.4)",borderRadius:10,padding:"6px 10px",minWidth:"65px",textAlign:"center",flex:"0 0 auto",background:"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
           <div style={{fontSize:16,fontWeight:900,color:"var(--gold)"}}>⭐ {displayRating}</div>
           <div style={{fontSize:8,color:"var(--text-muted)"}}>({reviewCount})</div>
@@ -2524,17 +2530,6 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
             <div style={{fontSize:16,fontWeight:800,color:"#e74c3c",marginBottom:6}}>عرض خاص من {salon.name}</div>
             <div style={{fontSize:13,color:"var(--text-muted)",lineHeight:1.7,padding:"0 8px"}}>{activePromo.promo_text}</div>
           </div>
-          {activePromo.discount_code&&(
-            <div style={{background:"rgba(231,76,60,.1)",border:"1.5px dashed rgba(231,76,60,.4)",borderRadius:10,padding:"10px 14px",textAlign:"center",marginBottom:16}}>
-              <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>كود الخصم</div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-                <div style={{fontSize:20,fontWeight:900,color:"#e74c3c",letterSpacing:3}}>{activePromo.discount_code}</div>
-                <button onClick={()=>{navigator.clipboard.writeText(activePromo.discount_code).catch(()=>{});setCodeCopied(true);setTimeout(()=>setCodeCopied(false),2000);}} style={{background:codeCopied?"rgba(39,174,96,.15)":"rgba(231,76,60,.15)",border:`1px solid ${codeCopied?"#27ae60":"rgba(231,76,60,.4)"}`,color:codeCopied?"#27ae60":"#e74c3c",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>
-                  {codeCopied?"✅ تم النسخ":"نسخ"}
-                </button>
-              </div>
-            </div>
-          )}
           {activePromo.ends_at&&(()=>{
             const ms=new Date(activePromo.ends_at)-Date.now();
             const hrs=Math.max(0,Math.ceil(ms/3600000));
@@ -4371,9 +4366,17 @@ function PromoPanel({salon,customers,toast$}){
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
   };
 
+  const deletePromo=async(promoId)=>{
+    try{
+      await sb("promotions","DELETE",null,`?id=eq.${promoId}`);
+      setMyPromos(p=>p.filter(x=>x.id!==promoId));
+      toast$("تم حذف العرض");
+    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
+  };
+
   const pkgColor=(p)=>PACKAGES.find(x=>x.id===p)?.color||"var(--text-muted)";
-  const statusLabel=(s)=>s==="active"?"✅ نشط":s==="pending"?"⏳ قيد المراجعة":s==="expired"?"⌛ منتهي":"❌ ملغي";
-  const statusColor=(s)=>s==="active"?"#27ae60":s==="pending"?"#f39c12":s==="expired"?"#666":"#e74c3c";
+  const statusLabel=(s)=>s==="active"?"✅ نشط":s==="pending"?"⚠️ لم تكتمل":s==="expired"?"⌛ منتهي":"❌ ملغي";
+  const statusColor=(s)=>s==="active"?"#27ae60":s==="pending"?"#e74c3c":s==="expired"?"#666":"#e74c3c";
 
   const[wizStep,setWizStep]=useState(1);
   const TOTAL_STEPS=4;
@@ -4432,18 +4435,29 @@ function PromoPanel({salon,customers,toast$}){
       {/* عروضي السابقة */}
       {!loadingPromos&&myPromos.length>0&&(
         <div style={{marginBottom:20}}>
-          <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8}}>عروضي</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <div style={{fontSize:13,fontWeight:800,color:"var(--p)"}}>عروضي</div>
+            <div style={{display:"flex",gap:6}}>
+              {myPromos.filter(p=>p.status==="active").length>0&&(
+                <span style={{fontSize:10,background:"rgba(39,174,96,.15)",color:"#27ae60",padding:"2px 9px",borderRadius:10,fontWeight:700}}>{myPromos.filter(p=>p.status==="active").length} نشط</span>
+              )}
+              {myPromos.filter(p=>p.status==="pending").length>0&&(
+                <span style={{fontSize:10,background:"rgba(231,76,60,.12)",color:"#e74c3c",padding:"2px 9px",borderRadius:10,fontWeight:700}}>{myPromos.filter(p=>p.status==="pending").length} لم تكتمل</span>
+              )}
+            </div>
+          </div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {myPromos.map(pr=>{
               const pkgInfo=PACKAGES.find(p=>p.id===pr.package);
               const ms=pr.ends_at?new Date(pr.ends_at)-Date.now():null;
               const hrsLeft=ms!==null?Math.max(0,Math.ceil(ms/3600000)):null;
               const urgent=hrsLeft!==null&&hrsLeft<=24&&pr.status==="active";
+              const isPending=pr.status==="pending";
               return(
-              <div key={pr.id} style={{background:"var(--surface-1)",border:`1.5px solid ${urgent?"#e67e22":pkgColor(pr.package)}44`,borderRadius:12,padding:"12px 14px",transition:"border .3s"}}>
+              <div key={pr.id} style={{background:isPending?"rgba(231,76,60,.05)":"var(--surface-1)",border:`1.5px solid ${isPending?"rgba(231,76,60,.3)":urgent?"#e67e22":pkgColor(pr.package)}44`,borderRadius:12,padding:"12px 14px",transition:"border .3s"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                   <div>
-                    <div style={{fontSize:13,fontWeight:800,color:pkgColor(pr.package)}}>{pkgInfo?.label} {pkgInfo?.medal}</div>
+                    <div style={{fontSize:13,fontWeight:800,color:isPending?"#e74c3c":pkgColor(pr.package)}}>{pkgInfo?.label} {pkgInfo?.medal}</div>
                     <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2}}>
                       {pr.package==="gold"?`${pr.customer_count||"--"} عميل`:`${pr.duration_days||7} يوم`}
                       {" · "}<span style={{color:pr.price===0?"#27ae60":"var(--text-muted)"}}>{pr.price===0?"مجاني":`${pr.price} ريال`}</span>
@@ -4451,8 +4465,9 @@ function PromoPanel({salon,customers,toast$}){
                   </div>
                   <span style={{fontSize:10,fontWeight:700,color:statusColor(pr.status),background:`${statusColor(pr.status)}18`,padding:"3px 9px",borderRadius:20}}>{statusLabel(pr.status)}</span>
                 </div>
+                {isPending&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:8,lineHeight:1.5}}>هذا العرض لم يكتمل — يمكنك حذفه والمحاولة مجدداً</div>}
                 <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.6,padding:"8px 10px",background:"rgba(255,255,255,.03)",borderRadius:8,marginBottom:8}}>{pr.promo_text}</div>
-                {pr.ends_at&&(
+                {!isPending&&pr.ends_at&&(
                   <div style={{fontSize:10,color:urgent?"#e67e22":"var(--text-muted)",marginBottom:8,fontWeight:urgent?700:400}}>
                     {urgent?`⚡ ينتهي خلال ${hrsLeft} ساعة`:pr.status==="active"?`⏳ ينتهي: ${new Date(pr.ends_at).toLocaleDateString("ar-SA")}`:`انتهى: ${new Date(pr.ends_at).toLocaleDateString("ar-SA")}`}
                   </div>
@@ -4460,6 +4475,9 @@ function PromoPanel({salon,customers,toast$}){
                 <div style={{display:"flex",gap:6}}>
                   {pr.status==="active"&&(
                     <button onClick={()=>cancelPromo(pr.id)} style={{flex:1,background:"transparent",border:"1px solid #e74c3c44",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>إلغاء العرض</button>
+                  )}
+                  {isPending&&(
+                    <button onClick={()=>deletePromo(pr.id)} style={{flex:1,background:"rgba(231,76,60,.1)",border:"1px solid rgba(231,76,60,.4)",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>🗑 حذف</button>
                   )}
                   {(pr.status==="expired"||pr.status==="cancelled")&&(
                     <button onClick={()=>renewPromo(pr)} style={{flex:1,background:"var(--pa12)",border:"1px solid rgba(var(--pr),.3)",color:"var(--p)",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>تجديد العرض ↩</button>
@@ -6538,6 +6556,8 @@ const CSS=`
     background:var(--bg-input)!important;color:var(--text-primary)!important;
     border-color:var(--border-ui)!important;}
   button:active{opacity:.82;}
+  @keyframes promoPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(231,76,60,.5);}60%{transform:scale(1.06);box-shadow:0 0 0 7px rgba(231,76,60,0);}}
+  .promo-badge-anim{animation:promoPulse 1.8s ease-in-out infinite;}
 `;
 
 const G={
@@ -6567,7 +6587,7 @@ const G={
   badge:{background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",padding:"2px 9px",borderRadius:20,fontSize:11,fontWeight:700},
   empty:{textAlign:"center",color:"var(--text-muted)",padding:"36px 0",fontSize:13},
 
-  card:{background:"rgba(19,19,31,0.82)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderRadius:14,padding:13,border:"1px solid var(--border-ui)",boxShadow:"0 4px 16px rgba(0,0,0,.3)"},
+  card:{background:"rgba(var(--pr),0.07)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderRadius:14,padding:13,border:"1.5px solid rgba(var(--pr),.28)",boxShadow:"0 4px 16px rgba(0,0,0,.3)"},
   cav:{width:38,height:38,borderRadius:10,background:"var(--grad)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0},
   tag:{background:"var(--surface-2)",color:"var(--p)",padding:"2px 8px",borderRadius:20,fontSize:10,border:"1px solid var(--border-ui)"},
   favBtn:{background:"transparent",border:"none",cursor:"pointer",fontSize:20,color:"var(--text-muted)",padding:0,lineHeight:1},
