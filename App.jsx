@@ -4269,7 +4269,6 @@ function PromoPanel({salon,customers,toast$}){
   const[waCredits,setWaCredits]=useState(null);
   const[customerGroup,setCustomerGroup]=useState("last80");
   const[saving,setSaving]=useState(false);
-  const[pendingPromoId,setPendingPromoId]=useState(null);
   const[myPromos,setMyPromos]=useState([]);
   const[loadingPromos,setLoadingPromos]=useState(true);
 
@@ -4324,26 +4323,19 @@ function PromoPanel({salon,customers,toast$}){
     try{
       const now=new Date();
       const ends=new Date(now);ends.setDate(ends.getDate()+(pkg==="gold"?7:durationDays));
-      const inserted=await sb("promotions","POST",{
+      await sb("promotions","POST",{
         salon_id:salon.id,package:pkg,promo_text:promoText.trim(),
         customer_count:pkg==="gold"?customerCount:null,
         duration_days:pkg==="gold"?7:durationDays,
-        price:totalPrice,
-        status:totalPrice===0?"active":"pending",
+        price:basePrice,
+        status:"active",
         discount_code:discountCode||null,
         ends_at:ends.toISOString(),
       },"");
-      if(totalPrice===0){
-        toast$("✅ تم إرسال العرض وتفعيله مجاناً!");
-        const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=10`).catch(()=>[]);
-        setMyPromos(rows||[]);
-        setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);
-      }else{
-        setPendingPromoId(inserted[0]?.id||null);
-        window.open(PAYMENT_LINK,"_blank");
-        setShowPayment(false);
-        toast$("✅ تم إرسال الطلب، أكمل الدفع لتفعيل العرض");
-      }
+      toast$("✅ تم إرسال العرض وتفعيله!");
+      const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=10`).catch(()=>[]);
+      setMyPromos(rows||[]);
+      setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
     finally{setSaving(false);}
   };
@@ -4359,7 +4351,6 @@ function PromoPanel({salon,customers,toast$}){
   const pkgColor=(p)=>PACKAGES.find(x=>x.id===p)?.color||"var(--text-muted)";
   const statusLabel=(s)=>s==="active"?"✅ نشط":s==="pending"?"⏳ قيد المراجعة":s==="expired"?"⌛ منتهي":"❌ ملغي";
   const statusColor=(s)=>s==="active"?"#27ae60":s==="pending"?"#f39c12":s==="expired"?"#666":"#e74c3c";
-  const PAYMENT_LINK="https://payment.dork-app.com/checkout";
 
   const[wizStep,setWizStep]=useState(1);
   const TOTAL_STEPS=4;
