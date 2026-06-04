@@ -1837,10 +1837,10 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
         <SecHead label={t("salon_drawer.section_operations")}/>
         <Row icon="📋" label={t("salon_drawer.dashboard")} active={ownerTab===null} onClick={()=>nav(()=>{setOwnerTab(null);setView("ownerDash");})}/>
         <Row icon="🗓" label={t("salon_drawer.bookings")} active={ownerTab==="calendar"} onClick={()=>nav(()=>{setOwnerTab("calendar");setView("ownerDash");})}/>
-        <Row icon="💬" label={t("salon_drawer.messages")} active={ownerTab==="messages"} onClick={()=>nav(()=>{setOwnerTab("messages");setView("ownerDash");})}/>
-        <Row icon="⭐" label={t("salon_drawer.reviews")} active={ownerTab==="reviews"} onClick={()=>nav(()=>{setOwnerTab("reviews");setView("ownerDash");})}/>
-        <Row icon="📊" label={t("salon_drawer.stats")} active={ownerTab==="stats"} onClick={()=>nav(()=>{setOwnerTab("stats");setView("ownerDash");})}/>
         <Row icon="🔥" label="إرسال عرض" active={ownerTab==="promo"} onClick={()=>nav(()=>{setOwnerTab("promo");setView("ownerDash");})}/>
+        <Row icon="⭐" label={t("salon_drawer.reviews")} active={ownerTab==="reviews"} onClick={()=>nav(()=>{setOwnerTab("reviews");setView("ownerDash");})}/>
+        <Row icon="💬" label={t("salon_drawer.messages")} active={ownerTab==="messages"} onClick={()=>nav(()=>{setOwnerTab("messages");setView("ownerDash");})}/>
+        <Row icon="📊" label={t("salon_drawer.stats")} active={ownerTab==="stats"} onClick={()=>nav(()=>{setOwnerTab("stats");setView("ownerDash");})}/>
         <SecHead label={t("salon_drawer.section_salon")}/>
         <Row icon="📋" label={t("salon_drawer.salon_info")} onClick={()=>nav(()=>setView("ownerInfo"))}/>
         <Row icon="🕐" label={t("salon_drawer.working_hours")} onClick={()=>nav(()=>setView("ownerHours"))}/>
@@ -2764,6 +2764,15 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
   const[showMonthPicker,setShowMonthPicker]=useState(false);
   const[showYearPicker,setShowYearPicker]=useState(false);
   const[barberPeriod,setBarberPeriod]=useState("day");
+  const todayDefault=getTodayDateInRiyadh();
+  const nowM=new Date().getMonth();
+  const nowY=new Date().getFullYear();
+  const[barberDay,setBarberDay]=useState(todayDefault);
+  const[barberM,setBarberM]=useState(nowM);
+  const[barberY,setBarberY]=useState(nowY);
+  const[showBarberDayPicker,setShowBarberDayPicker]=useState(false);
+  const[showBarberMonthPicker,setShowBarberMonthPicker]=useState(false);
+  const[showBarberYearPicker,setShowBarberYearPicker]=useState(false);
   const[servicesView,setServicesView]=useState("requests");
   const[showCashForm,setShowCashForm]=useState(false);
   const[cashAmount,setCashAmount]=useState("");
@@ -2785,14 +2794,14 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
     if(!salon.barbers?.length)return;
     setLoadingStats(true);
     try{
-      const mm=String(m+1).padStart(2,"0");
-      const dim=new Date(y,m+1,0).getDate();
-      const startM=`${y}-${mm}-01`;
-      const endM=`${y}-${mm}-${String(dim).padStart(2,"0")}`;
+      const mm=String(barberM+1).padStart(2,"0");
+      const dim=new Date(barberY,barberM+1,0).getDate();
+      const startM=`${barberY}-${mm}-01`;
+      const endM=`${barberY}-${mm}-${String(dim).padStart(2,"0")}`;
       const[dayR,monthR,yearR]=await Promise.all([
-        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=eq.${selectedDate}&limit=100`),
+        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=eq.${barberDay}&limit=100`),
         sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${startM}&date=lte.${endM}&limit=100`),
-        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${y}-01-01&date=lte.${y}-12-31&limit=100`)
+        sb("bookings","GET",null,`?select=barber_id,total&salon_id=eq.${salon.id}&status=eq.approved&date=gte.${barberY}-01-01&date=lte.${barberY}-12-31&limit=100`)
       ]);
       const grp=(rows)=>{const s={};if(Array.isArray(rows))for(const r of rows){const bid=r.barber_id||"any";if(!s[bid])s[bid]={count:0,revenue:0};s[bid].count++;s[bid].revenue+=(r.total||0);}return s;};
       setDayStats(grp(dayR));
@@ -2800,7 +2809,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
       setYearStats(grp(yearR));
     }catch(e){console.warn("barber stats error:",e);}
     setLoadingStats(false);
-  },[salon.id,salon.barbers?.length,selectedDate,m,y]);
+  },[salon.id,salon.barbers?.length,barberDay,barberM,barberY]);
 
   useEffect(()=>{loadBarberStats();},[loadBarberStats]);
 
@@ -2899,7 +2908,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
   // تنبيه ذكي
   const smartAlert=(()=>{
     if(cancelRate>20)return`⚠️ معدل الإلغاء ${cancelRate}% — حاول تأكيد الحجوزات مسبقاً`;
-    if(topDays.length>0){const quietDay=dayNames.find((_,i)=>!dayCounts[i]);if(quietDay)return`💡 ${quietDay} أهدأ أيامك — جرّب عرضاً لرفع الحجوزات`;}
+    if(topDays.length>0){const quietDay=dayNames.find((_,i)=>!dayCounts[i]);if(quietDay)return`💡 ${quietDay} أقل أيامك — جرّب عرضاً لرفع الحجوزات`;}
     if(forecastNext>thisWeekBks+2)return`📈 الأسبوع القادم متوقع ${forecastNext} حجز — كن مستعداً`;
     if(approvedBks.length===0)return`🚀 ابدأ باستقبال حجوزاتك عبر التطبيق وتابع إحصائياتك هنا`;
     return`✅ الصالون يعمل بشكل جيد — واصل`;
@@ -2910,18 +2919,14 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
   return(
     <div style={{paddingTop:4}}>
 
-      {/* ── تنبيه ذكي ── */}
-      <div style={{background:"rgba(var(--pr),.08)",border:"1px solid rgba(var(--pr),.25)",borderRadius:12,padding:"10px 14px",marginBottom:14,fontSize:12,color:"var(--p)",lineHeight:1.6}}>
-        {smartAlert}
-      </div>
-
       {/* ── بطاقات KPI ── */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
         {[
           {label:"إيراد اليوم",val:`${salonDayRevenue} ر`,sub:`+${todayCash} ر كاش`,icon:"💰"},
           {label:"حجوزات الشهر",val:approvedBks.filter(b=>b.date?.startsWith(monthStr)).length,sub:`${cancelRate}% إلغاء`,icon:"📅"},
           {label:"متوسط الحجز",val:`${avgBookingVal} ر`,sub:"لكل حجز",icon:"📊"},
-          {label:"عملاء الصالون",val:salonCusts.length,sub:`${newCusts.length} جديد هذا الشهر`,icon:"👥"},
+          {label:"إجمالي العملاء",val:salonCusts.length,sub:"جميع العملاء",icon:"👥"},
+          {label:"العملاء الجدد",val:newCusts.length,sub:"آخر 30 يوم",icon:"🆕"},
         ].map(({label,val,sub,icon})=>(
           <div key={label} style={{background:"var(--surface-1)",borderRadius:12,padding:"12px",border:"1px solid var(--border-ui)"}}>
             <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{icon} {label}</div>
@@ -2944,15 +2949,63 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
         </div>
       </div>
 
+      {/* ── تنبيه ذكي ── */}
+      <div style={{background:"rgba(var(--pr),.08)",border:"1px solid rgba(var(--pr),.25)",borderRadius:12,padding:"10px 14px",marginBottom:14,fontSize:12,color:"var(--p)",lineHeight:1.6}}>
+        {smartAlert}
+      </div>
+
       {/* ── أداء الحلاقين ── */}
       {salon.barbers&&salon.barbers.length>0&&(
         <div style={{background:"var(--surface-1)",borderRadius:14,padding:"12px",border:"1px solid var(--border-ui)",marginBottom:14}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>💈 أداء الحلاقين</div>
-            <div style={{display:"flex",gap:4}}>
-              {[{k:"day",l:"اليوم"},{k:"month",l:"الشهر"},{k:"year",l:"السنة"}].map(({k,l})=>(
-                <button key={k} onClick={()=>setBarberPeriod(k)} style={{padding:"3px 8px",borderRadius:8,border:`1px solid ${barberPeriod===k?"var(--p)":"var(--border-ui)"}`,background:barberPeriod===k?"var(--pa12)":"transparent",color:barberPeriod===k?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
-              ))}
+          <div style={{marginBottom:10}}>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8}}>💈 أداء الحلاقين</div>
+            <div style={{display:"flex",gap:6}}>
+              {/* تاب اليوم */}
+              <div style={{flex:1,position:"relative"}}>
+                <button onClick={()=>{setBarberPeriod("day");setShowBarberDayPicker(v=>!v);setShowBarberMonthPicker(false);setShowBarberYearPicker(false);}} style={{width:"100%",padding:"5px 6px",borderRadius:9,border:`1.5px solid ${barberPeriod==="day"?"var(--p)":"var(--border-ui)"}`,background:barberPeriod==="day"?"var(--pa12)":"transparent",color:barberPeriod==="day"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"space-between",gap:2}}>
+                  <span>اليوم</span>
+                  {barberDay!==todayDefault&&<span onClick={(e)=>{e.stopPropagation();setBarberDay(todayDefault);}} style={{fontSize:9,color:"#e74c3c",fontWeight:700}}>✕</span>}
+                </button>
+                {barberPeriod==="day"&&showBarberDayPicker&&(
+                  <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--gold)",borderRadius:10,padding:6,maxHeight:180,overflowY:"auto",zIndex:20,marginTop:3}}>
+                    {Array.from({length:31},(_,i)=>i+1).map(d=>{
+                      const ds=`${barberY}-${String(barberM+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+                      const sel=barberDay===ds;
+                      return(<button key={d} onClick={()=>{setBarberDay(ds);setShowBarberDayPicker(false);}} style={{display:"block",width:"100%",padding:"4px 0",borderRadius:7,background:sel?"var(--gold)":"transparent",color:sel?"#000":"var(--gold)",border:`1px solid ${sel?"var(--gold)":"var(--border-ui)"}`,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:2}}>{d}</button>);
+                    })}
+                  </div>
+                )}
+              </div>
+              {/* تاب الشهر */}
+              <div style={{flex:1,position:"relative"}}>
+                <button onClick={()=>{setBarberPeriod("month");setShowBarberMonthPicker(v=>!v);setShowBarberDayPicker(false);setShowBarberYearPicker(false);}} style={{width:"100%",padding:"5px 6px",borderRadius:9,border:`1.5px solid ${barberPeriod==="month"?"var(--p)":"var(--border-ui)"}`,background:barberPeriod==="month"?"var(--pa12)":"transparent",color:barberPeriod==="month"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"space-between",gap:2}}>
+                  <span>{_months[barberM]?.slice(0,3)||"الشهر"}</span>
+                  {barberM!==nowM&&<span onClick={(e)=>{e.stopPropagation();setBarberM(nowM);}} style={{fontSize:9,color:"#e74c3c",fontWeight:700}}>✕</span>}
+                </button>
+                {barberPeriod==="month"&&showBarberMonthPicker&&(
+                  <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--gold)",borderRadius:10,padding:6,maxHeight:180,overflowY:"auto",zIndex:20,marginTop:3}}>
+                    {(_months||[]).map((mn,idx)=>{
+                      const sel=barberM===idx;
+                      return(<button key={idx} onClick={()=>{setBarberM(idx);setShowBarberMonthPicker(false);}} style={{display:"block",width:"100%",padding:"4px 0",borderRadius:7,background:sel?"var(--gold)":"transparent",color:sel?"#000":"var(--gold)",border:`1px solid ${sel?"var(--gold)":"var(--border-ui)"}`,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:2}}>{mn}</button>);
+                    })}
+                  </div>
+                )}
+              </div>
+              {/* تاب السنة */}
+              <div style={{flex:1,position:"relative"}}>
+                <button onClick={()=>{setBarberPeriod("year");setShowBarberYearPicker(v=>!v);setShowBarberDayPicker(false);setShowBarberMonthPicker(false);}} style={{width:"100%",padding:"5px 6px",borderRadius:9,border:`1.5px solid ${barberPeriod==="year"?"var(--p)":"var(--border-ui)"}`,background:barberPeriod==="year"?"var(--pa12)":"transparent",color:barberPeriod==="year"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"space-between",gap:2}}>
+                  <span>{barberY}</span>
+                  {barberY!==nowY&&<span onClick={(e)=>{e.stopPropagation();setBarberY(nowY);}} style={{fontSize:9,color:"#e74c3c",fontWeight:700}}>✕</span>}
+                </button>
+                {barberPeriod==="year"&&showBarberYearPicker&&(
+                  <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--gold)",borderRadius:10,padding:6,maxHeight:180,overflowY:"auto",zIndex:20,marginTop:3}}>
+                    {Array.from({length:6},(_,i)=>nowY-2+i).map(yr=>{
+                      const sel=barberY===yr;
+                      return(<button key={yr} onClick={()=>{setBarberY(yr);setShowBarberYearPicker(false);}} style={{display:"block",width:"100%",padding:"4px 0",borderRadius:7,background:sel?"var(--gold)":"transparent",color:sel?"#000":"var(--gold)",border:`1px solid ${sel?"var(--gold)":"var(--border-ui)"}`,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:2}}>{yr}</button>);
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           {loadingStats&&<div style={{textAlign:"center",padding:"6px",color:"var(--text-muted)",fontSize:11}}>جاري التحميل...</div>}
@@ -3094,7 +3147,10 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
                 <input type="date" value={cashDate} onChange={e=>setCashDate(e.target.value)} style={{flex:1,padding:"8px 6px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:11,fontFamily:"'Cairo',sans-serif",outline:"none"}}/>
               </div>
               <input value={cashNote} onChange={e=>setCashNote(e.target.value)} placeholder="ملاحظة (اختياري)" style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:6}}/>
-              <button onClick={addCashEntry} style={{width:"100%",padding:"9px",borderRadius:9,border:"none",background:"var(--pa15)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>حفظ</button>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={addCashEntry} style={{flex:1,padding:"9px",borderRadius:9,border:"none",background:"var(--pa15)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>حفظ</button>
+                <button onClick={()=>{setShowCashForm(false);setCashAmount("");setCashNote("");setCashDate(getTodayDateInRiyadh());}} style={{padding:"9px 14px",borderRadius:9,border:"1px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>إلغاء</button>
+              </div>
             </div>
           )}
           {cashEntries.filter(e=>e.date===getTodayDateInRiyadh()).map(e=>(
@@ -3107,17 +3163,6 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
             </div>
           ))}
         </div>
-      </div>
-
-      {/* ── ضريبة القيمة المضافة ── */}
-      <div style={{background:"var(--surface-1)",borderRadius:12,padding:"12px 14px",border:"1px solid var(--border-ui)",marginBottom:14}}>
-        <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8}}>🧾 ملخص الضريبة (15%)</div>
-        {[{l:"اليوم",r:salonDayRevenue+todayCash},{l:"الشهر",r:salonMonthRevenue+monthCash},{l:"السنة",r:salonYearRevenue+yearCash}].map(({l,r})=>(
-          <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(var(--pr),.1)"}}>
-            <span style={{fontSize:11,color:"var(--text-muted)"}}>{l}</span>
-            <span style={{fontSize:11,color:"var(--p)",fontWeight:700}}>إيراد: {r} ر · ضريبة: {Math.round(r*0.15)} ر · صافي: {Math.round(r*0.85)} ر</span>
-          </div>
-        ))}
       </div>
 
       {/* ── تصدير PDF ── */}
@@ -4092,19 +4137,13 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
               <span style={{fontSize:14,fontWeight:900,color:"var(--gold)"}}>⭐ {(salon.rating||0).toFixed(1)}</span>
             </div>
           </div>
-          {/* فاصل */}
-          <div style={{height:2,background:"rgba(var(--pr),.5)",borderRadius:2}}/>
           {/* الجوال */}
-          <div style={{fontSize:12,color:"var(--p)",fontWeight:600}}>📞 {salon.phone||t("owner_dash.not_available")}</div>
-          {/* فاصل */}
-          <div style={{height:2,background:"rgba(var(--pr),.5)",borderRadius:2}}/>
+          <div style={{fontSize:15,color:"var(--p)",fontWeight:800}}>📞 {salon.phone||t("owner_dash.not_available")}</div>
           {/* الموقع */}
-          <div style={{fontSize:12,color:"var(--p)",fontWeight:600}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
-          {/* فاصل */}
-          <div style={{height:2,background:"rgba(var(--pr),.5)",borderRadius:2}}/>
+          <div style={{fontSize:14,color:"var(--p)",fontWeight:600}}>📍 {salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
           {/* صف أخير: تاريخ الانضمام + نشط */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div style={{fontSize:12,color:"var(--p)",fontWeight:600}}>📅 {salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):t("owner_dash.not_available")}</div>
+            <div style={{fontSize:14,color:"var(--p)",fontWeight:600}}>📅 {salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):t("owner_dash.not_available")}</div>
             {salon.status==="approved"&&<div style={{background:"rgba(var(--pr),.2)",border:"1px solid rgba(var(--pr),.5)",borderRadius:8,padding:"3px 10px",fontSize:12,color:"var(--p)",fontWeight:700}}>{t("owner_dash.salon_active")}</div>}
           </div>
         </div>
@@ -4765,10 +4804,6 @@ function PromoPanel({salon,customers,toast$}){
           </div>
         ):(
           <div>
-            {/* رسالة تحفيزية */}
-            <div style={{background:"rgba(212,160,23,.06)",border:"1px solid rgba(212,160,23,.2)",borderRadius:10,padding:"9px 12px",fontSize:11,color:"var(--text-muted)",lineHeight:1.7,marginBottom:14,textAlign:"center"}}>
-              💡 كلما حجز عملاؤك عبر التطبيق زاد الرقم — وزادت قدرتك على استهدافهم في عروضك القادمة
-            </div>
             {/* فئات الاستهداف */}
             <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8,textAlign:"center"}}>اختر الفئة المستهدفة</div>
             <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
