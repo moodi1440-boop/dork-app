@@ -989,6 +989,8 @@ export default function App(){
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
       const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
       const promoRows = await sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]);
+      const now=new Date();
+      const activePromoRows=(promoRows||[]).filter(r=>!r.ends_at||new Date(r.ends_at)>now);
       const salonsWithBookings = salonRows.map(row => {
         const salon = toAppSalon(row);
         salon.bookings = bookingRows
@@ -1013,7 +1015,7 @@ export default function App(){
       try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsWithBookings));}catch{}
       setCustomers(custRows.map(toAppCustomer));
       setReviews(reviewRows||[]);
-      setPromotions(promoRows||[]);
+      setPromotions(activePromoRows);
       setDbError(null);
     } catch(e) {
       console.error(e);
@@ -1089,7 +1091,8 @@ export default function App(){
   const pollPromotions=useCallback(async()=>{
     try{
       const rows=await sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200");
-      setPromotions(rows||[]);
+      const nowP=new Date();
+      setPromotions((rows||[]).filter(r=>!r.ends_at||new Date(r.ends_at)>nowP));
     }catch{}
   },[]);
 
@@ -2181,7 +2184,8 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   };
 
   // ترتيب الأقرب
-  const activeSalonPromoIds=new Set((promotions||[]).filter(p=>p.status==="active").map(p=>String(p.salon_id)));
+  const nowPromo=new Date();
+  const activeSalonPromoIds=new Set((promotions||[]).filter(p=>p.status==="active"&&(!p.ends_at||new Date(p.ends_at)>nowPromo)).map(p=>String(p.salon_id)));
   const savedLoc=(customer?.locationLat&&customer?.locationLng)?{lat:customer.locationLat,lng:customer.locationLng}:null;
   const sortedSalons=(()=>{
     let list=urgentMode?displaySalons.filter(isOpenNow):displaySalons;
@@ -4554,7 +4558,10 @@ function PromoPanel({salon,customers,toast$}){
     const deletedKey=`dork_del_promos_${salon.id}`;
     const deletedIds=new Set(JSON.parse(localStorage.getItem(deletedKey)||"[]"));
     sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=20`)
-      .then(rows=>setMyPromos((rows||[]).filter(r=>!deletedIds.has(r.id)))).catch(()=>{}).finally(()=>setLoadingPromos(false));
+      .then(rows=>{
+        const nowM=new Date();
+        setMyPromos((rows||[]).filter(r=>!deletedIds.has(r.id)).map(r=>({...r,_expired:r.ends_at&&new Date(r.ends_at)<=nowM})));
+      }).catch(()=>{}).finally(()=>setLoadingPromos(false));
   },[salon?.id]);
 
   const[checkingCode,setCheckingCode]=useState(false);
@@ -4589,7 +4596,7 @@ function PromoPanel({salon,customers,toast$}){
   const submitPromo=async()=>{
     if(!pkg){toast$("❌ اختر الباقة","err");return;}
     if(!promoText.trim()){toast$("❌ اختر نص العرض أو اكتبه","err");return;}
-    if(myPromos.some(p=>p.status==="active"&&p.package===pkg)){
+    if(myPromos.some(p=>p.status==="active"&&!p._expired&&p.package===pkg)){
       toast$("❌ لديك عرض نشط من هذه الباقة، ألغِه أولاً","err");return;
     }
     setSaving(true);
@@ -4699,8 +4706,8 @@ function PromoPanel({salon,customers,toast$}){
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
             <div style={{fontSize:13,fontWeight:800,color:"var(--p)"}}>عروضي</div>
             <div style={{display:"flex",gap:6}}>
-              {myPromos.filter(p=>p.status==="active").length>0&&(
-                <span style={{fontSize:10,background:"rgba(39,174,96,.15)",color:"#27ae60",padding:"2px 9px",borderRadius:10,fontWeight:700}}>{myPromos.filter(p=>p.status==="active").length} نشط</span>
+              {myPromos.filter(p=>p.status==="active"&&!p._expired).length>0&&(
+                <span style={{fontSize:10,background:"rgba(39,174,96,.15)",color:"#27ae60",padding:"2px 9px",borderRadius:10,fontWeight:700}}>{myPromos.filter(p=>p.status==="active"&&!p._expired).length} نشط</span>
               )}
               {myPromos.filter(p=>p.status==="pending").length>0&&(
                 <span style={{fontSize:10,background:"rgba(231,76,60,.12)",color:"#e74c3c",padding:"2px 9px",borderRadius:10,fontWeight:700}}>{myPromos.filter(p=>p.status==="pending").length} لم تكتمل</span>
@@ -4712,7 +4719,8 @@ function PromoPanel({salon,customers,toast$}){
               const pkgInfo=PACKAGES.find(p=>p.id===pr.package);
               const ms=pr.ends_at?new Date(pr.ends_at)-Date.now():null;
               const hrsLeft=ms!==null?Math.max(0,Math.ceil(ms/3600000)):null;
-              const urgent=hrsLeft!==null&&hrsLeft<=24&&pr.status==="active";
+              const isExpired=pr._expired||false;
+              const urgent=hrsLeft!==null&&hrsLeft<=24&&pr.status==="active"&&!isExpired;
               const isPending=pr.status==="pending";
               return(
               <div key={pr.id} style={{background:isPending?"rgba(231,76,60,.05)":"var(--surface-1)",border:`1.5px solid ${isPending?"rgba(231,76,60,.3)":urgent?"#e67e22":pkgColor(pr.package)}44`,borderRadius:12,padding:"12px 14px",transition:"border .3s"}}>
@@ -4724,7 +4732,7 @@ function PromoPanel({salon,customers,toast$}){
                       {" · "}<span style={{color:pr.price===0?"#27ae60":"var(--text-muted)"}}>{pr.price===0?"مجاني":`${pr.price} ريال`}</span>
                     </div>
                   </div>
-                  <span style={{fontSize:10,fontWeight:700,color:statusColor(pr.status),background:`${statusColor(pr.status)}18`,padding:"3px 9px",borderRadius:20}}>{statusLabel(pr.status)}</span>
+                  <span style={{fontSize:10,fontWeight:700,color:isExpired?"#95a5a6":statusColor(pr.status),background:isExpired?"rgba(149,165,166,.15)":`${statusColor(pr.status)}18`,padding:"3px 9px",borderRadius:20}}>{isExpired?"منتهي":statusLabel(pr.status)}</span>
                 </div>
                 {isPending&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:8,lineHeight:1.5}}>هذا العرض لم يكتمل — يمكنك حذفه والمحاولة مجدداً</div>}
                 <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.6,padding:"8px 10px",background:"rgba(255,255,255,.03)",borderRadius:8,marginBottom:8}}>{pr.promo_text}</div>
@@ -4734,7 +4742,7 @@ function PromoPanel({salon,customers,toast$}){
                   </div>
                 )}
                 <div style={{display:"flex",gap:6}}>
-                  {pr.status==="active"&&(
+                  {pr.status==="active"&&!isExpired&&(
                     <button onClick={()=>cancelPromo(pr.id)} style={{flex:1,background:"transparent",border:"1px solid #e74c3c44",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>إلغاء العرض</button>
                   )}
                   {isPending&&(
