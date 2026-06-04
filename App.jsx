@@ -1510,7 +1510,7 @@ export default function App(){
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
       <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} activeDrawerItem={activeDrawerItem} setActiveDrawerItem={setActiveDrawerItem} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
-      <SalonDrawer open={showSalonDrawer} onClose={()=>setShowSalonDrawer(false)} salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} setView={setView} setOwnerSession={sharedProps.setOwnerSession} settings={sharedProps.settings} setSettings={sharedProps.setSettings} persistUiToSupabase={sharedProps.persistUiToSupabase} toast$={toast$}/>
+      <SalonDrawer open={showSalonDrawer} onClose={()=>setShowSalonDrawer(false)} salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} view={view} setView={setView} setOwnerSession={sharedProps.setOwnerSession} settings={sharedProps.settings} setSettings={sharedProps.setSettings} persistUiToSupabase={sharedProps.persistUiToSupabase} toast$={toast$}/>
       <div style={{paddingTop:(view==="entry"||view==="custLogin"||view==="ownerLogin")?0:64}}>
         {view==="entry"&&     <EntryView setView={setView}/>}
         {view==="home"&&      <HomeView {...sharedProps}/>}
@@ -1807,7 +1807,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
 // ==============================================
 //  SALON DRAWER — قائمة صاحب الصالون
 // ==============================================
-function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSession,settings,setSettings,persistUiToSupabase,toast$}){
+function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOwnerSession,settings,setSettings,persistUiToSupabase,toast$}){
   const[showLogout,setShowLogout]=useState(false);
   const{t,i18n}=useTranslation();
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
@@ -1835,25 +1835,25 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,setView,setOwnerSe
         </div>
         <div style={{height:8}}/>
         <SecHead label={t("salon_drawer.section_operations")}/>
-        <Row icon="📋" label={t("salon_drawer.dashboard")} active={ownerTab===null} onClick={()=>nav(()=>{setOwnerTab(null);setView("ownerDash");})}/>
+        <Row icon="📋" label={t("salon_drawer.dashboard")} active={ownerTab===null&&view==="ownerDash"} onClick={()=>nav(()=>{setOwnerTab(null);setView("ownerDash");})}/>
         <Row icon="🗓" label={t("salon_drawer.bookings")} active={ownerTab==="calendar"} onClick={()=>nav(()=>{setOwnerTab("calendar");setView("ownerDash");})}/>
         <Row icon="🔥" label="إرسال عرض" active={ownerTab==="promo"} onClick={()=>nav(()=>{setOwnerTab("promo");setView("ownerDash");})}/>
         <Row icon="⭐" label={t("salon_drawer.reviews")} active={ownerTab==="reviews"} onClick={()=>nav(()=>{setOwnerTab("reviews");setView("ownerDash");})}/>
         <Row icon="💬" label={t("salon_drawer.messages")} active={ownerTab==="messages"} onClick={()=>nav(()=>{setOwnerTab("messages");setView("ownerDash");})}/>
         <Row icon="📊" label={t("salon_drawer.stats")} active={ownerTab==="stats"} onClick={()=>nav(()=>{setOwnerTab("stats");setView("ownerDash");})}/>
         <SecHead label={t("salon_drawer.section_salon")}/>
-        <Row icon="📋" label={t("salon_drawer.salon_info")} onClick={()=>nav(()=>setView("ownerInfo"))}/>
-        <Row icon="🕐" label={t("salon_drawer.working_hours")} onClick={()=>nav(()=>setView("ownerHours"))}/>
-        <Row icon="✂" label={t("salon_drawer.services_prices")} onClick={()=>nav(()=>setView("ownerServices"))}/>
-        <Row icon="💈" label={t("salon_drawer.barbers")} onClick={()=>nav(()=>setView("ownerBarbers"))}/>
-        <Row icon="📱" label={t("salon_drawer.social_media")} onClick={()=>nav(()=>setView("ownerSocial"))}/>
+        <Row icon="📋" label={t("salon_drawer.salon_info")} active={view==="ownerInfo"} onClick={()=>nav(()=>setView("ownerInfo"))}/>
+        <Row icon="🕐" label={t("salon_drawer.working_hours")} active={view==="ownerHours"} onClick={()=>nav(()=>setView("ownerHours"))}/>
+        <Row icon="✂" label={t("salon_drawer.services_prices")} active={view==="ownerServices"} onClick={()=>nav(()=>setView("ownerServices"))}/>
+        <Row icon="💈" label={t("salon_drawer.barbers")} active={view==="ownerBarbers"} onClick={()=>nav(()=>setView("ownerBarbers"))}/>
+        <Row icon="📱" label={t("salon_drawer.social_media")} active={view==="ownerSocial"} onClick={()=>nav(()=>setView("ownerSocial"))}/>
         <SecHead label={t("salon_drawer.section_app")}/>
-        <Row icon="🎨" label={t("salon_drawer.colors_theme")} onClick={()=>nav(()=>setView("ownerTheme"))}/>
-        <Row icon="🌙" label={t("salon_drawer.lighting")} onClick={()=>nav(()=>setView("ownerDark"))}/>
-        <Row icon="🌐" label={t("salon_drawer.language")} onClick={()=>nav(()=>setView("ownerLang"))}/>
-        <Row icon="🔔" label={t("salon_drawer.tones")} onClick={()=>nav(()=>setView("ownerTone"))}/>
-        <Row icon="🔐" label={t("salon_drawer.pin")} onClick={()=>nav(()=>setView("ownerPin"))}/>
-        <Row icon="❓" label={t("salon_drawer.faq")} onClick={()=>nav(()=>setView("ownerFaq"))}/>
+        <Row icon="🎨" label={t("salon_drawer.colors_theme")} active={view==="ownerTheme"} onClick={()=>nav(()=>setView("ownerTheme"))}/>
+        <Row icon="🌙" label={t("salon_drawer.lighting")} active={view==="ownerDark"} onClick={()=>nav(()=>setView("ownerDark"))}/>
+        <Row icon="🌐" label={t("salon_drawer.language")} active={view==="ownerLang"} onClick={()=>nav(()=>setView("ownerLang"))}/>
+        <Row icon="🔔" label={t("salon_drawer.tones")} active={view==="ownerTone"} onClick={()=>nav(()=>setView("ownerTone"))}/>
+        <Row icon="🔐" label={t("salon_drawer.pin")} active={view==="ownerPin"} onClick={()=>nav(()=>setView("ownerPin"))}/>
+        <Row icon="❓" label={t("salon_drawer.faq")} active={view==="ownerFaq"} onClick={()=>nav(()=>setView("ownerFaq"))}/>
 
         <div style={{height:16}}/>
         <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:dir==="rtl"?"right":"left",WebkitAppearance:"none",appearance:"none"}}>
