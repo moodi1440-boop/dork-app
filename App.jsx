@@ -4507,7 +4507,7 @@ function PromoPanel({salon,customers,toast$}){
      icon:"💬",service:"رسائل WhatsApp مباشرة لعملائك",
      prices:null},
   ];
-  const DURATIONS=[{days:1,label:"يوم واحد"},{days:3,label:"3 أيام"},{days:7,label:"أسبوع"}];
+  const DURATIONS=[{days:1,label:"يوم واحد"},{days:3,label:"3 أيام"},{days:7,label:"أسبوع"},{days:0,label:"⚠️ 5 دقائق (اختبار)"}];
   const CUSTOMER_GROUPS=[
     {key:"recent",label:"آخر العملاء الذين زاروا الصالون",subtitle:"العملاء الذين زاروك مؤخراً"},
     {key:"frequent",label:"أكثر العملاء زيارة للصالون",subtitle:"العملاء الذين يترددون عليك باستمرار"},
@@ -4602,7 +4602,9 @@ function PromoPanel({salon,customers,toast$}){
     setSaving(true);
     try{
       const now=new Date();
-      const ends=new Date(now);ends.setDate(ends.getDate()+(pkg==="gold"?7:durationDays));
+      const ends=new Date(now);
+      if(durationDays===0){ends.setMinutes(ends.getMinutes()+5);}
+      else{ends.setDate(ends.getDate()+(pkg==="gold"?7:durationDays));}
       await sb("promotions","POST",{
         salon_id:salon.id,package:pkg,promo_text:promoText.trim(),
         customer_count:pkg==="gold"?effectiveCustomerCount:null,
