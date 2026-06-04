@@ -2979,7 +2979,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
               {/* تاب الشهر */}
               <div style={{flex:1,position:"relative"}}>
                 <button onClick={()=>{setBarberPeriod("month");setShowBarberMonthPicker(v=>!v);setShowBarberDayPicker(false);setShowBarberYearPicker(false);}} style={{width:"100%",padding:"5px 6px",borderRadius:9,border:`1.5px solid ${barberPeriod==="month"?"var(--p)":"var(--border-ui)"}`,background:barberPeriod==="month"?"var(--pa12)":"transparent",color:barberPeriod==="month"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"space-between",gap:2}}>
-                  <span>{_months[barberM]?.slice(0,3)||"الشهر"}</span>
+                  <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"70%"}}>{_months[barberM]||"الشهر"}</span>
                   {barberM!==nowM&&<span onClick={(e)=>{e.stopPropagation();setBarberM(nowM);}} style={{fontSize:9,color:"#e74c3c",fontWeight:700}}>✕</span>}
                 </button>
                 {barberPeriod==="month"&&showBarberMonthPicker&&(
