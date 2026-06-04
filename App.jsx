@@ -4621,6 +4621,17 @@ function PromoPanel({salon,customers,toast$}){
         ).catch(()=>{});
       }
       toast$("✅ تم إرسال العرض وتفعيله!");
+      if(pkg==="bronze"){
+        salonCustomers.forEach(c=>{
+          sendNotif(
+            `🔥 عرض خاص من ${salon.name||"الصالون"}`,
+            promoText.trim(),
+            "🔥",
+            "customer",
+            c.id
+          );
+        });
+      }
       const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=10`).catch(()=>[]);
       setMyPromos(rows||[]);
       setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setAppliedCodeRow(null);setTemplateType("discount");setTmplService1("");setTmplService2("");setTmplPercent(20);setTargetCount(null);
