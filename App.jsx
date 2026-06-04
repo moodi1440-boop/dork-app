@@ -1520,8 +1520,8 @@ export default function App(){
         {view==="ownerLogin"&&<OwnerLogin {...sharedProps}/>}
         {view==="ownerDash"&& <OwnerDash  salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} showSalonDrawer={showSalonDrawer} setShowSalonDrawer={setShowSalonDrawer} {...sharedProps}/>}
         {(view==="ownerInfo"||view==="ownerHours"||view==="ownerServices"||view==="ownerBarbers"||view==="ownerSocial"||view==="ownerTone"||view==="ownerPin")&&<OwnerSettings salon={salons.find(s=>s.id===ownerSession)} setSalons={sharedProps.setSalons} toast$={toast$} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.updateSocial} setView={setView} setShowSalonDrawer={setShowSalonDrawer} setOwnerTab={setOwnerTab} onlySec={view.replace("owner","").toLowerCase()}/>}
-        {view==="ownerTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setOwnerTab(null);setView("ownerDash");setShowSalonDrawer(true);}}/>}
-        {view==="ownerDark"&&<SettingsView {...sharedProps} onlySec="dark" backFn={()=>{setOwnerTab(null);setView("ownerDash");setShowSalonDrawer(true);}}/>}
+        {view==="ownerTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setOwnerTab(null);setShowSalonDrawer(true);}}/>}
+        {view==="ownerDark"&&<SettingsView {...sharedProps} onlySec="dark" backFn={()=>{setOwnerTab(null);setShowSalonDrawer(true);}}/>}
         {view==="ownerLang"&&<OwnerLangView setView={setView} setOwnerTab={setOwnerTab} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="ownerFaq"&&<OwnerFaqView setView={setView} setOwnerTab={setOwnerTab} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="custLang"&&<CustLangView setView={setView} setShowDrawer={setShowDrawer}/>}
@@ -5178,7 +5178,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 
   return(
     <div style={onlySec?G.page:undefined}><div style={onlySec?G.fp:undefined}>
-      {onlySec&&<div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setView&&setView("ownerDash");setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("owner_settings.back")}</button><h2 style={G.ft}>{SEC_TITLES[onlySec]||t("owner_settings.settings_title")}</h2></div>}
+      {onlySec&&<div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("owner_settings.back")}</button><h2 style={G.ft}>{SEC_TITLES[onlySec]||t("owner_settings.settings_title")}</h2></div>}
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
         {[{id:"info",icon:"📋",label:t("owner_settings.tab_info")},{id:"hours",icon:"🕐",label:t("owner_settings.tab_hours")},{id:"services",icon:"✂",label:t("owner_settings.tab_services")},{id:"barbers",icon:"💈",label:t("owner_settings.tab_barbers")},{id:"tone",icon:"🔔",label:t("owner_settings.tab_tone")},{id:"social",icon:"📱",label:t("owner_settings.tab_social")},{id:"pin",icon:"🔐",label:t("owner_settings.tab_pin")}].map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
@@ -5550,7 +5550,7 @@ function OwnerLangView({setView,setShowSalonDrawer,setOwnerTab}){
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setView("ownerDash");setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("owner_dash.back")}</button>
+          <button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("owner_dash.back")}</button>
           <h2 style={G.ft}>🌐 {t("salon_drawer.language")}</h2>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,paddingTop:8}}>
@@ -5636,7 +5636,7 @@ function OwnerFaqView({setView,setShowSalonDrawer,setOwnerTab}){
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setView("ownerDash");setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("faq.back")}</button><h2 style={G.ft}>{t("faq.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("faq.back")}</button><h2 style={G.ft}>{t("faq.title")}</h2></div>
       <div style={box}>
         <div style={hdr}>{t("faq.owner_faq_title")}</div>
         <input value={faqQ} onChange={e=>setFaqQ(e.target.value)} placeholder={t("faq.search_ph")} style={{...inp,marginBottom:12}}/>
