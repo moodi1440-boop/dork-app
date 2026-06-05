@@ -2473,7 +2473,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
       {/* Header Row: الاسم يسار + التقييم يمين */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
         <div style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0}}>
-          <button style={{background:"var(--pa08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:20,padding:"5px 14px",display:"flex",alignItems:"center",flex:1,minWidth:0,cursor:"default",fontFamily:"'Cairo',sans-serif",overflow:"hidden"}}>
+          <button style={{background:"var(--pa08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:20,padding:"5px 14px",display:"inline-flex",alignItems:"center",cursor:"default",fontFamily:"'Cairo',sans-serif",maxWidth:"100%",overflow:"hidden"}}>
             <span style={{fontSize:13,fontWeight:800,color:"var(--p)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{salon.name}</span>
           </button>
           {activePromo&&(
@@ -2554,7 +2554,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
             {/* عداد تنازلي */}
             {promoCountdown&&(
               <div style={{display:"flex",gap:6,justifyContent:"center"}}>
-                {[{v:promoCountdown.d,l:"يوم"},{v:promoCountdown.h,l:"ساعة"},{v:promoCountdown.m,l:"دقيقة"},{v:promoCountdown.s,l:"ثانية"}].map(({v,l})=>(
+                {[{v:promoCountdown.s,l:"ثانية"},{v:promoCountdown.m,l:"دقيقة"},{v:promoCountdown.h,l:"ساعة"},{v:promoCountdown.d,l:"يوم"}].map(({v,l})=>(
                   <div key={l} style={{flex:1,textAlign:"center",background:"var(--surface-1)",borderRadius:10,padding:"8px 4px",border:"1.5px solid rgba(var(--pr),.3)"}}>
                     <div style={{fontSize:20,fontWeight:900,color:"var(--p)",lineHeight:1}}>{String(v).padStart(2,"0")}</div>
                     <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3}}>{l}</div>
@@ -3275,7 +3275,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
     }
   };
 
-  const allBks=[...salon.bookings].sort((a,b)=>{
+  const allBks=[...salon.bookings.filter(b=>!dateFilter||b.date===dateFilter)].sort((a,b)=>{
     const order={pending:0,approved:1,rejected:2};
     const so=(order[a.status]??1)-(order[b.status]??1);
     if(so!==0)return so;
@@ -4068,6 +4068,9 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
   const[activeCard,setActiveCard]=useState(null);
   const[ownerNotifs,setOwnerNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
+  const[dashCashEntries,setDashCashEntries]=useState(()=>{try{return JSON.parse(localStorage.getItem(`dork_cash_${salon?.id}`)||"[]");}catch{return[];}});
+  const[showDashCash,setShowDashCash]=useState(false);
+  const[dashCashAmt,setDashCashAmt]=useState("");
   if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{t("owner_dash.back")}</button><h2 style={G.ft}>{t("owner_dash.page_title")}</h2></div><div style={G.empty}>{t("owner_dash.not_found")}</div></div></div>;
 
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
@@ -4087,6 +4090,16 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const _tdPending=_tdBks.filter(b=>b.status==="pending");
   const _tdRejected=_tdBks.filter(b=>b.status==="rejected");
   const _tdRevenue=_tdApproved.reduce((s,b)=>s+(b.total||0),0);
+  const _tdCash=dashCashEntries.filter(e=>e.date===_td).reduce((s,e)=>s+(e.amount||0),0);
+  const _tdTotal=_tdRevenue+_tdCash;
+  const addDashCash=()=>{
+    const amt=parseFloat(dashCashAmt);
+    if(!amt||amt<=0)return;
+    const updated=[...dashCashEntries,{id:Date.now(),amount:amt,note:"",date:_td}];
+    setDashCashEntries(updated);
+    try{localStorage.setItem(`dork_cash_${salon.id}`,JSON.stringify(updated));}catch{}
+    setDashCashAmt("");setShowDashCash(false);
+  };
   const _now=new Date();
   const _nowMins=_now.getHours()*60+_now.getMinutes();
   const _nextBk=_tdApproved
@@ -4165,28 +4178,40 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         {/* التاريخ */}
         <div style={{fontSize:14,fontWeight:800,color:"var(--p)",marginBottom:14}}>🌅 {_dayLabel}</div>
 
-        {/* حجوزات اليوم + إيراد اليوم */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-          <div style={{background:"rgba(var(--pr),.15)",borderRadius:13,padding:"13px",border:"1px solid rgba(var(--pr),.35)",textAlign:"center",position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.08}}>📅</div>
-            <div style={{fontSize:32,fontWeight:900,color:"var(--p)",lineHeight:1}}>{_tdApproved.length}</div>
-            <div style={{fontSize:11,fontWeight:700,color:"var(--p)",marginTop:5,opacity:.8}}>{t("owner_dash.today_bookings")}</div>
+        {/* إيرادات التطبيق + الكاش + الإجمالي */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
+          <div style={{background:"rgba(var(--pr),.12)",borderRadius:12,padding:"11px 8px",border:"1px solid rgba(var(--pr),.3)",textAlign:"center"}}>
+            <div style={{fontSize:20,fontWeight:900,color:"var(--p)",lineHeight:1}}>{_tdRevenue}</div>
+            <div style={{fontSize:9,color:"var(--p)",marginTop:4,opacity:.8,fontWeight:700}}>إيرادات التطبيق</div>
           </div>
-          <div style={{background:"rgba(39,174,96,.12)",borderRadius:13,padding:"13px",border:"1px solid rgba(39,174,96,.35)",textAlign:"center",position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",top:-8,right:-8,fontSize:36,opacity:.08}}>💰</div>
-            <div style={{fontSize:32,fontWeight:900,color:"#27ae60",lineHeight:1}}>{_tdRevenue}</div>
-            <div style={{fontSize:11,fontWeight:700,color:"#27ae60",marginTop:5,opacity:.9}}>{t("owner_dash.today_revenue")}</div>
+          <div style={{background:"rgba(39,174,96,.10)",borderRadius:12,padding:"11px 8px",border:"1px solid rgba(39,174,96,.3)",textAlign:"center",position:"relative"}}>
+            <button onClick={()=>setShowDashCash(v=>!v)} style={{position:"absolute",top:4,left:4,background:"rgba(39,174,96,.2)",border:"1px solid rgba(39,174,96,.4)",color:"#27ae60",borderRadius:6,fontSize:10,fontWeight:800,padding:"1px 5px",cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>+</button>
+            <div style={{fontSize:20,fontWeight:900,color:"#27ae60",lineHeight:1}}>{_tdCash}</div>
+            <div style={{fontSize:9,color:"#27ae60",marginTop:4,fontWeight:700}}>إيرادات الكاش</div>
+          </div>
+          <div style={{background:"rgba(241,196,15,.10)",borderRadius:12,padding:"11px 8px",border:"1px solid rgba(241,196,15,.35)",textAlign:"center"}}>
+            <div style={{fontSize:20,fontWeight:900,color:"#f1c40f",lineHeight:1}}>{_tdTotal}</div>
+            <div style={{fontSize:9,color:"#f1c40f",marginTop:4,fontWeight:700}}>إجمالي اليوم</div>
           </div>
         </div>
 
-        {/* شريط الامتلاء */}
-        <div style={{marginBottom:_nextBk?14:0}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",opacity:.8}}>{t("owner_dash.occupancy")}</div>
-            <div style={{fontSize:13,fontWeight:900,color:_occ>=80?"#e74c3c":_occ>=50?"var(--p)":"#27ae60"}}>{_occ}%</div>
+        {/* نموذج إضافة الكاش */}
+        {showDashCash&&(
+          <div style={{background:"rgba(39,174,96,.08)",border:"1px solid rgba(39,174,96,.3)",borderRadius:10,padding:"10px",marginBottom:10,display:"flex",gap:8,alignItems:"center"}}>
+            <input type="number" value={dashCashAmt} onChange={e=>setDashCashAmt(e.target.value)} placeholder="المبلغ بالريال" onKeyDown={e=>e.key==="Enter"&&addDashCash()} style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid rgba(39,174,96,.4)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none"}}/>
+            <button onClick={addDashCash} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>حفظ</button>
+            <button onClick={()=>setShowDashCash(false)} style={{padding:"8px 10px",borderRadius:8,border:"1px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
           </div>
-          <div style={{height:7,background:"rgba(var(--pr),.15)",borderRadius:10,overflow:"hidden"}}>
-            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center",boxShadow:_occ>0?`0 0 8px ${_occ>=80?"rgba(231,76,60,.5)":_occ>=50?"rgba(var(--pr),.5)":"rgba(39,174,96,.5)"}`:""}}/>
+        )}
+
+        {/* مربع الامتلاء */}
+        <div style={{background:`rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.08)`,border:`1px solid rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.25)`,borderRadius:12,padding:"10px 14px",marginBottom:_nextBk?14:0,display:"flex",alignItems:"center",gap:12}}>
+          <div style={{fontSize:26,fontWeight:900,color:_occ>=80?"#e74c3c":_occ>=50?"var(--p)":"#27ae60",lineHeight:1,minWidth:48,textAlign:"center"}}>{_occ}%</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:5,fontWeight:600}}>{t("owner_dash.occupancy")}</div>
+            <div style={{height:7,background:"rgba(var(--pr),.12)",borderRadius:10,overflow:"hidden"}}>
+              <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center"}}/>
+            </div>
           </div>
         </div>
 
@@ -4242,7 +4267,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           {/* قائمة الحجوزات المنسدلة */}
           {activeCard&&(
             <div style={{animation:"fadeInUp .3s ease-out",marginBottom:14,border:`1.5px solid ${activeCard==="all"?"var(--gold)":activeCard==="pending"?"#f39c12":activeCard==="approved"?"#27ae60":"#e74c3c"}33`,borderTop:"none",borderRadius:"0 0 14px 14px",overflow:"hidden",background:"rgba(255,255,255,.02)"}}>
-              <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings}/>
+              <NotifPanel key={activeCard} salon={salon} onUpdate={updateBookingStatus} customers={customers} defaultFilter={activeCard} refreshSalonBookings={refreshSalonBookings} dateFilter={_td}/>
             </div>
           )}
         </>
@@ -4560,9 +4585,16 @@ function PromoPanel({salon,customers,toast$}){
     sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=20`)
       .then(rows=>{
         const nowM=new Date();
-        setMyPromos((rows||[]).filter(r=>!deletedIds.has(r.id)).map(r=>({...r,_expired:r.ends_at&&new Date(r.ends_at)<=nowM})));
+        setMyPromos((rows||[]).filter(r=>!deletedIds.has(r.id)).map(r=>({...r,_expired:!!(r.ends_at&&new Date(r.ends_at)<=nowM)})));
       }).catch(()=>{}).finally(()=>setLoadingPromos(false));
   },[salon?.id]);
+
+  useEffect(()=>{
+    const id=setInterval(()=>{
+      setMyPromos(prev=>prev.map(r=>({...r,_expired:!!(r.ends_at&&new Date(r.ends_at)<=new Date())})));
+    },5000);
+    return()=>clearInterval(id);
+  },[]);
 
   const[checkingCode,setCheckingCode]=useState(false);
   const applyCode=async()=>{
@@ -4632,8 +4664,10 @@ function PromoPanel({salon,customers,toast$}){
           );
         });
       }
-      const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=10`).catch(()=>[]);
-      setMyPromos(rows||[]);
+      const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=20`).catch(()=>[]);
+      const delIds=new Set(JSON.parse(localStorage.getItem(`dork_del_promos_${salon.id}`)||"[]"));
+      const nowRl=new Date();
+      setMyPromos((rows||[]).filter(r=>!delIds.has(r.id)).map(r=>({...r,_expired:!!(r.ends_at&&new Date(r.ends_at)<=nowRl)})));
       setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setAppliedCodeRow(null);setTemplateType("discount");setTmplService1("");setTmplService2("");setTmplPercent(20);setTargetCount(null);
     }catch(e){toast$("❌ خطأ: "+e.message,"err");}
     finally{setSaving(false);}
@@ -4728,7 +4762,7 @@ function PromoPanel({salon,customers,toast$}){
             </div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {myPromos.map(pr=>{
+            {myPromos.filter(pr=>!pr._expired).map(pr=>{
               const pkgInfo=PACKAGES.find(p=>p.id===pr.package);
               const ms=pr.ends_at?new Date(pr.ends_at)-Date.now():null;
               const hrsLeft=ms!==null?Math.max(0,Math.ceil(ms/3600000)):null;
@@ -4741,7 +4775,7 @@ function PromoPanel({salon,customers,toast$}){
                   <div>
                     <div style={{fontSize:13,fontWeight:800,color:isPending?"#e74c3c":pkgColor(pr.package)}}>{pkgInfo?.label} {pkgInfo?.medal}</div>
                     <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2}}>
-                      {pr.package==="gold"?`${pr.customer_count||"--"} عميل`:`${pr.duration_days||7} يوم`}
+                      {pr.package==="gold"?`${pr.customer_count||"--"} عميل`:pr.duration_days===0?"⚠️ 5 دقائق":`${pr.duration_days||1} يوم`}
                       {" · "}<span style={{color:pr.price===0?"#27ae60":"var(--text-muted)"}}>{pr.price===0?"مجاني":`${pr.price} ريال`}</span>
                     </div>
                   </div>
