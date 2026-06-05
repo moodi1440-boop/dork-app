@@ -116,12 +116,12 @@ BEGIN
       -- Mark sent FIRST to prevent duplicate fires
       UPDATE public.bookings SET reminder_sent = true WHERE id = b.id;
 
-      -- X-Cron-Secret is the custom auth header — NOT Authorization: Bearer service_role_key
+      -- x-cron-token is the custom auth header — NOT Authorization: Bearer service_role_key
       PERFORM net.http_post(
         url     := fn_url,
         headers := jsonb_build_object(
-          'Content-Type',  'application/json',
-          'X-Cron-Secret', cron_secret
+          'Content-Type', 'application/json',
+          'x-cron-token', cron_secret
         ),
         body    := jsonb_build_object(
           'target_type', 'single',

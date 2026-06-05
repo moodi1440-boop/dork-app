@@ -172,18 +172,18 @@ async function sendBatch(
 // ── Edge Function entry point ─────────────────────────────────────────────────
 Deno.serve(async (req: Request): Promise<Response> => {
   // ── Auth gate ─────────────────────────────────────────────────────────────
-  // Requests come from two callers:
-  //   1. Frontend  → supabase.functions.invoke sends Authorization: Bearer <user-jwt>
-  //   2. pg_cron   → sends X-Cron-Secret: <cron_secret>
+  // Two caller types:
+  //   pg_cron   → sends  x-cron-token: <CRON_SECRET>
+  //   frontend  → sends  Authorization: Bearer <user-jwt>  (no x-cron-token)
   //
-  // CRON_SECRET is a random UUID stored in Edge Function Secrets.
-  // It is NOT the service_role_key — it only authorises calling this function.
-  const cronSecret = Deno.env.get("CRON_SECRET");
-  if (cronSecret) {
-    const fromCron    = req.headers.get("X-Cron-Secret") === cronSecret;
-    const fromFrontend = (req.headers.get("Authorization") ?? "").startsWith("Bearer ");
-    if (!fromCron && !fromFrontend) {
-      return json({ success: false, error: "Unauthorized" }, 401);
+  // Rule: if x-cron-token is present it MUST match CRON_SECRET → else 403.
+  //       if x-cron-token is absent  the request is a frontend call → pass through.
+  const incomingToken = req.headers.get("x-cron-token");
+  if (incomingToken !== null) {
+    const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+    if (!cronSecret || incomingToken !== cronSecret) {
+      console.warn("Auth: invalid x-cron-token rejected");
+      return json({ success: false, error: "Forbidden" }, 403);
     }
   }
 
