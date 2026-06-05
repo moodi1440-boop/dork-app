@@ -1,75 +1,37 @@
-// Service Worker for FCM push notifications - handles background & terminated state
-const CACHE_NAME = 'dork-app-v2';
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(self.skipWaiting());
+firebase.initializeApp({
+  apiKey: "AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",
+  projectId: "dork-app",
+  messagingSenderId: "659823227621",
+  appId: "1:659823227621:web:befaaa1b5063"
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
+const messaging = firebase.messaging();
 
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
-
-  let title = 'إشعار جديد';
-  let options = {
-    body: '',
+messaging.onBackgroundMessage((payload) => {
+  const title = payload.notification?.title || 'إشعار جديد';
+  const body = payload.notification?.body || '';
+  self.registration.showNotification(title, {
+    body,
     icon: '/favicon.ico',
     badge: '/favicon.ico',
-    tag: 'notification-' + Date.now(),
+    tag: payload.data?.type || 'notification-' + Date.now(),
     requireInteraction: true,
     vibrate: [200, 100, 200, 100, 200],
-    data: {},
-  };
-
-  try {
-    const payload = event.data.json();
-
-    if (payload.notification) {
-      title = payload.notification.title || title;
-      options.body = payload.notification.body || '';
-    }
-
-    if (payload.data) {
-      options.data = payload.data;
-      options.tag = payload.data.type + '-' + (payload.data.booking_id || Date.now());
-    }
-
-    if (payload.webpush && payload.webpush.notification) {
-      const webNotif = payload.webpush.notification;
-      title = webNotif.title || title;
-      options.body = webNotif.body || options.body;
-    }
-  } catch (e) {
-    try {
-      const text = event.data.text();
-      options.body = text;
-    } catch (_) {}
-  }
-
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
+    data: payload.data || {},
+  });
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-
-  const urlToOpen = new URL('/', self.location.origin).href;
-
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ('focus' in client) {
-          return client.focus();
-        }
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if ('focus' in client) return client.focus();
       }
-      return clients.openWindow(urlToOpen);
+      return clients.openWindow('/');
     })
   );
-});
-
-self.addEventListener('notificationclose', (event) => {
-  // no-op
 });
