@@ -1,5 +1,39 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
+// ── Config self-validation (runs before any processing) ───────────────────────
+function validateConfig(): { ok: boolean; error?: string } {
+  const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
+  if (!projectId) {
+    return { ok: false, error: "Missing FIREBASE_PROJECT_ID environment variable" };
+  }
+
+  const saJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
+  if (!saJson) {
+    return { ok: false, error: "Missing FIREBASE_SERVICE_ACCOUNT secret" };
+  }
+
+  let sa: any;
+  try {
+    sa = JSON.parse(saJson);
+  } catch {
+    console.error("Invalid JSON format in FIREBASE_SERVICE_ACCOUNT secret");
+    return { ok: false, error: "Invalid JSON format in FIREBASE_SERVICE_ACCOUNT secret" };
+  }
+
+  for (const field of ["client_email", "private_key", "project_id"]) {
+    if (!sa[field]) {
+      return { ok: false, error: `FIREBASE_SERVICE_ACCOUNT missing required field: ${field}` };
+    }
+  }
+
+  return { ok: true };
+}
+
+// ── Token sanity check ────────────────────────────────────────────────────────
+function isValidToken(token: string): boolean {
+  return typeof token === "string" && token.trim().length >= 20;
+}
+
 // ── JWT + OAuth2 via Web Crypto (no external deps) ────────────────────────────
 async function getAccessToken(): Promise<string> {
   const saJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
@@ -138,6 +172,13 @@ async function sendBatch(
 // ── Edge Function entry point ─────────────────────────────────────────────────
 Deno.serve(async (req: Request): Promise<Response> => {
   try {
+    // ── Config gate: fail fast on bad secrets ──────────────────────────────
+    const cfg = validateConfig();
+    if (!cfg.ok) {
+      console.error("Config validation failed:", cfg.error);
+      return json({ success: false, error: cfg.error }, 500);
+    }
+
     const reqBody   = await req.json() as any;
     const record    = reqBody?.record;
     const eventType = (reqBody?.type ?? "new_booking") as string;
@@ -150,7 +191,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const projectId = Deno.env.get("FIREBASE_PROJECT_ID") ?? "dork-app";
+    const projectId = Deno.env.get("FIREBASE_PROJECT_ID")!;
 
     // Resolve salon name once
     const { data: salon } = await supabase
@@ -175,7 +216,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       if (userId !== undefined) q.eq("user_id", userId);
       const { data, error } = await q;
       if (error) { console.error("Token fetch:", error.message); return []; }
-      return (data ?? []).map((r: any) => r.device_token as string);
+      const all    = (data ?? []).map((r: any) => r.device_token as string);
+      const valid  = all.filter(isValidToken);
+      const bad    = all.length - valid.length;
+      if (bad > 0) console.warn(`Skipped ${bad} empty/malformed token(s) for ${userType}:${userId ?? "*"}`);
+      return valid;
     };
 
     if (eventType === "new_booking") {
@@ -239,7 +284,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
           .in("user_id", customerIds);
 
         if (error) console.error("Promo token fetch:", error.message);
-        const tokens = (rows ?? []).map((r: any) => r.device_token as string);
+        const allPromo   = (rows ?? []).map((r: any) => r.device_token as string);
+        const tokens     = allPromo.filter(isValidToken);
+        const badPromo   = allPromo.length - tokens.length;
+        if (badPromo > 0) console.warn(`Promo: skipped ${badPromo} empty/malformed token(s)`);
         if (tokens.length)
           jobs.push({
             title:  `🔥 عرض خاص من ${salon.name}`,
