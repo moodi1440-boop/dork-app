@@ -104,7 +104,7 @@ async function initializeFirebaseNotifications() {
         if (userType && userId) {
           await supabase.from("fcm_tokens").upsert(
             {user_type:userType,user_id:userId,device_token:token,is_active:true},
-            {onConflict:"device_token"}
+            {onConflict:"user_type,device_token"}
           );
         }
       } catch (error) {
