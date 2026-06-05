@@ -1310,6 +1310,7 @@ export default function App(){
         total:bk.total,
         status:isReschedule?"approved":"pending",
         notes:bk.email||"",
+        reminder_minutes:bk.reminderMins??60,
       },"");
       if(isReschedule){
         await sb("bookings","PATCH",{status:"cancelled"},"?id=eq."+rescheduleOldId).catch(()=>{});
@@ -2633,6 +2634,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
 function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}){
   const{t}=useTranslation();
   const[step,setStep]=useState(1);
+  const[reminderMins,setReminderMins]=useState(60);
   const[form,setForm]=useState({
     name: customer?.name||"",
     phone: customer?.phone||"",
@@ -2724,6 +2726,17 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {[[t("book.field_name"),form.name],[t("book.field_phone"),form.phone],[t("book.field_email"),form.email||"-"],[t("book.field_services"),form.services.join(" + ")],[t("book.field_barber"),barber?.name||t("book.any_barber")],[t("book.field_date"),form.date],[t("book.field_time"),form.waitSlot?`⏳ ${form.waitSlot}`:form.time],[t("book.field_total"),`${total} ${t("book.sar")}`]].map(([l,v])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid var(--border-ui)"}}><span style={{color:"var(--text-muted)",fontSize:12}}>{l}</span><span style={{color:"var(--text-primary)",fontWeight:600,fontSize:12}}>{v}</span></div>)}
         <button style={{...G.mapsBtn,width:"100%",marginTop:10,justifyContent:"center",display:"flex",padding:10}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>{t("book.open_map")}</button>
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.1)",border:"1px solid #f39c1255",borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:11,color:"#f39c12"}}>{t("book.wait_msg")} {form.waitSlot} {t("book.wait_notify")}</div>}
+        {!form.waitSlot&&customerSession&&<div style={{margin:"10px 0 4px"}}>
+          <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6,textAlign:"center"}}>⏰ تذكير قبل الموعد بـ</div>
+          <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
+            {[{v:30,l:"30 د"},{v:60,l:"ساعة"},{v:120,l:"ساعتين"},{v:0,l:"بدون"}].map(({v,l})=>(
+              <button key={v} onClick={()=>setReminderMins(v)}
+                style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${reminderMins===v?"var(--p)":"var(--border-ui)"}`,background:reminderMins===v?"var(--pa12)":"transparent",color:reminderMins===v?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>}
         <button style={{...G.sub,marginTop:8,background:form.waitSlot?"linear-gradient(135deg,#f39c12,#e67e22)":rescheduleId?"linear-gradient(135deg,#8e44ad,#9b59b6)":"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff"}} onClick={async()=>{
           if(form.waitSlot){
             if(!form.name||!form.phone){alert(t("book.err_name_phone"));return;}
@@ -2733,7 +2746,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
               if(setView)setView("home");
             }catch(e){alert("❌ حدث خطأ، حاول مرة أخرى");}
           }else{
-            addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total},rescheduleId||null);
+            addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total,reminderMins},rescheduleId||null);
           }
         }}>{form.waitSlot?t("book.confirm_wait_btn"):rescheduleId?t("book.reschedule_btn"):t("book.confirm_btn")}</button>
       </div>}
