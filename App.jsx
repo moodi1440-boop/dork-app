@@ -2185,7 +2185,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
   // ترتيب الأقرب
   const nowPromo=new Date();
-  const activeSalonPromoIds=new Set((promotions||[]).filter(p=>p.status==="active"&&(!p.ends_at||new Date(p.ends_at)>nowPromo)).map(p=>String(p.salon_id)));
+  const activeSalonPromoIds=new Set((promotions||[]).filter(p=>p.status==="active"&&p.package==="silver"&&(!p.ends_at||new Date(p.ends_at)>nowPromo)).map(p=>String(p.salon_id)));
   const savedLoc=(customer?.locationLat&&customer?.locationLng)?{lat:customer.locationLat,lng:customer.locationLng}:null;
   const sortedSalons=(()=>{
     let list=urgentMode?displaySalons.filter(isOpenNow):displaySalons;
@@ -2331,7 +2331,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
               ?<div style={G.empty}>{promoMode?"لا توجد عروض نشطة الآن":urgentMode?t("home.no_salons_open"):t("home.no_salons")}</div>
               :<div style={{display:"flex",flexDirection:"column",gap:11,animation:"fadeInCards .4s ease-out"}}>
                 {sortedSalons.map(s=>{
-                  const activePromo=(promotions||[]).find(p=>String(p.salon_id)===String(s.id)&&p.status==="active")||null;
+                  const activePromo=(promotions||[]).find(p=>String(p.salon_id)===String(s.id)&&p.status==="active"&&p.package==="silver")||null;
                   const loc=savedLoc||userLoc;
                   const coords=getSalonCoords(s);
                   const distKm=promoMode&&loc&&coords?Math.round(haversine(loc.lat,loc.lng,coords.lat,coords.lng)*10)/10:null;
