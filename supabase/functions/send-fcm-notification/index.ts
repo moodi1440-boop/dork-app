@@ -205,6 +205,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
           icon: "❌",
         });
       }
+    } else if (eventType === "promo_broadcast") {
+      const customerIds: number[] = booking.customer_ids || [];
+      const promoText: string = booking.promo_text || "";
+      for (const customerId of customerIds) {
+        notifications.push({
+          target_type: "customer",
+          target_id: customerId,
+          title: `🔥 عرض خاص من ${salon.name}`,
+          body: promoText,
+          icon: "🔥",
+        });
+      }
     }
 
     if (notifications.length === 0) {

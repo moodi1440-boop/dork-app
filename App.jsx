@@ -2550,7 +2550,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
             <div style={{textAlign:"center",fontSize:12,color:"var(--text-muted)",marginBottom:3}}>عرض خاص من</div>
             <div style={{textAlign:"center",fontSize:21,fontWeight:900,color:"var(--p)",marginBottom:14,letterSpacing:.3}}>{salon.name}</div>
             {/* نص العرض */}
-            <div style={{background:"rgba(var(--pr),.07)",border:"1px dashed rgba(var(--pr),.3)",borderRadius:12,padding:"12px 16px",textAlign:"center",fontSize:13,color:"var(--text-primary)",lineHeight:1.8,marginBottom:14}}>{activePromo.promo_text}</div>
+            <div style={{background:"rgba(var(--pr),.22)",border:"2px solid rgba(var(--pr),.55)",borderRadius:12,padding:"14px 16px",textAlign:"center",fontSize:15,fontWeight:700,color:"var(--p)",lineHeight:1.9,marginBottom:14,letterSpacing:.2}}>{activePromo.promo_text}</div>
             {/* عداد تنازلي */}
             {promoCountdown&&(
               <div style={{display:"flex",gap:6,justifyContent:"center"}}>
@@ -2672,7 +2672,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {form.services.length>0&&<div style={G.totalBox}>{t("book.total")} <strong style={{color:"var(--p)"}}>{total} {t("book.sar")}</strong></div>}
         {salon.barbers?.length>0&&<F label={t("book.barber_label")} error={errors.barberId}>
           <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {salon.barbers.map(b=>{
+            {salon.barbers.filter(b=>b.active!==false).map(b=>{
               const active=form.barberId===b.id;
               // تحقق من وقت الدوام
               const now=new Date();
@@ -4204,17 +4204,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           </div>
         )}
 
-        {/* مربع الامتلاء */}
-        <div style={{background:`rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.08)`,border:`1px solid rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.25)`,borderRadius:12,padding:"10px 14px",marginBottom:_nextBk?14:0,display:"flex",alignItems:"center",gap:12}}>
-          <div style={{fontSize:26,fontWeight:900,color:_occ>=80?"#e74c3c":_occ>=50?"var(--p)":"#27ae60",lineHeight:1,minWidth:48,textAlign:"center"}}>{_occ}%</div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:5,fontWeight:600}}>{t("owner_dash.occupancy")}</div>
-            <div style={{height:7,background:"rgba(var(--pr),.12)",borderRadius:10,overflow:"hidden"}}>
-              <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center"}}/>
-            </div>
-          </div>
-        </div>
-
         {/* الحجز القادم */}
         {_nextBk&&(
           <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(var(--pr),.15)",borderRadius:11,padding:"10px 12px",border:"1px solid rgba(var(--pr),.3)"}}>
@@ -4236,11 +4225,17 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             </div>
           </div>
         )}
-        {!_nextBk&&(
-          <div style={{fontSize:12,fontWeight:700,color:"var(--p)",textAlign:"center",opacity:.7,paddingTop:_tdApproved.length>0?8:0}}>
-            {_tdApproved.length>0?t("owner_dash.no_more_bookings"):t("owner_dash.no_bookings")}
+      </div>
+
+      {/* نسبة حجز اليوم - خارج مربع الأرباح */}
+      <div style={{background:`rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.08)`,border:`1px solid rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.25)`,borderRadius:12,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{fontSize:26,fontWeight:900,color:_occ>=80?"#e74c3c":_occ>=50?"var(--p)":"#27ae60",lineHeight:1,minWidth:48,textAlign:"center"}}>{_occ}%</div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:5,fontWeight:600}}>نسبة حجز اليوم</div>
+          <div style={{height:7,background:"rgba(var(--pr),.12)",borderRadius:10,overflow:"hidden"}}>
+            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center"}}/>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── الـ 4 مربعات ── */}
@@ -4653,16 +4648,13 @@ function PromoPanel({salon,customers,toast$}){
         ).catch(()=>{});
       }
       toast$("✅ تم إرسال العرض وتفعيله!");
-      if(pkg==="bronze"){
-        salonCustomers.forEach(c=>{
-          sendNotif(
-            `🔥 عرض خاص من ${salon.name||"الصالون"}`,
-            promoText.trim(),
-            "🔥",
-            "customer",
-            c.id
-          );
-        });
+      if(pkg==="bronze"&&salonCustomers.length>0){
+        supabase.functions.invoke('send-fcm-notification',{
+          body:{
+            record:{id:null,salon_id:salon.id,promo_text:promoText.trim(),customer_ids:salonCustomers.map(c=>c.id)},
+            type:"promo_broadcast",
+          },
+        }).catch(()=>{});
       }
       const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=20`).catch(()=>[]);
       const delIds=new Set(JSON.parse(localStorage.getItem(`dork_del_promos_${salon.id}`)||"[]"));
@@ -5329,8 +5321,17 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                 </label>
               </div>
               <input style={{...inp,flex:1,padding:"6px 10px"}} placeholder={t("owner_settings.barber_name_ph")} value={b.name} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,name:e.target.value}:x)}))}/>
+              {/* زر التفعيل/التعطيل بنمط iPhone */}
+              <button onClick={()=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,active:x.active===false}:x)}))}
+                style={{width:38,height:22,borderRadius:11,border:"none",cursor:"pointer",position:"relative",flexShrink:0,
+                  background:b.active!==false?"var(--p)":"#555",transition:"background .2s"}}>
+                <div style={{position:"absolute",top:3,width:16,height:16,borderRadius:"50%",background:"#fff",
+                  transition:"left .2s",left:b.active!==false?19:3}}/>
+              </button>
               <button style={G.xBtn} onClick={()=>setF(p=>({...p,barbers:p.barbers.filter((_,j)=>j!==i)}))}>✕</button>
             </div>
+            {b.active===false&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:6,textAlign:"center",fontWeight:600}}>مغلق / مسافر</div>}
+            {b.active!==false&&<>
             <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>{t("owner_settings.barber_shift")}</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
               <div>
@@ -5342,12 +5343,13 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                 <input type="time" style={{...inp,fontSize:12}} value={b.shiftEnd||"22:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftEnd:e.target.value}:x)}))}/>
               </div>
             </div>
+            </>}
           </div>
         ))}
         <div style={{display:"flex",gap:7,marginTop:8}}>
           <input style={{...inp,flex:1}} placeholder={t("owner_settings.new_barber_ph")} value={newBarber} onChange={e=>setNewBarber(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter"&&newBarber.trim()){setF(p=>({...p,barbers:[...p.barbers,{id:`b_${Date.now()}`,name:newBarber.trim(),shiftStart:"09:00",shiftEnd:"22:00"}]}));setNewBarber("");}}}/>
-          <button style={{...G.sub,width:"auto",padding:"0 14px",marginTop:0}} onClick={()=>{if(newBarber.trim()){setF(p=>({...p,barbers:[...p.barbers,{id:`b_${Date.now()}`,name:newBarber.trim(),shiftStart:"09:00",shiftEnd:"22:00"}]}));setNewBarber("");}}}>{t("owner_settings.add_btn")}</button>
+            onKeyDown={e=>{if(e.key==="Enter"&&newBarber.trim()){setF(p=>({...p,barbers:[...p.barbers,{id:`b_${Date.now()}`,name:newBarber.trim(),shiftStart:"09:00",shiftEnd:"22:00",active:true}]}));setNewBarber("");}}}/>
+          <button style={{...G.sub,width:"auto",padding:"0 14px",marginTop:0}} onClick={()=>{if(newBarber.trim()){setF(p=>({...p,barbers:[...p.barbers,{id:`b_${Date.now()}`,name:newBarber.trim(),shiftStart:"09:00",shiftEnd:"22:00",active:true}]}));setNewBarber("");}}}>{t("owner_settings.add_btn")}</button>
         </div>
       </div>}
 
