@@ -171,6 +171,22 @@ async function sendBatch(
 
 // ── Edge Function entry point ─────────────────────────────────────────────────
 Deno.serve(async (req: Request): Promise<Response> => {
+  // ── Auth gate ─────────────────────────────────────────────────────────────
+  // Requests come from two callers:
+  //   1. Frontend  → supabase.functions.invoke sends Authorization: Bearer <user-jwt>
+  //   2. pg_cron   → sends X-Cron-Secret: <cron_secret>
+  //
+  // CRON_SECRET is a random UUID stored in Edge Function Secrets.
+  // It is NOT the service_role_key — it only authorises calling this function.
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  if (cronSecret) {
+    const fromCron    = req.headers.get("X-Cron-Secret") === cronSecret;
+    const fromFrontend = (req.headers.get("Authorization") ?? "").startsWith("Bearer ");
+    if (!fromCron && !fromFrontend) {
+      return json({ success: false, error: "Unauthorized" }, 401);
+    }
+  }
+
   // ── Config gate ───────────────────────────────────────────────────────────
   const cfg = validateConfig();
   if (!cfg.ok) {

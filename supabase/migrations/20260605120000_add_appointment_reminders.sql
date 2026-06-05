@@ -12,7 +12,7 @@ CREATE INDEX IF NOT EXISTS idx_bookings_reminder
   ON public.bookings (date, time)
   WHERE status = 'approved' AND reminder_sent = false;
 
--- 2. Auto-reset reminder when a booking is rescheduled (date/time changed) ────
+-- 2. Auto-reset reminder when a booking is rescheduled ────────────────────────
 CREATE OR REPLACE FUNCTION public.reset_reminder_on_reschedule()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -28,8 +28,23 @@ CREATE TRIGGER trg_reset_reminder
   BEFORE UPDATE ON public.bookings
   FOR EACH ROW EXECUTE FUNCTION public.reset_reminder_on_reschedule();
 
--- 3. Config table (avoids ALTER DATABASE which requires superuser) ─────────────
---    RLS blocks all direct access; only SECURITY DEFINER functions can read it.
+-- 3. Config table ──────────────────────────────────────────────────────────────
+--
+--  SECURITY NOTE:
+--  ─────────────────────────────────────────────────────────────────────────────
+--  This table stores ONLY:
+--    • supabase_url   — the project URL (not sensitive)
+--    • cron_secret    — a random UUID you generate; authorises calling the
+--                       send-fcm-notification Edge Function ONLY.
+--                       It is NOT the service_role_key.
+--
+--  The service_role_key NEVER enters this table.
+--  It lives exclusively in Edge Function Secrets (Supabase Dashboard →
+--  Edge Functions → send-fcm-notification → Secrets).
+--
+--  RLS blocks all direct read/write from client connections.
+--  Only the SECURITY DEFINER cron function can read it.
+--  ─────────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.app_config (
   key   text PRIMARY KEY,
   value text NOT NULL
@@ -40,10 +55,10 @@ ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "no_direct_access" ON public.app_config;
 CREATE POLICY "no_direct_access" ON public.app_config FOR ALL USING (false);
 
--- Seed with empty placeholders — update values in Step 2 of setup guide
+-- Seed with empty placeholders — update in Step 2 of setup guide
 INSERT INTO public.app_config (key, value) VALUES
-  ('supabase_url',      ''),
-  ('service_role_key',  '')
+  ('supabase_url',  ''),
+  ('cron_secret',   '')
 ON CONFLICT (key) DO NOTHING;
 
 -- 4. Core cron function ────────────────────────────────────────────────────────
@@ -58,13 +73,13 @@ DECLARE
   appointment_ts TIMESTAMPTZ;
   reminder_ts    TIMESTAMPTZ;
   fn_url         text;
-  svc_key        text;
+  cron_secret    text;
 BEGIN
-  -- Read config from table (bypasses RLS via SECURITY DEFINER)
-  SELECT value INTO fn_url  FROM public.app_config WHERE key = 'supabase_url';
-  SELECT value INTO svc_key FROM public.app_config WHERE key = 'service_role_key';
+  -- Read config from table (SECURITY DEFINER bypasses RLS)
+  SELECT value INTO fn_url     FROM public.app_config WHERE key = 'supabase_url';
+  SELECT value INTO cron_secret FROM public.app_config WHERE key = 'cron_secret';
 
-  IF fn_url IS NULL OR fn_url = '' OR svc_key IS NULL OR svc_key = '' THEN
+  IF fn_url IS NULL OR fn_url = '' OR cron_secret IS NULL OR cron_secret = '' THEN
     RAISE WARNING 'process_appointment_reminders: app_config not set — skipping';
     RETURN;
   END IF;
@@ -87,7 +102,6 @@ BEGIN
     AND    bk.customer_id      IS NOT NULL
     AND    bk.reminder_minutes > 0
   LOOP
-    -- Parse "YYYY-MM-DD HH:MM" as Riyadh local time → UTC for comparison
     BEGIN
       appointment_ts := (b.date || ' ' || b.time)::timestamp AT TIME ZONE 'Asia/Riyadh';
     EXCEPTION WHEN OTHERS THEN
@@ -96,17 +110,18 @@ BEGIN
 
     reminder_ts := appointment_ts - make_interval(mins => b.reminder_minutes);
 
-    -- 2-minute window absorbs minor cron delays; duplicates blocked by reminder_sent flag
+    -- 2-minute window absorbs minor cron delays; duplicates blocked by reminder_sent
     IF now() >= reminder_ts AND now() < reminder_ts + INTERVAL '2 minutes' THEN
 
       -- Mark sent FIRST to prevent duplicate fires
       UPDATE public.bookings SET reminder_sent = true WHERE id = b.id;
 
+      -- X-Cron-Secret is the custom auth header — NOT Authorization: Bearer service_role_key
       PERFORM net.http_post(
         url     := fn_url,
         headers := jsonb_build_object(
           'Content-Type',  'application/json',
-          'Authorization', 'Bearer ' || svc_key
+          'X-Cron-Secret', cron_secret
         ),
         body    := jsonb_build_object(
           'target_type', 'single',
