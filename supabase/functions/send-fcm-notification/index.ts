@@ -24,79 +24,18 @@ async function sendFCMNotification(
 
   try {
     const response = await fetch(
-      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+      `https://fcm.googleapis.com/fcm/send`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${firebaseKey}`,
+          "Authorization": `key=${firebaseKey}`,
         },
         body: JSON.stringify({
-          message: {
-            token,
-            notification: {
-              title,
-              body,
-            },
-            data,
-            webpush: {
-              headers: {
-                Urgency: "high",
-              },
-              fcmOptions: {
-                link: "/",
-              },
-              notification: {
-                title,
-                body,
-                icon: "/favicon.ico",
-                badge: "/favicon.ico",
-                tag: data.type || "booking-notification",
-                requireInteraction: true,
-                vibrate: [200, 100, 200, 100, 200],
-                actions: [
-                  { action: "open", title: "فتح التطبيق" },
-                ],
-              },
-              data,
-            },
-            android: {
-              priority: "HIGH",
-              notification: {
-                title,
-                body,
-                sound: "default",
-                channelId: "booking_notifications",
-                clickAction: "FLUTTER_NOTIFICATION_CLICK",
-                defaultSound: true,
-                defaultVibrateTimings: true,
-                notificationPriority: "PRIORITY_HIGH",
-                visibility: "PUBLIC",
-              },
-              data,
-            },
-            apns: {
-              headers: {
-                "apns-priority": "10",
-                "apns-push-type": "alert",
-              },
-              payload: {
-                aps: {
-                  alert: {
-                    title,
-                    body,
-                  },
-                  sound: "default",
-                  badge: 1,
-                  "content-available": 1,
-                  "mutable-content": 1,
-                },
-              },
-              fcmOptions: {
-                analyticsLabel: data.type || "booking_notification",
-              },
-            },
-          },
+          to: token,
+          priority: "high",
+          notification: { title, body, icon: "/favicon.ico", badge: "/favicon.ico", click_action: "/" },
+          data,
         }),
       }
     );
