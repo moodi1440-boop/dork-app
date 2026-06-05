@@ -1,9 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
-// ── Config self-validation (runs before any processing) ───────────────────────
+// ── Config self-validation ────────────────────────────────────────────────────
 function validateConfig(): { ok: boolean; error?: string } {
-  const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
-  if (!projectId) {
+  if (!Deno.env.get("FIREBASE_PROJECT_ID")) {
     return { ok: false, error: "Missing FIREBASE_PROJECT_ID environment variable" };
   }
 
@@ -34,12 +33,16 @@ function isValidToken(token: string): boolean {
   return typeof token === "string" && token.trim().length >= 20;
 }
 
+function cleanTokens(raw: string[], label: string): string[] {
+  const valid = raw.filter(isValidToken);
+  const skipped = raw.length - valid.length;
+  if (skipped > 0) console.warn(`[${label}] skipped ${skipped} empty/malformed token(s)`);
+  return valid;
+}
+
 // ── JWT + OAuth2 via Web Crypto (no external deps) ────────────────────────────
 async function getAccessToken(): Promise<string> {
-  const saJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
-  if (!saJson) throw new Error("Missing FIREBASE_SERVICE_ACCOUNT secret");
-
-  const sa  = JSON.parse(saJson);
+  const sa  = JSON.parse(Deno.env.get("FIREBASE_SERVICE_ACCOUNT")!);
   const now = Math.floor(Date.now() / 1000);
 
   const b64url = (obj: object): string =>
@@ -57,8 +60,8 @@ async function getAccessToken(): Promise<string> {
 
   const sigInput = `${header}.${payload}`;
 
-  const pem   = (sa.private_key as string).replace(/\\n/g, "\n");
-  const b64   = pem.replace(/-----[^-]+-----/g, "").replace(/\s/g, "");
+  const pem    = (sa.private_key as string).replace(/\\n/g, "\n");
+  const b64    = pem.replace(/-----[^-]+-----/g, "").replace(/\s/g, "");
   const keyBuf = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
   const cryptoKey = await crypto.subtle.importKey(
@@ -75,12 +78,10 @@ async function getAccessToken(): Promise<string> {
   const sig = btoa(String.fromCharCode(...new Uint8Array(sigBuf)))
     .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 
-  const jwt = `${sigInput}.${sig}`;
-
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
+    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${sigInput}.${sig}`,
   });
 
   if (!res.ok) throw new Error(`OAuth2 failed: ${await res.text()}`);
@@ -160,7 +161,6 @@ async function sendBatch(
     );
     for (const r of results) r.ok ? sent++ : failed++;
 
-    // Brief pause between chunks to avoid burst-rate issues
     if (i + chunkSize < tokens.length) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
@@ -171,157 +171,129 @@ async function sendBatch(
 
 // ── Edge Function entry point ─────────────────────────────────────────────────
 Deno.serve(async (req: Request): Promise<Response> => {
+  // ── Config gate ───────────────────────────────────────────────────────────
+  const cfg = validateConfig();
+  if (!cfg.ok) {
+    console.error("Config validation failed:", cfg.error);
+    return json({ success: false, error: cfg.error }, 500);
+  }
+
   try {
-    // ── Config gate: fail fast on bad secrets ──────────────────────────────
-    const cfg = validateConfig();
-    if (!cfg.ok) {
-      console.error("Config validation failed:", cfg.error);
-      return json({ success: false, error: cfg.error }, 500);
+    const payload    = await req.json() as any;
+    const targetType = payload?.target_type as string;
+    const title      = payload?.title as string;
+    const body       = payload?.body  as string;
+
+    if (!title || !body) {
+      return json({ success: false, error: "title and body are required" }, 400);
     }
 
-    const reqBody   = await req.json() as any;
-    const record    = reqBody?.record;
-    const eventType = (reqBody?.type ?? "new_booking") as string;
+    const notifData: Record<string, string> = {
+      timestamp: new Date().toISOString(),
+      ...Object.fromEntries(
+        Object.entries(payload?.data ?? {}).map(([k, v]) => [k, String(v)]),
+      ),
+    };
 
-    if (!record?.salon_id) {
-      return json({ success: false, error: "record.salon_id is required" }, 400);
-    }
-
-    const supabase = createClient(
+    const supabase  = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
     const projectId = Deno.env.get("FIREBASE_PROJECT_ID")!;
 
-    // Resolve salon name once
-    const { data: salon } = await supabase
-      .from("salons").select("id, name")
-      .eq("id", record.salon_id).single();
+    // ── Route: single vs broadcast ────────────────────────────────────────
+    if (targetType === "single") {
+      // ── Single user (booking accepted / rejected) ─────────────────────
+      const { user_id, user_type = "customer" } = payload;
 
-    if (!salon) return json({ success: false, error: "Salon not found" }, 404);
+      if (!user_id) {
+        return json({ success: false, error: "user_id is required for target_type=single" }, 400);
+      }
 
-    // ── Resolve targets: { title, body, tokens[] } ──────────────────────────
-    type SendJob = { title: string; body: string; tokens: string[] };
-    const jobs: SendJob[] = [];
-
-    const fetchTokens = async (
-      userType: string,
-      userId?: number,
-    ): Promise<string[]> => {
-      const q = supabase
+      const { data: rows, error } = await supabase
         .from("fcm_tokens")
         .select("device_token")
-        .eq("user_type", userType)
+        .eq("user_type", user_type)
+        .eq("user_id",   user_id)
         .eq("is_active", true);
-      if (userId !== undefined) q.eq("user_id", userId);
-      const { data, error } = await q;
-      if (error) { console.error("Token fetch:", error.message); return []; }
-      const all    = (data ?? []).map((r: any) => r.device_token as string);
-      const valid  = all.filter(isValidToken);
-      const bad    = all.length - valid.length;
-      if (bad > 0) console.warn(`Skipped ${bad} empty/malformed token(s) for ${userType}:${userId ?? "*"}`);
-      return valid;
-    };
 
-    if (eventType === "new_booking") {
-      const salonTokens = await fetchTokens("salon", record.salon_id);
-      if (salonTokens.length)
-        jobs.push({
-          title:  `✂️ حجز جديد في ${salon.name}`,
-          body:   `${record.customer_name} | ${record.time} | ${record.date}`,
-          tokens: salonTokens,
-        });
-
-      if (record.customer_id) {
-        const custTokens = await fetchTokens("customer", record.customer_id);
-        if (custTokens.length)
-          jobs.push({
-            title:  "📋 تم استلام حجزك",
-            body:   `في ${salon.name} | ${record.date} | ${record.time}`,
-            tokens: custTokens,
-          });
+      if (error) {
+        console.error("Token fetch error:", error.message);
+        return json({ success: false, error: error.message }, 500);
       }
 
-    } else if (eventType === "booking_approved") {
-      const salonTokens = await fetchTokens("salon", record.salon_id);
-      if (salonTokens.length)
-        jobs.push({
-          title:  "✅ تم تأكيد الحجز",
-          body:   `${record.customer_name} | ${record.time}`,
-          tokens: salonTokens,
-        });
-
-      if (record.customer_id) {
-        const custTokens = await fetchTokens("customer", record.customer_id);
-        if (custTokens.length)
-          jobs.push({
-            title:  "✅ تم قبول حجزك!",
-            body:   `${salon.name} | ${record.date} | ${record.time}`,
-            tokens: custTokens,
-          });
-      }
-
-    } else if (eventType === "booking_rejected") {
-      if (record.customer_id) {
-        const custTokens = await fetchTokens("customer", record.customer_id);
-        if (custTokens.length)
-          jobs.push({
-            title:  "❌ تم رفض حجزك",
-            body:   `${salon.name} | ${record.date}`,
-            tokens: custTokens,
-          });
-      }
-
-    } else if (eventType === "promo_broadcast") {
-      // Collect all customer tokens in one batched query
-      const customerIds: number[] = record.customer_ids ?? [];
-      if (customerIds.length > 0) {
-        const { data: rows, error } = await supabase
-          .from("fcm_tokens")
-          .select("device_token")
-          .eq("user_type", "customer")
-          .eq("is_active", true)
-          .in("user_id", customerIds);
-
-        if (error) console.error("Promo token fetch:", error.message);
-        const allPromo   = (rows ?? []).map((r: any) => r.device_token as string);
-        const tokens     = allPromo.filter(isValidToken);
-        const badPromo   = allPromo.length - tokens.length;
-        if (badPromo > 0) console.warn(`Promo: skipped ${badPromo} empty/malformed token(s)`);
-        if (tokens.length)
-          jobs.push({
-            title:  `🔥 عرض خاص من ${salon.name}`,
-            body:   record.promo_text ?? "",
-            tokens,
-          });
-      }
-    }
-
-    if (jobs.length === 0) {
-      return json({ success: true, message: "No tokens found for targets" });
-    }
-
-    // ── Obtain OAuth token once, then run all batches ────────────────────────
-    const accessToken = await getAccessToken();
-    const data: Record<string, string> = {
-      type:       eventType,
-      salon_id:   String(record.salon_id),
-      booking_id: String(record.id ?? ""),
-      timestamp:  new Date().toISOString(),
-    };
-
-    let totalSent = 0, totalFailed = 0;
-
-    for (const job of jobs) {
-      const { sent, failed } = await sendBatch(
-        job.tokens, accessToken, projectId,
-        job.title, job.body, data,
+      const tokens = cleanTokens(
+        (rows ?? []).map((r: any) => r.device_token as string),
+        `single:${user_type}:${user_id}`,
       );
-      totalSent   += sent;
-      totalFailed += failed;
-    }
 
-    return json({ success: true, event_type: eventType, sent: totalSent, failed: totalFailed });
+      if (tokens.length === 0) {
+        return json({ success: true, target_type: "single", sent: 0, message: "No active token for user" });
+      }
+
+      const accessToken = await getAccessToken();
+      const { sent, failed } = await sendBatch(tokens, accessToken, projectId, title, body, notifData);
+      return json({ success: true, target_type: "single", sent, failed });
+
+    } else if (targetType === "broadcast") {
+      // ── Broadcast to all customers of a salon ─────────────────────────
+      const { salon_id } = payload;
+
+      if (!salon_id) {
+        return json({ success: false, error: "salon_id is required for target_type=broadcast" }, 400);
+      }
+
+      // Resolve all distinct customer IDs who have booked at this salon
+      const { data: bookings, error: bErr } = await supabase
+        .from("bookings")
+        .select("customer_id")
+        .eq("salon_id", salon_id)
+        .not("customer_id", "is", null);
+
+      if (bErr) {
+        console.error("Bookings fetch error:", bErr.message);
+        return json({ success: false, error: bErr.message }, 500);
+      }
+
+      const customerIds = [
+        ...new Set((bookings ?? []).map((b: any) => b.customer_id as number)),
+      ];
+
+      if (customerIds.length === 0) {
+        return json({ success: true, target_type: "broadcast", sent: 0, message: "No customers found for salon" });
+      }
+
+      const { data: tokenRows, error: tErr } = await supabase
+        .from("fcm_tokens")
+        .select("device_token")
+        .eq("user_type", "customer")
+        .eq("is_active", true)
+        .in("user_id", customerIds);
+
+      if (tErr) {
+        console.error("Token fetch error:", tErr.message);
+        return json({ success: false, error: tErr.message }, 500);
+      }
+
+      const tokens = cleanTokens(
+        (tokenRows ?? []).map((r: any) => r.device_token as string),
+        `broadcast:salon:${salon_id}`,
+      );
+
+      if (tokens.length === 0) {
+        return json({ success: true, target_type: "broadcast", sent: 0, message: "No active tokens for salon customers" });
+      }
+
+      const accessToken = await getAccessToken();
+      const { sent, failed } = await sendBatch(tokens, accessToken, projectId, title, body, notifData);
+      return json({ success: true, target_type: "broadcast", sent, failed });
+
+    } else {
+      return json({
+        success: false,
+        error: `Unknown target_type: "${targetType}". Expected "single" or "broadcast"`,
+      }, 400);
+    }
 
   } catch (e: any) {
     console.error("Handler error:", e.message);

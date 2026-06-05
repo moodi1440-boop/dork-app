@@ -1318,17 +1318,23 @@ export default function App(){
       }
       const newBooking=inserted[0]||{};
       if(newBooking&&newBooking.id){
-        supabase.functions.invoke('send-fcm-notification',{
-          body:{record:newBooking,type:"new_booking"},
-        }).then(({data,error})=>{
-          if(error){
-            console.error('❌ خطأ في إرسال الإشعار:',error);
-          }else{
-            console.log('✅ تم إرسال الإشعار بنجاح:',data);
-          }
-        }).catch((err)=>{
-          console.error('⚠️ فشل الاتصال بخدمة الإشعارات:',err);
-        });
+        const _d={type:"new_booking",salon_id:String(sid),booking_id:String(newBooking.id)};
+        // notify salon owner
+        supabase.functions.invoke('send-fcm-notification',{body:{
+          target_type:"single",user_id:sid,user_type:"salon",
+          title:`✂️ حجز جديد في ${salon?.name||""}`,
+          body:`${bk.name} | ${bk.time} | ${bk.date}`,
+          data:_d,
+        }}).catch(()=>{});
+        // notify customer
+        if(newBooking.customer_id){
+          supabase.functions.invoke('send-fcm-notification',{body:{
+            target_type:"single",user_id:newBooking.customer_id,user_type:"customer",
+            title:"📋 تم استلام حجزك",
+            body:`في ${salon?.name||""} | ${bk.date} | ${bk.time}`,
+            data:_d,
+          }}).catch(()=>{});
+        }
       }
       if(customerSession){
         const c=customers.find(x=>x.id===customerSession.id);
@@ -1388,16 +1394,15 @@ export default function App(){
           setCustomers(p=>p.map(x=>x.id===c.id?{...x,history:hist}:x));
         }
       }
-      if(status==="approved"||status==="rejected"){
-        const bookingRecord={...bk,id:bid,salon_id:sid,status};
-        supabase.functions.invoke('send-fcm-notification',{
-          body:{record:bookingRecord,type:status==="approved"?"booking_approved":"booking_rejected"},
-        }).then(({data,error})=>{
-          if(error)console.error('❌ خطأ في إرسال الإشعار:',error);
-          else console.log('✅ تم إرسال إشعار تحديث الحجز:',data);
-        }).catch((err)=>{
-          console.error('⚠️ فشل الاتصال بخدمة الإشعارات:',err);
-        });
+      if((status==="approved"||status==="rejected")&&bk.customer_id){
+        supabase.functions.invoke('send-fcm-notification',{body:{
+          target_type:"single",user_id:bk.customer_id,user_type:"customer",
+          title:status==="approved"?"✅ تم قبول حجزك!":"❌ تم رفض حجزك",
+          body:status==="approved"
+            ?`${salon.name} | ${bk.date} | ${bk.time}`
+            :`${salon.name} | ${bk.date}`,
+          data:{type:status==="approved"?"booking_approved":"booking_rejected",salon_id:String(sid),booking_id:String(bid)},
+        }}).catch(()=>{});
       }
       toast$(status==="approved"?"✅ تم قبول الحجز":"تم تحديث حالة الحجز");
       await loadData();
@@ -4639,13 +4644,13 @@ function PromoPanel({salon,customers,toast$}){
         ).catch(()=>{});
       }
       toast$("✅ تم إرسال العرض وتفعيله!");
-      if(pkg==="bronze"&&salonCustomers.length>0){
-        supabase.functions.invoke('send-fcm-notification',{
-          body:{
-            record:{id:null,salon_id:salon.id,promo_text:promoText.trim(),customer_ids:salonCustomers.map(c=>c.id)},
-            type:"promo_broadcast",
-          },
-        }).catch(()=>{});
+      if(pkg==="bronze"){
+        supabase.functions.invoke('send-fcm-notification',{body:{
+          target_type:"broadcast",salon_id:salon.id,
+          title:`🔥 عرض خاص من ${salon.name}`,
+          body:promoText.trim(),
+          data:{type:"promo_broadcast",salon_id:String(salon.id)},
+        }}).catch(()=>{});
       }
       const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=20`).catch(()=>[]);
       const delIds=new Set(JSON.parse(localStorage.getItem(`dork_del_promos_${salon.id}`)||"[]"));
