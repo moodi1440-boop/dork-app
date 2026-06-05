@@ -102,13 +102,10 @@ async function initializeFirebaseNotifications() {
         } catch {}
 
         if (userType && userId) {
-          await sb("fcm_tokens", "POST", {
-            user_type: userType,
-            user_id: userId,
-            device_token: token,
-            is_active: true
-          });
-        } else {
+          await supabase.from("fcm_tokens").upsert(
+            {user_type:userType,user_id:userId,device_token:token,is_active:true},
+            {onConflict:"device_token"}
+          );
         }
       } catch (error) {
         console.warn("Token registration:", error.message);
@@ -128,12 +125,10 @@ async function registerFcmTokenForUser(userType, userId) {
   try {
     const token = localStorage.getItem("fcm_token");
     if (!token || !userType || !userId) return;
-    await sb("fcm_tokens", "POST", {
-      user_type: userType,
-      user_id: userId,
-      device_token: token,
-      is_active: true
-    });
+    await supabase.from("fcm_tokens").upsert(
+      {user_type:userType,user_id:userId,device_token:token,is_active:true},
+      {onConflict:"device_token"}
+    );
   } catch {}
 }
 
