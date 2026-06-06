@@ -89,11 +89,10 @@ async function _callRegisterFcmToken(userType, userId, token) {
 async function initializeFirebaseNotifications() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
   try {
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    for (const registration of registrations) {
-      await registration.unregister();
-    }
-    const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    // سجّل SW بدون إلغاء القديم — المتصفح يتعامل مع التحديثات تلقائياً
+    await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    // انتظر حتى يصبح SW في حالة active ويتحكم بالصفحة
+    const swReg = await navigator.serviceWorker.ready;
     await loadFirebaseSDK();
     initializeFirebaseApp();
     const messaging = window.firebase.messaging();
