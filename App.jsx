@@ -97,7 +97,7 @@ async function initializeFirebaseNotifications() {
     await loadFirebaseSDK();
     initializeFirebaseApp();
     const messaging = window.firebase.messaging();
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BPJC3oMO-HdxJa1WG7LjB1cP3k9qXMUTCIS2bKsAaWxbmK3uR0YQFiQRXHAWzwOJ64KlCXZ4X0YHmlYpQgVbla0";
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BA_f6JK1iOsSYSezS7j19f2_u2_Jr4aBYBFpikOcELItSoceJ53xMgbUbm21HF4Jubbh2-fSdksFfpqLAxOC1gM";
     const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: swReg });
     if (token) {
       localStorage.setItem("fcm_token", token);
@@ -128,7 +128,7 @@ async function smartFcmRefresh() {
   try {
     const messaging = window.firebase?.messaging?.();
     if (!messaging) return;
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BPJC3oMO-HdxJa1WG7LjB1cP3k9qXMUTCIS2bKsAaWxbmK3uR0YQFiQRXHAWzwOJ64KlCXZ4X0YHmlYpQgVbla0";
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BA_f6JK1iOsSYSezS7j19f2_u2_Jr4aBYBFpikOcELItSoceJ53xMgbUbm21HF4Jubbh2-fSdksFfpqLAxOC1gM";
     const swReg = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js").catch(() => null);
     const opts = swReg ? { vapidKey, serviceWorkerRegistration: swReg } : { vapidKey };
     const currentToken = await messaging.getToken(opts).catch(() => null);
