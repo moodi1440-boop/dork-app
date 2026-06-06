@@ -236,17 +236,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return json({ success: false, error: error.message }, 500);
       }
 
+      console.log(`[single:${user_type}:${user_id}] found ${rows?.length ?? 0} token row(s)`);
+
       const tokens = cleanTokens(
         (rows ?? []).map((r: any) => r.device_token as string),
         `single:${user_type}:${user_id}`,
       );
 
       if (tokens.length === 0) {
+        console.log(`[single:${user_type}:${user_id}] no active token — skipping`);
         return json({ success: true, target_type: "single", sent: 0, message: "No active token for user" });
       }
 
       const accessToken = await getAccessToken();
       const { sent, failed, invalidTokens } = await sendBatch(tokens, accessToken, projectId, title, body, notifData);
+      console.log(`[single:${user_type}:${user_id}] sent=${sent} failed=${failed}`);
       if (invalidTokens.length > 0) {
         await supabase.from("fcm_tokens").update({ is_active: false }).in("device_token", invalidTokens);
         console.log(`[single] deactivated ${invalidTokens.length} invalid token(s)`);
