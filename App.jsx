@@ -89,8 +89,7 @@ async function _callRegisterFcmToken(userType, userId, token) {
 async function initializeFirebaseNotifications() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
   try {
-    await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-    const swReg = await navigator.serviceWorker.ready;
+    const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
     await loadFirebaseSDK();
     initializeFirebaseApp();
     const messaging = window.firebase.messaging();
