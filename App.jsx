@@ -164,11 +164,13 @@ function initializeFirebaseApp() {
   const firebase = window.firebase;
   if (firebase.apps.length > 0) return;
   firebase.initializeApp({
-    apiKey: "AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",
-    authDomain: "dork-app.firebaseapp.com",
-    projectId: "dork-app",
-    messagingSenderId: "659823227621",
-    appId: "1:659823227621:web:befaaa1b5063"
+    apiKey: "AIzaSyD2apyCKbR8tczHA-62Cl3R_2THHut7Jo0",
+    authDomain: "dork-app-c1011.firebaseapp.com",
+    projectId: "dork-app-c1011",
+    storageBucket: "dork-app-c1011.firebasestorage.app",
+    messagingSenderId: "341759447687",
+    appId: "1:341759447687:web:148ba8f895d6aa7f271e22",
+    measurementId: "G-4BXDWKXYQ2"
   });
 }
 
@@ -6097,7 +6099,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
               await loadScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js");
               const fb=window.firebase;
-              if(!fb.apps.length) fb.initializeApp({apiKey:"AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",authDomain:"dork-app.firebaseapp.com",projectId:"dork-app",appId:"1:659823227621:web:befaaa1b5063"});
+              if(!fb.apps.length) fb.initializeApp({apiKey:"AIzaSyD2apyCKbR8tczHA-62Cl3R_2THHut7Jo0",authDomain:"dork-app-c1011.firebaseapp.com",projectId:"dork-app-c1011",storageBucket:"dork-app-c1011.firebasestorage.app",messagingSenderId:"341759447687",appId:"1:341759447687:web:148ba8f895d6aa7f271e22",measurementId:"G-4BXDWKXYQ2"});
               const provider=new fb.auth.GoogleAuthProvider();
               provider.setCustomParameters({prompt:"select_account"});
               const result=await fb.auth().signInWithPopup(provider);
