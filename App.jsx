@@ -1675,6 +1675,20 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const[editPinConfirm,setEditPinConfirm]=useState("");
   const[editPinErr,setEditPinErr]=useState("");
   const toggle=(s)=>setExp(e=>e===s?null:s);
+  const [fcmStatus,setFcmStatus]=useState(()=>localStorage.getItem("fcm_debug")||"pending");
+  const [fcmMsg,setFcmMsg]=useState("");
+  const handleEnableNotifications=async()=>{
+    setFcmMsg("");
+    const permission=await Notification.requestPermission();
+    if(permission==="granted"){
+      await initializeFirebaseNotifications();
+      setFcmStatus(localStorage.getItem("fcm_debug")||"pending");
+    } else {
+      localStorage.setItem("fcm_debug","permission-"+permission);
+      setFcmStatus("permission-"+permission);
+      setFcmMsg("يرجى الضغط على سماح لتصلك تنبيهات الحجوزات");
+    }
+  };
   if(!customer)return null;
   const cl=getCustomerClassification(customer);
   const history=customer.history||[];
@@ -1777,8 +1791,14 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           {t("cust_drawer.delete_btn")}
         </button>
         <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>{t("cust_drawer.version")} {APP_VERSION}</div>
-        <div style={{padding:"4px 20px 14px",textAlign:"center",fontSize:10,color:"var(--text-muted)",fontFamily:"monospace",wordBreak:"break-all"}}>FCM: {localStorage.getItem("fcm_debug")||"pending"}</div>
-        {(()=>{const d=localStorage.getItem("fcm_debug")||"";return(d.includes("permission-denied")||d.includes("permission-blocked")||d.includes("permission-error"))&&(<div style={{margin:"0 16px 12px",padding:"10px 14px",background:"rgba(231,76,60,.12)",border:"1px solid rgba(231,76,60,.3)",borderRadius:10,fontSize:11,color:"#e74c3c",textAlign:"center",lineHeight:1.5}}>🔔 الإشعارات محظورة — فعّلها من إعدادات الجهاز ← الإشعارات ← DORK</div>);})()}
+        <div style={{padding:"4px 20px 8px",textAlign:"center",fontSize:10,color:"var(--text-muted)",fontFamily:"monospace",wordBreak:"break-all"}}>FCM: {fcmStatus}</div>
+        {(fcmStatus.includes("permission-denied")||fcmStatus.includes("permission-blocked")||fcmStatus.includes("permission-error"))&&(
+          <div style={{margin:"0 16px 12px"}}>
+            <div style={{padding:"10px 14px",background:"rgba(231,76,60,.12)",border:"1px solid rgba(231,76,60,.3)",borderRadius:"10px 10px 0 0",fontSize:11,color:"#e74c3c",textAlign:"center",lineHeight:1.5}}>الإشعارات محظورة — اضغط الزر لتفعيلها</div>
+            <button onClick={handleEnableNotifications} style={{width:"100%",padding:"13px",background:"var(--grad)",color:"#000",border:"none",borderRadius:"0 0 10px 10px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>تفعيل الإشعارات 🔔</button>
+            {fcmMsg&&<div style={{marginTop:8,padding:"8px 12px",background:"rgba(243,156,18,.12)",border:"1px solid rgba(243,156,18,.3)",borderRadius:8,fontSize:11,color:"#f39c12",textAlign:"center"}}>{fcmMsg}</div>}
+          </div>
+        )}
         <div style={{height:40}}/>
       </div>
       {/* نوافذ تسجيل الخروج وحذف الحساب — خارج الـ drawer لتجنب تأثير transform */}
