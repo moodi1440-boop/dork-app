@@ -92,15 +92,8 @@ async function initializeFirebaseNotifications() {
     if (token) {
       localStorage.setItem("fcm_token", token);
       try {
-        let userType = null;
-        let userId = null;
-        try {
-          const ow = localStorage.getItem("dork_owner");
-          const cu = localStorage.getItem("dork_customer");
-          if (ow) { userType = "salon"; userId = +ow; }
-          else if (cu) { const cp = JSON.parse(cu); userType = "customer"; userId = cp.id; }
-        } catch {}
-
+        const ow = localStorage.getItem("dork_owner");
+        const cu = localStorage.getItem("dork_customer");
         const sessions = [];
         if (ow) sessions.push({ userType: "salon", userId: +ow });
         if (cu) { try { const cp = JSON.parse(cu); sessions.push({ userType: "customer", userId: cp.id }); } catch {} }
@@ -172,6 +165,7 @@ function initializeFirebaseApp() {
   if (firebase.apps.length > 0) return;
   firebase.initializeApp({
     apiKey: "AIzaSyBYCJYdJUi_oPfYlOzSukntj4YeLZFiVUY",
+    authDomain: "dork-app.firebaseapp.com",
     projectId: "dork-app",
     messagingSenderId: "659823227621",
     appId: "1:659823227621:web:befaaa1b5063"
