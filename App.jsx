@@ -89,15 +89,14 @@ async function _callRegisterFcmToken(userType, userId, token) {
 async function initializeFirebaseNotifications() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
   try {
-    // سجّل SW بدون إلغاء القديم — المتصفح يتعامل مع التحديثات تلقائياً
     await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-    // انتظر حتى يصبح SW في حالة active ويتحكم بالصفحة
     const swReg = await navigator.serviceWorker.ready;
     await loadFirebaseSDK();
     initializeFirebaseApp();
     const messaging = window.firebase.messaging();
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BA_f6JK1iOsSYSezS7j19f2_u2_Jr4aBYBFpikOcELItSoceJ53xMgbUbm21HF4Jubbh2-fSdksFfpqLAxOC1gM";
     const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: swReg });
+    localStorage.setItem("fcm_debug", token ? "token:" + token.slice(0,20) : "getToken returned null");
     if (token) {
       localStorage.setItem("fcm_token", token);
       localStorage.setItem("fcm_registered_at", String(Date.now()));
@@ -112,6 +111,7 @@ async function initializeFirebaseNotifications() {
       }
     });
   } catch (error) {
+    localStorage.setItem("fcm_debug", "ERROR:" + error.message);
     console.error("FCM Error:", error.message);
   }
 }
@@ -1755,6 +1755,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           {t("cust_drawer.delete_btn")}
         </button>
         <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>{t("cust_drawer.version")} {APP_VERSION}</div>
+        <div style={{padding:"4px 20px 14px",textAlign:"center",fontSize:10,color:"var(--text-muted)",fontFamily:"monospace",wordBreak:"break-all"}}>FCM: {localStorage.getItem("fcm_debug")||"pending"}</div>
         <div style={{height:40}}/>
       </div>
       {/* نوافذ تسجيل الخروج وحذف الحساب — خارج الـ drawer لتجنب تأثير transform */}
