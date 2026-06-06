@@ -53,7 +53,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // Helper function: الحصول على تاريخ اليوم بتوقيت السعودية (AST/GMT+3)
 const getTodayDateInRiyadh = () =>
-  new Date().toLocaleString("en-CA", { timeZone: "Asia/Riyadh" }).split(' ')[0];
+  new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" });
 
 async function sb(table, method, body, query = "") {
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
@@ -101,9 +101,12 @@ async function initializeFirebaseNotifications() {
           else if (cu) { const cp = JSON.parse(cu); userType = "customer"; userId = cp.id; }
         } catch {}
 
-        if (userType && userId) {
-          await sb("fcm_tokens","DELETE",null,`?user_type=eq.${userType}&user_id=eq.${userId}`).catch(()=>{});
-          await sb("fcm_tokens","POST",{user_type:userType,user_id:userId,device_token:token,is_active:true}).catch(()=>{});
+        const sessions = [];
+        if (ow) sessions.push({ userType: "salon", userId: +ow });
+        if (cu) { try { const cp = JSON.parse(cu); sessions.push({ userType: "customer", userId: cp.id }); } catch {} }
+        for (const s of sessions) {
+          await sb("fcm_tokens","DELETE",null,`?user_type=eq.${s.userType}&user_id=eq.${s.userId}`).catch(()=>{});
+          await sb("fcm_tokens","POST",{user_type:s.userType,user_id:s.userId,device_token:token,is_active:true}).catch(()=>{});
         }
       } catch (error) {
         console.warn("Token registration:", error.message);
@@ -125,6 +128,22 @@ async function registerFcmTokenForUser(userType, userId) {
     if (!token || !userType || !userId) return;
     await sb("fcm_tokens","DELETE",null,`?user_type=eq.${userType}&user_id=eq.${userId}`).catch(()=>{});
     await sb("fcm_tokens","POST",{user_type:userType,user_id:userId,device_token:token,is_active:true}).catch(()=>{});
+  } catch {}
+}
+
+async function refreshFcmTokenRegistration() {
+  try {
+    const token = localStorage.getItem("fcm_token");
+    if (!token) return;
+    const ow = localStorage.getItem("dork_owner");
+    const cu = localStorage.getItem("dork_customer");
+    const sessions = [];
+    if (ow) sessions.push({ userType: "salon", userId: +ow });
+    if (cu) { try { const cp = JSON.parse(cu); sessions.push({ userType: "customer", userId: cp.id }); } catch {} }
+    for (const s of sessions) {
+      await sb("fcm_tokens","DELETE",null,`?user_type=eq.${s.userType}&user_id=eq.${s.userId}`).catch(()=>{});
+      await sb("fcm_tokens","POST",{user_type:s.userType,user_id:s.userId,device_token:token,is_active:true}).catch(()=>{});
+    }
   } catch {}
 }
 
@@ -974,7 +993,7 @@ export default function App(){
       if(!silent)setLoading(true);
       const [salonRows, bookingRows, custRows] = await Promise.all([
         sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
-        sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000"),
+        sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000"),
         sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&limit=500"),
       ]);
       // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
@@ -989,6 +1008,7 @@ export default function App(){
           .map(b => ({
             id: b.id,
             salonId: b.salon_id,
+            customer_id: b.customer_id || null,
             name: b.customer_name || "",
             phone: b.customer_phone || "",
             services: (() => { try { return JSON.parse(b.service || "[]"); } catch { return b.service ? [b.service] : []; } })(),
@@ -1038,6 +1058,7 @@ export default function App(){
       if(document.visibilityState==="visible"){
         loadData({silent:true});
         loadAppSettings({silent:true});
+        refreshFcmTokenRegistration();
       }
     };
     document.addEventListener("visibilitychange",onVisible);
@@ -1185,11 +1206,12 @@ export default function App(){
   const refreshSalonBookings=useCallback(async(salonId)=>{
     try{
       const rows=await sb("bookings","GET",null,
-        `?salon_id=eq.${salonId}&select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc`
+        `?salon_id=eq.${salonId}&select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc`
       );
       const bookings=rows.map(b=>({
         id:b.id,
         salonId:b.salon_id,
+        customer_id:b.customer_id||null,
         name:b.customer_name||"",
         phone:b.customer_phone||"",
         services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
