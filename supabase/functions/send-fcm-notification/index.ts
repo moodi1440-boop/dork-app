@@ -5,26 +5,12 @@ function validateConfig(): { ok: boolean; error?: string } {
   if (!Deno.env.get("FIREBASE_PROJECT_ID")) {
     return { ok: false, error: "Missing FIREBASE_PROJECT_ID environment variable" };
   }
-
-  const saJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
-  if (!saJson) {
-    return { ok: false, error: "Missing FIREBASE_SERVICE_ACCOUNT secret" };
+  if (!Deno.env.get("FIREBASE_CLIENT_EMAIL")) {
+    return { ok: false, error: "Missing FIREBASE_CLIENT_EMAIL secret" };
   }
-
-  let sa: any;
-  try {
-    sa = JSON.parse(saJson);
-  } catch {
-    console.error("Invalid JSON format in FIREBASE_SERVICE_ACCOUNT secret");
-    return { ok: false, error: "Invalid JSON format in FIREBASE_SERVICE_ACCOUNT secret" };
+  if (!Deno.env.get("FIREBASE_PRIVATE_KEY")) {
+    return { ok: false, error: "Missing FIREBASE_PRIVATE_KEY secret" };
   }
-
-  for (const field of ["client_email", "private_key", "project_id"]) {
-    if (!sa[field]) {
-      return { ok: false, error: `FIREBASE_SERVICE_ACCOUNT missing required field: ${field}` };
-    }
-  }
-
   return { ok: true };
 }
 
@@ -42,7 +28,8 @@ function cleanTokens(raw: string[], label: string): string[] {
 
 // ── JWT + OAuth2 via Web Crypto (no external deps) ────────────────────────────
 async function getAccessToken(): Promise<string> {
-  const sa  = JSON.parse(Deno.env.get("FIREBASE_SERVICE_ACCOUNT")!);
+  const clientEmail = Deno.env.get("FIREBASE_CLIENT_EMAIL")!;
+  const privateKey  = Deno.env.get("FIREBASE_PRIVATE_KEY")!;
   const now = Math.floor(Date.now() / 1000);
 
   const b64url = (obj: object): string =>
@@ -51,7 +38,7 @@ async function getAccessToken(): Promise<string> {
 
   const header  = b64url({ alg: "RS256", typ: "JWT" });
   const payload = b64url({
-    iss:   sa.client_email,
+    iss:   clientEmail,
     scope: "https://www.googleapis.com/auth/firebase.messaging",
     aud:   "https://oauth2.googleapis.com/token",
     iat:   now,
@@ -60,7 +47,7 @@ async function getAccessToken(): Promise<string> {
 
   const sigInput = `${header}.${payload}`;
 
-  const pem    = (sa.private_key as string).replace(/\\n/g, "\n");
+  const pem    = privateKey.replace(/\\n/g, "\n");
   const b64    = pem.replace(/-----[^-]+-----/g, "").replace(/\s/g, "");
   const keyBuf = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
@@ -97,7 +84,7 @@ async function sendOne(
   title:       string,
   body:        string,
   data:        Record<string, string>,
-): Promise<{ ok: boolean; token: string; error?: string }> {
+): Promise<{ ok: boolean; token: string; error?: string; statusCode?: number }> {
   try {
     const res = await fetch(
       `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
@@ -132,7 +119,7 @@ async function sendOne(
     if (!res.ok) {
       const err = await res.text();
       console.error(`FCM failed [${deviceToken.slice(-8)}]:`, err);
-      return { ok: false, token: deviceToken, error: err };
+      return { ok: false, token: deviceToken, error: err, statusCode: res.status };
     }
 
     return { ok: true, token: deviceToken };
@@ -151,22 +138,33 @@ async function sendBatch(
   body:        string,
   data:        Record<string, string>,
   chunkSize = 50,
-): Promise<{ sent: number; failed: number }> {
+): Promise<{ sent: number; failed: number; invalidTokens: string[] }> {
   let sent = 0, failed = 0;
+  const invalidTokens: string[] = [];
 
   for (let i = 0; i < tokens.length; i += chunkSize) {
     const chunk   = tokens.slice(i, i + chunkSize);
     const results = await Promise.all(
       chunk.map((t) => sendOne(accessToken, projectId, t, title, body, data)),
     );
-    for (const r of results) r.ok ? sent++ : failed++;
+    for (const r of results) {
+      if (r.ok) {
+        sent++;
+      } else {
+        failed++;
+        // 403 = wrong project / permission denied, 404 = token unregistered
+        if (r.statusCode === 403 || r.statusCode === 404) {
+          invalidTokens.push(r.token);
+        }
+      }
+    }
 
     if (i + chunkSize < tokens.length) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
-  return { sent, failed };
+  return { sent, failed, invalidTokens };
 }
 
 // ── Edge Function entry point ─────────────────────────────────────────────────
@@ -248,7 +246,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
 
       const accessToken = await getAccessToken();
-      const { sent, failed } = await sendBatch(tokens, accessToken, projectId, title, body, notifData);
+      const { sent, failed, invalidTokens } = await sendBatch(tokens, accessToken, projectId, title, body, notifData);
+      if (invalidTokens.length > 0) {
+        await supabase.from("fcm_tokens").update({ is_active: false }).in("device_token", invalidTokens);
+        console.log(`[single] deactivated ${invalidTokens.length} invalid token(s)`);
+      }
       return json({ success: true, target_type: "single", sent, failed });
 
     } else if (targetType === "broadcast") {
@@ -259,11 +261,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return json({ success: false, error: "salon_id is required for target_type=broadcast" }, 400);
       }
 
-      // Resolve all distinct customer IDs who have booked at this salon
+      // bookings.salon_id is stored as text; cast to string to avoid type mismatch
+      const salonIdStr = String(salon_id);
+
       const { data: bookings, error: bErr } = await supabase
         .from("bookings")
         .select("customer_id")
-        .eq("salon_id", salon_id)
+        .eq("salon_id", salonIdStr)
         .not("customer_id", "is", null);
 
       if (bErr) {
@@ -272,11 +276,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
 
       const customerIds = [
-        ...new Set((bookings ?? []).map((b: any) => b.customer_id as number)),
+        ...new Set((bookings ?? []).map((b: any) => b.customer_id)),
       ];
 
+      console.log(`[broadcast:salon:${salonIdStr}] ${customerIds.length} distinct customer(s) found`);
+
       if (customerIds.length === 0) {
-        return json({ success: true, target_type: "broadcast", sent: 0, message: "No customers found for salon" });
+        return json({ success: true, target_type: "broadcast", sent: 0, customers_found: 0, message: "No customers found for salon" });
       }
 
       const { data: tokenRows, error: tErr } = await supabase
@@ -291,18 +297,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
         return json({ success: false, error: tErr.message }, 500);
       }
 
+      console.log(`[broadcast:salon:${salonIdStr}] ${tokenRows?.length ?? 0} token row(s) found`);
+
       const tokens = cleanTokens(
         (tokenRows ?? []).map((r: any) => r.device_token as string),
-        `broadcast:salon:${salon_id}`,
+        `broadcast:salon:${salonIdStr}`,
       );
 
       if (tokens.length === 0) {
-        return json({ success: true, target_type: "broadcast", sent: 0, message: "No active tokens for salon customers" });
+        return json({ success: true, target_type: "broadcast", sent: 0, customers_found: customerIds.length, message: "No active tokens for salon customers" });
       }
 
       const accessToken = await getAccessToken();
-      const { sent, failed } = await sendBatch(tokens, accessToken, projectId, title, body, notifData);
-      return json({ success: true, target_type: "broadcast", sent, failed });
+      const { sent, failed, invalidTokens } = await sendBatch(tokens, accessToken, projectId, title, body, notifData);
+      if (invalidTokens.length > 0) {
+        await supabase.from("fcm_tokens").update({ is_active: false }).in("device_token", invalidTokens);
+        console.log(`[broadcast:salon:${salonIdStr}] deactivated ${invalidTokens.length} invalid token(s)`);
+      }
+      return json({ success: true, target_type: "broadcast", sent, failed, customers_found: customerIds.length });
 
     } else {
       return json({
@@ -321,6 +333,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
 function json(body: object, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
