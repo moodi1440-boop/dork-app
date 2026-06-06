@@ -814,6 +814,8 @@ export default function App(){
 
   useEffect(() => {
     initializeFirebaseNotifications();
+    // تأخير بسيط ليضمن أن localStorage موجود قبل التسجيل
+    setTimeout(() => refreshFcmTokenRegistration(), 2000);
   }, []);
 
   // -- تسجيل الدخول المستمر --
