@@ -137,6 +137,7 @@ async function sendBatch(
   title:       string,
   body:        string,
   data:        Record<string, string>,
+  supabase:    ReturnType<typeof import("https://esm.sh/@supabase/supabase-js@2.39.7").createClient>,
   chunkSize = 50,
 ): Promise<{ sent: number; failed: number; invalidTokens: string[] }> {
   let sent = 0, failed = 0;
@@ -155,6 +156,16 @@ async function sendBatch(
         // 403 = wrong project / permission denied, 404 = token unregistered
         if (r.statusCode === 403 || r.statusCode === 404) {
           invalidTokens.push(r.token);
+        }
+        // Log 403 to system_logs — indicates credential/project mismatch
+        if (r.statusCode === 403) {
+          supabase.from("system_logs").insert({
+            level: "error",
+            event: "fcm_403",
+            details: { error: r.error, token_suffix: r.token.slice(-8), project_id: projectId },
+            user_type: data.user_type ?? null,
+            user_id: data.user_id ?? null,
+          }).catch(() => {});
         }
       }
     }
@@ -249,7 +260,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
 
       const accessToken = await getAccessToken();
-      const { sent, failed, invalidTokens } = await sendBatch(tokens, accessToken, projectId, title, body, notifData);
+      const { sent, failed, invalidTokens } = await sendBatch(tokens, accessToken, projectId, title, body, notifData, supabase);
       console.log(`[single:${user_type}:${user_id}] sent=${sent} failed=${failed}`);
       if (invalidTokens.length > 0) {
         await supabase.from("fcm_tokens").update({ is_active: false }).in("device_token", invalidTokens);
@@ -313,7 +324,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
 
       const accessToken = await getAccessToken();
-      const { sent, failed, invalidTokens } = await sendBatch(tokens, accessToken, projectId, title, body, notifData);
+      const { sent, failed, invalidTokens } = await sendBatch(tokens, accessToken, projectId, title, body, notifData, supabase);
       if (invalidTokens.length > 0) {
         await supabase.from("fcm_tokens").update({ is_active: false }).in("device_token", invalidTokens);
         console.log(`[broadcast:salon:${salonIdStr}] deactivated ${invalidTokens.length} invalid token(s)`);
