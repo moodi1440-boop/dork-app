@@ -2726,7 +2726,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {[[t("book.field_name"),form.name],[t("book.field_phone"),form.phone],[t("book.field_email"),form.email||"-"],[t("book.field_services"),form.services.join(" + ")],[t("book.field_barber"),barber?.name||t("book.any_barber")],[t("book.field_date"),form.date],[t("book.field_time"),form.waitSlot?`⏳ ${form.waitSlot}`:form.time],[t("book.field_total"),`${total} ${t("book.sar")}`]].map(([l,v])=><div key={l} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid var(--border-ui)"}}><span style={{color:"var(--text-muted)",fontSize:12}}>{l}</span><span style={{color:"var(--text-primary)",fontWeight:600,fontSize:12}}>{v}</span></div>)}
         <button style={{...G.mapsBtn,width:"100%",marginTop:10,justifyContent:"center",display:"flex",padding:10}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>{t("book.open_map")}</button>
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.1)",border:"1px solid #f39c1255",borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:11,color:"#f39c12"}}>{t("book.wait_msg")} {form.waitSlot} {t("book.wait_notify")}</div>}
-        {!form.waitSlot&&customerSession&&<div style={{margin:"10px 0 4px"}}>
+        {!form.waitSlot&&customer&&<div style={{margin:"10px 0 4px"}}>
           <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6,textAlign:"center"}}>⏰ تذكير قبل الموعد بـ</div>
           <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
             {[{v:30,l:"30 د"},{v:60,l:"ساعة"},{v:120,l:"ساعتين"},{v:0,l:"بدون"}].map(({v,l})=>(
