@@ -5,26 +5,12 @@ function validateConfig(): { ok: boolean; error?: string } {
   if (!Deno.env.get("FIREBASE_PROJECT_ID")) {
     return { ok: false, error: "Missing FIREBASE_PROJECT_ID environment variable" };
   }
-
-  const saJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
-  if (!saJson) {
-    return { ok: false, error: "Missing FIREBASE_SERVICE_ACCOUNT secret" };
+  if (!Deno.env.get("FIREBASE_CLIENT_EMAIL")) {
+    return { ok: false, error: "Missing FIREBASE_CLIENT_EMAIL secret" };
   }
-
-  let sa: any;
-  try {
-    sa = JSON.parse(saJson);
-  } catch {
-    console.error("Invalid JSON format in FIREBASE_SERVICE_ACCOUNT secret");
-    return { ok: false, error: "Invalid JSON format in FIREBASE_SERVICE_ACCOUNT secret" };
+  if (!Deno.env.get("FIREBASE_PRIVATE_KEY")) {
+    return { ok: false, error: "Missing FIREBASE_PRIVATE_KEY secret" };
   }
-
-  for (const field of ["client_email", "private_key", "project_id"]) {
-    if (!sa[field]) {
-      return { ok: false, error: `FIREBASE_SERVICE_ACCOUNT missing required field: ${field}` };
-    }
-  }
-
   return { ok: true };
 }
 
@@ -42,7 +28,8 @@ function cleanTokens(raw: string[], label: string): string[] {
 
 // ── JWT + OAuth2 via Web Crypto (no external deps) ────────────────────────────
 async function getAccessToken(): Promise<string> {
-  const sa  = JSON.parse(Deno.env.get("FIREBASE_SERVICE_ACCOUNT")!);
+  const clientEmail = Deno.env.get("FIREBASE_CLIENT_EMAIL")!;
+  const privateKey  = Deno.env.get("FIREBASE_PRIVATE_KEY")!;
   const now = Math.floor(Date.now() / 1000);
 
   const b64url = (obj: object): string =>
@@ -51,7 +38,7 @@ async function getAccessToken(): Promise<string> {
 
   const header  = b64url({ alg: "RS256", typ: "JWT" });
   const payload = b64url({
-    iss:   sa.client_email,
+    iss:   clientEmail,
     scope: "https://www.googleapis.com/auth/firebase.messaging",
     aud:   "https://oauth2.googleapis.com/token",
     iat:   now,
@@ -60,7 +47,7 @@ async function getAccessToken(): Promise<string> {
 
   const sigInput = `${header}.${payload}`;
 
-  const pem    = (sa.private_key as string).replace(/\\n/g, "\n");
+  const pem    = privateKey.replace(/\\n/g, "\n");
   const b64    = pem.replace(/-----[^-]+-----/g, "").replace(/\s/g, "");
   const keyBuf = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
