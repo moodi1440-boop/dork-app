@@ -76,6 +76,16 @@ async function sb(table, method, body, query = "") {
 }
 
 // ========== Firebase Cloud Messaging ==========
+
+// ── أرسل token لـ Edge Function (لا كتابة مباشرة في DB من الكود) ──
+async function _callRegisterFcmToken(userType, userId, token) {
+  if (!token || !userType || !userId) return;
+  await supabase.functions.invoke("register-fcm-token", {
+    body: { device_token: token, user_type: userType, user_id: userId },
+  }).catch(() => {});
+}
+
+// ── تسجيل أولي: يُشغَّل مرة عند بدء التطبيق ──
 async function initializeFirebaseNotifications() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
   try {
@@ -91,19 +101,11 @@ async function initializeFirebaseNotifications() {
     const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: swReg });
     if (token) {
       localStorage.setItem("fcm_token", token);
-      try {
-        const ow = localStorage.getItem("dork_owner");
-        const cu = localStorage.getItem("dork_customer");
-        const sessions = [];
-        if (ow) sessions.push({ userType: "salon", userId: +ow });
-        if (cu) { try { const cp = JSON.parse(cu); sessions.push({ userType: "customer", userId: cp.id }); } catch {} }
-        for (const s of sessions) {
-          await sb("fcm_tokens","DELETE",null,`?user_type=eq.${s.userType}&user_id=eq.${s.userId}`).catch(()=>{});
-          await sb("fcm_tokens","POST",{user_type:s.userType,user_id:s.userId,device_token:token,is_active:true}).catch(()=>{});
-        }
-      } catch (error) {
-        console.warn("Token registration:", error.message);
-      }
+      localStorage.setItem("fcm_registered_at", String(Date.now()));
+      const ow = localStorage.getItem("dork_owner");
+      const cu = localStorage.getItem("dork_customer");
+      if (ow) await _callRegisterFcmToken("salon", +ow, token);
+      if (cu) { try { const cp = JSON.parse(cu); await _callRegisterFcmToken("customer", cp.id, token); } catch {} }
     }
     messaging.onMessage((payload) => {
       if (payload.notification) {
@@ -115,28 +117,32 @@ async function initializeFirebaseNotifications() {
   }
 }
 
+// ── تسجيل فوري بعد تسجيل الدخول ──
 async function registerFcmTokenForUser(userType, userId) {
-  try {
-    const token = localStorage.getItem("fcm_token");
-    if (!token || !userType || !userId) return;
-    await sb("fcm_tokens","DELETE",null,`?user_type=eq.${userType}&user_id=eq.${userId}`).catch(()=>{});
-    await sb("fcm_tokens","POST",{user_type:userType,user_id:userId,device_token:token,is_active:true}).catch(()=>{});
-  } catch {}
+  const token = localStorage.getItem("fcm_token");
+  await _callRegisterFcmToken(userType, userId, token);
 }
 
-async function refreshFcmTokenRegistration() {
+// ── تحديث ذكي: يعمل فقط إذا تغيّر الـ token أو مرّ أكثر من 24 ساعة ──
+async function smartFcmRefresh() {
   try {
-    const token = localStorage.getItem("fcm_token");
-    if (!token) return;
+    const messaging = window.firebase?.messaging?.();
+    if (!messaging) return;
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BPJC3oMO-HdxJa1WG7LjB1cP3k9qXMUTCIS2bKsAaWxbmK3uR0YQFiQRXHAWzwOJ64KlCXZ4X0YHmlYpQgVbla0";
+    const swReg = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js").catch(() => null);
+    const opts = swReg ? { vapidKey, serviceWorkerRegistration: swReg } : { vapidKey };
+    const currentToken = await messaging.getToken(opts).catch(() => null);
+    if (!currentToken) return;
+    const cachedToken      = localStorage.getItem("fcm_token");
+    const lastRegistered   = parseInt(localStorage.getItem("fcm_registered_at") || "0");
+    const hoursSince       = (Date.now() - lastRegistered) / 3_600_000;
+    if (currentToken === cachedToken && hoursSince < 24) return; // لا حاجة للتحديث
+    localStorage.setItem("fcm_token", currentToken);
+    localStorage.setItem("fcm_registered_at", String(Date.now()));
     const ow = localStorage.getItem("dork_owner");
     const cu = localStorage.getItem("dork_customer");
-    const sessions = [];
-    if (ow) sessions.push({ userType: "salon", userId: +ow });
-    if (cu) { try { const cp = JSON.parse(cu); sessions.push({ userType: "customer", userId: cp.id }); } catch {} }
-    for (const s of sessions) {
-      await sb("fcm_tokens","DELETE",null,`?user_type=eq.${s.userType}&user_id=eq.${s.userId}`).catch(()=>{});
-      await sb("fcm_tokens","POST",{user_type:s.userType,user_id:s.userId,device_token:token,is_active:true}).catch(()=>{});
-    }
+    if (ow) await _callRegisterFcmToken("salon", +ow, currentToken);
+    if (cu) { try { const cp = JSON.parse(cu); await _callRegisterFcmToken("customer", cp.id, currentToken); } catch {} }
   } catch {}
 }
 
@@ -815,7 +821,7 @@ export default function App(){
   },[]);
 
   useEffect(() => {
-    initializeFirebaseNotifications().then(() => refreshFcmTokenRegistration()).catch(() => {});
+    initializeFirebaseNotifications().catch(() => {});
   }, []);
 
   // -- تسجيل الدخول المستمر --
@@ -1054,7 +1060,7 @@ export default function App(){
       if(document.visibilityState==="visible"){
         loadData({silent:true});
         loadAppSettings({silent:true});
-        refreshFcmTokenRegistration();
+        smartFcmRefresh();
       }
     };
     document.addEventListener("visibilitychange",onVisible);
