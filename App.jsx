@@ -85,10 +85,29 @@ async function _callRegisterFcmToken(userType, userId, token) {
   }).catch(() => {});
 }
 
+// ── طلب إذن الإشعارات صراحةً قبل getToken ──
+async function requestNotificationPermission() {
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      localStorage.removeItem("fcm_token");
+      localStorage.removeItem("fcm_registered_at");
+      localStorage.setItem("fcm_debug", "permission-" + permission);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    localStorage.setItem("fcm_debug", "permission-error:" + err.message);
+    return false;
+  }
+}
+
 // ── تسجيل أولي: يُشغَّل مرة عند بدء التطبيق ──
 async function initializeFirebaseNotifications() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
   try {
+    const granted = await requestNotificationPermission();
+    if (!granted) return;
     const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
     await loadFirebaseSDK();
     initializeFirebaseApp();
@@ -110,6 +129,10 @@ async function initializeFirebaseNotifications() {
       }
     });
   } catch (error) {
+    if (error.message?.includes("permission") || error.message?.includes("blocked")) {
+      localStorage.removeItem("fcm_token");
+      localStorage.removeItem("fcm_registered_at");
+    }
     localStorage.setItem("fcm_debug", "ERROR:" + error.message);
     console.error("FCM Error:", error.message);
   }
@@ -1755,6 +1778,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         </button>
         <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>{t("cust_drawer.version")} {APP_VERSION}</div>
         <div style={{padding:"4px 20px 14px",textAlign:"center",fontSize:10,color:"var(--text-muted)",fontFamily:"monospace",wordBreak:"break-all"}}>FCM: {localStorage.getItem("fcm_debug")||"pending"}</div>
+        {(()=>{const d=localStorage.getItem("fcm_debug")||"";return(d.includes("permission-denied")||d.includes("permission-blocked")||d.includes("permission-error"))&&(<div style={{margin:"0 16px 12px",padding:"10px 14px",background:"rgba(231,76,60,.12)",border:"1px solid rgba(231,76,60,.3)",borderRadius:10,fontSize:11,color:"#e74c3c",textAlign:"center",lineHeight:1.5}}>🔔 الإشعارات محظورة — فعّلها من إعدادات الجهاز ← الإشعارات ← DORK</div>);})()}
         <div style={{height:40}}/>
       </div>
       {/* نوافذ تسجيل الخروج وحذف الحساب — خارج الـ drawer لتجنب تأثير transform */}
