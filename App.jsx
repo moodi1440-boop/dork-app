@@ -999,10 +999,13 @@ export default function App(){
       const reviewPromise  = sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
       const promoPromise   = sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]);
 
-      // عرض الصالونات فور وصولها (بدون حجوزات مؤقتاً)
+      // عرض الصالونات فور وصولها وحفظ كاش خفيف (بدون حجوزات)
       const salonRows = await salonPromise;
-      setSalons(salonRows.map(row=>{const s=toAppSalon(row);s.bookings=[];return s;}));
+      const salonsNoBookings = salonRows.map(row=>{const s=toAppSalon(row);s.bookings=[];return s;});
+      setSalons(salonsNoBookings);
       if(!silent)setLoading(false);
+      // حفظ كاش خفيف بدون حجوزات حتى لا يتجاوز حد localStorage
+      try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsNoBookings));}catch{}
 
       // جلب بقية البيانات بالتوازي
       const [bookingRows, custRows, reviewRows, promoRows] = await Promise.all([
@@ -1024,7 +1027,6 @@ export default function App(){
         return salon;
       });
       setSalons(salonsWithBookings);
-      try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsWithBookings));}catch{}
       setCustomers(custRows.map(toAppCustomer));
       setReviews(reviewRows||[]);
       setPromotions(activePromoRows);
