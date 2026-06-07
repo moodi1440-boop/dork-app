@@ -1014,7 +1014,11 @@ export default function App(){
         return salon;
       });
       setSalons(salonsWithBookings);
-      try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsWithBookings));}catch{}
+      try{
+        // حفظ نسخة مصغرة للكاش (بدون services/prices/barbers) لضمان النجاح في Safari
+        const slim=salonsWithBookings.map(s=>({id:s.id,name:s.name,region:s.region,gov:s.gov,center:s.center,village:s.village,phone:s.phone,address:s.address,locationUrl:s.locationUrl,tone:s.tone,rating:s.rating,status:s.status,paused:s.paused,frozen:s.frozen,banned:s.banned,workStart:s.workStart,workEnd:s.workEnd,closedDays:s.closedDays,shiftEnabled:s.shiftEnabled,shift1Start:s.shift1Start,shift1End:s.shift1End,shift2Start:s.shift2Start,shift2End:s.shift2End,slotMin:s.slotMin,bookings:s.bookings,services:[],prices:{},barbers:[]}));
+        localStorage.setItem("dork_salons_cache",JSON.stringify(slim));
+      }catch{}
       setCustomers(custRows.map(toAppCustomer));
       setReviews(reviewRows||[]);
       setPromotions(activePromoRows);
