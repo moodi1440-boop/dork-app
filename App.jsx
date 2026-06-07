@@ -113,7 +113,11 @@ async function initializeFirebaseNotifications() {
     initializeFirebaseApp();
     const messaging = window.firebase.messaging();
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BA_f6JK1iOsSYSezS7j19f2_u2_Jr4a8YBFpikOcELltScceJ53xMgbUbm21HF4Jubbh2-fSdksFFpqLAxOC1gM";
-    const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: swReg });
+    localStorage.setItem("fcm_debug", "getting-token...");
+    const token = await Promise.race([
+      messaging.getToken({ vapidKey, serviceWorkerRegistration: swReg }),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error("getToken timeout 15s")),15000)),
+    ]);
     localStorage.setItem("fcm_debug", token ? "token:" + token.slice(0,20) : "getToken returned null");
     if (token) {
       localStorage.setItem("fcm_token", token);
