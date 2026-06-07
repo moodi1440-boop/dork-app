@@ -992,19 +992,21 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
 
-      // فقط الصالونات + التقييمات + العروض — بدون حجوزات وبدون عملاء
-      const [salonRows, reviewRows, promoRows] = await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
+      // مرحلة ١: جلب الصالونات وعرضها فوراً + حفظ الكاش
+      const salonRows=await sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500");
+      const salonsNoBookings=salonRows.map(row=>{const s=toAppSalon(row);s.bookings=[];return s;});
+      setSalons(salonsNoBookings);
+      try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsNoBookings));}catch{}
+      if(!silent)setLoading(false);
+
+      // مرحلة ٢: التقييمات والعروض في الخلفية
+      const [reviewRows,promoRows]=await Promise.all([
         sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]),
         sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]),
       ]);
       const now=new Date();
-      const activePromoRows=(promoRows||[]).filter(r=>!r.ends_at||new Date(r.ends_at)>now);
-      const salonsNoBookings=salonRows.map(row=>{const s=toAppSalon(row);s.bookings=[];return s;});
-      setSalons(salonsNoBookings);
-      try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsNoBookings));}catch{}
       setReviews(reviewRows||[]);
-      setPromotions(activePromoRows);
+      setPromotions((promoRows||[]).filter(r=>!r.ends_at||new Date(r.ends_at)>now));
       setDbError(null);
     } catch(e) {
       console.error(e);
