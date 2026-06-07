@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "esbuild src/firebase-messaging-sw-src.js --bundle --outfile=public/firebase-messaging-sw.js --platform=browser --format=iife --define:process.env.NODE_ENV='\"production\"' && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
+    "firebase": "^12.14.0",
     "playwright": "^1.60.0",
     "sharp": "^0.34.5",
     "vite": "^5.0.0"
