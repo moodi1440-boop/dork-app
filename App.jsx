@@ -1117,6 +1117,22 @@ export default function App(){
           }catch{}
           return;
         }
+        if(n.target_type==="broadcast"){
+          try{
+            const cu=localStorage.getItem("dork_customer");
+            if(!cu)return;
+            const cp=JSON.parse(cu);
+            const history=JSON.parse(localStorage.getItem(`hist_${cp.id}`)||"[]");
+            const hasBooked=history.some(h=>String(h.salonId)===String(n.target_id));
+            if(!hasBooked)return;
+            const newNotif={id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔥",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false};
+            const stored=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+            stored.unshift(newNotif);
+            localStorage.setItem("dork_notifs",JSON.stringify(stored.slice(0,50)));
+            window.dispatchEvent(new CustomEvent("dork-customer-notif",{detail:newNotif}));
+          }catch{}
+          return;
+        }
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
         try{
@@ -4705,6 +4721,13 @@ function PromoPanel({salon,customers,toast$}){
           body:promoText.trim(),
           data:{type:"promo_broadcast",salon_id:String(salon.id)},
         }}).catch(()=>{});
+        sb("notifications","POST",{
+          target_type:"broadcast",
+          target_id:String(salon.id),
+          title:`🔥 عرض خاص من ${salon.name}`,
+          body:promoText.trim(),
+          icon:"🔥",
+        }).catch(()=>{});
       }
       const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=20`).catch(()=>[]);
       const delIds=new Set(JSON.parse(localStorage.getItem(`dork_del_promos_${salon.id}`)||"[]"));
