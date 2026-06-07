@@ -1184,7 +1184,7 @@ export default function App(){
   const refreshSalonBookings=useCallback(async(salonId)=>{
     try{
       const rows=await sb("bookings","GET",null,
-        `?salon_id=eq.${salonId}&select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc`
+        `?salon_id=eq.${salonId}&select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=500`
       );
       const bookings=rows.map(b=>({
         id:b.id,
