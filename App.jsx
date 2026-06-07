@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 import { useTranslation } from 'react-i18next';
 import { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
+import { initializeApp, getApps } from 'firebase/app';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // رقم الإصدار — يُحقن تلقائياً من vite عند كل build
 const APP_VERSION = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "dev";
@@ -109,6 +111,25 @@ async function requestNotificationPermission() {
   }
 }
 
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyD2apyCKbR8tczHA-62Cl3R_2THHut7Jo0",
+  authDomain: "dork-app-c1011.firebaseapp.com",
+  projectId: "dork-app-c1011",
+  storageBucket: "dork-app-c1011.firebasestorage.app",
+  messagingSenderId: "341759447687",
+  appId: "1:341759447687:web:148ba8f895d6aa7f271e22",
+  measurementId: "G-4BXDWKXYQ2",
+};
+const VAPID_KEY = "BA_f6JK1iOsSYSezS7j19f2_u2_Jr4a8YBFpikOcELltScceJ53xMgbUbm21HF4Jubbh2-fSdksFFpqLAxOC1gM";
+
+let _fbMessaging = null;
+function getFirebaseMessaging() {
+  if (_fbMessaging) return _fbMessaging;
+  const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+  _fbMessaging = getMessaging(app);
+  return _fbMessaging;
+}
+
 // ── تسجيل أولي: يُشغَّل مرة عند بدء التطبيق ──
 async function initializeFirebaseNotifications() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
@@ -116,11 +137,10 @@ async function initializeFirebaseNotifications() {
     const granted = await requestNotificationPermission();
     if (!granted) return;
     const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { updateViaCache: "none", scope: "/" });
-    await loadFirebaseSDK();
-    initializeFirebaseApp();
-    const messaging = window.firebase.messaging();
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BA_f6JK1iOsSYSezS7j19f2_u2_Jr4a8YBFpikOcELltScceJ53xMgbUbm21HF4Jubbh2-fSdksFFpqLAxOC1gM";
-    const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: swReg });
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || VAPID_KEY;
+    const messaging = getFirebaseMessaging();
+    localStorage.setItem("fcm_debug", "getting-token...");
+    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swReg });
     localStorage.setItem("fcm_debug", token ? "token:" + token.slice(0,20) : "getToken returned null");
     if (token) {
       localStorage.setItem("fcm_token", token);
@@ -130,7 +150,7 @@ async function initializeFirebaseNotifications() {
       if (ow) await _callRegisterFcmToken("salon", +ow, token);
       if (cu) { try { const cp = JSON.parse(cu); await _callRegisterFcmToken("customer", cp.id, token); } catch {} }
     }
-    messaging.onMessage((payload) => {
+    onMessage(messaging, (payload) => {
       if (payload.notification) {
         sendNotif(payload.notification.title, payload.notification.body, "🔔", "all", payload.data?.booking_id);
       }
@@ -154,17 +174,16 @@ async function registerFcmTokenForUser(userType, userId) {
 // ── تحديث ذكي: يعمل فقط إذا تغيّر الـ token أو مرّ أكثر من 24 ساعة ──
 async function smartFcmRefresh() {
   try {
-    const messaging = window.firebase?.messaging?.();
-    if (!messaging) return;
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || "BA_f6JK1iOsSYSezS7j19f2_u2_Jr4a8YBFpikOcELltScceJ53xMgbUbm21HF4Jubbh2-fSdksFFpqLAxOC1gM";
+    const messaging = getFirebaseMessaging();
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || VAPID_KEY;
     const swReg = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js").catch(() => null);
     const opts = swReg ? { vapidKey, serviceWorkerRegistration: swReg } : { vapidKey };
-    const currentToken = await messaging.getToken(opts).catch(() => null);
+    const currentToken = await getToken(messaging, opts).catch(() => null);
     if (!currentToken) return;
-    const cachedToken      = localStorage.getItem("fcm_token");
-    const lastRegistered   = parseInt(localStorage.getItem("fcm_registered_at") || "0");
-    const hoursSince       = (Date.now() - lastRegistered) / 3_600_000;
-    if (currentToken === cachedToken && hoursSince < 24) return; // لا حاجة للتحديث
+    const cachedToken    = localStorage.getItem("fcm_token");
+    const lastRegistered = parseInt(localStorage.getItem("fcm_registered_at") || "0");
+    const hoursSince     = (Date.now() - lastRegistered) / 3_600_000;
+    if (currentToken === cachedToken && hoursSince < 24) return;
     localStorage.setItem("fcm_token", currentToken);
     localStorage.setItem("fcm_registered_at", String(Date.now()));
     const ow = localStorage.getItem("dork_owner");
@@ -172,40 +191,6 @@ async function smartFcmRefresh() {
     if (ow) await _callRegisterFcmToken("salon", +ow, currentToken);
     if (cu) { try { const cp = JSON.parse(cu); await _callRegisterFcmToken("customer", cp.id, currentToken); } catch {} }
   } catch {}
-}
-
-function loadFirebaseSDK() {
-  return new Promise((resolve, reject) => {
-    if (window.firebase) {
-      resolve();
-      return;
-    }
-    const script1 = document.createElement("script");
-    script1.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js";
-    script1.onload = () => {
-      const script2 = document.createElement("script");
-      script2.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js";
-      script2.onload = () => resolve();
-      script2.onerror = reject;
-      document.head.appendChild(script2);
-    };
-    script1.onerror = reject;
-    document.head.appendChild(script1);
-  });
-}
-
-function initializeFirebaseApp() {
-  const firebase = window.firebase;
-  if (firebase.apps.length > 0) return;
-  firebase.initializeApp({
-    apiKey: "AIzaSyD2apyCKbR8tczHA-62Cl3R_2THHut7Jo0",
-    authDomain: "dork-app-c1011.firebaseapp.com",
-    projectId: "dork-app-c1011",
-    storageBucket: "dork-app-c1011.firebasestorage.app",
-    messagingSenderId: "341759447687",
-    appId: "1:341759447687:web:148ba8f895d6aa7f271e22",
-    measurementId: "G-4BXDWKXYQ2"
-  });
 }
 
 
