@@ -88,6 +88,13 @@ async function _callRegisterFcmToken(userType, userId, token) {
 // ── طلب إذن الإشعارات صراحةً قبل getToken ──
 async function requestNotificationPermission() {
   try {
+    if (Notification.permission === "granted") return true;
+    if (Notification.permission === "denied") {
+      localStorage.removeItem("fcm_token");
+      localStorage.removeItem("fcm_registered_at");
+      localStorage.setItem("fcm_debug", "permission-denied");
+      return false;
+    }
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       localStorage.removeItem("fcm_token");
