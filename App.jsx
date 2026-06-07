@@ -992,42 +992,17 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
 
-      // بدء جميع الطلبات بالتوازي
-      const salonPromise   = sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500");
-      const bookingPromise = sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000");
-      const custPromise    = sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&limit=500");
-      const reviewPromise  = sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
-      const promoPromise   = sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]);
-
-      // عرض الصالونات فور وصولها وحفظ كاش خفيف (بدون حجوزات)
-      const salonRows = await salonPromise;
-      const salonsNoBookings = salonRows.map(row=>{const s=toAppSalon(row);s.bookings=[];return s;});
-      setSalons(salonsNoBookings);
-      if(!silent)setLoading(false);
-      // حفظ كاش خفيف بدون حجوزات حتى لا يتجاوز حد localStorage
-      try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsNoBookings));}catch{}
-
-      // جلب بقية البيانات بالتوازي
-      const [bookingRows, custRows, reviewRows, promoRows] = await Promise.all([
-        bookingPromise, custPromise, reviewPromise, promoPromise,
+      // فقط الصالونات + التقييمات + العروض — بدون حجوزات وبدون عملاء
+      const [salonRows, reviewRows, promoRows] = await Promise.all([
+        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
+        sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]),
+        sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]),
       ]);
       const now=new Date();
       const activePromoRows=(promoRows||[]).filter(r=>!r.ends_at||new Date(r.ends_at)>now);
-      const toBooking=b=>({
-        id:b.id,salonId:b.salon_id,customer_id:b.customer_id||null,
-        name:b.customer_name||"",phone:b.customer_phone||"",
-        services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
-        barberId:b.barber_id||"any",barberName:b.barber_name||"",
-        date:b.date||"",time:b.time||"",total:b.total||0,
-        status:b.status||"pending",attendance:b.attendance||null,
-      });
-      const salonsWithBookings=salonRows.map(row=>{
-        const salon=toAppSalon(row);
-        salon.bookings=bookingRows.filter(b=>String(b.salon_id)===String(row.id)).map(toBooking);
-        return salon;
-      });
-      setSalons(salonsWithBookings);
-      setCustomers(custRows.map(toAppCustomer));
+      const salonsNoBookings=salonRows.map(row=>{const s=toAppSalon(row);s.bookings=[];return s;});
+      setSalons(salonsNoBookings);
+      try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsNoBookings));}catch{}
       setReviews(reviewRows||[]);
       setPromotions(activePromoRows);
       setDbError(null);
@@ -1170,9 +1145,9 @@ export default function App(){
 
   useEffect(()=>{
     if(!customerSession?.id)return;
-    const cust=customers.find(c=>c.id===customerSession.id);
+    const cust=customerSession;
     if(!cust)return;
-    const phoneN=normPhone(cust.phone);
+    const phoneN=normPhone(cust.phone||"");
     const name=(cust.name||"").trim();
     const snap={};
     for(const s of salons){
@@ -1204,7 +1179,7 @@ export default function App(){
       }
     }
     bookingStatusSnapRef.current=snap;
-  },[salons,customers,customerSession]);
+  },[salons,customerSession]);
 
   const refreshSalonBookings=useCallback(async(salonId)=>{
     try{
@@ -1240,7 +1215,7 @@ export default function App(){
   useEffect(()=>{
     if(!customerSession)return;
     const check=()=>{
-      const cust=customers.find(c=>c.id===customerSession.id);
+      const cust=customerSession;
       if(!cust)return;
       const now=new Date();
       const reminderMins=parseInt(localStorage.getItem("dork_reminder")||"60");
@@ -1269,7 +1244,7 @@ export default function App(){
     check();
     const id=setInterval(check,60000);
     return()=>clearInterval(id);
-  },[customerSession,customers]);
+  },[customerSession]);
 
 
   // Splash Screen
@@ -1399,7 +1374,7 @@ export default function App(){
       if(!bk)return;
       await sb("bookings","PATCH",{status},`?id=eq.${bid}`);
       const bkn=normPhone(bk.phone);
-      const targets=bkn.length>=9?customers.filter(c=>normPhone(c.phone)===bkn):[];
+      const targets=[];
       for(const c of targets){
         let changed=false;
         const hist=(c.history||[]).map(h=>{
@@ -4127,6 +4102,8 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const[dashCashEntries,setDashCashEntries]=useState(()=>{try{return JSON.parse(localStorage.getItem(`dork_cash_${salon?.id}`)||"[]");}catch{return[];}});
   const[showDashCash,setShowDashCash]=useState(false);
   const[dashCashAmt,setDashCashAmt]=useState("");
+  // جلب حجوزات الصالون عند فتح اللوحة
+  useEffect(()=>{if(salon?.id)refreshSalonBookings(salon.id);},[salon?.id]);
   if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{t("owner_dash.back")}</button><h2 style={G.ft}>{t("owner_dash.page_title")}</h2></div><div style={G.empty}>{t("owner_dash.not_found")}</div></div></div>;
 
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
