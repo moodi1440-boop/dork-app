@@ -4,12 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "esbuild src/firebase-messaging-sw-src.js --bundle --outfile=public/firebase-messaging-sw.js --platform=browser --format=iife --define:process.env.NODE_ENV='\"production\"' && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
-    "firebase": "^12.14.0",
     "i18next": "^26.3.0",
     "i18next-http-backend": "^4.0.0",
     "react": "^18.2.0",

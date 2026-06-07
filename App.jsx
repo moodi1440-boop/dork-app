@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 import { useTranslation } from 'react-i18next';
 import { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
-import { initializeApp, getApps } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // رقم الإصدار — يُحقن تلقائياً من vite عند كل build
 const APP_VERSION = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "dev";
@@ -77,30 +75,32 @@ async function sb(table, method, body, query = "") {
   return text ? JSON.parse(text) : [];
 }
 
-// ========== Firebase Cloud Messaging ==========
+// ========== Web Push Notifications (بدون Firebase) ==========
 
-// ── أرسل token لـ Edge Function (لا كتابة مباشرة في DB من الكود) ──
-async function _callRegisterFcmToken(userType, userId, token) {
-  if (!token || !userType || !userId) return;
-  await supabase.functions.invoke("register-fcm-token", {
-    body: { device_token: token, user_type: userType, user_id: userId },
+const VAPID_PUBLIC_KEY = "BPvrWkhV1bzhuiz5kxwwFGqcLnOcfxx-bJeKV8cCMY0eE94oLXvHGVccLEoCuBoyirkP7CKKdzBuU-NgkKZMlMA";
+
+function urlBase64ToUint8Array(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
+
+async function _callRegisterPushSub(userType, userId, sub) {
+  if (!sub || !userType || !userId) return;
+  await supabase.functions.invoke("register-push-sub", {
+    body: { subscription: sub, user_type: userType, user_id: userId },
   }).catch(() => {});
 }
 
-// ── طلب إذن الإشعارات صراحةً قبل getToken ──
 async function requestNotificationPermission() {
   try {
     if (Notification.permission === "granted") return true;
     if (Notification.permission === "denied") {
-      localStorage.removeItem("fcm_token");
-      localStorage.removeItem("fcm_registered_at");
       localStorage.setItem("fcm_debug", "permission-denied");
       return false;
     }
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
-      localStorage.removeItem("fcm_token");
-      localStorage.removeItem("fcm_registered_at");
       localStorage.setItem("fcm_debug", "permission-" + permission);
       return false;
     }
@@ -111,85 +111,70 @@ async function requestNotificationPermission() {
   }
 }
 
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyD2apyCKbR8tczHA-62Cl3R_2THHut7Jo0",
-  authDomain: "dork-app-c1011.firebaseapp.com",
-  projectId: "dork-app-c1011",
-  storageBucket: "dork-app-c1011.firebasestorage.app",
-  messagingSenderId: "341759447687",
-  appId: "1:341759447687:web:148ba8f895d6aa7f271e22",
-  measurementId: "G-4BXDWKXYQ2",
-};
-const VAPID_KEY = "BA_f6JK1iOsSYSezS7j19f2_u2_Jr4a8YBFpikOcELltScceJ53xMgbUbm21HF4Jubbh2-fSdksFFpqLAxOC1gM";
-
-let _fbMessaging = null;
-function getFirebaseMessaging() {
-  if (_fbMessaging) return _fbMessaging;
-  const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
-  _fbMessaging = getMessaging(app);
-  return _fbMessaging;
-}
-
-// ── تسجيل أولي: يُشغَّل مرة عند بدء التطبيق ──
-async function initializeFirebaseNotifications() {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+async function initializeWebPushNotifications() {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
   try {
     const granted = await requestNotificationPermission();
     if (!granted) return;
-    const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { updateViaCache: "none", scope: "/" });
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || VAPID_KEY;
-    const messaging = getFirebaseMessaging();
-    localStorage.setItem("fcm_debug", "getting-token...");
-    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swReg });
-    localStorage.setItem("fcm_debug", token ? "token:" + token.slice(0,20) : "getToken returned null");
-    if (token) {
-      localStorage.setItem("fcm_token", token);
-      localStorage.setItem("fcm_registered_at", String(Date.now()));
-      const ow = localStorage.getItem("dork_owner");
-      const cu = localStorage.getItem("dork_customer");
-      if (ow) await _callRegisterFcmToken("salon", +ow, token);
-      if (cu) { try { const cp = JSON.parse(cu); await _callRegisterFcmToken("customer", cp.id, token); } catch {} }
+
+    const swReg = await navigator.serviceWorker.register("/push-sw.js", { updateViaCache: "none", scope: "/" });
+    await navigator.serviceWorker.ready;
+
+    let sub = await swReg.pushManager.getSubscription();
+    if (!sub) {
+      localStorage.setItem("fcm_debug", "subscribing...");
+      sub = await swReg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
     }
-    onMessage(messaging, (payload) => {
-      if (payload.notification) {
-        sendNotif(payload.notification.title, payload.notification.body, "🔔", "all", payload.data?.booking_id);
-      }
-    });
+
+    const subJson = sub.toJSON();
+    localStorage.setItem("fcm_debug", "ok:" + sub.endpoint.slice(-16));
+    localStorage.setItem("fcm_token", sub.endpoint);
+    localStorage.setItem("fcm_registered_at", String(Date.now()));
+
+    const ow = localStorage.getItem("dork_owner");
+    const cu = localStorage.getItem("dork_customer");
+    if (ow) await _callRegisterPushSub("salon", +ow, subJson);
+    if (cu) { try { const cp = JSON.parse(cu); await _callRegisterPushSub("customer", cp.id, subJson); } catch {} }
+
   } catch (error) {
     if (error.message?.includes("permission") || error.message?.includes("blocked")) {
       localStorage.removeItem("fcm_token");
-      localStorage.removeItem("fcm_registered_at");
     }
     localStorage.setItem("fcm_debug", "ERROR:" + error.message);
-    console.error("FCM Error:", error.message);
+    console.error("Push Error:", error.message);
   }
 }
 
-// ── تسجيل فوري بعد تسجيل الدخول ──
-async function registerFcmTokenForUser(userType, userId) {
-  const token = localStorage.getItem("fcm_token");
-  await _callRegisterFcmToken(userType, userId, token);
+async function registerPushSubForUser(userType, userId) {
+  try {
+    const swReg = await navigator.serviceWorker.getRegistration("/push-sw.js").catch(() => null);
+    if (!swReg) return;
+    const sub = await swReg.pushManager.getSubscription().catch(() => null);
+    if (!sub) return;
+    await _callRegisterPushSub(userType, userId, sub.toJSON());
+  } catch {}
 }
 
-// ── تحديث ذكي: يعمل فقط إذا تغيّر الـ token أو مرّ أكثر من 24 ساعة ──
-async function smartFcmRefresh() {
+async function smartPushRefresh() {
   try {
-    const messaging = getFirebaseMessaging();
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || VAPID_KEY;
-    const swReg = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js").catch(() => null);
-    const opts = swReg ? { vapidKey, serviceWorkerRegistration: swReg } : { vapidKey };
-    const currentToken = await getToken(messaging, opts).catch(() => null);
-    if (!currentToken) return;
-    const cachedToken    = localStorage.getItem("fcm_token");
-    const lastRegistered = parseInt(localStorage.getItem("fcm_registered_at") || "0");
-    const hoursSince     = (Date.now() - lastRegistered) / 3_600_000;
-    if (currentToken === cachedToken && hoursSince < 24) return;
-    localStorage.setItem("fcm_token", currentToken);
+    const swReg = await navigator.serviceWorker.getRegistration("/push-sw.js").catch(() => null);
+    if (!swReg) return;
+    const sub = await swReg.pushManager.getSubscription().catch(() => null);
+    if (!sub) return;
+    const cachedEndpoint = localStorage.getItem("fcm_token");
+    const lastReg = parseInt(localStorage.getItem("fcm_registered_at") || "0");
+    const hoursSince = (Date.now() - lastReg) / 3_600_000;
+    if (sub.endpoint === cachedEndpoint && hoursSince < 24) return;
+    const subJson = sub.toJSON();
+    localStorage.setItem("fcm_token", sub.endpoint);
     localStorage.setItem("fcm_registered_at", String(Date.now()));
     const ow = localStorage.getItem("dork_owner");
     const cu = localStorage.getItem("dork_customer");
-    if (ow) await _callRegisterFcmToken("salon", +ow, currentToken);
-    if (cu) { try { const cp = JSON.parse(cu); await _callRegisterFcmToken("customer", cp.id, currentToken); } catch {} }
+    if (ow) await _callRegisterPushSub("salon", +ow, subJson);
+    if (cu) { try { const cp = JSON.parse(cu); await _callRegisterPushSub("customer", cp.id, subJson); } catch {} }
   } catch {}
 }
 
@@ -834,7 +819,7 @@ export default function App(){
   },[]);
 
   useEffect(() => {
-    initializeFirebaseNotifications().catch(() => {});
+    initializeWebPushNotifications().catch(() => {});
   }, []);
 
   // -- تسجيل الدخول المستمر --
@@ -1073,7 +1058,7 @@ export default function App(){
       if(document.visibilityState==="visible"){
         loadData({silent:true});
         loadAppSettings({silent:true});
-        smartFcmRefresh();
+        smartPushRefresh();
       }
     };
     document.addEventListener("visibilitychange",onVisible);
@@ -1302,7 +1287,7 @@ export default function App(){
   );
 
   // العميل لما يسجل دخول يروح للصفحة الرئيسية مباشرة
-  const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");registerFcmTokenForUser("customer",c.id);};
+  const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");registerPushSubForUser("customer",c.id);};
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
   const toggleFav=async(salonId)=>{
@@ -1358,7 +1343,7 @@ export default function App(){
       if(newBooking&&newBooking.id){
         const _d={type:"new_booking",salon_id:String(sid),booking_id:String(newBooking.id)};
         // notify salon owner
-        supabase.functions.invoke('send-fcm-notification',{body:{
+        supabase.functions.invoke('send-push-notification',{body:{
           target_type:"single",user_id:sid,user_type:"salon",
           title:`✂️ حجز جديد في ${salon?.name||""}`,
           body:`${bk.name} | ${bk.time} | ${bk.date}`,
@@ -1366,7 +1351,7 @@ export default function App(){
         }}).catch(()=>{});
         // notify customer
         if(newBooking.customer_id){
-          supabase.functions.invoke('send-fcm-notification',{body:{
+          supabase.functions.invoke('send-push-notification',{body:{
             target_type:"single",user_id:newBooking.customer_id,user_type:"customer",
             title:"📋 تم استلام حجزك",
             body:`في ${salon?.name||""} | ${bk.date} | ${bk.time}`,
@@ -1433,7 +1418,7 @@ export default function App(){
         }
       }
       if((status==="approved"||status==="rejected")&&bk.customer_id){
-        supabase.functions.invoke('send-fcm-notification',{body:{
+        supabase.functions.invoke('send-push-notification',{body:{
           target_type:"single",user_id:bk.customer_id,user_type:"customer",
           title:status==="approved"?"✅ تم قبول حجزك!":"❌ تم رفض حجزك",
           body:status==="approved"
@@ -1673,7 +1658,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
     setFcmMsg("");
     const permission=await Notification.requestPermission();
     if(permission==="granted"){
-      await initializeFirebaseNotifications();
+      await initializeWebPushNotifications();
       setFcmStatus(localStorage.getItem("fcm_debug")||"pending");
     } else {
       localStorage.setItem("fcm_debug","permission-"+permission);
@@ -4094,14 +4079,14 @@ function OwnerLogin({salons,setOwnerSession,setOwnerTab,setView,toast$}){
     if(!s){setErr(t("owner_login.err_not_found"));return;}
     if(s.banned){setErr(t("owner_login.err_banned"));return;}
     if(s.frozen){setErr(t("owner_login.err_frozen"));return;}
-    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
+    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",s.id);
   };
   const loginWithPin=()=>{
     const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
     if(!s){setPinErr(t("owner_login.err_pin_wrong"));setPin("");return;}
     if(s.banned){setPinErr(t("owner_login.err_pin_banned"));return;}
     if(s.frozen){setPinErr(t("owner_login.err_pin_frozen"));return;}
-    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
+    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",s.id);
   };
   return(
     <div style={G.page}><div style={G.fp}>
@@ -4717,7 +4702,7 @@ function PromoPanel({salon,customers,toast$}){
       }
       toast$("✅ تم إرسال العرض وتفعيله!");
       if(pkg==="bronze"){
-        supabase.functions.invoke('send-fcm-notification',{body:{
+        supabase.functions.invoke('send-push-notification',{body:{
           target_type:"broadcast",salon_id:salon.id,
           title:`🔥 عرض خاص من ${salon.name}`,
           body:promoText.trim(),
