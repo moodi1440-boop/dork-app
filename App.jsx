@@ -115,7 +115,7 @@ async function initializeFirebaseNotifications() {
   try {
     const granted = await requestNotificationPermission();
     if (!granted) return;
-    const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { updateViaCache: "none", scope: "/" });
     await loadFirebaseSDK();
     initializeFirebaseApp();
     const messaging = window.firebase.messaging();
