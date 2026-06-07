@@ -6298,7 +6298,7 @@ function AttendanceView({customer,salons}){
     </div>
   );
 }
-function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$,initTab="settings",initSection=false,setShowDrawer}){
+function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,refreshSalonBookings,toast$,initTab="settings",initSection=false,setShowDrawer}){
   const{t}=useTranslation();
   const[tab,setTab]=useState(initTab);
   const[sectionMode,setSectionMode]=useState(initSection);
@@ -6311,6 +6311,12 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
     window.addEventListener("dork-customer-notif",handler);
     return()=>window.removeEventListener("dork-customer-notif",handler);
   },[]);
+  // جلب حجوزات صالونات العميل عند فتح الصفحة لتفعيل أزرار التعديل والإلغاء
+  useEffect(()=>{
+    if(!refreshSalonBookings)return;
+    const ids=[...new Set((customer.history||[]).map(h=>h.salonId).filter(Boolean))];
+    ids.slice(0,5).forEach(sid=>refreshSalonBookings(sid));
+  },[customer.id]);
   const[editName,setEditName]=useState(customer?.name||"");
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
   const[showDeleteConfirm,setShowDeleteConfirm]=useState(false);
