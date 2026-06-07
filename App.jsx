@@ -991,34 +991,36 @@ export default function App(){
     const silent=opts&&opts.silent;
     try {
       if(!silent)setLoading(true);
-      const [salonRows, bookingRows, custRows, reviewRows, promoRows] = await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
-        sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000"),
-        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&limit=500"),
-        sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]),
-        sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]),
+
+      // بدء جميع الطلبات بالتوازي
+      const salonPromise   = sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500");
+      const bookingPromise = sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000");
+      const custPromise    = sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&limit=500");
+      const reviewPromise  = sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
+      const promoPromise   = sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]);
+
+      // عرض الصالونات فور وصولها (بدون حجوزات مؤقتاً)
+      const salonRows = await salonPromise;
+      setSalons(salonRows.map(row=>{const s=toAppSalon(row);s.bookings=[];return s;}));
+      if(!silent)setLoading(false);
+
+      // جلب بقية البيانات بالتوازي
+      const [bookingRows, custRows, reviewRows, promoRows] = await Promise.all([
+        bookingPromise, custPromise, reviewPromise, promoPromise,
       ]);
       const now=new Date();
       const activePromoRows=(promoRows||[]).filter(r=>!r.ends_at||new Date(r.ends_at)>now);
-      const salonsWithBookings = salonRows.map(row => {
-        const salon = toAppSalon(row);
-        salon.bookings = bookingRows
-          .filter(b => String(b.salon_id) === String(row.id))
-          .map(b => ({
-            id: b.id,
-            salonId: b.salon_id,
-            customer_id: b.customer_id || null,
-            name: b.customer_name || "",
-            phone: b.customer_phone || "",
-            services: (() => { try { return JSON.parse(b.service || "[]"); } catch { return b.service ? [b.service] : []; } })(),
-            barberId: b.barber_id || "any",
-            barberName: b.barber_name || "",
-            date: b.date || "",
-            time: b.time || "",
-            total: b.total || 0,
-            status: b.status || "pending",
-            attendance: b.attendance || null,
-          }));
+      const toBooking=b=>({
+        id:b.id,salonId:b.salon_id,customer_id:b.customer_id||null,
+        name:b.customer_name||"",phone:b.customer_phone||"",
+        services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
+        barberId:b.barber_id||"any",barberName:b.barber_name||"",
+        date:b.date||"",time:b.time||"",total:b.total||0,
+        status:b.status||"pending",attendance:b.attendance||null,
+      });
+      const salonsWithBookings=salonRows.map(row=>{
+        const salon=toAppSalon(row);
+        salon.bookings=bookingRows.filter(b=>String(b.salon_id)===String(row.id)).map(toBooking);
         return salon;
       });
       setSalons(salonsWithBookings);
