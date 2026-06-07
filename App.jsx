@@ -1099,7 +1099,20 @@ export default function App(){
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},(payload)=>{
         const n=payload.new;
         if(!n)return;
-        if(n.target_type==="customer")return;
+        if(n.target_type==="customer"){
+          try{
+            const cu=localStorage.getItem("dork_customer");
+            if(!cu)return;
+            const cp=JSON.parse(cu);
+            if(String(n.target_id)!==String(cp.id))return;
+            const newNotif={id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔔",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false};
+            const stored=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+            stored.unshift(newNotif);
+            localStorage.setItem("dork_notifs",JSON.stringify(stored.slice(0,50)));
+            window.dispatchEvent(new CustomEvent("dork-customer-notif",{detail:newNotif}));
+          }catch{}
+          return;
+        }
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
         try{
@@ -6263,6 +6276,14 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[tab,setTab]=useState(initTab);
   const[sectionMode,setSectionMode]=useState(initSection);
   const[editMode,setEditMode]=useState(false);
+  const[custNotifs,setCustNotifs]=useState(()=>{
+    try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}
+  });
+  useEffect(()=>{
+    const handler=(e)=>setCustNotifs(prev=>[e.detail,...prev].slice(0,50));
+    window.addEventListener("dork-customer-notif",handler);
+    return()=>window.removeEventListener("dork-customer-notif",handler);
+  },[]);
   const[editName,setEditName]=useState(customer?.name||"");
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
   const[showDeleteConfirm,setShowDeleteConfirm]=useState(false);
@@ -6555,8 +6576,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
       {/* إشعارات العميل */}
       {tab==="notif"&&(()=>{
-        const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-        const clearAll=()=>{localStorage.setItem("dork_notifs","[]");localStorage.setItem("dork_notif_count","0");};
+        const notifs=custNotifs;
+        const clearAll=()=>{setCustNotifs([]);localStorage.setItem("dork_notifs","[]");localStorage.setItem("dork_notif_count","0");};
         return(
           <div>
             {notifs.length>0&&<button style={{...G.pageBtn,width:"100%",marginBottom:10,color:"#e74c3c",border:"1px solid #e74c3c"}} onClick={clearAll}>🗑 مسح الكل</button>}
