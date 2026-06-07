@@ -1051,21 +1051,24 @@ export default function App(){
   /* Supabase Realtime - تحديثات لحظية في كل الاتجاهات */
 
   // جلب مخصص للحجوزات فقط (بدون إعادة تحميل كامل)
-  const pollBookings=useCallback(async()=>{
+  const pollBookings=useCallback(async(salonId)=>{
+    if(!salonId)return;
     try{
-      const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000");
-      setSalons(prev=>prev.map(salon=>({
-        ...salon,
-        bookings:rows
-          .filter(b=>String(b.salon_id)===String(salon.id))
-          .map(b=>({
+      const rows=await sb("bookings","GET",null,
+        `?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&salon_id=eq.${salonId}&order=created_at.desc&limit=500`
+      );
+      setSalons(prev=>prev.map(salon=>
+        String(salon.id)!==String(salonId)?salon:{
+          ...salon,
+          bookings:rows.map(b=>({
             id:b.id,salonId:b.salon_id,
             name:b.customer_name||"",phone:b.customer_phone||"",
             services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
             barberId:b.barber_id||"any",barberName:b.barber_name||"",
             date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",attendance:b.attendance||null,
           })),
-      })));
+        }
+      ));
     }catch{}
   },[]);
 
@@ -1089,8 +1092,9 @@ export default function App(){
   useEffect(()=>{
     // حجوزات — لحظي في كل الاتجاهات (عميل ↔ صالون)
     const bookingChannel=supabase.channel('realtime-bookings')
-      .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
-        pollBookings();
+      .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},(payload)=>{
+        const sId=payload?.new?.salon_id||payload?.old?.salon_id;
+        if(sId)pollBookings(sId);
       })
       .subscribe();
 
