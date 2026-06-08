@@ -3,6 +3,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { sb } from "@/lib/supabase-browser";
+import { useAdminTheme, type AdminTheme } from "./ThemeProvider";
+
+const THEMES: { id: AdminTheme; label: string; bg: string }[] = [
+  { id: "dark",  label: "داكن",  bg: "#0d0d1a" },
+  { id: "dim",   label: "معتم",  bg: "#1e1e24" },
+  { id: "light", label: "فاتح",  bg: "#f0f0f0" },
+  { id: "lgray", label: "رمادي", bg: "#9e9b98" },
+];
 
 const NAV = [
   { href: "/",               label: "لوحة التحكم",        icon: "📊" },
@@ -21,6 +29,7 @@ const NAV = [
 export default function Sidebar() {
   const path   = usePathname();
   const router = useRouter();
+  const { theme, setTheme } = useAdminTheme();
   const [unreadMsgs,    setUnreadMsgs]    = useState(0);
   const [unreadNotifs,  setUnreadNotifs]  = useState(0);
   const [pendingSalons, setPendingSalons] = useState(0);
@@ -120,7 +129,7 @@ export default function Sidebar() {
           </div>
           <div>
             <div className="font-black text-lg gold-text tracking-widest leading-none">DORK</div>
-            <div className="text-gray-500 text-[10px] leading-none mt-0.5">Admin Panel</div>
+            <div className="text-gray-500 text-[10px] leading-none mt-0.5">Admin Panel <span className="text-gold/60">v1</span></div>
           </div>
         </div>
       </div>
@@ -145,6 +154,18 @@ export default function Sidebar() {
       </nav>
 
       <div className="px-3 py-3 border-t border-border">
+        {/* Theme switcher */}
+        <div className="flex items-center justify-around px-2 py-2 mb-2">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id)}
+              title={t.label}
+              style={{ background: t.bg }}
+              className={`w-6 h-6 rounded-full border-2 transition-all ${theme === t.id ? "border-gold scale-110 shadow-[0_0_6px_rgba(212,160,23,0.6)]" : "border-transparent hover:scale-105 hover:border-gold/40"}`}
+            />
+          ))}
+        </div>
         <Link href="/owner" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white transition-all mb-1">
           <span>💈</span>
           لوحة المالك
