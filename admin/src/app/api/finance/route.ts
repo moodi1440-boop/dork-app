@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     let query = sb
       .from("salons")
       .select("id,name,owner,phone,total_paid,status,bookings")
-      .eq("status", "approved")
+      .neq("status", "banned")
       .order("id", { ascending: false });
 
     if (search) query = query.ilike("name", `%${search}%`);

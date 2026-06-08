@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json() as Record<string, unknown>;
 
   // تحديث loyalty و social في جدول app_settings الموجود
-  if ("loyalty" in body || "social" in body) {
+  if ("loyalty" in body || "social" in body || "appearance" in body) {
     const { data: existingRows } = await sb.from("app_settings").select("id").order("id", { ascending: true }).limit(1);
     const existingId = (existingRows?.[0] as Record<string, unknown>)?.id;
     const patch: Record<string, string> = {};

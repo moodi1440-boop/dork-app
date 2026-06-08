@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 import { useAdminTheme, type AdminTheme } from "@/components/ThemeProvider";
 
-interface AppearanceSettings { theme: string; themeMode: string; fontSize: string; bg: string; }
+interface AppearanceSettings { theme: string; fontSize: string; bg: string; }
 
-const DEFAULT_APPEARANCE: AppearanceSettings = { theme: "gold", themeMode: "dark", fontSize: "md", bg: "none" };
+const DEFAULT_APPEARANCE: AppearanceSettings = { theme: "gold", fontSize: "md", bg: "none" };
 
 const ADMIN_THEMES: { id: AdminTheme; label: string; bg: string }[] = [
   { id: "dark",  label: "🌙 داكن",       bg: "#0d0d1a" },
@@ -32,11 +32,7 @@ const BACKGROUNDS = [
   { id: "goldMarble", label: "✨ رخام ذهبي" },
 ];
 
-const FONT_SIZES  = [{ id: "sm", label: "صغير" }, { id: "md", label: "متوسط" }, { id: "lg", label: "كبير" }];
-const THEME_MODES = [
-  { id: "dark",  label: "🌙 داكن" }, { id: "dim",   label: "⬛ رمادي داكن" },
-  { id: "lgray", label: "🔘 رمادي فاتح" }, { id: "light", label: "☀️ فاتح" },
-];
+const FONT_SIZES = [{ id: "sm", label: "صغير" }, { id: "md", label: "متوسط" }, { id: "lg", label: "كبير" }];
 
 export default function AppearancePage() {
   const { theme: adminTheme, setTheme: setAdminTheme } = useAdminTheme();
@@ -102,18 +98,6 @@ export default function AppearancePage() {
                 style={appearance.theme === t.id ? { background: t.color + "22", borderColor: t.color + "88" } : {}}>
                 <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: t.color }} />
                 {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-5">
-          <label className="block text-xs text-gray-400 mb-3 font-semibold">🌙 وضع الإضاءة</label>
-          <div className="flex flex-wrap gap-2">
-            {THEME_MODES.map((m) => (
-              <button key={m.id} onClick={() => setAppearance((p) => ({ ...p, themeMode: m.id }))}
-                className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${appearance.themeMode === m.id ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500 hover:border-gray-500"}`}>
-                {m.label}
               </button>
             ))}
           </div>

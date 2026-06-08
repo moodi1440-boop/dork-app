@@ -11,11 +11,11 @@ const NAV = [
   { href: "/salons",        label: "الصالونات",          icon: "✂"  },
   { href: "/messages",      label: "الرسائل",            icon: "💬" },
   { href: "/notifications", label: "الإشعارات",          icon: "🔔" },
-  { href: "/promo-codes",   label: "أكواد الخصم",        icon: "🎟" },
   { href: "/compare",       label: "مقارنة الصالونات",  icon: "📈" },
   { href: "/contact",       label: "التواصل",             icon: "📱" },
   { href: "/appearance",    label: "المظهر",              icon: "🎨" },
   { href: "/password",      label: "كلمة المرور",         icon: "🔑" },
+  { href: "/promo-codes",   label: "أكواد الخصم",        icon: "🎟" },
 ];
 
 export default function Sidebar() {
