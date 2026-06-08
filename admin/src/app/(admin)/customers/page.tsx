@@ -5,6 +5,56 @@ import { sb } from "@/lib/supabase-browser";
 interface Customer { id: string; name: string; phone: string; email: string; loyalty_points: number; loyalty_frozen: boolean; admin_notes?: string; blocked?: boolean; favs?: unknown[]; }
 type Booking = { id: string; date: string; time: string; services: string[]; total: number; status: string; salonName?: string; };
 
+function AddCustomerModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
+  const [form, setForm] = useState({ name: "", phone: "", password: "" });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const submit = async () => {
+    if (!form.name || !form.phone) { setErr("الاسم والجوال مطلوبان"); return; }
+    setSaving(true);
+    const res = await fetch("/api/customers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: form.name, phone: form.phone, password: form.password || "1234" }),
+    });
+    setSaving(false);
+    if (!res.ok) { const d = await res.json(); setErr(d.error ?? "خطأ في الإضافة"); return; }
+    onAdded();
+    onClose();
+  };
+
+  const inpCls = "w-full bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold";
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="text-white font-bold">👤 إضافة عميل جديد</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
+        </div>
+        <div className="p-5 space-y-4">
+          {[["الاسم *", "name"], ["الجوال *", "phone"], ["كلمة المرور (اختياري)", "password"]].map(([lbl, k]) => (
+            <div key={k}>
+              <label className="block text-xs text-gray-400 mb-1.5 font-semibold">{lbl}</label>
+              <input type={k === "password" ? "password" : "text"}
+                value={(form as Record<string, string>)[k]}
+                onChange={(e) => setForm((p) => ({ ...p, [k]: e.target.value }))}
+                placeholder={k === "password" ? "الافتراضي: 1234" : ""}
+                className={inpCls} />
+            </div>
+          ))}
+          {err && <div className="text-red-400 text-sm">❌ {err}</div>}
+          <button onClick={submit} disabled={saving}
+            className="w-full py-3 bg-gold/10 border border-gold/30 text-gold rounded-xl font-bold text-sm hover:bg-gold/20 transition-colors disabled:opacity-50">
+            {saving ? "جاري الإضافة..." : "✅ إضافة العميل"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, [string, string]> = {
     pending:   ["معلقة",  "bg-yellow-400/10 text-yellow-400 border-yellow-400/30"],
@@ -164,6 +214,7 @@ export default function CustomersPage() {
   const [search,    setSearch]    = useState("");
   const [loading,   setLoading]   = useState(true);
   const [selected,  setSelected]  = useState<string | null>(null);
+  const [showAdd,   setShowAdd]   = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -179,9 +230,17 @@ export default function CustomersPage() {
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       {selected && <CustomerPanel customerId={selected} onClose={() => { setSelected(null); load(); }} />}
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-white">العملاء</h1>
-        <p className="text-gray-400 text-sm mt-1">{customers.length} عميل</p>
+      {showAdd   && <AddCustomerModal onClose={() => setShowAdd(false)} onAdded={load} />}
+
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-black text-white">العملاء</h1>
+          <p className="text-gray-400 text-sm mt-1">{customers.length} عميل</p>
+        </div>
+        <button onClick={() => setShowAdd(true)}
+          className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
+          ➕ إضافة عميل
+        </button>
       </div>
       <div className="mb-6">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 بحث باسم العميل أو الجوال..."

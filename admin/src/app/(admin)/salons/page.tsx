@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { sb } from "@/lib/supabase-browser";
 
 interface Salon {
   id: string; name: string; owner: string; owner_phone: string;
@@ -26,6 +25,59 @@ const TONE_OPTIONS = [
   { id: "vip",        label: "👑 VIP" },
 ];
 const DEFAULT_SOCIAL = { enabled: false, email: "", whatsapp: "", twitter: "", telegramUser: "" };
+
+function AddSalonModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
+  const [form, setForm] = useState({ name: "", owner: "", phone: "", ownerPhone: "", region: "", gov: "", address: "" });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const upd = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+
+  const submit = async () => {
+    if (!form.name || !form.phone) { setErr("اسم الصالون والجوال مطلوبان"); return; }
+    setSaving(true);
+    const res = await fetch("/api/salons", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: form.name, owner: form.owner, phone: form.phone, owner_phone: form.ownerPhone, region: form.region, gov: form.gov, address: form.address }),
+    });
+    setSaving(false);
+    if (!res.ok) { const d = await res.json(); setErr(d.error ?? "خطأ في الإضافة"); return; }
+    onAdded();
+    onClose();
+  };
+
+  const inpCls = "w-full bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold";
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="text-white font-bold">✂ إضافة صالون جديد</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
+        </div>
+        <div className="p-5 space-y-4">
+          {[
+            ["اسم الصالون *", "name"], ["اسم المالك", "owner"], ["جوال الصالون *", "phone"],
+            ["جوال المالك", "ownerPhone"], ["المنطقة", "region"], ["المحافظة", "gov"], ["العنوان", "address"],
+          ].map(([lbl, k]) => (
+            <div key={k}>
+              <label className="block text-xs text-gray-400 mb-1.5 font-semibold">{lbl}</label>
+              <input value={(form as Record<string, string>)[k]}
+                onChange={(e) => upd(k, e.target.value)}
+                className={inpCls} />
+            </div>
+          ))}
+          {err && <div className="text-red-400 text-sm">❌ {err}</div>}
+          <button onClick={submit} disabled={saving}
+            className="w-full py-3 bg-gold/10 border border-gold/30 text-gold rounded-xl font-bold text-sm hover:bg-gold/20 transition-colors disabled:opacity-50">
+            {saving ? "جاري الإضافة..." : "✅ إضافة الصالون"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 const STATUSES = [
   { value: "all", label: "الكل" },
   { value: "pending", label: "تنتظر مراجعة" },
@@ -358,20 +410,17 @@ export default function SalonsPage() {
   const [messaging, setMessaging] = useState<Salon | null>(null);
   const [pinned,    setPinned]    = useState<string[]>([]);
   const [weekSalon, setWeekSalon] = useState("");
+  const [showAdd,   setShowAdd]   = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      let query = sb
-        .from("salons")
-        .select("id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,bookings")
-        .order("id", { ascending: false });
-
-      if (status && status !== "all") query = query.eq("status", status);
-      if (search) query = query.or(`name.ilike.%${search}%,owner.ilike.%${search}%`);
-
-      const { data, error } = await query.limit(200);
-      if (error) throw new Error(error.message);
+      const params = new URLSearchParams();
+      if (status && status !== "all") params.set("status", status);
+      if (search) params.set("search", search);
+      const res = await fetch(`/api/salons?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
       setSalons(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Error loading salons:", e);
@@ -452,10 +501,17 @@ export default function SalonsPage() {
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       {editing   && <SalonModal salon={editing} onClose={() => setEditing(null)} onSave={(s) => { setSalons((p) => p.map((x) => x.id === s.id ? s : x)); setEditing(null); }} />}
       {messaging && <QuickMessageModal salon={messaging} onClose={() => setMessaging(null)} />}
+      {showAdd   && <AddSalonModal onClose={() => setShowAdd(false)} onAdded={load} />}
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-black text-white">الصالونات</h1>
-        <p className="text-gray-400 text-sm mt-1">{salons.length} صالون</p>
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-black text-white">الصالونات</h1>
+          <p className="text-gray-400 text-sm mt-1">{salons.length} صالون</p>
+        </div>
+        <button onClick={() => setShowAdd(true)}
+          className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
+          ➕ إضافة صالون
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">

@@ -3,33 +3,24 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { sb } from "@/lib/supabase-browser";
-import { useAdminTheme, type AdminTheme } from "./ThemeProvider";
-
-const THEMES: { id: AdminTheme; label: string; bg: string }[] = [
-  { id: "dark",  label: "داكن",  bg: "#0d0d1a" },
-  { id: "dim",   label: "معتم",  bg: "#1e1e24" },
-  { id: "light", label: "فاتح",  bg: "#f0f0f0" },
-  { id: "lgray", label: "رمادي", bg: "#9e9b98" },
-];
 
 const NAV = [
-  { href: "/",               label: "لوحة التحكم",        icon: "📊" },
-  { href: "/bookings",       label: "الحجوزات",            icon: "📅" },
-  { href: "/customers",      label: "العملاء",              icon: "👥" },
-  { href: "/salons",         label: "الصالونات",            icon: "✂"  },
-  { href: "/finance",        label: "الميزان المالي",       icon: "💰" },
-  { href: "/messages",       label: "الرسائل",              icon: "💬" },
-  { href: "/notifications",  label: "الإشعارات",            icon: "🔔" },
-  { href: "/promo-codes",    label: "أكواد الخصم",          icon: "🎟" },
-  { href: "/compare",        label: "مقارنة الصالونات",    icon: "📈" },
-  { href: "/add",            label: "إضافة",                icon: "➕" },
-  { href: "/settings",       label: "الإعدادات",            icon: "⚙"  },
+  { href: "/",              label: "لوحة التحكم",      icon: "📊" },
+  { href: "/bookings",      label: "الحجوزات",          icon: "📅" },
+  { href: "/customers",     label: "العملاء",            icon: "👥" },
+  { href: "/salons",        label: "الصالونات",          icon: "✂"  },
+  { href: "/messages",      label: "الرسائل",            icon: "💬" },
+  { href: "/notifications", label: "الإشعارات",          icon: "🔔" },
+  { href: "/promo-codes",   label: "أكواد الخصم",        icon: "🎟" },
+  { href: "/compare",       label: "مقارنة الصالونات",  icon: "📈" },
+  { href: "/contact",       label: "التواصل",             icon: "📱" },
+  { href: "/appearance",    label: "المظهر",              icon: "🎨" },
+  { href: "/password",      label: "كلمة المرور",         icon: "🔑" },
 ];
 
 export default function Sidebar() {
   const path   = usePathname();
   const router = useRouter();
-  const { theme, setTheme } = useAdminTheme();
   const [unreadMsgs,    setUnreadMsgs]    = useState(0);
   const [unreadNotifs,  setUnreadNotifs]  = useState(0);
   const [pendingSalons, setPendingSalons] = useState(0);
@@ -56,7 +47,6 @@ export default function Sidebar() {
     };
     loadCounts();
 
-    // polling للرسائل كل 30 ثانية
     const msgInterval = setInterval(async () => {
       try {
         const msgs = await fetch("/api/messages").then((r) => r.json());
@@ -65,7 +55,6 @@ export default function Sidebar() {
       } catch {}
     }, 30000);
 
-    // realtime للإشعارات والصالونات المعلقة
     const notifChannel = sb
       .channel("sidebar-realtime-all")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
@@ -122,6 +111,7 @@ export default function Sidebar() {
           </div>
         </div>
       )}
+
       <div className="px-5 py-7 border-b border-border">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gold/10 border border-gold/30 flex items-center justify-center text-lg shadow-[0_0_12px_rgba(212,160,23,0.15)]">
@@ -154,22 +144,6 @@ export default function Sidebar() {
       </nav>
 
       <div className="px-3 py-3 border-t border-border">
-        {/* Theme switcher */}
-        <div className="flex items-center justify-around px-2 py-2 mb-2">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTheme(t.id)}
-              title={t.label}
-              style={{ background: t.bg }}
-              className={`w-6 h-6 rounded-full border-2 transition-all ${theme === t.id ? "border-gold scale-110 shadow-[0_0_6px_rgba(212,160,23,0.6)]" : "border-transparent hover:scale-105 hover:border-gold/40"}`}
-            />
-          ))}
-        </div>
-        <Link href="/owner" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:bg-white/5 hover:text-white transition-all mb-1">
-          <span>💈</span>
-          لوحة المالك
-        </Link>
         <button onClick={logout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-red-400 hover:bg-red-400/5 transition-all w-full">
           <span>🚪</span>
