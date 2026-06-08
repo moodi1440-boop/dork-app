@@ -19,13 +19,13 @@ interface PromoCode {
 }
 
 const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-function genRandom(len = 7) {
+function genRandom(len = 5) {
   let r = "";
   for (let i = 0; i < len; i++) r += CHARS[Math.floor(Math.random() * CHARS.length)];
   return r;
 }
-const genApp = () => `APP-${genRandom()}`;
-const genWa  = () => `WA-${genRandom()}`;
+const genApp = () => `DORK-${genRandom()}`;
+const genWa  = () => `WH-${genRandom()}`;
 
 function getStatus(c: PromoCode): "unused" | "used" | "expired" {
   const now = new Date();
