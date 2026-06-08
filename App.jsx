@@ -2171,6 +2171,19 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   const[showSearch,setShowSearch]=useState(false);
   const[showRegionSelect,setShowRegionSelect]=useState(false);
 
+  // Pull to Refresh
+  const _ptStartY=useRef(0);const _ptActive=useRef(false);const _ptYRef=useRef(0);
+  const[_ptY,_setPtY]=useState(0);const _PT=65;
+  useEffect(()=>{
+    const onTS=(e)=>{if(window.scrollY>2)return;_ptStartY.current=e.touches[0].clientY;_ptActive.current=true;_ptYRef.current=0;};
+    const onTM=(e)=>{if(!_ptActive.current)return;const dy=e.touches[0].clientY-_ptStartY.current;if(dy>0){const y=Math.min(dy*.45,80);_ptYRef.current=y;_setPtY(y);}else{_ptActive.current=false;_ptYRef.current=0;_setPtY(0);}};
+    const onTE=()=>{if(_ptActive.current&&_ptYRef.current>=_PT&&!pullRefreshing)handlePullRefresh();_ptActive.current=false;_ptYRef.current=0;_setPtY(0);};
+    window.addEventListener('touchstart',onTS,{passive:true});
+    window.addEventListener('touchmove',onTM,{passive:true});
+    window.addEventListener('touchend',onTE,{passive:true});
+    return()=>{window.removeEventListener('touchstart',onTS);window.removeEventListener('touchmove',onTM);window.removeEventListener('touchend',onTE);};
+  },[handlePullRefresh,pullRefreshing]);
+
   const getRealRating=(salonId)=>{
     const id=Number(salonId);
     const sRatings=(reviews||[]).filter(r=>Number(r.salon_id)===id).map(r=>r.rating);
@@ -2260,7 +2273,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   return(
     <div style={G.page}>
       {/* Pull to refresh */}
-      {pullRefreshing&&<div style={{position:"fixed",top:64,left:"50%",transform:"translateX(-50%)",zIndex:100,background:"var(--p)",color:"#000",padding:"4px 16px",borderRadius:20,fontSize:12,fontWeight:700}}>{t("home.refreshing")}</div>}
+      {(_ptY>8||pullRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${pullRefreshing?10:Math.max(_ptY-16,0)}px)`,zIndex:100,transition:pullRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"#000",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{pullRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}>↻</span>:_ptY>=_PT?"↑":"↓"}</div>}
 
       {/* Region Select - قائمة متدرجة */}
       {showRegionSelect&&(()=>{
@@ -4119,6 +4132,17 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const[dashCashEntries,setDashCashEntries]=useState(()=>{try{return JSON.parse(localStorage.getItem(`dork_cash_${salon?.id}`)||"[]");}catch{return[];}});
   const[showDashCash,setShowDashCash]=useState(false);
   const[dashCashAmt,setDashCashAmt]=useState("");
+  const _oPtStartY=useRef(0);const _oPtActive=useRef(false);const _oPtYRef=useRef(0);
+  const[_oPtY,_setOPtY]=useState(0);const[_oPtRefreshing,_setOPtRefreshing]=useState(false);const _OPT=65;
+  useEffect(()=>{
+    const onTS=(e)=>{if(window.scrollY>2)return;_oPtStartY.current=e.touches[0].clientY;_oPtActive.current=true;_oPtYRef.current=0;};
+    const onTM=(e)=>{if(!_oPtActive.current)return;const dy=e.touches[0].clientY-_oPtStartY.current;if(dy>0){const y=Math.min(dy*.45,80);_oPtYRef.current=y;_setOPtY(y);}else{_oPtActive.current=false;_oPtYRef.current=0;_setOPtY(0);}};
+    const onTE=async()=>{if(_oPtActive.current&&_oPtYRef.current>=_OPT&&!_oPtRefreshing){_setOPtRefreshing(true);if(salon?.id)await refreshSalonBookings(salon.id).catch(()=>{});setTimeout(()=>_setOPtRefreshing(false),800);}_oPtActive.current=false;_oPtYRef.current=0;_setOPtY(0);};
+    window.addEventListener('touchstart',onTS,{passive:true});
+    window.addEventListener('touchmove',onTM,{passive:true});
+    window.addEventListener('touchend',onTE,{passive:true});
+    return()=>{window.removeEventListener('touchstart',onTS);window.removeEventListener('touchmove',onTM);window.removeEventListener('touchend',onTE);};
+  },[salon?.id,_oPtRefreshing,refreshSalonBookings]);
   if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{t("owner_dash.back")}</button><h2 style={G.ft}>{t("owner_dash.page_title")}</h2></div><div style={G.empty}>{t("owner_dash.not_found")}</div></div></div>;
 
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
@@ -4177,6 +4201,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         .pending-pulse{animation:pulse 2s infinite;}
       `}</style>
       <div style={G.fp}>
+      {(_oPtY>8||_oPtRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${_oPtRefreshing?10:Math.max(_oPtY-16,0)}px)`,zIndex:100,transition:_oPtRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"#000",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{_oPtRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}>↻</span>:_oPtY>=_OPT?"↑":"↓"}</div>}
 
       {/* بانر إشعارات الإدارة */}
       {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
