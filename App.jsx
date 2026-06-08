@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { createClient } from "@supabase/supabase-js";
 import { useTranslation } from 'react-i18next';
 import { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
-import { initializeApp, getApps } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // رقم الإصدار — يُحقن تلقائياً من vite عند كل build
 const APP_VERSION = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "dev";
@@ -77,30 +75,32 @@ async function sb(table, method, body, query = "") {
   return text ? JSON.parse(text) : [];
 }
 
-// ========== Firebase Cloud Messaging ==========
+// ========== Web Push Notifications (بدون Firebase) ==========
 
-// ── أرسل token لـ Edge Function (لا كتابة مباشرة في DB من الكود) ──
-async function _callRegisterFcmToken(userType, userId, token) {
-  if (!token || !userType || !userId) return;
-  await supabase.functions.invoke("register-fcm-token", {
-    body: { device_token: token, user_type: userType, user_id: userId },
+const VAPID_PUBLIC_KEY = "BPvrWkhV1bzhuiz5kxwwFGqcLnOcfxx-bJeKV8cCMY0eE94oLXvHGVccLEoCuBoyirkP7CKKdzBuU-NgkKZMlMA";
+
+function urlBase64ToUint8Array(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
+
+async function _callRegisterPushSub(userType, userId, sub) {
+  if (!sub || !userType || !userId) return;
+  await supabase.functions.invoke("register-push-sub", {
+    body: { subscription: sub, user_type: userType, user_id: userId },
   }).catch(() => {});
 }
 
-// ── طلب إذن الإشعارات صراحةً قبل getToken ──
 async function requestNotificationPermission() {
   try {
     if (Notification.permission === "granted") return true;
     if (Notification.permission === "denied") {
-      localStorage.removeItem("fcm_token");
-      localStorage.removeItem("fcm_registered_at");
       localStorage.setItem("fcm_debug", "permission-denied");
       return false;
     }
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
-      localStorage.removeItem("fcm_token");
-      localStorage.removeItem("fcm_registered_at");
       localStorage.setItem("fcm_debug", "permission-" + permission);
       return false;
     }
@@ -111,85 +111,70 @@ async function requestNotificationPermission() {
   }
 }
 
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyD2apyCKbR8tczHA-62Cl3R_2THHut7Jo0",
-  authDomain: "dork-app-c1011.firebaseapp.com",
-  projectId: "dork-app-c1011",
-  storageBucket: "dork-app-c1011.firebasestorage.app",
-  messagingSenderId: "341759447687",
-  appId: "1:341759447687:web:148ba8f895d6aa7f271e22",
-  measurementId: "G-4BXDWKXYQ2",
-};
-const VAPID_KEY = "BA_f6JK1iOsSYSezS7j19f2_u2_Jr4a8YBFpikOcELltScceJ53xMgbUbm21HF4Jubbh2-fSdksFFpqLAxOC1gM";
-
-let _fbMessaging = null;
-function getFirebaseMessaging() {
-  if (_fbMessaging) return _fbMessaging;
-  const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
-  _fbMessaging = getMessaging(app);
-  return _fbMessaging;
-}
-
-// ── تسجيل أولي: يُشغَّل مرة عند بدء التطبيق ──
-async function initializeFirebaseNotifications() {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+async function initializeWebPushNotifications() {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
   try {
     const granted = await requestNotificationPermission();
     if (!granted) return;
-    const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { updateViaCache: "none", scope: "/" });
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || VAPID_KEY;
-    const messaging = getFirebaseMessaging();
-    localStorage.setItem("fcm_debug", "getting-token...");
-    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swReg });
-    localStorage.setItem("fcm_debug", token ? "token:" + token.slice(0,20) : "getToken returned null");
-    if (token) {
-      localStorage.setItem("fcm_token", token);
-      localStorage.setItem("fcm_registered_at", String(Date.now()));
-      const ow = localStorage.getItem("dork_owner");
-      const cu = localStorage.getItem("dork_customer");
-      if (ow) await _callRegisterFcmToken("salon", +ow, token);
-      if (cu) { try { const cp = JSON.parse(cu); await _callRegisterFcmToken("customer", cp.id, token); } catch {} }
+
+    const swReg = await navigator.serviceWorker.register("/push-sw.js", { updateViaCache: "none", scope: "/" });
+    await navigator.serviceWorker.ready;
+
+    let sub = await swReg.pushManager.getSubscription();
+    if (!sub) {
+      localStorage.setItem("fcm_debug", "subscribing...");
+      sub = await swReg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
     }
-    onMessage(messaging, (payload) => {
-      if (payload.notification) {
-        sendNotif(payload.notification.title, payload.notification.body, "🔔", "all", payload.data?.booking_id);
-      }
-    });
+
+    const subJson = sub.toJSON();
+    localStorage.setItem("fcm_debug", "ok:" + sub.endpoint.slice(-16));
+    localStorage.setItem("fcm_token", sub.endpoint);
+    localStorage.setItem("fcm_registered_at", String(Date.now()));
+
+    const ow = localStorage.getItem("dork_owner");
+    const cu = localStorage.getItem("dork_customer");
+    if (ow) await _callRegisterPushSub("salon", +ow, subJson);
+    if (cu) { try { const cp = JSON.parse(cu); await _callRegisterPushSub("customer", cp.id, subJson); } catch {} }
+
   } catch (error) {
     if (error.message?.includes("permission") || error.message?.includes("blocked")) {
       localStorage.removeItem("fcm_token");
-      localStorage.removeItem("fcm_registered_at");
     }
     localStorage.setItem("fcm_debug", "ERROR:" + error.message);
-    console.error("FCM Error:", error.message);
+    console.error("Push Error:", error.message);
   }
 }
 
-// ── تسجيل فوري بعد تسجيل الدخول ──
-async function registerFcmTokenForUser(userType, userId) {
-  const token = localStorage.getItem("fcm_token");
-  await _callRegisterFcmToken(userType, userId, token);
+async function registerPushSubForUser(userType, userId) {
+  try {
+    const swReg = await navigator.serviceWorker.getRegistration("/push-sw.js").catch(() => null);
+    if (!swReg) return;
+    const sub = await swReg.pushManager.getSubscription().catch(() => null);
+    if (!sub) return;
+    await _callRegisterPushSub(userType, userId, sub.toJSON());
+  } catch {}
 }
 
-// ── تحديث ذكي: يعمل فقط إذا تغيّر الـ token أو مرّ أكثر من 24 ساعة ──
-async function smartFcmRefresh() {
+async function smartPushRefresh() {
   try {
-    const messaging = getFirebaseMessaging();
-    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || VAPID_KEY;
-    const swReg = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js").catch(() => null);
-    const opts = swReg ? { vapidKey, serviceWorkerRegistration: swReg } : { vapidKey };
-    const currentToken = await getToken(messaging, opts).catch(() => null);
-    if (!currentToken) return;
-    const cachedToken    = localStorage.getItem("fcm_token");
-    const lastRegistered = parseInt(localStorage.getItem("fcm_registered_at") || "0");
-    const hoursSince     = (Date.now() - lastRegistered) / 3_600_000;
-    if (currentToken === cachedToken && hoursSince < 24) return;
-    localStorage.setItem("fcm_token", currentToken);
+    const swReg = await navigator.serviceWorker.getRegistration("/push-sw.js").catch(() => null);
+    if (!swReg) return;
+    const sub = await swReg.pushManager.getSubscription().catch(() => null);
+    if (!sub) return;
+    const cachedEndpoint = localStorage.getItem("fcm_token");
+    const lastReg = parseInt(localStorage.getItem("fcm_registered_at") || "0");
+    const hoursSince = (Date.now() - lastReg) / 3_600_000;
+    if (sub.endpoint === cachedEndpoint && hoursSince < 24) return;
+    const subJson = sub.toJSON();
+    localStorage.setItem("fcm_token", sub.endpoint);
     localStorage.setItem("fcm_registered_at", String(Date.now()));
     const ow = localStorage.getItem("dork_owner");
     const cu = localStorage.getItem("dork_customer");
-    if (ow) await _callRegisterFcmToken("salon", +ow, currentToken);
-    if (cu) { try { const cp = JSON.parse(cu); await _callRegisterFcmToken("customer", cp.id, currentToken); } catch {} }
+    if (ow) await _callRegisterPushSub("salon", +ow, subJson);
+    if (cu) { try { const cp = JSON.parse(cu); await _callRegisterPushSub("customer", cp.id, subJson); } catch {} }
   } catch {}
 }
 
@@ -834,7 +819,7 @@ export default function App(){
   },[]);
 
   useEffect(() => {
-    initializeFirebaseNotifications().catch(() => {});
+    initializeWebPushNotifications().catch(() => {});
   }, []);
 
   // -- تسجيل الدخول المستمر --
@@ -1006,39 +991,34 @@ export default function App(){
     const silent=opts&&opts.silent;
     try {
       if(!silent)setLoading(true);
-      const [salonRows, bookingRows, custRows] = await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,password,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
+      const [salonRows,bookingRows,custRows]=await Promise.all([
+        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000"),
         sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&limit=500"),
       ]);
-      // reviews تُجلب بشكل مستقل حتى لا توقف التطبيق عند أي خطأ
-      const reviewRows = await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
-      const promoRows = await sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]);
+      const reviewRows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
+      const promoRows=await sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]);
       const now=new Date();
       const activePromoRows=(promoRows||[]).filter(r=>!r.ends_at||new Date(r.ends_at)>now);
-      const salonsWithBookings = salonRows.map(row => {
-        const salon = toAppSalon(row);
-        salon.bookings = bookingRows
-          .filter(b => String(b.salon_id) === String(row.id))
-          .map(b => ({
-            id: b.id,
-            salonId: b.salon_id,
-            customer_id: b.customer_id || null,
-            name: b.customer_name || "",
-            phone: b.customer_phone || "",
-            services: (() => { try { return JSON.parse(b.service || "[]"); } catch { return b.service ? [b.service] : []; } })(),
-            barberId: b.barber_id || "any",
-            barberName: b.barber_name || "",
-            date: b.date || "",
-            time: b.time || "",
-            total: b.total || 0,
-            status: b.status || "pending",
-            attendance: b.attendance || null,
-          }));
+      const toBooking=b=>({
+        id:b.id,salonId:b.salon_id,customer_id:b.customer_id||null,
+        name:b.customer_name||"",phone:b.customer_phone||"",
+        services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
+        barberId:b.barber_id||"any",barberName:b.barber_name||"",
+        date:b.date||"",time:b.time||"",total:b.total||0,
+        status:b.status||"pending",attendance:b.attendance||null,
+      });
+      const salonsWithBookings=salonRows.map(row=>{
+        const salon=toAppSalon(row);
+        salon.bookings=bookingRows.filter(b=>String(b.salon_id)===String(row.id)).map(toBooking);
         return salon;
       });
       setSalons(salonsWithBookings);
-      try{localStorage.setItem("dork_salons_cache",JSON.stringify(salonsWithBookings));}catch{}
+      try{
+        // حفظ نسخة مصغرة للكاش (بدون services/prices/barbers) لضمان النجاح في Safari
+        const slim=salonsWithBookings.map(s=>({id:s.id,name:s.name,region:s.region,gov:s.gov,center:s.center,village:s.village,phone:s.phone,address:s.address,locationUrl:s.locationUrl,tone:s.tone,rating:s.rating,status:s.status,paused:s.paused,frozen:s.frozen,banned:s.banned,workStart:s.workStart,workEnd:s.workEnd,closedDays:s.closedDays,shiftEnabled:s.shiftEnabled,shift1Start:s.shift1Start,shift1End:s.shift1End,shift2Start:s.shift2Start,shift2End:s.shift2End,slotMin:s.slotMin,bookings:s.bookings,services:[],prices:{},barbers:[]}));
+        localStorage.setItem("dork_salons_cache",JSON.stringify(slim));
+      }catch{}
       setCustomers(custRows.map(toAppCustomer));
       setReviews(reviewRows||[]);
       setPromotions(activePromoRows);
@@ -1073,7 +1053,7 @@ export default function App(){
       if(document.visibilityState==="visible"){
         loadData({silent:true});
         loadAppSettings({silent:true});
-        smartFcmRefresh();
+        smartPushRefresh();
       }
     };
     document.addEventListener("visibilitychange",onVisible);
@@ -1088,21 +1068,24 @@ export default function App(){
   /* Supabase Realtime - تحديثات لحظية في كل الاتجاهات */
 
   // جلب مخصص للحجوزات فقط (بدون إعادة تحميل كامل)
-  const pollBookings=useCallback(async()=>{
+  const pollBookings=useCallback(async(salonId)=>{
+    if(!salonId)return;
     try{
-      const rows=await sb("bookings","GET",null,"?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000");
-      setSalons(prev=>prev.map(salon=>({
-        ...salon,
-        bookings:rows
-          .filter(b=>String(b.salon_id)===String(salon.id))
-          .map(b=>({
+      const rows=await sb("bookings","GET",null,
+        `?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&salon_id=eq.${salonId}&order=created_at.desc&limit=500`
+      );
+      setSalons(prev=>prev.map(salon=>
+        String(salon.id)!==String(salonId)?salon:{
+          ...salon,
+          bookings:rows.map(b=>({
             id:b.id,salonId:b.salon_id,
             name:b.customer_name||"",phone:b.customer_phone||"",
             services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
             barberId:b.barber_id||"any",barberName:b.barber_name||"",
             date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",attendance:b.attendance||null,
           })),
-      })));
+        }
+      ));
     }catch{}
   },[]);
 
@@ -1126,8 +1109,9 @@ export default function App(){
   useEffect(()=>{
     // حجوزات — لحظي في كل الاتجاهات (عميل ↔ صالون)
     const bookingChannel=supabase.channel('realtime-bookings')
-      .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
-        if(ownerSession)pollBookings(ownerSession);
+      .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},(payload)=>{
+        const sId=payload?.new?.salon_id||payload?.old?.salon_id;
+        if(sId)pollBookings(sId);
       })
       .subscribe();
 
@@ -1136,7 +1120,36 @@ export default function App(){
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},(payload)=>{
         const n=payload.new;
         if(!n)return;
-        if(n.target_type==="customer")return;
+        if(n.target_type==="customer"){
+          try{
+            const cu=localStorage.getItem("dork_customer");
+            if(!cu)return;
+            const cp=JSON.parse(cu);
+            if(String(n.target_id)!==String(cp.id))return;
+            const newNotif={id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔔",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false};
+            const stored=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+            stored.unshift(newNotif);
+            localStorage.setItem("dork_notifs",JSON.stringify(stored.slice(0,50)));
+            window.dispatchEvent(new CustomEvent("dork-customer-notif",{detail:newNotif}));
+          }catch{}
+          return;
+        }
+        if(n.target_type==="broadcast"){
+          try{
+            const cu=localStorage.getItem("dork_customer");
+            if(!cu)return;
+            const cp=JSON.parse(cu);
+            const history=JSON.parse(localStorage.getItem(`hist_${cp.id}`)||"[]");
+            const hasBooked=history.some(h=>String(h.salonId)===String(n.target_id));
+            if(!hasBooked)return;
+            const newNotif={id:n.id||Date.now(),title:n.title,body:n.body,icon:n.icon||"🔥",time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}),read:false};
+            const stored=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
+            stored.unshift(newNotif);
+            localStorage.setItem("dork_notifs",JSON.stringify(stored.slice(0,50)));
+            window.dispatchEvent(new CustomEvent("dork-customer-notif",{detail:newNotif}));
+          }catch{}
+          return;
+        }
         const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
         localStorage.setItem("dork_notif_count",String(count+1));
         try{
@@ -1182,9 +1195,9 @@ export default function App(){
 
   useEffect(()=>{
     if(!customerSession?.id)return;
-    const cust=customers.find(c=>c.id===customerSession.id);
+    const cust=customerSession;
     if(!cust)return;
-    const phoneN=normPhone(cust.phone);
+    const phoneN=normPhone(cust.phone||"");
     const name=(cust.name||"").trim();
     const snap={};
     for(const s of salons){
@@ -1216,12 +1229,12 @@ export default function App(){
       }
     }
     bookingStatusSnapRef.current=snap;
-  },[salons,customers,customerSession]);
+  },[salons,customerSession]);
 
   const refreshSalonBookings=useCallback(async(salonId)=>{
     try{
       const rows=await sb("bookings","GET",null,
-        `?salon_id=eq.${salonId}&select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc`
+        `?salon_id=eq.${salonId}&select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=500`
       );
       const bookings=rows.map(b=>({
         id:b.id,
@@ -1252,7 +1265,7 @@ export default function App(){
   useEffect(()=>{
     if(!customerSession)return;
     const check=()=>{
-      const cust=customers.find(c=>c.id===customerSession.id);
+      const cust=customerSession;
       if(!cust)return;
       const now=new Date();
       const reminderMins=parseInt(localStorage.getItem("dork_reminder")||"60");
@@ -1281,7 +1294,7 @@ export default function App(){
     check();
     const id=setInterval(check,60000);
     return()=>clearInterval(id);
-  },[customerSession,customers]);
+  },[customerSession]);
 
 
   // Splash Screen
@@ -1302,7 +1315,7 @@ export default function App(){
   );
 
   // العميل لما يسجل دخول يروح للصفحة الرئيسية مباشرة
-  const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");registerFcmTokenForUser("customer",c.id);};
+  const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");registerPushSubForUser("customer",c.id);};
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
   const toggleFav=async(salonId)=>{
@@ -1358,7 +1371,7 @@ export default function App(){
       if(newBooking&&newBooking.id){
         const _d={type:"new_booking",salon_id:String(sid),booking_id:String(newBooking.id)};
         // notify salon owner
-        supabase.functions.invoke('send-fcm-notification',{body:{
+        supabase.functions.invoke('send-push-notification',{body:{
           target_type:"single",user_id:sid,user_type:"salon",
           title:`✂️ حجز جديد في ${salon?.name||""}`,
           body:`${bk.name} | ${bk.time} | ${bk.date}`,
@@ -1366,7 +1379,7 @@ export default function App(){
         }}).catch(()=>{});
         // notify customer
         if(newBooking.customer_id){
-          supabase.functions.invoke('send-fcm-notification',{body:{
+          supabase.functions.invoke('send-push-notification',{body:{
             target_type:"single",user_id:newBooking.customer_id,user_type:"customer",
             title:"📋 تم استلام حجزك",
             body:`في ${salon?.name||""} | ${bk.date} | ${bk.time}`,
@@ -1411,7 +1424,7 @@ export default function App(){
       if(!bk)return;
       await sb("bookings","PATCH",{status},`?id=eq.${bid}`);
       const bkn=normPhone(bk.phone);
-      const targets=bkn.length>=9?customers.filter(c=>normPhone(c.phone)===bkn):[];
+      const targets=[];
       for(const c of targets){
         let changed=false;
         const hist=(c.history||[]).map(h=>{
@@ -1433,14 +1446,14 @@ export default function App(){
         }
       }
       if((status==="approved"||status==="rejected")&&bk.customer_id){
-        supabase.functions.invoke('send-fcm-notification',{body:{
+        const notifTitle=status==="approved"?"✅ تم قبول حجزك!":"❌ تم رفض حجزك";
+        const notifBody=status==="approved"?`${salon.name} | ${bk.date} | ${bk.time}`:`${salon.name} | ${bk.date}`;
+        supabase.functions.invoke('send-push-notification',{body:{
           target_type:"single",user_id:bk.customer_id,user_type:"customer",
-          title:status==="approved"?"✅ تم قبول حجزك!":"❌ تم رفض حجزك",
-          body:status==="approved"
-            ?`${salon.name} | ${bk.date} | ${bk.time}`
-            :`${salon.name} | ${bk.date}`,
+          title:notifTitle,body:notifBody,
           data:{type:status==="approved"?"booking_approved":"booking_rejected",salon_id:String(sid),booking_id:String(bid)},
         }}).catch(()=>{});
+        sb("notifications","POST",{target_type:"customer",target_id:bk.customer_id,title:notifTitle,body:notifBody,icon:status==="approved"?"✅":"❌"}).catch(()=>{});
       }
       toast$(status==="approved"?"✅ تم قبول الحجز":"تم تحديث حالة الحجز");
       await loadData();
@@ -1667,6 +1680,20 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const[editPinConfirm,setEditPinConfirm]=useState("");
   const[editPinErr,setEditPinErr]=useState("");
   const toggle=(s)=>setExp(e=>e===s?null:s);
+  const [fcmStatus,setFcmStatus]=useState(()=>localStorage.getItem("fcm_debug")||"pending");
+  const [fcmMsg,setFcmMsg]=useState("");
+  const handleEnableNotifications=async()=>{
+    setFcmMsg("");
+    const permission=await Notification.requestPermission();
+    if(permission==="granted"){
+      await initializeWebPushNotifications();
+      setFcmStatus(localStorage.getItem("fcm_debug")||"pending");
+    } else {
+      localStorage.setItem("fcm_debug","permission-"+permission);
+      setFcmStatus("permission-"+permission);
+      setFcmMsg("يرجى الضغط على سماح لتصلك تنبيهات الحجوزات");
+    }
+  };
   if(!customer)return null;
   const cl=getCustomerClassification(customer);
   const history=customer.history||[];
@@ -1769,8 +1796,14 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           {t("cust_drawer.delete_btn")}
         </button>
         <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>{t("cust_drawer.version")} {APP_VERSION}</div>
-        <div style={{padding:"4px 20px 14px",textAlign:"center",fontSize:10,color:"var(--text-muted)",fontFamily:"monospace",wordBreak:"break-all"}}>FCM: {localStorage.getItem("fcm_debug")||"pending"}</div>
-        {(()=>{const d=localStorage.getItem("fcm_debug")||"";return(d.includes("permission-denied")||d.includes("permission-blocked")||d.includes("permission-error"))&&(<div style={{margin:"0 16px 12px",padding:"10px 14px",background:"rgba(231,76,60,.12)",border:"1px solid rgba(231,76,60,.3)",borderRadius:10,fontSize:11,color:"#e74c3c",textAlign:"center",lineHeight:1.5}}>🔔 الإشعارات محظورة — فعّلها من إعدادات الجهاز ← الإشعارات ← DORK</div>);})()}
+        <div style={{padding:"4px 20px 8px",textAlign:"center",fontSize:10,color:"var(--text-muted)",fontFamily:"monospace",wordBreak:"break-all"}}>FCM: {fcmStatus}</div>
+        {(fcmStatus.includes("permission-denied")||fcmStatus.includes("permission-blocked")||fcmStatus.includes("permission-error"))&&(
+          <div style={{margin:"0 16px 12px"}}>
+            <div style={{padding:"10px 14px",background:"rgba(231,76,60,.12)",border:"1px solid rgba(231,76,60,.3)",borderRadius:"10px 10px 0 0",fontSize:11,color:"#e74c3c",textAlign:"center",lineHeight:1.5}}>الإشعارات محظورة — اضغط الزر لتفعيلها</div>
+            <button onClick={handleEnableNotifications} style={{width:"100%",padding:"13px",background:"var(--grad)",color:"#000",border:"none",borderRadius:"0 0 10px 10px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>تفعيل الإشعارات 🔔</button>
+            {fcmMsg&&<div style={{marginTop:8,padding:"8px 12px",background:"rgba(243,156,18,.12)",border:"1px solid rgba(243,156,18,.3)",borderRadius:8,fontSize:11,color:"#f39c12",textAlign:"center"}}>{fcmMsg}</div>}
+          </div>
+        )}
         <div style={{height:40}}/>
       </div>
       {/* نوافذ تسجيل الخروج وحذف الحساب — خارج الـ drawer لتجنب تأثير transform */}
@@ -4087,14 +4120,14 @@ function OwnerLogin({salons,setOwnerSession,setOwnerTab,setView,toast$}){
     if(!s){setErr(t("owner_login.err_not_found"));return;}
     if(s.banned){setErr(t("owner_login.err_banned"));return;}
     if(s.frozen){setErr(t("owner_login.err_frozen"));return;}
-    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
+    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",s.id);
   };
   const loginWithPin=()=>{
     const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
     if(!s){setPinErr(t("owner_login.err_pin_wrong"));setPin("");return;}
     if(s.banned){setPinErr(t("owner_login.err_pin_banned"));return;}
     if(s.frozen){setPinErr(t("owner_login.err_pin_frozen"));return;}
-    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerFcmTokenForUser("salon",s.id);
+    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",s.id);
   };
   return(
     <div style={G.page}><div style={G.fp}>
@@ -4132,6 +4165,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const[dashCashEntries,setDashCashEntries]=useState(()=>{try{return JSON.parse(localStorage.getItem(`dork_cash_${salon?.id}`)||"[]");}catch{return[];}});
   const[showDashCash,setShowDashCash]=useState(false);
   const[dashCashAmt,setDashCashAmt]=useState("");
+  useEffect(()=>{if(salon?.id)refreshSalonBookings(salon.id);},[salon?.id]);
   const _oPtStartY=useRef(0);const _oPtActive=useRef(false);const _oPtYRef=useRef(0);
   const[_oPtY,_setOPtY]=useState(0);const[_oPtRefreshing,_setOPtRefreshing]=useState(false);const _OPT=65;
   useEffect(()=>{
@@ -4722,12 +4756,19 @@ function PromoPanel({salon,customers,toast$}){
       }
       toast$("✅ تم إرسال العرض وتفعيله!");
       if(pkg==="bronze"){
-        supabase.functions.invoke('send-fcm-notification',{body:{
+        supabase.functions.invoke('send-push-notification',{body:{
           target_type:"broadcast",salon_id:salon.id,
           title:`🔥 عرض خاص من ${salon.name}`,
           body:promoText.trim(),
           data:{type:"promo_broadcast",salon_id:String(salon.id)},
         }}).catch(()=>{});
+        sb("notifications","POST",{
+          target_type:"broadcast",
+          target_id:String(salon.id),
+          title:`🔥 عرض خاص من ${salon.name}`,
+          body:promoText.trim(),
+          icon:"🔥",
+        }).catch(()=>{});
       }
       const rows=await sb("promotions","GET",null,`?salon_id=eq.${salon.id}&select=id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&order=created_at.desc&limit=20`).catch(()=>[]);
       const delIds=new Set(JSON.parse(localStorage.getItem(`dork_del_promos_${salon.id}`)||"[]"));
@@ -6298,11 +6339,25 @@ function AttendanceView({customer,salons}){
     </div>
   );
 }
-function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,toast$,initTab="settings",initSection=false,setShowDrawer}){
+function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,refreshSalonBookings,toast$,initTab="settings",initSection=false,setShowDrawer}){
   const{t}=useTranslation();
   const[tab,setTab]=useState(initTab);
   const[sectionMode,setSectionMode]=useState(initSection);
   const[editMode,setEditMode]=useState(false);
+  const[custNotifs,setCustNotifs]=useState(()=>{
+    try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}
+  });
+  useEffect(()=>{
+    const handler=(e)=>setCustNotifs(prev=>[e.detail,...prev].slice(0,50));
+    window.addEventListener("dork-customer-notif",handler);
+    return()=>window.removeEventListener("dork-customer-notif",handler);
+  },[]);
+  // جلب حجوزات صالونات العميل عند فتح الصفحة لتفعيل أزرار التعديل والإلغاء
+  useEffect(()=>{
+    if(!refreshSalonBookings)return;
+    const ids=[...new Set((customer.history||[]).map(h=>h.salonId).filter(Boolean))];
+    ids.slice(0,5).forEach(sid=>refreshSalonBookings(sid));
+  },[customer.id]);
   const[editName,setEditName]=useState(customer?.name||"");
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
   const[showDeleteConfirm,setShowDeleteConfirm]=useState(false);
@@ -6595,8 +6650,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
       {/* إشعارات العميل */}
       {tab==="notif"&&(()=>{
-        const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-        const clearAll=()=>{localStorage.setItem("dork_notifs","[]");localStorage.setItem("dork_notif_count","0");};
+        const notifs=custNotifs;
+        const clearAll=()=>{setCustNotifs([]);localStorage.setItem("dork_notifs","[]");localStorage.setItem("dork_notif_count","0");};
         return(
           <div>
             {notifs.length>0&&<button style={{...G.pageBtn,width:"100%",marginBottom:10,color:"#e74c3c",border:"1px solid #e74c3c"}} onClick={clearAll}>🗑 مسح الكل</button>}
