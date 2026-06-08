@@ -840,6 +840,7 @@ export default function App(){
   const loadAppSettings=useCallback(async(opts)=>{
     const silent=opts&&opts.silent;
     try{
+      if(silent){try{localStorage.removeItem('cache_app_settings');}catch{}}
       const rows=await getCachedData("app_settings",()=>sb("app_settings","GET",null,"?order=id.asc&limit=1"),86400000);
       if(rows.length){
         const r=rows[0];

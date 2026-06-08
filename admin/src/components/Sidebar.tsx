@@ -15,7 +15,6 @@ const NAV = [
   { href: "/contact",       label: "التواصل",             icon: "📱" },
   { href: "/appearance",    label: "المظهر",              icon: "🎨" },
   { href: "/password",      label: "كلمة المرور",         icon: "🔑" },
-  { href: "/promo-codes",   label: "أكواد الخصم",        icon: "🎟" },
 ];
 
 export default function Sidebar() {
@@ -144,6 +143,11 @@ export default function Sidebar() {
       </nav>
 
       <div className="px-3 py-3 border-t border-border">
+        <Link href="/promo-codes"
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all mb-1 ${path.startsWith("/promo-codes") ? "bg-gold/10 text-gold border border-gold/20" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}>
+          <span className="text-base">🎟</span>
+          <span className="flex-1">أكواد الخصم</span>
+        </Link>
         <button onClick={logout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-red-400 hover:bg-red-400/5 transition-all w-full">
           <span>🚪</span>

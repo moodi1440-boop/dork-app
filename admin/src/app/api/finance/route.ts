@@ -7,26 +7,38 @@ export async function GET(req: NextRequest) {
   const filter = req.nextUrl.searchParams.get("filter") ?? "all";
 
   try {
-    let query = sb
+    let salonQuery = sb
       .from("salons")
-      .select("id,name,owner,phone,total_paid,status,bookings")
+      .select("id,name,owner,phone,total_paid,status")
       .neq("status", "banned")
       .order("id", { ascending: false });
 
-    if (search) query = query.ilike("name", `%${search}%`);
+    if (search) salonQuery = salonQuery.ilike("name", `%${search}%`);
 
-    const { data, error } = await query.limit(200);
-    if (error) throw new Error(error.message);
-    if (!data) throw new Error("No data returned");
+    const { data: salonsData, error: salonError } = await salonQuery.limit(200);
+    if (salonError) throw new Error(salonError.message);
 
-    const RATE_PER_BOOKING = 1; // 1 ريال لكل حجز مكتمل
-    const salons = (data ?? []).map((s: Record<string, unknown>) => {
-      const bookings = (s.bookings as Array<{ status: string; total?: number }>) ?? [];
-      const completedCount = bookings.filter((b) => b.status === "approved" || b.status === "completed").length;
-      const earned   = completedCount * RATE_PER_BOOKING;
-      const paid     = Number(s.total_paid) || 0;
-      const balance  = earned - paid;
-      return { id: s.id, name: s.name, owner: s.owner, phone: s.phone, earned, paid, balance, bookingCount: completedCount };
+    const { data: bookingsData, error: bookingsError } = await sb
+      .from("bookings")
+      .select("salon_id,total,status")
+      .eq("status", "approved")
+      .limit(5000);
+    if (bookingsError) throw new Error(bookingsError.message);
+
+    const byId: Record<number, { count: number }> = {};
+    for (const b of bookingsData ?? []) {
+      const sid = b.salon_id as number;
+      if (!byId[sid]) byId[sid] = { count: 0 };
+      byId[sid].count++;
+    }
+
+    const RATE = 1;
+    const salons = (salonsData ?? []).map((s: Record<string, unknown>) => {
+      const bk      = byId[s.id as number] ?? { count: 0 };
+      const earned  = bk.count * RATE;
+      const paid    = Number(s.total_paid) || 0;
+      const balance = earned - paid;
+      return { id: s.id, name: s.name, owner: s.owner, phone: s.phone, earned, paid, balance, bookingCount: bk.count };
     });
 
     const filtered = salons.filter((s) => {
