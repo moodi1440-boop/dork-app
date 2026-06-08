@@ -1127,7 +1127,7 @@ export default function App(){
     // حجوزات — لحظي في كل الاتجاهات (عميل ↔ صالون)
     const bookingChannel=supabase.channel('realtime-bookings')
       .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
-        pollBookings();
+        if(ownerSession)pollBookings(ownerSession);
       })
       .subscribe();
 
@@ -1178,7 +1178,7 @@ export default function App(){
       supabase.removeChannel(reviewsChannel);
       supabase.removeChannel(promoChannel);
     };
-  },[loadAppSettings,pollBookings,pollReviews,pollPromotions]);
+  },[loadAppSettings,pollBookings,pollReviews,pollPromotions,ownerSession]);
 
   useEffect(()=>{
     if(!customerSession?.id)return;
@@ -1244,9 +1244,9 @@ export default function App(){
 
   // Polling — fallback للـ Realtime كل 10 ثواني
   useEffect(()=>{
-    const id=setInterval(()=>{pollBookings();pollReviews();pollPromotions();},10000);
+    const id=setInterval(()=>{if(ownerSession)pollBookings(ownerSession);pollReviews();pollPromotions();},10000);
     return()=>clearInterval(id);
-  },[pollBookings,pollReviews,pollPromotions]);
+  },[pollBookings,pollReviews,pollPromotions,ownerSession]);
 
   // إشعار التذكير التلقائي + طلب التقييم
   useEffect(()=>{
