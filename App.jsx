@@ -1916,9 +1916,8 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
         <Row icon="📊" label={t("salon_drawer.stats")} active={ownerTab==="stats"} onClick={()=>nav(()=>{setOwnerTab("stats");setView("ownerDash");})}/>
         <SecHead label={t("salon_drawer.section_salon")}/>
         <Row icon="📋" label={t("salon_drawer.salon_info")} active={view==="ownerInfo"} onClick={()=>nav(()=>setView("ownerInfo"))}/>
-        <Row icon="🕐" label={t("salon_drawer.working_hours")} active={view==="ownerHours"} onClick={()=>nav(()=>setView("ownerHours"))}/>
         <Row icon="✂" label={t("salon_drawer.services_prices")} active={view==="ownerServices"} onClick={()=>nav(()=>setView("ownerServices"))}/>
-        <Row icon="💈" label={t("salon_drawer.barbers")} active={view==="ownerBarbers"} onClick={()=>nav(()=>setView("ownerBarbers"))}/>
+        <Row icon="💈" label={t("salon_drawer.barbers")} active={view==="ownerBarbers"||view==="ownerHours"} onClick={()=>nav(()=>setView("ownerBarbers"))}/>
         <Row icon="📱" label={t("salon_drawer.social_media")} active={view==="ownerSocial"} onClick={()=>nav(()=>setView("ownerSocial"))}/>
         <SecHead label={t("salon_drawer.section_app")}/>
         <Row icon="🎨" label={t("salon_drawer.colors_theme")} active={view==="ownerTheme"} onClick={()=>nav(()=>setView("ownerTheme"))}/>
@@ -2758,12 +2757,20 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
           <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
             {salon.barbers.filter(b=>b.active!==false).map(b=>{
               const active=form.barberId===b.id;
-              // تحقق من وقت الدوام
               const now=new Date();
               const currentMins=now.getHours()*60+now.getMinutes();
-              const [sh,sm]=(b.shiftStart||"00:00").split(":").map(Number);
-              const [eh,em]=(b.shiftEnd||"23:59").split(":").map(Number);
-              const inShift=currentMins>=sh*60+sm&&currentMins<=eh*60+em;
+              const toM=(t)=>{const[h,m]=(t||"").split(":").map(Number);return(h||0)*60+(m||0);};
+              const inShift=(()=>{
+                if(b.shiftStart||b.shiftEnd){
+                  return currentMins>=toM(b.shiftStart||"00:00")&&currentMins<=toM(b.shiftEnd||"23:59");
+                }
+                if(salon.shiftEnabled){
+                  const in1=currentMins>=toM(salon.shift1Start)&&currentMins<=toM(salon.shift1End);
+                  const in2=currentMins>=toM(salon.shift2Start)&&currentMins<=toM(salon.shift2End);
+                  return in1||in2;
+                }
+                return currentMins>=toM(salon.workStart||"09:00")&&currentMins<=toM(salon.workEnd||"22:00");
+              })();
               return(
                 <div key={b.id}
                   style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 10px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":inShift?"var(--surface-2)":"var(--shell-bg)",cursor:inShift?"pointer":"not-allowed",opacity:inShift?1:.5,minWidth:60}}
@@ -2877,6 +2884,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
   const[cashAmount,setCashAmount]=useState("");
   const[cashNote,setCashNote]=useState("");
   const[cashDate,setCashDate]=useState(getTodayDateInRiyadh());
+  const[cashBarber,setCashBarber]=useState("");
   const CASH_KEY=`dork_cash_${salon.id}`;
   const[cashEntries,setCashEntries]=useState(()=>{try{return JSON.parse(localStorage.getItem(`dork_cash_${salon.id}`)||"[]");}catch{return[];}});
   const balance=totalEarned-totalPaid;
@@ -2992,11 +3000,12 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
   const addCashEntry=()=>{
     const amt=parseFloat(cashAmount);
     if(!amt||amt<=0)return;
-    const entry={id:Date.now(),amount:amt,note:cashNote.trim(),date:cashDate};
+    const selBarber=salon.barbers?.find(b=>b.id===cashBarber);
+    const entry={id:Date.now(),amount:amt,note:cashNote.trim(),date:cashDate,barberId:cashBarber||null,barberName:selBarber?.name||""};
     const updated=[...cashEntries,entry];
     setCashEntries(updated);
     try{localStorage.setItem(CASH_KEY,JSON.stringify(updated));}catch{}
-    setCashAmount("");setCashNote("");setShowCashForm(false);
+    setCashAmount("");setCashNote("");setCashBarber("");setShowCashForm(false);
   };
   const removeCashEntry=(id)=>{
     const updated=cashEntries.filter(e=>e.id!==id);
@@ -3118,6 +3127,13 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
               const stats=getBarberStats(barber.id);
               const cnt=barberPeriod==="day"?stats.dayCount:barberPeriod==="month"?stats.monthCount:stats.yearCount;
               const rev=barberPeriod==="day"?stats.dayRevenue:barberPeriod==="month"?stats.monthRevenue:stats.yearRevenue;
+              const barberCash=(()=>{
+                const filtered=cashEntries.filter(e=>e.barberId===barber.id);
+                if(barberPeriod==="day")return filtered.filter(e=>e.date===barberDay).reduce((s,e)=>s+(e.amount||0),0);
+                const mStr=`${barberY}-${String(barberM+1).padStart(2,"0")}`;
+                if(barberPeriod==="month")return filtered.filter(e=>e.date?.startsWith(mStr)).reduce((s,e)=>s+(e.amount||0),0);
+                return filtered.filter(e=>e.date?.startsWith(String(barberY))).reduce((s,e)=>s+(e.amount||0),0);
+              })();
               const palette=[["#3498db","#3498db33"],["#9b59b6","#9b59b633"],["#1abc9c","#1abc9c33"],["#e67e22","#e67e2233"],["#e91e63","#e91e6333"],["#00bcd4","#00bcd433"]];
               const[col,colBg]=palette[idx%palette.length];
               const medals=["🥇","🥈","🥉"];
@@ -3128,6 +3144,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
                   <div style={{fontSize:12,fontWeight:700,color:col,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{barber.name||barber.barber_name||"حلاق"}</div>
                   <div style={{fontSize:11,color:col,fontWeight:700,flexShrink:0}}>{cnt} حجز</div>
                   <div style={{fontSize:11,color:col,fontWeight:700,flexShrink:0}}>{rev} ر</div>
+                  {barberCash>0&&<div style={{fontSize:10,color:"#27ae60",fontWeight:700,flexShrink:0}}>+{barberCash}💵</div>}
                   <div style={{width:40,height:6,background:"rgba(255,255,255,.1)",borderRadius:3,flexShrink:0,overflow:"hidden"}}>
                     <div style={{height:"100%",width:`${(cnt/maxCnt)*100}%`,background:col,borderRadius:3}}/>
                   </div>
@@ -3241,6 +3258,14 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
           </div>
           {showCashForm&&(
             <div style={{background:"var(--surface-1)",borderRadius:10,padding:"10px",marginBottom:10,border:"1px solid var(--border-ui)"}}>
+              {salon.barbers?.length>0&&(
+                <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
+                  <button onClick={()=>setCashBarber("")} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${!cashBarber?"var(--p)":"var(--border-ui)"}`,background:!cashBarber?"var(--pa12)":"transparent",color:!cashBarber?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>بدون حلاق</button>
+                  {salon.barbers.map(b=>(
+                    <button key={b.id} onClick={()=>setCashBarber(b.id)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${cashBarber===b.id?"var(--p)":"var(--border-ui)"}`,background:cashBarber===b.id?"var(--pa12)":"transparent",color:cashBarber===b.id?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{b.name||"حلاق"}</button>
+                  ))}
+                </div>
+              )}
               <div style={{display:"flex",gap:6,marginBottom:6}}>
                 <input type="number" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} placeholder="المبلغ" style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none"}}/>
                 <input type="date" value={cashDate} onChange={e=>setCashDate(e.target.value)} style={{flex:1,padding:"8px 6px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:11,fontFamily:"'Cairo',sans-serif",outline:"none"}}/>
@@ -3248,13 +3273,16 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
               <input value={cashNote} onChange={e=>setCashNote(e.target.value)} placeholder="ملاحظة (اختياري)" style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:6}}/>
               <div style={{display:"flex",gap:6}}>
                 <button onClick={addCashEntry} style={{flex:1,padding:"9px",borderRadius:9,border:"none",background:"var(--pa15)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>حفظ</button>
-                <button onClick={()=>{setShowCashForm(false);setCashAmount("");setCashNote("");setCashDate(getTodayDateInRiyadh());}} style={{padding:"9px 14px",borderRadius:9,border:"1px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>إلغاء</button>
+                <button onClick={()=>{setShowCashForm(false);setCashAmount("");setCashNote("");setCashDate(getTodayDateInRiyadh());setCashBarber("");}} style={{padding:"9px 14px",borderRadius:9,border:"1px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>إلغاء</button>
               </div>
             </div>
           )}
           {cashEntries.filter(e=>e.date===getTodayDateInRiyadh()).map(e=>(
             <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 8px",borderRadius:8,background:"rgba(var(--pr),.06)",marginBottom:4}}>
-              <span style={{fontSize:11,color:"var(--text-muted)"}}>{e.note||"كاش"}</span>
+              <div style={{display:"flex",flexDirection:"column",gap:1}}>
+                {e.barberName&&<span style={{fontSize:10,color:"var(--p)",fontWeight:700}}>💈 {e.barberName}</span>}
+                <span style={{fontSize:11,color:"var(--text-muted)"}}>{e.note||"كاش"}</span>
+              </div>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <span style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>{e.amount} ر</span>
                 <button onClick={()=>removeCashEntry(e.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#e74c3c",fontSize:12,padding:0}}>✕</button>
@@ -4166,6 +4194,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const[dashCashEntries,setDashCashEntries]=useState(()=>{try{return JSON.parse(localStorage.getItem(`dork_cash_${salon?.id}`)||"[]");}catch{return[];}});
   const[showDashCash,setShowDashCash]=useState(false);
   const[dashCashAmt,setDashCashAmt]=useState("");
+  const[dashCashBarber,setDashCashBarber]=useState("");
   useEffect(()=>{if(salon?.id)refreshSalonBookings(salon.id);},[salon?.id]);
   const _oPtStartY=useRef(0);const _oPtActive=useRef(false);const _oPtYRef=useRef(0);
   const[_oPtY,_setOPtY]=useState(0);const[_oPtRefreshing,_setOPtRefreshing]=useState(false);const _OPT=65;
@@ -4202,18 +4231,20 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const addDashCash=()=>{
     const amt=parseFloat(dashCashAmt);
     if(!amt||amt<=0)return;
-    const updated=[...dashCashEntries,{id:Date.now(),amount:amt,note:"",date:_td}];
+    const selB=salon.barbers?.find(b=>b.id===dashCashBarber);
+    const updated=[...dashCashEntries,{id:Date.now(),amount:amt,note:"",date:_td,barberId:dashCashBarber||null,barberName:selB?.name||""}];
     setDashCashEntries(updated);
     try{localStorage.setItem(`dork_cash_${salon.id}`,JSON.stringify(updated));}catch{}
-    setDashCashAmt("");setShowDashCash(false);
+    setDashCashAmt("");setDashCashBarber("");setShowDashCash(false);
   };
   const _now=new Date();
   const _nowMins=_now.getHours()*60+_now.getMinutes();
   const _nextBk=_tdApproved
     .filter(b=>{const[h,m]=(b.time||"0:0").split(":").map(Number);return h*60+m>_nowMins;})
     .sort((a,b)=>(a.time||"").localeCompare(b.time||""))[0];
-  const _totalSlots=Math.max((getSlotsForSalon(salon).length)*(salon.barbers?.length||1),1);
-  const _occ=Math.min(100,Math.round(_tdApproved.length/_totalSlots*100));
+  const _allSlots=getSlotsForSalon(salon);
+  const _bookedSlotCount=new Set(_tdApproved.map(b=>b.time)).size;
+  const _occ=Math.min(100,Math.round(_bookedSlotCount/Math.max(_allSlots.length,1)*100));
   const _dNames=t("owner_dash.days",{returnObjects:true});
   const _mNames=t("owner_dash.months",{returnObjects:true});
   const _dayLabel=`${_dNames[_now.getDay()]}، ${_now.getDate()} ${_mNames[_now.getMonth()]}`;
@@ -4305,10 +4336,20 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
         {/* نموذج إضافة الكاش */}
         {showDashCash&&(
-          <div style={{background:"rgba(39,174,96,.08)",border:"1px solid rgba(39,174,96,.3)",borderRadius:10,padding:"10px",marginBottom:10,display:"flex",gap:8,alignItems:"center"}}>
-            <input type="number" value={dashCashAmt} onChange={e=>setDashCashAmt(e.target.value)} placeholder="المبلغ بالريال" onKeyDown={e=>e.key==="Enter"&&addDashCash()} style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid rgba(39,174,96,.4)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none"}}/>
-            <button onClick={addDashCash} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>حفظ</button>
-            <button onClick={()=>setShowDashCash(false)} style={{padding:"8px 10px",borderRadius:8,border:"1px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+          <div style={{background:"rgba(39,174,96,.08)",border:"1px solid rgba(39,174,96,.3)",borderRadius:10,padding:"10px",marginBottom:10}}>
+            {salon.barbers?.length>0&&(
+              <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
+                <button onClick={()=>setDashCashBarber("")} style={{padding:"3px 9px",borderRadius:7,border:`1.5px solid ${!dashCashBarber?"#27ae60":"var(--border-ui)"}`,background:!dashCashBarber?"rgba(39,174,96,.2)":"transparent",color:!dashCashBarber?"#27ae60":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>بدون حلاق</button>
+                {salon.barbers.map(b=>(
+                  <button key={b.id} onClick={()=>setDashCashBarber(b.id)} style={{padding:"3px 9px",borderRadius:7,border:`1.5px solid ${dashCashBarber===b.id?"#27ae60":"var(--border-ui)"}`,background:dashCashBarber===b.id?"rgba(39,174,96,.2)":"transparent",color:dashCashBarber===b.id?"#27ae60":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{b.name||"حلاق"}</button>
+                ))}
+              </div>
+            )}
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <input type="number" value={dashCashAmt} onChange={e=>setDashCashAmt(e.target.value)} placeholder="المبلغ بالريال" onKeyDown={e=>e.key==="Enter"&&addDashCash()} style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid rgba(39,174,96,.4)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none"}}/>
+              <button onClick={addDashCash} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>حفظ</button>
+              <button onClick={()=>{setShowDashCash(false);setDashCashBarber("");}} style={{padding:"8px 10px",borderRadius:8,border:"1px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+            </div>
           </div>
         )}
 
@@ -5293,6 +5334,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
   const[draftSocial,setDraftSocial]=useState({...DEFAULT_SOCIAL_LINKS,...(socialLinks||{})});
   const[socialSaved,setSocialSaved]=useState(false);
   const saveSocial=()=>{setSocialLinks&&setSocialLinks(draftSocial);setSocialSaved(true);setTimeout(()=>setSocialSaved(false),2500);};
+  const effectiveSec=onlySec==="hours"?"barbers":sec;
   const[f,setF]=useState({
     name:salon.name||"",
     phone:salon.phone||"",
@@ -5307,12 +5349,25 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     workEnd:salon.workEnd||"22:00",
     services:[...(salon.services||[])],
     prices:{...(salon.prices||{})},
+    durations:{...(salon.prices?.__durations||{})},
     barbers:JSON.parse(JSON.stringify(salon.barbers||[])),
     tone:salon.tone||"bell",
   });
   const[newSvc,setNewSvc]=useState("");
   const[newBarber,setNewBarber]=useState("");
+  const[detecting,setDetecting]=useState(false);
+  const dragIdx=useRef(null);
+  const dragOverIdx=useRef(null);
   const upd=(k,v)=>setF(p=>({...p,[k]:v}));
+  const detectSalonLocation=()=>{
+    if(!navigator.geolocation){toast$&&toast$("❌ المتصفح لا يدعم تحديد الموقع","err");return;}
+    setDetecting(true);
+    navigator.geolocation.getCurrentPosition(
+      p=>{const lat=p.coords.latitude.toFixed(6),lng=p.coords.longitude.toFixed(6);upd("locationUrl",`https://maps.google.com/?q=${lat},${lng}`);setDetecting(false);toast$&&toast$("✅ تم تحديد الموقع، اضغط حفظ لتأكيده");},
+      ()=>{setDetecting(false);toast$&&toast$("❌ تعذّر تحديد الموقع","err");},
+      {enableHighAccuracy:true,timeout:15000}
+    );
+  };
 
   const save=async()=>{
     setSaving(true);
@@ -5323,11 +5378,11 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         shift1_start:f.shift1Start,shift1_end:f.shift1End,
         shift2_start:f.shift2Start,shift2_end:f.shift2End,
         work_start:f.workStart,work_end:f.workEnd,
-        services:f.services,prices:f.prices,
+        services:f.services,prices:{...f.prices,__durations:f.durations},
         barbers:f.barbers,tone:f.tone,
       };
       await sb("salons","PATCH",patch,`?id=eq.${salon.id}`);
-      setSalons(p=>p.map(s=>s.id===salon.id?{...s,name:f.name,phone:f.phone,address:f.address,locationUrl:f.locationUrl,shiftEnabled:f.shiftEnabled,shift1Start:f.shift1Start,shift1End:f.shift1End,shift2Start:f.shift2Start,shift2End:f.shift2End,workStart:f.workStart,workEnd:f.workEnd,services:f.services,prices:f.prices,barbers:f.barbers,tone:f.tone}:s));
+      setSalons(p=>p.map(s=>s.id===salon.id?{...s,name:f.name,phone:f.phone,address:f.address,locationUrl:f.locationUrl,shiftEnabled:f.shiftEnabled,shift1Start:f.shift1Start,shift1End:f.shift1End,shift2Start:f.shift2Start,shift2End:f.shift2End,workStart:f.workStart,workEnd:f.workEnd,services:f.services,prices:{...f.prices,__durations:f.durations},barbers:f.barbers,tone:f.tone}:s));
       toast$&&toast$(t("owner_settings.success"));
     }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
     setSaving(false);
@@ -5342,7 +5397,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     <div style={onlySec?G.page:undefined}><div style={onlySec?G.fp:undefined}>
       {onlySec&&<div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("owner_settings.back")}</button><h2 style={G.ft}>{SEC_TITLES[onlySec]||t("owner_settings.settings_title")}</h2></div>}
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
-        {[{id:"info",icon:"📋",label:t("owner_settings.tab_info")},{id:"hours",icon:"🕐",label:t("owner_settings.tab_hours")},{id:"services",icon:"✂",label:t("owner_settings.tab_services")},{id:"barbers",icon:"💈",label:t("owner_settings.tab_barbers")},{id:"tone",icon:"🔔",label:t("owner_settings.tab_tone")},{id:"social",icon:"📱",label:t("owner_settings.tab_social")},{id:"pin",icon:"🔐",label:t("owner_settings.tab_pin")}].map(s=>(
+        {[{id:"info",icon:"📋",label:t("owner_settings.tab_info")},{id:"services",icon:"✂",label:t("owner_settings.tab_services")},{id:"barbers",icon:"💈",label:t("owner_settings.tab_barbers")},{id:"tone",icon:"🔔",label:t("owner_settings.tab_tone")},{id:"social",icon:"📱",label:t("owner_settings.tab_social")},{id:"pin",icon:"🔐",label:t("owner_settings.tab_pin")}].map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
             style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"var(--border-ui)"}`,background:sec===s.id?"var(--pa12)":"var(--surface-2)",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
             {s.icon} {s.label}
@@ -5352,49 +5407,46 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 
       {sec==="info"&&<div style={box}>
         <div style={hdr}>{t("owner_settings.info_title")}</div>
-        {[{l:t("owner_settings.salon_name"),k:"name"},{l:t("owner_settings.phone"),k:"phone"},{l:t("owner_settings.address"),k:"address"},{l:t("owner_settings.map_url"),k:"locationUrl"}].map(({l,k})=>(
+        {[{l:t("owner_settings.salon_name"),k:"name"},{l:t("owner_settings.phone"),k:"phone"},{l:t("owner_settings.address"),k:"address"}].map(({l,k})=>(
           <div key={k} style={{marginBottom:10}}>
             <label style={lbl}>{l}</label>
             <input style={inp} value={f[k]} onChange={e=>upd(k,e.target.value)}/>
           </div>
         ))}
+        {/* قسم الموقع */}
+        <div style={{background:"rgba(var(--pr),.06)",borderRadius:12,padding:12,border:"1px solid rgba(var(--pr),.2)"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8}}>📍 {t("owner_settings.map_url")}</div>
+          {f.locationUrl?(
+            <>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>✅ موقع محفوظ — يظهر للعملاء على الخريطة</div>
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",opacity:detecting?0.6:1}} disabled={detecting} onClick={detectSalonLocation}>{detecting?"⏳ جاري التحديد...":"🔄 تحديث الموقع"}</button>
+                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={()=>upd("locationUrl","")}>🗑 حذف الموقع</button>
+              </div>
+            </>
+          ):(
+            <>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>لا يوجد موقع محفوظ</div>
+              <button style={{width:"100%",padding:"10px",borderRadius:8,background:"transparent",border:"1.5px dashed rgba(var(--pr),.4)",color:"var(--p)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",marginBottom:8,opacity:detecting?0.6:1}} disabled={detecting} onClick={detectSalonLocation}>{detecting?"⏳ جاري التحديد...":"📍 تحديد موقعي الحالي"}</button>
+            </>
+          )}
+          <input style={{...inp,fontSize:11}} placeholder="أو أدخل رابط Google Maps يدوياً" value={f.locationUrl} onChange={e=>upd("locationUrl",e.target.value)}/>
+        </div>
       </div>}
 
-      {sec==="hours"&&<div style={box}>
-        <div style={hdr}>{t("owner_settings.hours_title")}</div>
-        <div style={{display:"flex",gap:8,marginBottom:12}}>
-          <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${!f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:!f.shiftEnabled?"var(--pa12)":"var(--surface-2)",color:!f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",false)}>{t("owner_settings.single_shift")}</button>
-          <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:f.shiftEnabled?"var(--pa12)":"var(--surface-2)",color:f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",true)}>{t("owner_settings.double_shift")}</button>
-        </div>
-        {!f.shiftEnabled
-          ?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            <div><label style={lbl}>{t("owner_settings.from")}</label><input type="time" style={inp} value={f.workStart} onChange={e=>upd("workStart",e.target.value)}/></div>
-            <div><label style={lbl}>{t("owner_settings.to")}</label><input type="time" style={inp} value={f.workEnd} onChange={e=>upd("workEnd",e.target.value)}/></div>
-          </div>
-          :<>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>{t("owner_settings.morning")}</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-              <div><label style={lbl}>{t("owner_settings.from")}</label><input type="time" style={inp} value={f.shift1Start} onChange={e=>upd("shift1Start",e.target.value)}/></div>
-              <div><label style={lbl}>{t("owner_settings.to")}</label><input type="time" style={inp} value={f.shift1End} onChange={e=>upd("shift1End",e.target.value)}/></div>
-            </div>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>{t("owner_settings.evening")}</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <div><label style={lbl}>{t("owner_settings.from")}</label><input type="time" style={inp} value={f.shift2Start} onChange={e=>upd("shift2Start",e.target.value)}/></div>
-              <div><label style={lbl}>{t("owner_settings.to")}</label><input type="time" style={inp} value={f.shift2End} onChange={e=>upd("shift2End",e.target.value)}/></div>
-            </div>
-          </>
-        }
-      </div>}
 
       {sec==="services"&&<div style={box}>
         <div style={hdr}>{t("owner_settings.services_title")}</div>
         {f.services.map(svc=>(
           <div key={svc} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,background:"var(--bg-input)",borderRadius:9,padding:"8px 10px",border:"1px solid var(--border-ui)"}}>
             <span style={{flex:1,fontSize:13,color:"var(--text-primary)"}}>{svc}</span>
-            <input type="number" min="0" style={{width:75,padding:"6px 8px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--p)",fontSize:13,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
+            <input type="number" min="0" style={{width:65,padding:"6px 6px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--p)",fontSize:12,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
               value={f.prices[svc]||0} onChange={e=>setF(p=>({...p,prices:{...p.prices,[svc]:+e.target.value}}))}/>
-            <span style={{fontSize:11,color:"var(--text-muted)",flexShrink:0}}>{t("owner_settings.sar")}</span>
-            <button style={G.xBtn} onClick={()=>setF(p=>{const sv=p.services.filter(s=>s!==svc);const pr={...p.prices};delete pr[svc];return{...p,services:sv,prices:pr};})}>✕</button>
+            <span style={{fontSize:10,color:"var(--text-muted)",flexShrink:0}}>ر</span>
+            <input type="number" min="1" max="480" placeholder="د" title="المدة بالدقائق" style={{width:50,padding:"6px 4px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"#27ae60",fontSize:12,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
+              value={f.durations[svc]||""} onChange={e=>setF(p=>({...p,durations:{...p.durations,[svc]:+e.target.value||undefined}}))}/>
+            <span style={{fontSize:10,color:"var(--text-muted)",flexShrink:0}}>دق</span>
+            <button style={G.xBtn} onClick={()=>setF(p=>{const sv=p.services.filter(s=>s!==svc);const pr={...p.prices};delete pr[svc];const dr={...p.durations};delete dr[svc];return{...p,services:sv,prices:pr,durations:dr};})}>✕</button>
           </div>
         ))}
         <div style={{display:"flex",gap:7,marginTop:10}}>
@@ -5412,12 +5464,53 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         </div>
       </div>}
 
-      {sec==="barbers"&&<div style={box}>
+      {(sec==="barbers"||effectiveSec==="barbers")&&<div style={box}>
+        {/* ── ساعات عمل الصالون (مدموجة هنا) ── */}
+        <div style={{marginBottom:14,paddingBottom:14,borderBottom:"1px solid var(--border-ui)"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10}}>🕐 {t("owner_settings.hours_title")}</div>
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${!f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:!f.shiftEnabled?"var(--pa12)":"var(--surface-2)",color:!f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",false)}>{t("owner_settings.single_shift")}</button>
+            <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:f.shiftEnabled?"var(--pa12)":"var(--surface-2)",color:f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",true)}>{t("owner_settings.double_shift")}</button>
+          </div>
+          {!f.shiftEnabled
+            ?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div><label style={lbl}>{t("owner_settings.from")}</label><input type="time" style={inp} value={f.workStart} onChange={e=>upd("workStart",e.target.value)}/></div>
+              <div><label style={lbl}>{t("owner_settings.to")}</label><input type="time" style={inp} value={f.workEnd} onChange={e=>upd("workEnd",e.target.value)}/></div>
+            </div>
+            :<>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>{t("owner_settings.morning")}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                <div><label style={lbl}>{t("owner_settings.from")}</label><input type="time" style={inp} value={f.shift1Start} onChange={e=>upd("shift1Start",e.target.value)}/></div>
+                <div><label style={lbl}>{t("owner_settings.to")}</label><input type="time" style={inp} value={f.shift1End} onChange={e=>upd("shift1End",e.target.value)}/></div>
+              </div>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>{t("owner_settings.evening")}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div><label style={lbl}>{t("owner_settings.from")}</label><input type="time" style={inp} value={f.shift2Start} onChange={e=>upd("shift2Start",e.target.value)}/></div>
+                <div><label style={lbl}>{t("owner_settings.to")}</label><input type="time" style={inp} value={f.shift2End} onChange={e=>upd("shift2End",e.target.value)}/></div>
+              </div>
+            </>
+          }
+        </div>
         <div style={hdr}>{t("owner_settings.barbers_title")}</div>
         {f.barbers.length===0&&<div style={G.empty}>{t("owner_settings.barbers_empty")}</div>}
         {f.barbers.map((b,i)=>(
-          <div key={b.id} style={{marginBottom:10,background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:"1px solid var(--border-ui)"}}>
+          <div key={b.id} draggable
+            onDragStart={()=>{dragIdx.current=i;}}
+            onDragOver={e=>{e.preventDefault();dragOverIdx.current=i;}}
+            onDrop={()=>{
+              const from=dragIdx.current,to=dragOverIdx.current;
+              if(from===null||from===to)return;
+              setF(p=>{const arr=[...p.barbers];const[item]=arr.splice(from,1);arr.splice(to,0,item);return{...p,barbers:arr};});
+              dragIdx.current=null;dragOverIdx.current=null;
+            }}
+            style={{marginBottom:10,background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:"1px solid var(--border-ui)"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+              {/* مقبض الترتيب */}
+              <div style={{display:"flex",flexDirection:"column",gap:3,cursor:"grab",padding:"4px 2px",flexShrink:0,opacity:0.45}}>
+                <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
+                <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
+                <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
+              </div>
               {/* صورة الحلاق */}
               <div style={{position:"relative",flexShrink:0}}>
                 {b.photo
@@ -5447,15 +5540,41 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
             </div>
             {b.active===false&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:6,textAlign:"center",fontWeight:600}}>مغلق / مسافر</div>}
             {b.active!==false&&<>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>{t("owner_settings.barber_shift")}</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
-              <div>
-                <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>{t("owner_settings.from")}</label>
-                <input type="time" style={{...inp,fontSize:12}} value={b.shiftStart||"09:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:e.target.value}:x)}))}/>
+            {f.services.length>0&&(
+              <div style={{marginBottom:10}}>
+                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6,fontWeight:600}}>⏱ مدة الخدمة (تجاوز الافتراضي)</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {f.services.map(svc=>{
+                    const defaultDur=f.durations[svc];
+                    const barberDur=(b.durations||{})[svc];
+                    return(
+                      <div key={svc} style={{display:"flex",alignItems:"center",gap:4,background:"var(--surface-2)",borderRadius:7,padding:"3px 7px",border:"1px solid var(--border-ui)"}}>
+                        <span style={{fontSize:10,color:"var(--text-muted)"}}>{svc}</span>
+                        <input type="number" min="1" max="480" placeholder={defaultDur||"—"} title={`${svc} — مدة ${b.name||"الحلاق"}`}
+                          style={{width:42,padding:"3px 4px",borderRadius:5,border:`1.5px solid ${barberDur?"var(--p)":"var(--border-ui)"}`,background:"var(--bg-input)",color:"var(--p)",fontSize:11,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
+                          value={barberDur||""} onChange={e=>{const v=+e.target.value||undefined;setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,durations:{...(x.durations||{}),[svc]:v}}:x)}));}}/>
+                        <span style={{fontSize:9,color:"var(--text-muted)"}}>د</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div>
+            )}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+              <div style={{fontSize:11,color:"var(--text-muted)"}}>{t("owner_settings.barber_shift")}</div>
+              <button onClick={()=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:"00:00",shiftEnd:"23:59"}:x)}))}
+                style={{padding:"3px 10px",borderRadius:7,border:`1.5px solid ${(b.shiftStart==="00:00"&&b.shiftEnd==="23:59")?"var(--p)":"var(--border-ui)"}`,background:(b.shiftStart==="00:00"&&b.shiftEnd==="23:59")?"var(--pa12)":"transparent",color:(b.shiftStart==="00:00"&&b.shiftEnd==="23:59")?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                🕐 24 ساعة
+              </button>
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:6}}>
+              <div style={{flex:1,minWidth:0}}>
+                <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>{t("owner_settings.from")}</label>
+                <input type="time" style={{...inp,fontSize:12,minWidth:0}} value={b.shiftStart||"09:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:e.target.value}:x)}))}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
                 <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>{t("owner_settings.to")}</label>
-                <input type="time" style={{...inp,fontSize:12}} value={b.shiftEnd||"22:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftEnd:e.target.value}:x)}))}/>
+                <input type="time" style={{...inp,fontSize:12,minWidth:0}} value={b.shiftEnd||"22:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftEnd:e.target.value}:x)}))}/>
               </div>
             </div>
             </>}
@@ -6288,7 +6407,7 @@ function AttendanceView({customer,salons}){
           <button key={f.key}
             onClick={()=>setFilter(f.key)}
             style={{padding:"18px 4px 14px",borderRadius:14,border:`2px solid ${f.color}`,
-              background:filter===f.key?`${f.color}22`:"#0d0d1a",
+              background:filter===f.key?`${f.color}22`:"var(--surface-2)",
               color:f.color,cursor:"pointer",fontFamily:"inherit",
               display:"flex",flexDirection:"column",alignItems:"center",gap:6,
               outline:"none",WebkitTapHighlightColor:"transparent"}}>

@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     let query = sb
       .from("salons")
-      .select("id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,bookings")
+      .select("id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social")
       .order("id", { ascending: false });
 
     if (status && status !== "all") query = query.eq("status", status);
@@ -34,7 +34,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data ?? []);
+    const salonsWithBookings = (data ?? []).map((s: Record<string, unknown>) => ({ ...s, bookings: [] }));
+    return NextResponse.json(salonsWithBookings);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("[API /salons] Exception:", err);

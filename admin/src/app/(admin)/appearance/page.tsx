@@ -37,9 +37,10 @@ const FONT_SIZES = [{ id: "sm", label: "صغير" }, { id: "md", label: "متو�
 export default function AppearancePage() {
   const { theme: adminTheme, setTheme: setAdminTheme } = useAdminTheme();
   const [appearance, setAppearance] = useState<AppearanceSettings>(DEFAULT_APPEARANCE);
-  const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState(false);
-  const [saved,   setSaved]   = useState(false);
+  const [loading,   setLoading]   = useState(true);
+  const [saving,    setSaving]    = useState(false);
+  const [saved,     setSaved]     = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     fetch("/api/settings").then((r) => r.json()).then((s) => {
@@ -49,14 +50,21 @@ export default function AppearancePage() {
   }, []);
 
   const save = async () => {
-    setSaving(true);
-    await fetch("/api/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ appearance }),
-    });
-    setSaving(false); setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSaving(true); setSaveError("");
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appearance }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? `HTTP ${res.status}`); }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "خطأ في الحفظ");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <div className="p-8 text-center text-gold animate-pulse">جاري التحميل...</div>;
@@ -128,6 +136,7 @@ export default function AppearancePage() {
         </div>
       </div>
 
+      {saveError && <div className="mb-3 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center">❌ {saveError}</div>}
       <button onClick={save} disabled={saving}
         className={`w-full py-3 rounded-xl font-bold text-sm border transition-all ${saved ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-gold/10 border-gold/30 text-gold hover:bg-gold/20"} disabled:opacity-50`}>
         {saving ? "جاري الحفظ..." : saved ? "✅ تم الحفظ" : "💾 حفظ الإعدادات"}
