@@ -120,8 +120,8 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-[#0f1117]">
+      <div className="bg-navy border border-border rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-navy">
           <h2 className="text-white font-bold">👤 {customer.name}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-xl">✕</button>
         </div>
@@ -147,24 +147,6 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
                 <div className="text-gray-500 text-xs mt-0.5">{item.label}</div>
               </div>
             ))}
-          </div>
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="text-xs text-gray-400 font-semibold mb-3">نقاط الولاء</div>
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-3xl font-black text-gold">{customer.loyalty_points ?? 0}</span>
-              <span className="text-gray-500 text-sm">نقطة</span>
-              {customer.loyalty_frozen && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-bold">مجمّدة</span>}
-            </div>
-            <div className="flex gap-2 mb-3">
-              <input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value))}
-                className="flex-1 bg-[#0d0d1a] border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gold" />
-              <button onClick={() => patch({ loyalty_points: points })} disabled={saving}
-                className="px-4 py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-sm font-bold hover:bg-gold/20 transition-colors disabled:opacity-50">حفظ</button>
-            </div>
-            <button onClick={() => patch({ loyalty_frozen: !customer.loyalty_frozen })} disabled={saving}
-              className={`w-full py-2 rounded-lg text-sm font-semibold border transition-colors ${customer.loyalty_frozen ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}`}>
-              {customer.loyalty_frozen ? "🔓 رفع تجميد النقاط" : "🔒 تجميد النقاط"}
-            </button>
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
             <div className="text-xs text-gray-400 font-semibold mb-3">آخر الحجوزات ({bookings.length})</div>
@@ -254,7 +236,7 @@ export default function CustomersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-gray-400 text-xs">
-                  {["#","الاسم","الجوال","البريد","النقاط","الحالة","إجراءات"].map((h) => <th key={h} className="px-4 py-3 text-right font-semibold">{h}</th>)}
+                  {["#","الاسم","الجوال","البريد","الحالة","إجراءات"].map((h) => <th key={h} className="px-4 py-3 text-right font-semibold">{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -269,7 +251,6 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-300">{c.phone}</td>
                     <td className="px-4 py-3 text-gray-400">{c.email || "—"}</td>
-                    <td className="px-4 py-3"><span className="text-gold font-bold">{c.loyalty_points ?? 0}</span><span className="text-gray-500 text-xs mr-1">نقطة</span></td>
                     <td className="px-4 py-3">
                       {c.blocked
                         ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-900/20 text-red-400 border border-red-800/30">محظور</span>
