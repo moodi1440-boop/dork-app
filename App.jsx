@@ -5344,7 +5344,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
         {[{id:"info",icon:"📋",label:t("owner_settings.tab_info")},{id:"hours",icon:"🕐",label:t("owner_settings.tab_hours")},{id:"services",icon:"✂",label:t("owner_settings.tab_services")},{id:"barbers",icon:"💈",label:t("owner_settings.tab_barbers")},{id:"tone",icon:"🔔",label:t("owner_settings.tab_tone")},{id:"social",icon:"📱",label:t("owner_settings.tab_social")},{id:"pin",icon:"🔐",label:t("owner_settings.tab_pin")}].map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
-            style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"var(--border-ui)"}`,background:sec===s.id?"var(--pa12)":"#1a1a2e",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
+            style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"var(--border-ui)"}`,background:sec===s.id?"var(--pa12)":"var(--surface-2)",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
             {s.icon} {s.label}
           </button>
         ))}
@@ -5363,8 +5363,8 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       {sec==="hours"&&<div style={box}>
         <div style={hdr}>{t("owner_settings.hours_title")}</div>
         <div style={{display:"flex",gap:8,marginBottom:12}}>
-          <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${!f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:!f.shiftEnabled?"var(--pa12)":"#1a1a2e",color:!f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",false)}>{t("owner_settings.single_shift")}</button>
-          <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:f.shiftEnabled?"var(--pa12)":"#1a1a2e",color:f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",true)}>{t("owner_settings.double_shift")}</button>
+          <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${!f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:!f.shiftEnabled?"var(--pa12)":"var(--surface-2)",color:!f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",false)}>{t("owner_settings.single_shift")}</button>
+          <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:f.shiftEnabled?"var(--pa12)":"var(--surface-2)",color:f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",true)}>{t("owner_settings.double_shift")}</button>
         </div>
         {!f.shiftEnabled
           ?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -5475,7 +5475,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
             const active=f.tone===tn.id;
             return(
               <button key={tn.id} onClick={()=>{upd("tone",tn.id);playTone(tn.id,0.8);}}
-                style={{padding:"11px 8px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#aaa",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:active?700:400,textAlign:"center"}}>
+                style={{padding:"11px 8px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"#aaa",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:active?700:400,textAlign:"center"}}>
                 {t("settings.tones."+tn.id)} {active&&"✓"}
               </button>
             );
@@ -6684,7 +6684,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
             {[{v:30,l:"30 د"},{v:60,l:"ساعة"},{v:120,l:"ساعتين"},{v:1440,l:"يوم"}].map(({v,l})=>(
               <button key={v} onClick={()=>setReminderMins(v)}
-                style={{padding:"8px 14px",borderRadius:20,border:`1.5px solid ${reminderMins===v?"var(--p)":"var(--border-ui)"}`,background:reminderMins===v?"var(--pa12)":"#1a1a2e",color:reminderMins===v?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}>
+                style={{padding:"8px 14px",borderRadius:20,border:`1.5px solid ${reminderMins===v?"var(--p)":"var(--border-ui)"}`,background:reminderMins===v?"var(--pa12)":"var(--surface-2)",color:reminderMins===v?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}}>
                 {l}
               </button>
             ))}
@@ -6896,7 +6896,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
         {SECS.map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
-            style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"var(--border-ui)"}`,background:sec===s.id?"var(--pa12)":"#1a1a2e",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
+            style={{flexShrink:0,padding:"6px 10px",borderRadius:9,border:`1.5px solid ${sec===s.id?"var(--p)":"var(--border-ui)"}`,background:sec===s.id?"var(--pa12)":"var(--surface-2)",color:sec===s.id?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:sec===s.id?700:400,display:"flex",alignItems:"center",gap:4}}>
             {s.icon} {s.label}
           </button>
         ))}
@@ -6909,7 +6909,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
             const active=settings.theme===t.id;
             return(
               <button key={t.id} onClick={()=>applyTheme(t.id)}
-                style={{padding:"14px 6px",borderRadius:12,border:`2px solid ${active?t.color:"var(--border-ui)"}`,background:active?t.color+"22":"#1a1a2e",color:"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)"}}>
+                style={{padding:"14px 6px",borderRadius:12,border:`2px solid ${active?t.color:"var(--border-ui)"}`,background:active?t.color+"22":"var(--surface-2)",color:"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)"}}>
                 <span style={{fontSize:22}}>{t.emoji}</span>
                 <div style={{width:24,height:24,borderRadius:"50%",background:t.color,boxShadow:active?`0 0 0 3px ${t.color}55`:"none"}}/>
                 <span style={{fontSize:11,color:active?t.color:"var(--text-muted)"}}>{t.label}</span>
@@ -6927,7 +6927,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
             const active=(settings.fontSize||"md")===id;
             return(
               <button key={id} onClick={()=>{setSettings(s=>({...s,fontSize:id}));persistUiToSupabase&&persistUiToSupabase({fontSize:id});}}
-                style={{flex:1,padding:"14px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,fontSize:size,transform:active?"scale(1.04)":"scale(1)"}}>
+                style={{flex:1,padding:"14px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"#888",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,fontSize:size,transform:active?"scale(1.04)":"scale(1)"}}>
                 {label}
               </button>
             );
@@ -6949,7 +6949,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
                 setSettings(s=>({...s,bg:bg.id}));
                 persistUiToSupabase&&persistUiToSupabase({bg:bg.id});
               }}
-                style={{padding:"18px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)",minHeight:80,background:active?"var(--pa12)":"#1a1a2e"}}>
+                style={{padding:"18px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)",minHeight:80,background:active?"var(--pa12)":"var(--surface-2)"}}>
                 <span style={{fontSize:26}}>{bg.emoji}</span>
                 <span style={{fontSize:11,color:active?"var(--p)":"#aaa",fontWeight:active?700:400}}>{t("settings.bgs."+bg.id)}</span>
                 {active&&<span style={{fontSize:9,color:"var(--p)"}}>{t("settings.active")}</span>}
@@ -6976,8 +6976,8 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
               <button key={id}
                 onClick={()=>{setThemeMode(id);persistUiToSupabase&&persistUiToSupabase({darkMode:id==="dark"||id==="dim",themeMode:id});}}
                 style={{padding:"20px 8px 16px",borderRadius:14,
-                  border:`2px solid ${active?"var(--p)":"transparent"}`,
-                  background:active?"var(--pa08)":"rgba(255,255,255,.03)",
+                  border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,
+                  background:active?"var(--pa08)":"var(--surface-1)",
                   boxShadow:active?"0 0 18px rgba(var(--gold-rgb),.18)":"none",
                   cursor:"pointer",fontFamily:"inherit",outline:"none",
                   display:"flex",flexDirection:"column",alignItems:"center",gap:5,
@@ -7003,7 +7003,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
             const active=settings.defaultTone===tn.id;
             return(
               <button key={tn.id} onClick={()=>{setSettings(s=>({...s,defaultTone:tn.id}));playTone(tn.id,0.8);persistUiToSupabase&&persistUiToSupabase({defaultTone:tn.id});}}
-                style={{padding:"10px 8px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"#1a1a2e",color:active?"var(--p)":"#aaa",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:active?700:400,textAlign:"center"}}>
+                style={{padding:"10px 8px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",color:active?"var(--p)":"#aaa",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:active?700:400,textAlign:"center"}}>
                 {t("settings.tones."+tn.id)} {active&&"✓"}
               </button>
             );
