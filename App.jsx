@@ -5582,11 +5582,11 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
             <div style={{display:"flex",gap:8,marginBottom:6}}>
               <div style={{flex:1,minWidth:0}}>
                 <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>{t("owner_settings.from")}</label>
-                <input type="time" style={{...inp,fontSize:12,minWidth:0}} value={b.shiftStart||"09:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:e.target.value}:x)}))}/>
+                <input type="time" style={{...inp,fontSize:11,padding:"5px 7px",minWidth:0}} value={b.shiftStart||"09:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:e.target.value}:x)}))}/>
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>{t("owner_settings.to")}</label>
-                <input type="time" style={{...inp,fontSize:12,minWidth:0}} value={b.shiftEnd||"22:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftEnd:e.target.value}:x)}))}/>
+                <input type="time" style={{...inp,fontSize:11,padding:"5px 7px",minWidth:0}} value={b.shiftEnd||"22:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftEnd:e.target.value}:x)}))}/>
               </div>
             </div>
             </>}
