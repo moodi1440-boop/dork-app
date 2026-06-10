@@ -5336,6 +5336,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
   const saveSocial=()=>{setSocialLinks&&setSocialLinks(draftSocial);setSocialSaved(true);setTimeout(()=>setSocialSaved(false),2500);};
   const effectiveSec=onlySec==="hours"?"barbers":sec;
   const[showHoursInBarbers,setShowHoursInBarbers]=useState(false);
+  const[sortMode,setSortMode]=useState(false);
   const[f,setF]=useState({
     name:salon.name||"",
     phone:salon.phone||"",
@@ -5504,26 +5505,28 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           }
           </>}
         </div>
-        <div style={hdr}>{t("owner_settings.barbers_title")}</div>
+        <div style={{...hdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <span>{t("owner_settings.barbers_title")}</span>
+          {f.barbers.length>1&&<button onClick={()=>setSortMode(p=>!p)} style={{fontSize:11,padding:"3px 10px",borderRadius:7,border:`1.5px solid ${sortMode?"var(--p)":"var(--border-ui)"}`,background:sortMode?"var(--pa12)":"transparent",color:sortMode?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>
+            {sortMode?"✅ انتهى":"↕ ترتيب"}
+          </button>}
+        </div>
         {f.barbers.length===0&&<div style={G.empty}>{t("owner_settings.barbers_empty")}</div>}
         {f.barbers.map((b,i)=>(
-          <div key={b.id} draggable
-            onDragStart={()=>{dragIdx.current=i;}}
-            onDragOver={e=>{e.preventDefault();dragOverIdx.current=i;}}
-            onDrop={()=>{
-              const from=dragIdx.current,to=dragOverIdx.current;
-              if(from===null||from===to)return;
-              setF(p=>{const arr=[...p.barbers];const[item]=arr.splice(from,1);arr.splice(to,0,item);return{...p,barbers:arr};});
-              dragIdx.current=null;dragOverIdx.current=null;
-            }}
-            style={{marginBottom:10,background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:"1px solid var(--border-ui)"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-              {/* مقبض الترتيب */}
-              <div style={{display:"flex",flexDirection:"column",gap:3,cursor:"grab",padding:"4px 2px",flexShrink:0,opacity:0.45}}>
-                <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
-                <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
-                <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
-              </div>
+          <div key={b.id}
+            style={{marginBottom:10,background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:`1px solid ${sortMode?"var(--p)33":"var(--border-ui)"}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:sortMode?0:8}}>
+              {sortMode
+                ?<div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+                  <button onClick={()=>i>0&&setF(p=>{const a=[...p.barbers];[a[i-1],a[i]]=[a[i],a[i-1]];return{...p,barbers:a};})} disabled={i===0} style={{width:28,height:28,borderRadius:6,border:"1.5px solid var(--border-ui)",background:i===0?"transparent":"var(--surface-2)",color:i===0?"#444":"var(--p)",cursor:i===0?"default":"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>▲</button>
+                  <button onClick={()=>i<f.barbers.length-1&&setF(p=>{const a=[...p.barbers];[a[i+1],a[i]]=[a[i],a[i+1]];return{...p,barbers:a};})} disabled={i===f.barbers.length-1} style={{width:28,height:28,borderRadius:6,border:"1.5px solid var(--border-ui)",background:i===f.barbers.length-1?"transparent":"var(--surface-2)",color:i===f.barbers.length-1?"#444":"var(--p)",cursor:i===f.barbers.length-1?"default":"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>▼</button>
+                </div>
+                :<div style={{display:"flex",flexDirection:"column",gap:3,padding:"4px 2px",flexShrink:0,opacity:0.3}}>
+                  <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
+                  <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
+                  <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
+                </div>
+              }
               {/* صورة الحلاق */}
               <div style={{position:"relative",flexShrink:0}}>
                 {b.photo
@@ -5551,8 +5554,8 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
               </button>
               <button style={G.xBtn} onClick={()=>setF(p=>({...p,barbers:p.barbers.filter((_,j)=>j!==i)}))}>✕</button>
             </div>
-            {b.active===false&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:6,textAlign:"center",fontWeight:600}}>مغلق / مسافر</div>}
-            {b.active!==false&&<>
+            {!sortMode&&b.active===false&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:6,textAlign:"center",fontWeight:600}}>مغلق / مسافر</div>}
+            {!sortMode&&b.active!==false&&<>
             {f.services.length>0&&(
               <div style={{marginBottom:10}}>
                 <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6,fontWeight:600}}>⏱ مدة الخدمة (تجاوز الافتراضي)</div>
