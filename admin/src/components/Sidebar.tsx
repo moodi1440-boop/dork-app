@@ -118,7 +118,7 @@ export default function Sidebar() {
           </div>
           <div>
             <div className="font-black text-lg gold-text tracking-widest leading-none">DORK</div>
-            <div className="text-gray-500 text-[10px] leading-none mt-0.5">Admin Panel <span className="text-gold/60">{process.env.NEXT_PUBLIC_ADMIN_VERSION}</span></div>
+            <div className="text-gray-500 text-[10px] leading-none mt-0.5">Admin Panel <span className="text-gold/60">L53</span></div>
           </div>
         </div>
       </div>
