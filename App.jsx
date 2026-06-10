@@ -2773,8 +2773,8 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
               })();
               return(
                 <div key={b.id}
-                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 10px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":inShift?"var(--surface-2)":"var(--shell-bg)",cursor:inShift?"pointer":"not-allowed",opacity:inShift?1:.5,minWidth:60}}
-                  onClick={()=>inShift&&setForm(p=>({...p,barberId:b.id,time:""}))}>
+                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 10px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",cursor:"pointer",opacity:1,minWidth:60}}
+                  onClick={()=>setForm(p=>({...p,barberId:b.id,time:""}))}>
                   {b.photo
                     ?<img src={optimizeImageUrl(b.photo,36,36)} alt={b.name} style={{width:36,height:36,borderRadius:"50%",objectFit:"cover",border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`}}/>
                     :<div style={{width:36,height:36,borderRadius:"50%",background:"var(--surface-2)",border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>💈</div>
@@ -5335,6 +5335,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
   const[socialSaved,setSocialSaved]=useState(false);
   const saveSocial=()=>{setSocialLinks&&setSocialLinks(draftSocial);setSocialSaved(true);setTimeout(()=>setSocialSaved(false),2500);};
   const effectiveSec=onlySec==="hours"?"barbers":sec;
+  const[showHoursInBarbers,setShowHoursInBarbers]=useState(false);
   const[f,setF]=useState({
     name:salon.name||"",
     phone:salon.phone||"",
@@ -5467,7 +5468,11 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       {(sec==="barbers"||effectiveSec==="barbers")&&<div style={box}>
         {/* ── ساعات عمل الصالون (مدموجة هنا) ── */}
         <div style={{marginBottom:14,paddingBottom:14,borderBottom:"1px solid var(--border-ui)"}}>
-          <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10}}>🕐 {t("owner_settings.hours_title")}</div>
+          <button onClick={()=>setShowHoursInBarbers(p=>!p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:"none",border:"none",padding:0,cursor:"pointer",marginBottom:showHoursInBarbers?10:0}}>
+            <span style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>🕐 {t("owner_settings.hours_title")}</span>
+            <span style={{fontSize:12,color:"var(--text-muted)"}}>{showHoursInBarbers?"▲":"▼"}</span>
+          </button>
+          {showHoursInBarbers&&<>
           <div style={{display:"flex",gap:8,marginBottom:12}}>
             <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${!f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:!f.shiftEnabled?"var(--pa12)":"var(--surface-2)",color:!f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",false)}>{t("owner_settings.single_shift")}</button>
             <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:f.shiftEnabled?"var(--pa12)":"var(--surface-2)",color:f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",true)}>{t("owner_settings.double_shift")}</button>
@@ -5490,6 +5495,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
               </div>
             </>
           }
+          </>}
         </div>
         <div style={hdr}>{t("owner_settings.barbers_title")}</div>
         {f.barbers.length===0&&<div style={G.empty}>{t("owner_settings.barbers_empty")}</div>}
