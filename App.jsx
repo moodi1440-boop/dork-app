@@ -5482,6 +5482,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           <div style={{display:"flex",gap:8,marginBottom:12}}>
             <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${!f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:!f.shiftEnabled?"var(--pa12)":"var(--surface-2)",color:!f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",false)}>{t("owner_settings.single_shift")}</button>
             <button style={{flex:1,padding:"9px 0",borderRadius:9,border:`1.5px solid ${f.shiftEnabled?"var(--p)":"var(--border-ui)"}`,background:f.shiftEnabled?"var(--pa12)":"var(--surface-2)",color:f.shiftEnabled?"var(--p)":"#888",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700}} onClick={()=>upd("shiftEnabled",true)}>{t("owner_settings.double_shift")}</button>
+            <button style={{padding:"9px 12px",borderRadius:9,border:`1.5px solid ${(!f.shiftEnabled&&f.workStart==="00:00"&&f.workEnd==="23:59")?"var(--p)":"var(--border-ui)"}`,background:(!f.shiftEnabled&&f.workStart==="00:00"&&f.workEnd==="23:59")?"var(--pa12)":"var(--surface-2)",color:(!f.shiftEnabled&&f.workStart==="00:00"&&f.workEnd==="23:59")?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}} onClick={()=>{upd("shiftEnabled",false);upd("workStart","00:00");upd("workEnd","23:59");}}>🕐 24h</button>
           </div>
           {!f.shiftEnabled
             ?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -5572,12 +5573,8 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                 </div>
               </div>
             )}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+            <div style={{marginBottom:6}}>
               <div style={{fontSize:11,color:"var(--text-muted)"}}>{t("owner_settings.barber_shift")}</div>
-              <button onClick={()=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:"00:00",shiftEnd:"23:59"}:x)}))}
-                style={{padding:"3px 10px",borderRadius:7,border:`1.5px solid ${(b.shiftStart==="00:00"&&b.shiftEnd==="23:59")?"var(--p)":"var(--border-ui)"}`,background:(b.shiftStart==="00:00"&&b.shiftEnd==="23:59")?"var(--pa12)":"transparent",color:(b.shiftStart==="00:00"&&b.shiftEnd==="23:59")?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                🕐 24 ساعة
-              </button>
             </div>
             <div style={{display:"flex",gap:8,marginBottom:6}}>
               <div style={{flex:1,minWidth:0}}>
