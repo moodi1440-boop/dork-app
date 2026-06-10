@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useAdminTheme, type AdminTheme } from "@/components/ThemeProvider";
+import { sb } from "@/lib/supabase-browser";
 
 interface AppearanceSettings { theme: string; fontSize: string; bg: string; }
 
@@ -52,12 +53,13 @@ export default function AppearancePage() {
   const save = async () => {
     setSaving(true); setSaveError("");
     try {
-      const res = await fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appearance }),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? `HTTP ${res.status}`); }
+      const { data: rows } = await sb.from("app_settings").select("id").order("id", { ascending: true }).limit(1);
+      const existingId = (rows as { id: number }[] | null)?.[0]?.id;
+      const patch = { ui_settings: JSON.stringify(appearance) };
+      const { error } = existingId
+        ? await sb.from("app_settings").update(patch).eq("id", existingId)
+        : await sb.from("app_settings").insert(patch);
+      if (error) throw new Error(error.message);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e) {
