@@ -28,7 +28,7 @@ function AddCustomerModal({ onClose, onAdded }: { onClose: () => void; onAdded: 
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-navy border border-border rounded-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
           <h2 className="text-white font-bold">👤 إضافة عميل جديد</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
