@@ -40,7 +40,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const result = (data ?? []).map((s: Record<string, unknown>) => ({ ...s, bookings: [] }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = (data ?? []).map((s: any) => ({ ...s, bookings: [] }));
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
