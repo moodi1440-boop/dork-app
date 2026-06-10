@@ -44,21 +44,20 @@ export default function AppearancePage() {
   const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
-    fetch("/api/settings").then((r) => r.json()).then((s) => {
-      if (s.appearance) setAppearance({ ...DEFAULT_APPEARANCE, ...s.appearance });
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    sb.from("admin_config").select("value").eq("key", "ui_settings").maybeSingle()
+      .then(({ data }) => {
+        if (data?.value && typeof data.value === "object")
+          setAppearance({ ...DEFAULT_APPEARANCE, ...(data.value as AppearanceSettings) });
+        setLoading(false);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      }, (_err) => { setLoading(false); });
   }, []);
 
   const save = async () => {
     setSaving(true); setSaveError("");
     try {
-      const { data: rows } = await sb.from("app_settings").select("id").order("id", { ascending: true }).limit(1);
-      const existingId = (rows as { id: number }[] | null)?.[0]?.id;
-      const patch = { ui_settings: JSON.stringify(appearance) };
-      const { error } = existingId
-        ? await sb.from("app_settings").update(patch).eq("id", existingId)
-        : await sb.from("app_settings").insert(patch);
+      const { error } = await sb.from("admin_config")
+        .upsert({ key: "ui_settings", value: appearance }, { onConflict: "key" });
       if (error) throw new Error(error.message);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);

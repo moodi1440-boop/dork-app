@@ -411,16 +411,18 @@ export default function SalonsPage() {
   const [weekSalon, setWeekSalon] = useState("");
   const [showAdd,   setShowAdd]   = useState(false);
 
+  const SALON_SELECT = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,paused,created_at";
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (status && status !== "all") params.set("status", status);
-      if (search) params.set("search", search);
-      const res = await fetch(`/api/salons?${params.toString()}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setSalons(Array.isArray(data) ? data : []);
+      let q = sb.from("salons").select(SALON_SELECT).order("id", { ascending: false }).limit(200);
+      if (status && status !== "all") q = q.eq("status", status as string);
+      if (search) q = q.or(`name.ilike.%${search}%,owner.ilike.%${search}%`);
+      const { data, error } = await q;
+      if (error) throw new Error(error.message);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setSalons((Array.isArray(data) ? data : []).map((s: any) => ({ ...s, bookings: [] })));
     } catch (e) {
       console.error("Error loading salons:", e);
       setSalons([]);
@@ -432,16 +434,17 @@ export default function SalonsPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((s) => {
-        setPinned(Array.isArray(s.pinned) ? s.pinned : []);
-        setWeekSalon(s.week_salon ? String(s.week_salon) : "");
-      })
-      .catch((e) => console.error("Error loading settings:", e));
+    sb.from("admin_config").select("key,value")
+      .then(({ data }) => {
+        const rows = data ?? [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pinnedRow = rows.find((r: any) => r.key === "pinned");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const weekRow   = rows.find((r: any) => r.key === "week_salon");
+        setPinned(Array.isArray(pinnedRow?.value) ? pinnedRow.value : []);
+        setWeekSalon(weekRow?.value ? String(weekRow.value) : "");
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      }, (_e) => { console.error("Error loading settings"); });
   }, []);
 
   const togglePin = async (id: string) => {
