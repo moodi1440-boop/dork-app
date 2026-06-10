@@ -2728,7 +2728,8 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   });
   const[errors,setErrors]=useState({});
   const allSlots=getSlotsForSalon(salon);
-  const bc=salon.barbers?.length||1;
+  const activeBarbers=(salon.barbers||[]).filter(b=>b.active!==false);
+  const bc=activeBarbers.length||1;
   // Hide past slots for today
   const slots=form.date===todayStr()
     ? allSlots.filter(sl=>{
@@ -2742,7 +2743,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const total=calcTotal(form.services,salon.prices);
   const barber=salon.barbers?.find(b=>b.id===form.barberId);
   const toggle=s=>setForm(p=>({...p,services:p.services.includes(s)?p.services.filter(x=>x!==s):[...p.services,s]}));
-  const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");if(!form.services.length)e.services=t("book.err_service");if(salon.barbers?.length&&!form.barberId)e.barberId=t("book.err_barber");setErrors(e);return!Object.keys(e).length;};
+  const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");if(!form.services.length)e.services=t("book.err_service");if(activeBarbers.length&&!form.barberId)e.barberId=t("book.err_barber");setErrors(e);return!Object.keys(e).length;};
   const v2=()=>{const e={};if(!form.date)e.date=t("book.err_required");if(!form.time&&!form.waitSlot)e.time=t("book.err_time");setErrors(e);return!Object.keys(e).length;};
   const inner=(
     <>
