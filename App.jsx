@@ -5514,7 +5514,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         {f.barbers.length===0&&<div style={G.empty}>{t("owner_settings.barbers_empty")}</div>}
         {f.barbers.map((b,i)=>(
           <div key={b.id}
-            style={{marginBottom:10,background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:`1px solid ${sortMode?"var(--p)33":"var(--border-ui)"}`}}>
+            style={{marginBottom:10,background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:`1px solid ${sortMode?"var(--p)33":"var(--border-ui)"}`,overflow:"hidden"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:sortMode?0:8}}>
               {sortMode
                 ?<div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
@@ -5579,14 +5579,14 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
             <div style={{marginBottom:6}}>
               <div style={{fontSize:11,color:"var(--text-muted)"}}>{t("owner_settings.barber_shift")}</div>
             </div>
-            <div style={{display:"flex",gap:8,marginBottom:6}}>
-              <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
+              <div style={{minWidth:0,overflow:"hidden"}}>
                 <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>{t("owner_settings.from")}</label>
-                <input type="time" style={{...inp,fontSize:11,padding:"5px 7px",minWidth:0}} value={b.shiftStart||"09:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:e.target.value}:x)}))}/>
+                <input type="time" style={{width:"100%",padding:"5px 4px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr",minWidth:0}} value={b.shiftStart||"09:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:e.target.value}:x)}))}/>
               </div>
-              <div style={{flex:1,minWidth:0}}>
+              <div style={{minWidth:0,overflow:"hidden"}}>
                 <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>{t("owner_settings.to")}</label>
-                <input type="time" style={{...inp,fontSize:11,padding:"5px 7px",minWidth:0}} value={b.shiftEnd||"22:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftEnd:e.target.value}:x)}))}/>
+                <input type="time" style={{width:"100%",padding:"5px 4px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr",minWidth:0}} value={b.shiftEnd||"22:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftEnd:e.target.value}:x)}))}/>
               </div>
             </div>
             </>}
