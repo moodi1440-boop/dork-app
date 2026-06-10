@@ -3257,23 +3257,42 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
             <button onClick={()=>setShowCashForm(!showCashForm)} style={{padding:"4px 10px",borderRadius:8,border:"1px solid rgba(var(--pr),.4)",background:"var(--pa08)",color:"var(--p)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>+ أضف</button>
           </div>
           {showCashForm&&(
-            <div style={{background:"var(--surface-1)",borderRadius:10,padding:"10px",marginBottom:10,border:"1px solid var(--border-ui)"}}>
+            <div style={{background:"var(--surface-1)",borderRadius:12,padding:12,marginBottom:10,border:"1px solid var(--border-ui)"}}>
               {salon.barbers?.length>0&&(
-                <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
-                  <button onClick={()=>setCashBarber("")} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${!cashBarber?"var(--p)":"var(--border-ui)"}`,background:!cashBarber?"var(--pa12)":"transparent",color:!cashBarber?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>بدون حلاق</button>
-                  {salon.barbers.map(b=>(
-                    <button key={b.id} onClick={()=>setCashBarber(b.id)} style={{padding:"4px 10px",borderRadius:8,border:`1.5px solid ${cashBarber===b.id?"var(--p)":"var(--border-ui)"}`,background:cashBarber===b.id?"var(--pa12)":"transparent",color:cashBarber===b.id?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{b.name||"حلاق"}</button>
-                  ))}
+                <div style={{marginBottom:10}}>
+                  <label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}>💈 الحلاق</label>
+                  <div style={{position:"relative"}}>
+                    <select value={cashBarber} onChange={e=>setCashBarber(e.target.value)}
+                      style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1.5px solid ${cashBarber?"var(--p)":"var(--border-ui)"}`,background:"var(--surface-2)",color:cashBarber?"var(--p)":"var(--text-muted)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl",appearance:"none",WebkitAppearance:"none",cursor:"pointer",boxSizing:"border-box"}}>
+                      <option value="">بدون حلاق</option>
+                      {salon.barbers.map(b=><option key={b.id} value={b.id}>{b.name||"حلاق"}</option>)}
+                    </select>
+                    <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none"}}>▼</span>
+                  </div>
                 </div>
               )}
-              <div style={{display:"flex",gap:6,marginBottom:6}}>
-                <input type="number" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} placeholder="المبلغ" style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none"}}/>
-                <input type="date" value={cashDate} onChange={e=>setCashDate(e.target.value)} style={{flex:1,padding:"8px 6px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:11,fontFamily:"'Cairo',sans-serif",outline:"none"}}/>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                <div>
+                  <label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}>💵 المبلغ</label>
+                  <div style={{position:"relative"}}>
+                    <input type="number" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} placeholder="0"
+                      style={{width:"100%",padding:"8px 30px 8px 8px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:14,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",direction:"ltr",textAlign:"right",fontWeight:700}}/>
+                    <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none",fontWeight:600}}>ر.س</span>
+                  </div>
+                </div>
+                <div>
+                  <label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}>📅 التاريخ</label>
+                  <input type="date" value={cashDate} onChange={e=>setCashDate(e.target.value)}
+                    style={{width:"100%",padding:"8px 6px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:11,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",direction:"ltr"}}/>
+                </div>
               </div>
-              <input value={cashNote} onChange={e=>setCashNote(e.target.value)} placeholder="ملاحظة (اختياري)" style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:6}}/>
-              <div style={{display:"flex",gap:6}}>
-                <button onClick={addCashEntry} style={{flex:1,padding:"9px",borderRadius:9,border:"none",background:"var(--pa15)",color:"var(--p)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>حفظ</button>
-                <button onClick={()=>{setShowCashForm(false);setCashAmount("");setCashNote("");setCashDate(getTodayDateInRiyadh());setCashBarber("");}} style={{padding:"9px 14px",borderRadius:9,border:"1px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>إلغاء</button>
+              <input value={cashNote} onChange={e=>setCashNote(e.target.value)} placeholder="ملاحظة (اختياري)"
+                style={{width:"100%",padding:"8px 10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:10,direction:"rtl"}}/>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                <button onClick={()=>{setShowCashForm(false);setCashAmount("");setCashNote("");setCashDate(getTodayDateInRiyadh());setCashBarber("");}}
+                  style={{padding:"10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>← رجوع</button>
+                <button onClick={addCashEntry}
+                  style={{padding:"10px",borderRadius:9,border:"none",background:"var(--grad)",color:"var(--p-text,#000)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✓ موافق</button>
               </div>
             </div>
           )}
