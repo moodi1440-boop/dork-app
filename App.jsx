@@ -5354,6 +5354,12 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     barbers:JSON.parse(JSON.stringify(salon.barbers||[])),
     tone:salon.tone||"bell",
   });
+  const _sbLen=salon?.barbers?.length||0;
+  useEffect(()=>{
+    if(_sbLen>0&&f.barbers.length===0){
+      setF(p=>({...p,barbers:JSON.parse(JSON.stringify(salon.barbers))}));
+    }
+  },[_sbLen]);
   const[newSvc,setNewSvc]=useState("");
   const[newBarber,setNewBarber]=useState("");
   const[detecting,setDetecting]=useState(false);
