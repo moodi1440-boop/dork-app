@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { sb } from "@/lib/supabase-browser";
 
 interface Salon {
   id: string; name: string; owner: string; owner_phone: string;
@@ -36,13 +37,14 @@ function AddSalonModal({ onClose, onAdded }: { onClose: () => void; onAdded: () 
   const submit = async () => {
     if (!form.name || !form.phone) { setErr("اسم الصالون والجوال مطلوبان"); return; }
     setSaving(true);
-    const res = await fetch("/api/salons", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: form.name, owner: form.owner, phone: form.phone, owner_phone: form.ownerPhone, region: form.region, gov: form.gov, address: form.address }),
+    const { error } = await sb.from("salons").insert({
+      name: form.name, owner: form.owner, phone: form.phone, owner_phone: form.ownerPhone,
+      region: form.region, gov: form.gov, address: form.address,
+      bookings: [], services: [], barbers: [], prices: {}, rating: 5,
+      work_start: "09:00", work_end: "23:00", status: "approved",
     });
     setSaving(false);
-    if (!res.ok) { const d = await res.json(); setErr(d.error ?? "خطأ في الإضافة"); return; }
+    if (error) { setErr(error.message); return; }
     onAdded();
     onClose();
   };
@@ -173,21 +175,18 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
   const save = async () => {
     setSaving(true);
     try {
-      await fetch(`/api/salons/${salon.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: f.name, owner: f.owner, phone: f.phone, owner_phone: f.owner_phone,
-          address: f.address, rating: f.rating, welcome_msg: f.welcome_msg,
-          closed_days: f.closed_days, slot_min: f.slot_min,
-          services: f.services, prices: f.prices, barbers: f.barbers,
-          shift_enabled: f.shift_enabled,
-          work_start: f.work_start, work_end: f.work_end,
-          shift1_start: f.shift1_start, shift1_end: f.shift1_end,
-          shift2_start: f.shift2_start, shift2_end: f.shift2_end,
-          tone: f.tone, social: f.social,
-        }),
-      });
+      const { error } = await sb.from("salons").update({
+        name: f.name, owner: f.owner, phone: f.phone, owner_phone: f.owner_phone,
+        address: f.address, rating: f.rating, welcome_msg: f.welcome_msg,
+        closed_days: f.closed_days, slot_min: f.slot_min,
+        services: f.services, prices: f.prices, barbers: f.barbers,
+        shift_enabled: f.shift_enabled,
+        work_start: f.work_start, work_end: f.work_end,
+        shift1_start: f.shift1_start, shift1_end: f.shift1_end,
+        shift2_start: f.shift2_start, shift2_end: f.shift2_end,
+        tone: f.tone, social: f.social,
+      }).eq("id", salon.id);
+      if (error) throw new Error(error.message);
       onSave({ ...salon, ...f });
     } catch (e) { alert("خطأ: " + (e as Error).message); }
     setSaving(false);
@@ -448,46 +447,34 @@ export default function SalonsPage() {
   const togglePin = async (id: string) => {
     const np = pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id];
     setPinned(np);
-    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pinned: np }) });
+    await sb.from("admin_config").upsert({ key: "pinned", value: np }, { onConflict: "key" });
   };
 
   const toggleWeek = async (id: string) => {
     const nw = weekSalon === id ? "" : id;
     setWeekSalon(nw);
-    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ week_salon: nw || null }) });
+    await sb.from("admin_config").upsert({ key: "week_salon", value: nw || null }, { onConflict: "key" });
   };
 
   const updateStatus = async (id: string, newStatus: string) => {
-    await fetch(`/api/salons/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
-    });
+    await sb.from("salons").update({ status: newStatus }).eq("id", id);
     load();
   };
 
   const toggleFreeze = async (s: Salon) => {
-    await fetch(`/api/salons/${s.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ frozen: !s.frozen }),
-    });
+    await sb.from("salons").update({ frozen: !s.frozen }).eq("id", s.id);
     load();
   };
 
   const toggleBan = async (s: Salon) => {
     if (!confirm(s.banned ? "رفع الحظر عن هذا الصالون؟" : "حظر هذا الصالون نهائياً؟")) return;
-    await fetch(`/api/salons/${s.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ banned: !s.banned }),
-    });
+    await sb.from("salons").update({ banned: !s.banned }).eq("id", s.id);
     load();
   };
 
   const deleteSalon = async (id: string) => {
     if (!confirm("هل أنت متأكد من حذف هذا الصالون؟")) return;
-    await fetch(`/api/salons/${id}`, { method: "DELETE" });
+    await sb.from("salons").delete().eq("id", id);
     load();
   };
 
