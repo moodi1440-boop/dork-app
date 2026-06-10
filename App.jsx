@@ -3139,14 +3139,28 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
               const medals=["🥇","🥈","🥉"];
               const maxCnt=Math.max(...salon.barbers.map(b=>{const s=getBarberStats(b.id);return barberPeriod==="day"?s.dayCount:barberPeriod==="month"?s.monthCount:s.yearCount;}),1);
               return(
-                <div key={barber.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:colBg,border:`1px solid ${col}44`}}>
-                  <div style={{fontSize:16,flexShrink:0}}>{medals[idx]||"💈"}</div>
-                  <div style={{fontSize:12,fontWeight:700,color:col,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{barber.name||barber.barber_name||"حلاق"}</div>
-                  <div style={{fontSize:11,color:col,fontWeight:700,flexShrink:0}}>{cnt} حجز</div>
-                  <div style={{fontSize:11,color:col,fontWeight:700,flexShrink:0}}>{rev} ر</div>
-                  {barberCash>0&&<div style={{fontSize:10,color:"#27ae60",fontWeight:700,flexShrink:0}}>+{barberCash}💵</div>}
-                  <div style={{width:40,height:6,background:"rgba(255,255,255,.1)",borderRadius:3,flexShrink:0,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${(cnt/maxCnt)*100}%`,background:col,borderRadius:3}}/>
+                <div key={barber.id} style={{borderRadius:12,background:colBg,border:`1.5px solid ${col}44`,padding:"10px 12px",overflow:"hidden"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                    <span style={{fontSize:16,flexShrink:0}}>{medals[idx]||"💈"}</span>
+                    <span style={{fontSize:13,fontWeight:700,color:col,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{barber.name||barber.barber_name||"حلاق"}</span>
+                    <div style={{width:42,height:5,background:"rgba(255,255,255,.15)",borderRadius:3,flexShrink:0,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${(cnt/maxCnt)*100}%`,background:col,borderRadius:3}}/>
+                    </div>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:5}}>
+                    <div style={{background:"rgba(255,255,255,.07)",borderRadius:8,padding:"6px 4px",textAlign:"center"}}>
+                      <div style={{fontSize:9,color:`${col}bb`,marginBottom:3,fontWeight:600}}>💳 حجوزات</div>
+                      <div style={{fontSize:12,fontWeight:700,color:col}}>{cnt}<span style={{fontSize:9}}> حجز</span></div>
+                      <div style={{fontSize:10,color:col,fontWeight:600,marginTop:1}}>{rev} ر</div>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,.07)",borderRadius:8,padding:"6px 4px",textAlign:"center"}}>
+                      <div style={{fontSize:9,color:`${col}bb`,marginBottom:3,fontWeight:600}}>💵 كاش</div>
+                      <div style={{fontSize:12,fontWeight:700,color:barberCash>0?"#27ae60":col}}>{barberCash} ر</div>
+                    </div>
+                    <div style={{background:`${col}20`,borderRadius:8,padding:"6px 4px",textAlign:"center",border:`1px solid ${col}33`}}>
+                      <div style={{fontSize:9,color:`${col}bb`,marginBottom:3,fontWeight:600}}>📊 الإجمالي</div>
+                      <div style={{fontSize:13,fontWeight:700,color:col}}>{rev+barberCash} ر</div>
+                    </div>
                   </div>
                 </div>
               );
