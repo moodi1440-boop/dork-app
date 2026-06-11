@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAdminTheme, type AdminTheme } from "@/components/ThemeProvider";
 import { sb } from "@/lib/supabase-browser";
-import { saveAppearanceAction } from "./actions";
+import { loadAppearanceAction, saveAppearanceAction } from "./actions";
 
 interface AppearanceSettings { theme: string; fontSize: string; bg: string; }
 
@@ -45,13 +45,11 @@ export default function AppearancePage() {
   const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
-    sb.from("admin_config").select("value").eq("key", "ui_settings").maybeSingle()
-      .then(({ data }) => {
-        if (data?.value && typeof data.value === "object")
-          setAppearance({ ...DEFAULT_APPEARANCE, ...(data.value as AppearanceSettings) });
-        setLoading(false);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      }, (_err) => { setLoading(false); });
+    loadAppearanceAction().then(({ value }) => {
+      if (value && typeof value === "object")
+        setAppearance({ ...DEFAULT_APPEARANCE, ...(value as AppearanceSettings) });
+      setLoading(false);
+    });
   }, []);
 
   const save = async () => {
