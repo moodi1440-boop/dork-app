@@ -5652,26 +5652,27 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       {sec==="social"&&<div style={box}>
         <div style={hdr}>{t("owner_settings.social_title")}</div>
         {socialLinks?.enabled
-          ?<div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {socialLinks.email&&<a href={`mailto:${socialLinks.email}`} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
-              <span style={{fontSize:18}}>📧</span><span style={{fontSize:13}}>{socialLinks.email}</span>
-            </a>}
-            {socialLinks.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
-              <span style={{fontSize:18}}>💬</span><span style={{fontSize:13}}>{socialLinks.whatsapp}</span>
-            </a>}
-            {socialLinks.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
-              <span style={{fontSize:18}}>🐦</span><span style={{fontSize:13}}>{socialLinks.twitter}</span>
-            </a>}
-            {(socialLinks.telegram||socialLinks.telegramUser)&&<a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
-              <span style={{fontSize:18}}>✈</span><span style={{fontSize:13}}>{socialLinks.telegramUser||socialLinks.telegram}</span>
-            </a>}
+          ?<div>
+            {socialLinks.email&&<div style={{marginBottom:12}}>
+              <label style={lbl}>📧 البريد الإلكتروني</label>
+              <a href={`mailto:${socialLinks.email}`} style={{...inp,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.email}</a>
+            </div>}
+            {socialLinks.whatsapp&&<div style={{marginBottom:12}}>
+              <label style={lbl}>💬 واتساب</label>
+              <a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{...inp,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.whatsapp}</a>
+            </div>}
+            {socialLinks.twitter&&<div style={{marginBottom:12}}>
+              <label style={lbl}>🐦 تويتر / X</label>
+              <a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{...inp,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.twitter}</a>
+            </div>}
+            {(socialLinks.telegram||socialLinks.telegramUser)&&<div style={{marginBottom:12}}>
+              <label style={lbl}>✈ تيليغرام</label>
+              <a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{...inp,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.telegramUser||socialLinks.telegram}</a>
+            </div>}
             {(socialLinks.customFields||[]).filter(f=>f&&f.label&&(f.value||"").trim()).map((f,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",color:"#fff"}}>
-                <span style={{fontSize:18}}>📌</span>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:11,color:"var(--text-muted)"}}>{f.label}</div>
-                  <div style={{fontSize:13}}>{f.value}</div>
-                </div>
+              <div key={i} style={{marginBottom:12}}>
+                <label style={lbl}>📌 {f.label}</label>
+                <div style={{...inp}}>{f.value}</div>
               </div>
             ))}
           </div>
@@ -7176,26 +7177,27 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
       {sec==="social"&&<div style={box}>
         <div style={hdr}>{t("settings.social_header")}</div>
         {socialLinks?.enabled
-          ?<div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {socialLinks.email&&<a href={`mailto:${socialLinks.email}`} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
-              <span style={{fontSize:18}}>📧</span><span style={{fontSize:13}}>{socialLinks.email}</span>
-            </a>}
-            {socialLinks.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
-              <span style={{fontSize:18}}>💬</span><span style={{fontSize:13}}>{socialLinks.whatsapp}</span>
-            </a>}
-            {socialLinks.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
-              <span style={{fontSize:18}}>🐦</span><span style={{fontSize:13}}>{socialLinks.twitter}</span>
-            </a>}
-            {(socialLinks.telegram||socialLinks.telegramUser)&&<a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
-              <span style={{fontSize:18}}>✈</span><span style={{fontSize:13}}>{socialLinks.telegramUser||socialLinks.telegram}</span>
-            </a>}
+          ?<div>
+            {socialLinks.email&&<div style={{marginBottom:12}}>
+              <label style={lbl}>📧 البريد الإلكتروني</label>
+              <a href={`mailto:${socialLinks.email}`} style={{...inp2,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.email}</a>
+            </div>}
+            {socialLinks.whatsapp&&<div style={{marginBottom:12}}>
+              <label style={lbl}>💬 واتساب</label>
+              <a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{...inp2,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.whatsapp}</a>
+            </div>}
+            {socialLinks.twitter&&<div style={{marginBottom:12}}>
+              <label style={lbl}>🐦 تويتر / X</label>
+              <a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{...inp2,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.twitter}</a>
+            </div>}
+            {(socialLinks.telegram||socialLinks.telegramUser)&&<div style={{marginBottom:12}}>
+              <label style={lbl}>✈ تيليغرام</label>
+              <a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{...inp2,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.telegramUser||socialLinks.telegram}</a>
+            </div>}
             {(socialLinks.customFields||[]).filter(f=>f&&f.label&&(f.value||"").trim()).map((f,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",color:"#fff"}}>
-                <span style={{fontSize:18}}>📌</span>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:11,color:"var(--text-muted)"}}>{f.label}</div>
-                  <div style={{fontSize:13}}>{f.value}</div>
-                </div>
+              <div key={i} style={{marginBottom:12}}>
+                <label style={lbl}>📌 {f.label}</label>
+                <div style={{...inp2}}>{f.value}</div>
               </div>
             ))}
           </div>
