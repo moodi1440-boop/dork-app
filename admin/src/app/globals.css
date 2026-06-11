@@ -3,7 +3,15 @@
 @tailwind utilities;
 
 * { box-sizing: border-box; }
-body { direction: rtl; }
+body { direction: rtl; font-size: var(--adm-font, 15px); }
+
+/* ===== Admin Accent (default gold) ===== */
+:root {
+  --adm-accent:       212 160 23;
+  --adm-accent-light: 247 231 183;
+  --adm-accent-dark:  160 120 16;
+  --adm-font:         15px;
+}
 
 /* ===== Admin Theme Variables ===== */
 :root,
@@ -86,9 +94,19 @@ body { direction: rtl; }
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: rgb(var(--adm-bg)); }
-::-webkit-scrollbar-thumb { background: #d4a017; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgb(var(--adm-accent)); border-radius: 3px; }
 
 @layer utilities {
-  .gold-gradient { background: linear-gradient(135deg, #f7e7b7 0%, #d4a017 50%, #a07810 100%); }
-  .gold-text { background: linear-gradient(135deg, #f7e7b7, #d4a017); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .gold-gradient {
+    background: linear-gradient(135deg,
+      rgb(var(--adm-accent-light)) 0%,
+      rgb(var(--adm-accent))       50%,
+      rgb(var(--adm-accent-dark))  100%);
+  }
+  .gold-text {
+    background: linear-gradient(135deg, rgb(var(--adm-accent-light)), rgb(var(--adm-accent)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }
