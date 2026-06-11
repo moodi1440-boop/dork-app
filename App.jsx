@@ -2766,8 +2766,8 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
               const currentMins=now.getHours()*60+now.getMinutes();
               const toM=(t)=>{const[h,m]=(t||"").split(":").map(Number);return(h||0)*60+(m||0);};
               const inShift=(()=>{
-                if(b.shiftStart||b.shiftEnd){
-                  return currentMins>=toM(b.shiftStart||"00:00")&&currentMins<=toM(b.shiftEnd||"23:59");
+                if(b.shiftStart&&b.shiftEnd){
+                  return currentMins>=toM(b.shiftStart)&&currentMins<=toM(b.shiftEnd);
                 }
                 if(salon.shiftEnabled){
                   const in1=currentMins>=toM(salon.shift1Start)&&currentMins<=toM(salon.shift1End);
@@ -3276,26 +3276,43 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
             <button onClick={()=>setShowCashForm(!showCashForm)} style={{padding:"4px 10px",borderRadius:8,border:"1px solid rgba(var(--pr),.4)",background:"var(--pa08)",color:"var(--p)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>+ أضف</button>
           </div>
           {showCashForm&&(
-            <div style={{display:"flex",gap:7,marginBottom:10,alignItems:"center"}}>
-              <div style={{flex:"0 0 90px",position:"relative"}}>
-                <input type="number" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} placeholder="0"
-                  style={{width:"100%",padding:"9px 28px 9px 8px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:14,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",direction:"ltr",textAlign:"right",fontWeight:700}}/>
-                <span style={{position:"absolute",left:7,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none",fontWeight:600}}>ر.س</span>
-              </div>
+            <div style={{background:"var(--surface-1)",borderRadius:12,padding:12,marginBottom:10,border:"1px solid var(--border-ui)"}}>
               {salon.barbers?.length>0&&(
-                <div style={{flex:1,position:"relative"}}>
-                  <select value={cashBarber} onChange={e=>setCashBarber(e.target.value)}
-                    style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1.5px solid ${cashBarber?"var(--p)":"var(--border-ui)"}`,background:"var(--surface-2)",color:cashBarber?"var(--p)":"var(--text-muted)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl",appearance:"none",WebkitAppearance:"none",cursor:"pointer",boxSizing:"border-box"}}>
-                    <option value="">بدون حلاق</option>
-                    {salon.barbers.map(b=><option key={b.id} value={b.id}>{b.name||"حلاق"}</option>)}
-                  </select>
-                  <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none"}}>▼</span>
+                <div style={{marginBottom:10}}>
+                  <label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}>💈 الحلاق</label>
+                  <div style={{position:"relative"}}>
+                    <select value={cashBarber} onChange={e=>setCashBarber(e.target.value)}
+                      style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1.5px solid ${cashBarber?"var(--p)":"var(--border-ui)"}`,background:"var(--surface-2)",color:cashBarber?"var(--p)":"var(--text-muted)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl",appearance:"none",WebkitAppearance:"none",cursor:"pointer",boxSizing:"border-box"}}>
+                      <option value="">بدون حلاق</option>
+                      {salon.barbers.map(b=><option key={b.id} value={b.id}>{b.name||"حلاق"}</option>)}
+                    </select>
+                    <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none"}}>▼</span>
+                  </div>
                 </div>
               )}
-              <button onClick={addCashEntry}
-                style={{flex:"0 0 auto",padding:"9px 14px",borderRadius:9,border:"none",background:"var(--grad)",color:"var(--p-text,#000)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✓ حفظ</button>
-              <button onClick={()=>{setShowCashForm(false);setCashAmount("");setCashNote("");setCashDate(getTodayDateInRiyadh());setCashBarber("");}}
-                style={{flex:"0 0 auto",padding:"9px 10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>✕</button>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                <div>
+                  <label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}>💵 المبلغ</label>
+                  <div style={{position:"relative"}}>
+                    <input type="number" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} placeholder="0"
+                      style={{width:"100%",padding:"8px 30px 8px 8px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:14,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",direction:"ltr",textAlign:"right",fontWeight:700}}/>
+                    <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none",fontWeight:600}}>ر.س</span>
+                  </div>
+                </div>
+                <div>
+                  <label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}>📅 التاريخ</label>
+                  <input type="date" value={cashDate} onChange={e=>setCashDate(e.target.value)}
+                    style={{width:"100%",padding:"8px 6px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:11,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",direction:"ltr"}}/>
+                </div>
+              </div>
+              <input value={cashNote} onChange={e=>setCashNote(e.target.value)} placeholder="ملاحظة (اختياري)"
+                style={{width:"100%",padding:"8px 10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:10,direction:"rtl"}}/>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                <button onClick={()=>{setShowCashForm(false);setCashAmount("");setCashNote("");setCashDate(getTodayDateInRiyadh());setCashBarber("");}}
+                  style={{padding:"10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>← رجوع</button>
+                <button onClick={addCashEntry}
+                  style={{padding:"10px",borderRadius:9,border:"none",background:"var(--grad)",color:"var(--p-text,#000)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✓ موافق</button>
+              </div>
             </div>
           )}
           {cashEntries.filter(e=>e.date===getTodayDateInRiyadh()).map(e=>(
@@ -4357,20 +4374,26 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
         {/* نموذج إضافة الكاش */}
         {showDashCash&&(
-          <div style={{background:"rgba(39,174,96,.08)",border:"1px solid rgba(39,174,96,.3)",borderRadius:10,padding:"10px",marginBottom:10}}>
+          <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:10}}>
+            <div style={{flex:"0 0 90px",position:"relative"}}>
+              <input type="number" value={dashCashAmt} onChange={e=>setDashCashAmt(e.target.value)} placeholder="0" onKeyDown={e=>e.key==="Enter"&&addDashCash()}
+                style={{width:"100%",padding:"9px 28px 9px 8px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:14,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",direction:"ltr",textAlign:"right",fontWeight:700}}/>
+              <span style={{position:"absolute",left:7,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none",fontWeight:600}}>ر.س</span>
+            </div>
             {salon.barbers?.length>0&&(
-              <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
-                <button onClick={()=>setDashCashBarber("")} style={{padding:"3px 9px",borderRadius:7,border:`1.5px solid ${!dashCashBarber?"#27ae60":"var(--border-ui)"}`,background:!dashCashBarber?"rgba(39,174,96,.2)":"transparent",color:!dashCashBarber?"#27ae60":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>بدون حلاق</button>
-                {salon.barbers.map(b=>(
-                  <button key={b.id} onClick={()=>setDashCashBarber(b.id)} style={{padding:"3px 9px",borderRadius:7,border:`1.5px solid ${dashCashBarber===b.id?"#27ae60":"var(--border-ui)"}`,background:dashCashBarber===b.id?"rgba(39,174,96,.2)":"transparent",color:dashCashBarber===b.id?"#27ae60":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{b.name||"حلاق"}</button>
-                ))}
+              <div style={{flex:1,position:"relative"}}>
+                <select value={dashCashBarber} onChange={e=>setDashCashBarber(e.target.value)}
+                  style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1.5px solid ${dashCashBarber?"var(--p)":"var(--border-ui)"}`,background:"var(--surface-2)",color:dashCashBarber?"var(--p)":"var(--text-muted)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl",appearance:"none",WebkitAppearance:"none",cursor:"pointer",boxSizing:"border-box"}}>
+                  <option value="">بدون حلاق</option>
+                  {salon.barbers.map(b=><option key={b.id} value={b.id}>{b.name||"حلاق"}</option>)}
+                </select>
+                <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none"}}>▼</span>
               </div>
             )}
-            <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <input type="number" value={dashCashAmt} onChange={e=>setDashCashAmt(e.target.value)} placeholder="المبلغ بالريال" onKeyDown={e=>e.key==="Enter"&&addDashCash()} style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1.5px solid rgba(39,174,96,.4)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none"}}/>
-              <button onClick={addDashCash} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#27ae60,#2ecc71)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>حفظ</button>
-              <button onClick={()=>{setShowDashCash(false);setDashCashBarber("");}} style={{padding:"8px 10px",borderRadius:8,border:"1px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
-            </div>
+            <button onClick={addDashCash}
+              style={{flex:"0 0 auto",padding:"9px 14px",borderRadius:9,border:"none",background:"var(--grad)",color:"var(--p-text,#000)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✓ حفظ</button>
+            <button onClick={()=>{setShowDashCash(false);setDashCashBarber("");setDashCashAmt("");}}
+              style={{flex:"0 0 auto",padding:"9px 10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>✕</button>
           </div>
         )}
 
@@ -5561,7 +5584,20 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                     const file=e.target.files?.[0];
                     if(!file)return;
                     const reader=new FileReader();
-                    reader.onload=ev=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,photo:ev.target.result}:x)}));
+                    reader.onload=ev=>{
+                      const img=new Image();
+                      img.onload=()=>{
+                        const MAX=150;
+                        let w=img.width,h=img.height;
+                        if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}
+                        const canvas=document.createElement("canvas");
+                        canvas.width=w;canvas.height=h;
+                        canvas.getContext("2d").drawImage(img,0,0,w,h);
+                        const compressed=canvas.toDataURL("image/jpeg",0.75);
+                        setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,photo:compressed}:x)}));
+                      };
+                      img.src=ev.target.result;
+                    };
                     reader.readAsDataURL(file);
                   }}/>
                 </label>
