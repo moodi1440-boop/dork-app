@@ -5651,35 +5651,32 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 
       {sec==="social"&&<div style={box}>
         <div style={hdr}>{t("owner_settings.social_title")}</div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,padding:"10px 14px",borderRadius:10,background:"var(--surface-2)",border:"1px solid var(--border-ui)"}}>
-          <span style={{fontSize:13,fontWeight:600,color:"var(--text-primary)"}}>{t("owner_settings.show_customers")}</span>
-          <button onClick={()=>setDraftSocial(d=>({...d,enabled:!d.enabled}))}
-            style={{width:46,height:26,borderRadius:13,border:"none",cursor:"pointer",position:"relative",
-              background:draftSocial.enabled?"var(--p)":"var(--border-ui)",transition:"background .2s",flexShrink:0}}>
-            <div style={{position:"absolute",top:3,width:20,height:20,borderRadius:"50%",background:"#fff",
-              transition:"left .2s",left:draftSocial.enabled?23:3}}/>
-          </button>
-        </div>
-        {[
-          {key:"email",      label:"📧 البريد الإلكتروني", placeholder:"info@example.com", type:"email"},
-          {key:"whatsapp",   label:"💬 واتساب",             placeholder:"05XXXXXXXX",       type:"tel"},
-          {key:"twitter",    label:"🐦 تويتر / X",          placeholder:"@username"},
-          {key:"telegramUser",label:"✈ تيليغرام",           placeholder:"@username"},
-        ].map(({key,label,placeholder,type})=>(
-          <div key={key} style={{marginBottom:12}}>
-            <label style={lbl}>{label}</label>
-            <input style={inp} value={draftSocial[key]||""} dir="ltr"
-              onChange={e=>setDraftSocial(d=>({...d,[key]:e.target.value}))}
-              placeholder={placeholder} type={type||"text"}
-              inputMode={type==="tel"?"numeric":undefined}/>
+        {socialLinks?.enabled
+          ?<div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {socialLinks.email&&<a href={`mailto:${socialLinks.email}`} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
+              <span style={{fontSize:18}}>📧</span><span style={{fontSize:13}}>{socialLinks.email}</span>
+            </a>}
+            {socialLinks.whatsapp&&<a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
+              <span style={{fontSize:18}}>💬</span><span style={{fontSize:13}}>{socialLinks.whatsapp}</span>
+            </a>}
+            {socialLinks.twitter&&<a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
+              <span style={{fontSize:18}}>🐦</span><span style={{fontSize:13}}>{socialLinks.twitter}</span>
+            </a>}
+            {(socialLinks.telegram||socialLinks.telegramUser)&&<a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
+              <span style={{fontSize:18}}>✈</span><span style={{fontSize:13}}>{socialLinks.telegramUser||socialLinks.telegram}</span>
+            </a>}
+            {(socialLinks.customFields||[]).filter(f=>f&&f.label&&(f.value||"").trim()).map((f,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",color:"#fff"}}>
+                <span style={{fontSize:18}}>📌</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,color:"var(--text-muted)"}}>{f.label}</div>
+                  <div style={{fontSize:13}}>{f.value}</div>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-        <button onClick={saveSocial}
-          style={{width:"100%",padding:"12px",borderRadius:10,border:"none",
-            background:socialSaved?"#27ae60":"var(--p)",color:"#000",
-            fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"background .3s"}}>
-          {socialSaved?t("owner_settings.saved_social"):t("owner_settings.save_social")}
-        </button>
+          :<div style={G.empty}>{t("settings.social_empty")}</div>
+        }
       </div>}
 
       {sec==="pin"&&<div style={box}>
@@ -7178,9 +7175,6 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
       {sec==="social"&&<div style={box}>
         <div style={hdr}>{t("settings.social_header")}</div>
-        <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12,background:"rgba(255,255,255,.04)",padding:"8px 12px",borderRadius:8,border:"1px solid var(--border-ui)"}}>
-          {t("settings.social_readonly")}
-        </div>
         {socialLinks?.enabled
           ?<div style={{display:"flex",flexDirection:"column",gap:8}}>
             {socialLinks.email&&<a href={`mailto:${socialLinks.email}`} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:10,background:"var(--surface-1)",border:"1px solid var(--border-ui)",textDecoration:"none",color:"#fff"}}>
