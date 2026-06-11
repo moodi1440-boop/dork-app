@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAdminTheme, type AdminTheme } from "@/components/ThemeProvider";
 import { sb } from "@/lib/supabase-browser";
+import { saveAppearanceAction } from "./actions";
 
 interface AppearanceSettings { theme: string; fontSize: string; bg: string; }
 
@@ -56,9 +57,8 @@ export default function AppearancePage() {
   const save = async () => {
     setSaving(true); setSaveError("");
     try {
-      const { error } = await sb.from("admin_config")
-        .upsert({ key: "ui_settings", value: appearance }, { onConflict: "key" });
-      if (error) throw new Error(error.message);
+      const result = await saveAppearanceAction({ ...appearance });
+      if (!result.success) throw new Error(result.error);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e) {

@@ -411,7 +411,7 @@ export default function SalonsPage() {
   const [weekSalon, setWeekSalon] = useState("");
   const [showAdd,   setShowAdd]   = useState(false);
 
-  const SALON_SELECT = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,paused,created_at";
+  const SALON_SELECT = "id,name,owner,owner_phone,phone,rating,status,frozen,banned,address,region,gov,services,prices,barbers,slot_min,work_start,work_end,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,closed_days,welcome_msg";
 
   const load = useCallback(async () => {
     setLoading(true);
