@@ -862,14 +862,18 @@ export default function App(){
         if(r.ui_settings){
           try{
             const u=JSON.parse(r.ui_settings);
+            // localStorage (user preference) takes priority over admin defaults
+            let local={};try{const v=localStorage.getItem("dork_ui");if(v)local=JSON.parse(v);}catch{}
+            const hasLocal=Object.keys(local).length>0;
             setSettings(s=>({
               ...s,
-              theme:u.theme??s.theme,
-              fontSize:u.fontSize??s.fontSize,
-              defaultTone:u.defaultTone??s.defaultTone,
-              bg:normalizeBgId(u.bg??s.bg??"none"),
+              theme:hasLocal?(local.theme??u.theme??s.theme):(u.theme??s.theme),
+              fontSize:hasLocal?(local.fontSize??u.fontSize??s.fontSize):(u.fontSize??s.fontSize),
+              defaultTone:hasLocal?(local.defaultTone??u.defaultTone??s.defaultTone):(u.defaultTone??s.defaultTone),
+              bg:normalizeBgId(hasLocal?(local.bg??u.bg??s.bg??"none"):(u.bg??s.bg??"none")),
             }));
-            if(u.themeMode&&["dark","dim","light","lgray"].includes(u.themeMode))setThemeMode(u.themeMode);
+            const resolvedMode=hasLocal?(local.themeMode??u.themeMode):(u.themeMode);
+            if(resolvedMode&&["dark","dim","light","lgray"].includes(resolvedMode))setThemeMode(resolvedMode);
           }catch{}
         }
       }
