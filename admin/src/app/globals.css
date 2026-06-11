@@ -3,14 +3,15 @@
 @tailwind utilities;
 
 * { box-sizing: border-box; }
-body { direction: rtl; font-size: var(--adm-font, 15px); }
+body { direction: rtl; }
+html { font-size: var(--adm-font, 16px); }
 
 /* ===== Admin Accent (default gold) ===== */
 :root {
   --adm-accent:       212 160 23;
   --adm-accent-light: 247 231 183;
   --adm-accent-dark:  160 120 16;
-  --adm-font:         15px;
+  --adm-font:         16px;
 }
 
 /* ===== Admin Theme Variables ===== */
