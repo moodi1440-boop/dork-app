@@ -2765,22 +2765,23 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
               const now=new Date();
               const currentMins=now.getHours()*60+now.getMinutes();
               const toM=(t)=>{const[h,m]=(t||"").split(":").map(Number);return(h||0)*60+(m||0);};
-              const inShift=(()=>{
-                if(b.shiftStart&&b.shiftEnd){
-                  return currentMins>=toM(b.shiftStart)&&currentMins<=toM(b.shiftEnd);
-                }
+              const salonOpen=(()=>{
                 if(salon.shiftEnabled){
-                  const in1=currentMins>=toM(salon.shift1Start)&&currentMins<=toM(salon.shift1End);
-                  const in2=currentMins>=toM(salon.shift2Start)&&currentMins<=toM(salon.shift2End);
-                  return in1||in2;
+                  return(currentMins>=toM(salon.shift1Start)&&currentMins<=toM(salon.shift1End))||(currentMins>=toM(salon.shift2Start)&&currentMins<=toM(salon.shift2End));
                 }
                 return currentMins>=toM(salon.workStart||"09:00")&&currentMins<=toM(salon.workEnd||"22:00");
               })();
+              const inShift=(()=>{
+                if(!salonOpen) return false;
+                if(b.shiftStart&&b.shiftEnd){
+                  return currentMins>=toM(b.shiftStart)&&currentMins<=toM(b.shiftEnd);
+                }
+                return true;
+              })();
               return(
                 <div key={b.id}
-                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 10px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",cursor:"pointer",opacity:1,minWidth:60}}
-                  onClick={()=>setForm(p=>({...p,barberId:b.id,time:""}))}>
-                  {b.photo
+                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 10px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",cursor:inShift?"pointer":"not-allowed",opacity:inShift?1:0.5,minWidth:60}}
+                  onClick={()=>inShift&&setForm(p=>({...p,barberId:b.id,time:""}))}>                  {b.photo
                     ?<img src={optimizeImageUrl(b.photo,36,36)} alt={b.name} style={{width:36,height:36,borderRadius:"50%",objectFit:"cover",border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`}}/>
                     :<div style={{width:36,height:36,borderRadius:"50%",background:"var(--surface-2)",border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>💈</div>
                   }
