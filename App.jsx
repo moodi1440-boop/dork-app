@@ -5426,6 +5426,20 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
   const save=async()=>{
     setSaving(true);
     try{
+      const compressPhoto=(dataUrl)=>new Promise(resolve=>{
+        if(!dataUrl||!dataUrl.startsWith("data:")||dataUrl.length<40000){resolve(dataUrl);return;}
+        const img=new Image();
+        img.onload=()=>{
+          const MAX=150;let w=img.width,h=img.height;
+          if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}
+          const c=document.createElement("canvas");c.width=w;c.height=h;
+          c.getContext("2d").drawImage(img,0,0,w,h);
+          resolve(c.toDataURL("image/jpeg",0.75));
+        };
+        img.onerror=()=>resolve(dataUrl);
+        img.src=dataUrl;
+      });
+      const compressedBarbers=await Promise.all(f.barbers.map(async b=>({...b,photo:await compressPhoto(b.photo)})));
       const patch={
         name:f.name,phone:f.phone,address:f.address,location_url:f.locationUrl,
         shift_enabled:f.shiftEnabled,
@@ -5433,10 +5447,10 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         shift2_start:f.shift2Start,shift2_end:f.shift2End,
         work_start:f.workStart,work_end:f.workEnd,
         services:f.services,prices:{...f.prices,__durations:f.durations},
-        barbers:f.barbers,tone:f.tone,
+        barbers:compressedBarbers,tone:f.tone,
       };
       await sb("salons","PATCH",patch,`?id=eq.${salon.id}`);
-      setSalons(p=>p.map(s=>s.id===salon.id?{...s,name:f.name,phone:f.phone,address:f.address,locationUrl:f.locationUrl,shiftEnabled:f.shiftEnabled,shift1Start:f.shift1Start,shift1End:f.shift1End,shift2Start:f.shift2Start,shift2End:f.shift2End,workStart:f.workStart,workEnd:f.workEnd,services:f.services,prices:{...f.prices,__durations:f.durations},barbers:f.barbers,tone:f.tone}:s));
+      setSalons(p=>p.map(s=>s.id===salon.id?{...s,name:f.name,phone:f.phone,address:f.address,locationUrl:f.locationUrl,shiftEnabled:f.shiftEnabled,shift1Start:f.shift1Start,shift1End:f.shift1End,shift2Start:f.shift2Start,shift2End:f.shift2End,workStart:f.workStart,workEnd:f.workEnd,services:f.services,prices:{...f.prices,__durations:f.durations},barbers:compressedBarbers,tone:f.tone}:s));
       toast$&&toast$(t("owner_settings.success"));
     }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
     setSaving(false);
