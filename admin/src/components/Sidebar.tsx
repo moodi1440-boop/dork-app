@@ -111,16 +111,19 @@ export default function Sidebar() {
         </div>
       )}
 
-      <div className="px-5 py-7 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gold/10 border border-gold/30 flex items-center justify-center text-lg shadow-[0_0_12px_rgba(212,160,23,0.15)]">
-            ✂
-          </div>
-          <div>
-            <div className="font-black text-lg gold-text tracking-widest leading-none">DORK</div>
-            <div className="text-gray-500 text-[10px] leading-none mt-0.5">Admin Panel <span className="text-gold/60">L61</span></div>
-          </div>
-        </div>
+      <div className="px-5 py-6 border-b border-border flex items-center justify-center">
+        <span style={{
+          fontFamily: "var(--font-cinzel), serif",
+          fontSize: 38,
+          fontWeight: 900,
+          background: "linear-gradient(180deg, rgb(var(--adm-accent-light)) 0%, rgb(var(--adm-accent)) 50%, rgb(var(--adm-accent-dark)) 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+          filter: "drop-shadow(0px 2px 2px rgba(0,0,0,0.35))",
+          letterSpacing: 4,
+          lineHeight: 1,
+        }}>DORK</span>
       </div>
 
       <nav className="flex-1 px-3 py-5 space-y-1">

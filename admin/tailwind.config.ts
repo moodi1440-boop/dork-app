@@ -16,7 +16,8 @@ const config: Config = {
         border:      "rgb(var(--adm-border) / <alpha-value>)",
       },
       fontFamily: {
-        cairo: ["var(--font-cairo)", "sans-serif"],
+        cairo:  ["var(--font-cairo)",  "sans-serif"],
+        cinzel: ["var(--font-cinzel)", "serif"],
       },
       keyframes: {
         "slide-in": { from: { opacity: "0", transform: "translateY(-10px)" }, to: { opacity: "1", transform: "translateY(0)" } },

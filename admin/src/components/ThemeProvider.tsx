@@ -21,7 +21,7 @@ const ACCENT_COLORS: Record<string, { accent: string; light: string; dark: strin
   sky:       { accent: "2 132 199",   light: "56 189 248",  dark: "3 105 161"  },
 };
 
-const FONT_SIZES: Record<string, string> = { sm: "13px", md: "15px", lg: "17px" };
+const FONT_SIZES: Record<string, string> = { sm: "14px", md: "16px", lg: "18px" };
 
 interface ThemeCtxType {
   theme: AdminTheme;
