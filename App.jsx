@@ -5536,8 +5536,8 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         </div>
         <div style={{...hdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <span>{t("owner_settings.barbers_title")}</span>
-          {f.barbers.length>1&&<button onClick={()=>setSortMode(p=>!p)} style={{fontSize:11,padding:"3px 10px",borderRadius:7,border:`1.5px solid ${sortMode?"var(--p)":"var(--border-ui)"}`,background:sortMode?"var(--pa12)":"transparent",color:sortMode?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>
-            {sortMode?"✅ انتهى":"↕ ترتيب"}
+          {f.barbers.length>0&&<button onClick={()=>setSortMode(p=>!p)} style={{fontSize:11,padding:"3px 10px",borderRadius:7,border:`1.5px solid ${sortMode?"var(--p)":"var(--border-ui)"}`,background:sortMode?"var(--pa12)":"transparent",color:sortMode?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>
+            {sortMode?"✅ انتهى":"✏ تعديل"}
           </button>}
         </div>
         {f.barbers.length===0&&<div style={G.empty}>{t("owner_settings.barbers_empty")}</div>}
@@ -5545,17 +5545,10 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           <div key={b.id}
             style={{marginBottom:10,background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:`1px solid ${sortMode?"var(--p)33":"var(--border-ui)"}`,overflow:"hidden"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:sortMode?0:8}}>
-              {sortMode
-                ?<div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+              {sortMode&&<div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
                   <button onClick={()=>i>0&&setF(p=>{const a=[...p.barbers];[a[i-1],a[i]]=[a[i],a[i-1]];return{...p,barbers:a};})} disabled={i===0} style={{width:28,height:28,borderRadius:6,border:"1.5px solid var(--border-ui)",background:i===0?"transparent":"var(--surface-2)",color:i===0?"#444":"var(--p)",cursor:i===0?"default":"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>▲</button>
                   <button onClick={()=>i<f.barbers.length-1&&setF(p=>{const a=[...p.barbers];[a[i+1],a[i]]=[a[i],a[i+1]];return{...p,barbers:a};})} disabled={i===f.barbers.length-1} style={{width:28,height:28,borderRadius:6,border:"1.5px solid var(--border-ui)",background:i===f.barbers.length-1?"transparent":"var(--surface-2)",color:i===f.barbers.length-1?"#444":"var(--p)",cursor:i===f.barbers.length-1?"default":"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>▼</button>
-                </div>
-                :<div style={{display:"flex",flexDirection:"column",gap:3,padding:"4px 2px",flexShrink:0,opacity:0.3}}>
-                  <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
-                  <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
-                  <div style={{width:14,height:2,background:"var(--text-muted)",borderRadius:1}}/>
-                </div>
-              }
+                </div>}
               {/* صورة الحلاق */}
               <div style={{position:"relative",flexShrink:0}}>
                 {b.photo
@@ -5581,7 +5574,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                 <div style={{position:"absolute",top:3,width:16,height:16,borderRadius:"50%",background:"#fff",
                   transition:"left .2s",left:b.active!==false?19:3}}/>
               </button>
-              <button style={G.xBtn} onClick={()=>setF(p=>({...p,barbers:p.barbers.filter((_,j)=>j!==i)}))}>✕</button>
+              {sortMode&&<button style={G.xBtn} onClick={()=>setF(p=>({...p,barbers:p.barbers.filter((_,j)=>j!==i)}))}>✕</button>}
             </div>
             {!sortMode&&b.active===false&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:6,textAlign:"center",fontWeight:600}}>مغلق / مسافر</div>}
             {!sortMode&&b.active!==false&&<>
