@@ -6,9 +6,9 @@ const config: Config = {
     extend: {
       colors: {
         gold: {
-          DEFAULT: "#d4a017",
-          light: "#f0c040",
-          dark: "#a07810",
+          DEFAULT: "rgb(var(--adm-accent)       / <alpha-value>)",
+          light:   "rgb(var(--adm-accent-light)  / <alpha-value>)",
+          dark:    "rgb(var(--adm-accent-dark)   / <alpha-value>)",
         },
         navy:        "rgb(var(--adm-bg)  / <alpha-value>)",
         card:        "rgb(var(--adm-card) / <alpha-value>)",

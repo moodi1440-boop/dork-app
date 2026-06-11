@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             transform: `translate(-50%, ${refreshing ? 8 : Math.max(ptY - 16, 0)}px)`,
             transition: refreshing ? "transform .2s" : "none",
             width: 34, height: 34, borderRadius: "50%",
-            background: "#d4a017", color: "#000",
+            background: "rgb(var(--adm-accent))", color: "#000",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 17, zIndex: 100, pointerEvents: "none",
             boxShadow: "0 2px 10px rgba(0,0,0,.4)",
