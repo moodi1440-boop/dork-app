@@ -411,18 +411,16 @@ export default function SalonsPage() {
   const [weekSalon, setWeekSalon] = useState("");
   const [showAdd,   setShowAdd]   = useState(false);
 
-  const SALON_SELECT = "id,name,owner,owner_phone,phone,rating,status,frozen,banned,address,region,gov,services,prices,barbers,slot_min,work_start,work_end,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,closed_days,welcome_msg";
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      let q = sb.from("salons").select(SALON_SELECT).order("id", { ascending: false }).limit(200);
-      if (status && status !== "all") q = q.eq("status", status as string);
-      if (search) q = q.or(`name.ilike.%${search}%,owner.ilike.%${search}%`);
-      const { data, error } = await q;
-      if (error) throw new Error(error.message);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setSalons((Array.isArray(data) ? data : []).map((s: any) => ({ ...s, bookings: [] })));
+      const params = new URLSearchParams();
+      if (status && status !== "all") params.set("status", status);
+      if (search) params.set("search", search);
+      const res = await fetch(`/api/salons?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setSalons(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Error loading salons:", e);
       setSalons([]);
