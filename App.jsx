@@ -5398,13 +5398,13 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     services:[...(salon.services||[])],
     prices:{...(salon.prices||{})},
     durations:{...(salon.prices?.__durations||{})},
-    barbers:JSON.parse(JSON.stringify(salon.barbers||[])),
+    barbers:JSON.parse(JSON.stringify(salon.barbers||[])).map(b=>({...b,shiftStart:b.shiftStart??"09:00",shiftEnd:b.shiftEnd??"22:00"})),
     tone:salon.tone||"bell",
   });
   const _sbLen=salon?.barbers?.length||0;
   useEffect(()=>{
     if(_sbLen>0&&f.barbers.length===0){
-      setF(p=>({...p,barbers:JSON.parse(JSON.stringify(salon.barbers))}));
+      setF(p=>({...p,barbers:JSON.parse(JSON.stringify(salon.barbers)).map(b=>({...b,shiftStart:b.shiftStart??"09:00",shiftEnd:b.shiftEnd??"22:00"}))}));
     }
   },[_sbLen]);
   const[newSvc,setNewSvc]=useState("");
