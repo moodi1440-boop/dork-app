@@ -5509,20 +5509,26 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
             <button style={{padding:"9px 12px",borderRadius:9,border:`1.5px solid ${(!f.shiftEnabled&&f.workStart==="00:00"&&f.workEnd==="23:59")?"var(--p)":"var(--border-ui)"}`,background:(!f.shiftEnabled&&f.workStart==="00:00"&&f.workEnd==="23:59")?"var(--pa12)":"var(--surface-2)",color:(!f.shiftEnabled&&f.workStart==="00:00"&&f.workEnd==="23:59")?"var(--p)":"#888",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}} onClick={()=>setF(p=>{const already24h=p.workStart==="00:00"&&p.workEnd==="23:59";return{...p,shiftEnabled:false,_savedWorkStart:already24h?p._savedWorkStart:p.workStart,_savedWorkEnd:already24h?p._savedWorkEnd:p.workEnd,workStart:"00:00",workEnd:"23:59"};})}>🕐 24h</button>
           </div>
           {!f.shiftEnabled
-            ?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <div><label style={lbl}>{t("owner_settings.from")}</label><input type="time" style={inp} value={f.workStart} onChange={e=>upd("workStart",e.target.value)}/></div>
-              <div><label style={lbl}>{t("owner_settings.to")}</label><input type="time" style={inp} value={f.workEnd} onChange={e=>upd("workEnd",e.target.value)}/></div>
+            ?<div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={lbl}>{t("owner_settings.from")}</span>
+              <input type="time" style={{flex:1,minWidth:0,padding:"7px 5px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr"}} value={f.workStart} onChange={e=>upd("workStart",e.target.value)}/>
+              <span style={lbl}>{t("owner_settings.to")}</span>
+              <input type="time" style={{flex:1,minWidth:0,padding:"7px 5px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr"}} value={f.workEnd} onChange={e=>upd("workEnd",e.target.value)}/>
             </div>
             :<>
               <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>{t("owner_settings.morning")}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-                <div><label style={lbl}>{t("owner_settings.from")}</label><input type="time" style={inp} value={f.shift1Start} onChange={e=>upd("shift1Start",e.target.value)}/></div>
-                <div><label style={lbl}>{t("owner_settings.to")}</label><input type="time" style={inp} value={f.shift1End} onChange={e=>upd("shift1End",e.target.value)}/></div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+                <span style={lbl}>{t("owner_settings.from")}</span>
+                <input type="time" style={{flex:1,minWidth:0,padding:"7px 5px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr"}} value={f.shift1Start} onChange={e=>upd("shift1Start",e.target.value)}/>
+                <span style={lbl}>{t("owner_settings.to")}</span>
+                <input type="time" style={{flex:1,minWidth:0,padding:"7px 5px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr"}} value={f.shift1End} onChange={e=>upd("shift1End",e.target.value)}/>
               </div>
               <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>{t("owner_settings.evening")}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                <div><label style={lbl}>{t("owner_settings.from")}</label><input type="time" style={inp} value={f.shift2Start} onChange={e=>upd("shift2Start",e.target.value)}/></div>
-                <div><label style={lbl}>{t("owner_settings.to")}</label><input type="time" style={inp} value={f.shift2End} onChange={e=>upd("shift2End",e.target.value)}/></div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={lbl}>{t("owner_settings.from")}</span>
+                <input type="time" style={{flex:1,minWidth:0,padding:"7px 5px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr"}} value={f.shift2Start} onChange={e=>upd("shift2Start",e.target.value)}/>
+                <span style={lbl}>{t("owner_settings.to")}</span>
+                <input type="time" style={{flex:1,minWidth:0,padding:"7px 5px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr"}} value={f.shift2End} onChange={e=>upd("shift2End",e.target.value)}/>
               </div>
             </>
           }
@@ -5602,15 +5608,11 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
             <div style={{marginBottom:6}}>
               <div style={{fontSize:11,color:"var(--text-muted)"}}>{t("owner_settings.barber_shift")}</div>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
-              <div style={{minWidth:0,overflow:"hidden"}}>
-                <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>{t("owner_settings.from")}</label>
-                <input type="time" style={{width:"100%",padding:"5px 4px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr",minWidth:0}} value={b.shiftStart||"09:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:e.target.value}:x)}))}/>
-              </div>
-              <div style={{minWidth:0,overflow:"hidden"}}>
-                <label style={{display:"block",fontSize:10,color:"#666",marginBottom:3}}>{t("owner_settings.to")}</label>
-                <input type="time" style={{width:"100%",padding:"5px 4px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr",minWidth:0}} value={b.shiftEnd||"22:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftEnd:e.target.value}:x)}))}/>
-              </div>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+              <span style={{fontSize:10,color:"var(--text-muted)",flexShrink:0}}>{t("owner_settings.from")}</span>
+              <input type="time" style={{flex:1,minWidth:0,padding:"5px 4px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr"}} value={b.shiftStart||"09:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftStart:e.target.value}:x)}))}/>
+              <span style={{fontSize:10,color:"var(--text-muted)",flexShrink:0}}>{t("owner_settings.to")}</span>
+              <input type="time" style={{flex:1,minWidth:0,padding:"5px 4px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"ltr"}} value={b.shiftEnd||"22:00"} onChange={e=>setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,shiftEnd:e.target.value}:x)}))}/>
             </div>
             </>}
           </div>
