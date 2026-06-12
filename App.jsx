@@ -2812,19 +2812,25 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
                     </div>
                     <span style={{fontWeight:sel?700:400,color:sel?"var(--p)":"var(--text-primary)",fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{svc}</span>
                   </div>
-                  <div style={{display:"flex",gap:10,alignItems:"center",flexShrink:0,marginRight:4}}>
-                    {dur&&<span style={{fontSize:11,color:"var(--text-muted)",minWidth:26,textAlign:"center"}}>{dur}</span>}
-                    <span style={{fontSize:12,fontWeight:700,color:sel?"var(--p)":"var(--text-primary)",minWidth:28,textAlign:"center"}}>{price}</span>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+                    {dur&&<div style={{padding:"4px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"var(--surface-2)",fontSize:11,color:"var(--text-muted)",minWidth:30,textAlign:"center"}}>{dur}</div>}
+                    <div style={{padding:"4px 8px",borderRadius:7,border:`1px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa07)":"var(--surface-2)",fontSize:12,fontWeight:700,color:sel?"var(--p)":"var(--text-primary)",minWidth:30,textAlign:"center"}}>{price}</div>
                   </div>
                 </div>
               );
             })}
           </div>
         </F>
-        {form.services.length>0&&<div style={{display:"flex",alignItems:"center",background:"var(--pa07)",borderRadius:10,padding:"10px 14px",marginTop:-4,gap:4}}>
-          <span style={{flex:1,fontSize:12,color:"var(--text-muted)"}}>{form.services.length} خدمة</span>
-          {totalDuration>0&&<span style={{flex:1,fontSize:12,color:"var(--p)",fontWeight:700,textAlign:"center"}}>{totalDuration} {t("book.min_label")}</span>}
-          <span style={{flex:1,fontWeight:700,color:"var(--p)",fontSize:14,textAlign:"left"}}>{total} {t("book.sar")}</span>
+        {form.services.length>0&&<div style={{display:"flex",alignItems:"center",background:"var(--pa07)",borderRadius:10,padding:"8px 10px",marginTop:-4,gap:6}}>
+          <div style={{flex:1,padding:"7px 6px",borderRadius:8,border:"1px solid rgba(var(--pr),.25)",background:"rgba(255,255,255,.04)",textAlign:"center"}}>
+            <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:600}}>{form.services.length} خدمة</span>
+          </div>
+          {totalDuration>0&&<div style={{flex:1,padding:"7px 6px",borderRadius:8,border:"1px solid rgba(var(--pr),.35)",background:"rgba(255,255,255,.04)",textAlign:"center"}}>
+            <span style={{fontSize:12,color:"var(--p)",fontWeight:700}}>{totalDuration} دقيقة</span>
+          </div>}
+          <div style={{flex:1,padding:"7px 6px",borderRadius:8,border:"1px solid rgba(var(--pr),.35)",background:"rgba(255,255,255,.04)",textAlign:"center"}}>
+            <span style={{fontSize:13,fontWeight:700,color:"var(--p)"}}>{total} {t("book.sar")}</span>
+          </div>
         </div>}
         <div style={{display:"flex",gap:8,marginTop:8}}><BtnBack toStep={2}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(v3())setStep(4);}}>{t("book.next")}</button></div>
       </div>}
@@ -5555,19 +5561,18 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         <div style={{...hdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <span>{t("owner_settings.services_title")}</span>
           {f.services.length>0&&<button onClick={()=>setSortSvcMode(p=>!p)} style={{fontSize:11,padding:"3px 10px",borderRadius:7,border:`1.5px solid ${sortSvcMode?"var(--p)":"var(--border-ui)"}`,background:sortSvcMode?"var(--pa12)":"transparent",color:sortSvcMode?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>
-            {sortSvcMode?"✅ انتهى":"✏ ترتيب"}
+            {sortSvcMode?"✅ انتهى":"✏ تعديل"}
           </button>}
         </div>
         {/* رأس الجدول */}
-        {f.services.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 90px 80px 32px",gap:6,marginBottom:6,padding:"0 4px"}}>
+        {f.services.length>0&&!sortSvcMode&&<div style={{display:"grid",gridTemplateColumns:"1fr 90px 80px",gap:6,marginBottom:6,padding:"0 4px"}}>
           <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700}}>{t("owner_settings.services_title")}</span>
           <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>الوقت</span>
           <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>السعر</span>
-          <span/>
         </div>}
         {f.services.map((svc,i)=>(
-          <div key={svc} style={{display:"grid",gridTemplateColumns:"1fr 90px 80px 32px",gap:6,marginBottom:6,alignItems:"center",background:"var(--bg-input)",borderRadius:9,padding:"6px 8px",border:"1px solid var(--border-ui)"}}>
-            {sortSvcMode&&<div style={{gridColumn:"1/-1",display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+          <div key={svc} style={{display:"grid",gridTemplateColumns:sortSvcMode?"1fr":"1fr 90px 80px",gap:6,marginBottom:6,alignItems:"center",background:"var(--bg-input)",borderRadius:9,padding:"6px 8px",border:"1px solid var(--border-ui)"}}>
+            {sortSvcMode&&<div style={{display:"flex",alignItems:"center",gap:8}}>
               <div style={{display:"flex",gap:4}}>
                 <button onClick={()=>i>0&&setF(p=>{const a=[...p.services];[a[i-1],a[i]]=[a[i],a[i-1]];return{...p,services:a};})} disabled={i===0} style={{width:26,height:26,borderRadius:6,border:"1.5px solid var(--border-ui)",background:i===0?"transparent":"var(--surface-2)",color:i===0?"#444":"var(--p)",cursor:i===0?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>▲</button>
                 <button onClick={()=>i<f.services.length-1&&setF(p=>{const a=[...p.services];[a[i+1],a[i]]=[a[i],a[i+1]];return{...p,services:a};})} disabled={i===f.services.length-1} style={{width:26,height:26,borderRadius:6,border:"1.5px solid var(--border-ui)",background:i===f.services.length-1?"transparent":"var(--surface-2)",color:i===f.services.length-1?"#444":"var(--p)",cursor:i===f.services.length-1?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>▼</button>
@@ -5587,7 +5592,6 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                   value={f.prices[svc]||0} onChange={e=>setF(p=>({...p,prices:{...p.prices,[svc]:+e.target.value}}))}/>
                 <span style={{fontSize:9,color:"var(--text-muted)",flexShrink:0}}>ريال</span>
               </div>
-              <button style={G.xBtn} onClick={()=>setF(p=>{const sv=p.services.filter(s=>s!==svc);const pr={...p.prices};delete pr[svc];const dr={...p.durations};delete dr[svc];return{...p,services:sv,prices:pr,durations:dr};})}>✕</button>
             </>}
           </div>
         ))}
@@ -5722,7 +5726,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                     return(
                       <div key={svc} style={{display:"grid",gridTemplateColumns:"1fr 70px 70px",gap:6,padding:"7px 10px",borderBottom:"1px solid rgba(var(--pr),.05)",alignItems:"center"}}>
                         <span style={{fontSize:12,color:"var(--text-primary)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{svc}</span>
-                        <span style={{fontSize:11,color:"var(--text-muted)",textAlign:"center"}}>{defaultDur}{defaultDur!=="—"?" د":""}</span>
+                        <div style={{padding:"4px 6px",borderRadius:6,border:"1px solid var(--border-ui)",background:"var(--surface-2)",fontSize:11,color:"var(--text-muted)",textAlign:"center",minWidth:38}}>{defaultDur}{defaultDur!=="—"?" د":""}</div>
                         <div style={{display:"flex",alignItems:"center",gap:3}}>
                           <input type="number" min="1" max="480" placeholder={String(defaultDur)}
                             style={{flex:1,width:0,padding:"4px 4px",borderRadius:6,border:`1.5px solid ${barberDur?"var(--p)":"var(--border-ui)"}`,background:"var(--surface-1)",color:"var(--p)",fontSize:11,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
