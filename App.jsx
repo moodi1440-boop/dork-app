@@ -2741,8 +2741,8 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const totalDuration=form.services.reduce((a,s)=>a+(getDur(s)||0),0);
   const allSlots=barber?getSlotsForBarber(salon,barber):getSlotsForSalon(salon);
   const slots=form.date===todayStr()?allSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):allSlots;
-  const slotUsed=sl=>salon.bookings.filter(b=>b.date===form.date&&b.time===sl&&b.status!=="rejected"&&(!form.barberId||b.barberId===form.barberId)).length;
-  const slotFull=sl=>slotUsed(sl)>=(form.barberId?1:bc);
+  const getBookingDur=b=>{const svcs=Array.isArray(b.services)?b.services:[];const dur=svcs.reduce((a,s)=>a+(salonDurations[s]||0),0);return dur||(salon.slotMin||SLOT_MIN);};
+  const slotFull=sl=>{const slM=(h=>m=>h*60+m)(...sl.split(":").map(Number));const newDur=totalDuration||(salon.slotMin||SLOT_MIN);const newEnd=slM+newDur;const n=salon.bookings.filter(b=>{if(b.date!==form.date||b.status==="rejected")return false;if(form.barberId&&b.barberId!==form.barberId&&b.barberId!=="any")return false;const bM=(h=>m=>h*60+m)(...(b.time||"00:00").split(":").map(Number));return slM<bM+getBookingDur(b)&&bM<newEnd;}).length;return n>=(form.barberId?1:bc);};
   const total=calcTotal(form.services,salon.prices);
   const toggle=s=>setForm(p=>({...p,services:p.services.includes(s)?p.services.filter(x=>x!==s):[...p.services,s]}));
   const DAYS=t("book.days",{returnObjects:true});
@@ -2799,10 +2799,10 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         <F label={t("book.services_label")} error={errors.services}>
           <div style={{borderRadius:12,overflow:"hidden",border:`1.5px solid ${errors.services?"#e74c3c":"var(--border-ui)"}`}}>
             {/* رأس الأعمدة */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 66px 66px",padding:"6px 14px",background:"var(--surface-2)",borderBottom:"1px solid var(--border-ui)"}}>
-              <span style={{fontSize:9,color:"var(--text-muted)"}}>الخدمة</span>
-              <span style={{fontSize:9,color:"var(--text-muted)",textAlign:"center"}}>الوقت</span>
-              <span style={{fontSize:9,color:"var(--text-muted)",textAlign:"center"}}>السعر</span>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 66px 66px",padding:"8px 14px",gap:6,background:"var(--surface-2)",borderBottom:"1px solid var(--border-ui)"}}>
+              <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:9,color:"var(--text-muted)",fontWeight:700}}>الخدمة</div>
+              <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:9,color:"var(--text-muted)",fontWeight:700,textAlign:"center",minWidth:46}}>الوقت</div>
+              <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:9,color:"var(--text-muted)",fontWeight:700,textAlign:"center",minWidth:46}}>السعر</div>
             </div>
             {(salon.services||[]).map((svc,idx)=>{
               const sel=form.services.includes(svc);
