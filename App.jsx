@@ -290,7 +290,9 @@ function toAppCustomer(row) {
 // ==============================================
 //  CONSTANTS
 // ==============================================
+const SLOT_STEP = 15;
 const SLOT_MIN  = 40;
+const BUFFER_MIN = 5;
 
 /** مصدر الحقيقة لإعدادات المنصة في جدول app_settings (Supabase) */
 const DEFAULT_SOCIAL_LINKS={email:"",twitter:"",whatsapp:"",telegram:"",telegramUser:"",enabled:false,customFields:[]};
@@ -658,16 +660,14 @@ function makeSlots(s,e,slotMin=40){
   while(h<eh||(h===eh&&m<em)){r.push(`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`);m+=slotMin;if(m>=60){h++;m-=60;}} return r;
 }
 function getSlotsForSalon(s){
-  const sm=s.slotMin||SLOT_MIN;
   if(s.shiftEnabled){
-    return[...(s.shift1Start&&s.shift1End?makeSlots(s.shift1Start,s.shift1End,sm):[]),...(s.shift2Start&&s.shift2End?makeSlots(s.shift2Start,s.shift2End,sm):[])];
+    return[...(s.shift1Start&&s.shift1End?makeSlots(s.shift1Start,s.shift1End,SLOT_STEP):[]),...(s.shift2Start&&s.shift2End?makeSlots(s.shift2Start,s.shift2End,SLOT_STEP):[])];
   }
-  return makeSlots(s.workStart||"09:00",s.workEnd||"22:00",sm);
+  return makeSlots(s.workStart||"09:00",s.workEnd||"22:00",SLOT_STEP);
 }
 function getSlotsForBarber(salon,barber){
-  const sm=salon.slotMin||SLOT_MIN;
   if(barber?.shiftStart&&barber?.shiftEnd){
-    return makeSlots(barber.shiftStart,barber.shiftEnd,sm);
+    return makeSlots(barber.shiftStart,barber.shiftEnd,SLOT_STEP);
   }
   return getSlotsForSalon(salon);
 }
@@ -2741,8 +2741,9 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const totalDuration=form.services.reduce((a,s)=>a+(getDur(s)||0),0);
   const allSlots=barber?getSlotsForBarber(salon,barber):getSlotsForSalon(salon);
   const slots=form.date===todayStr()?allSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):allSlots;
-  const getBookingDur=b=>{const svcs=Array.isArray(b.services)?b.services:[];const dur=svcs.reduce((a,s)=>a+(salonDurations[s]||0),0);return dur||(salon.slotMin||SLOT_MIN);};
-  const slotFull=sl=>{const slM=(h=>m=>h*60+m)(...sl.split(":").map(Number));const newDur=totalDuration||(salon.slotMin||SLOT_MIN);const newEnd=slM+newDur;const n=salon.bookings.filter(b=>{if(b.date!==form.date||b.status==="rejected")return false;if(form.barberId&&b.barberId!==form.barberId&&b.barberId!=="any")return false;const bM=(h=>m=>h*60+m)(...(b.time||"00:00").split(":").map(Number));return slM<bM+getBookingDur(b)&&bM<newEnd;}).length;return n>=(form.barberId?1:bc);};
+  const BMIN=salon.bufferMin??BUFFER_MIN;
+  const getBookingDur=b=>{const svcs=Array.isArray(b.services)?b.services:[];const bBarber=salon.barbers?.find(x=>x.id===b.barberId);const dur=svcs.reduce((a,s)=>a+((bBarber?.durations?.[s])||salonDurations[s]||0),0);return dur||(salon.slotMin||SLOT_MIN);};
+  const slotFull=sl=>{const slM=(h=>m=>h*60+m)(...sl.split(":").map(Number));const newDur=totalDuration||(salon.slotMin||SLOT_MIN);const n=salon.bookings.filter(b=>{if(b.date!==form.date||b.status==="rejected")return false;if(form.barberId&&b.barberId!==form.barberId&&b.barberId!=="any")return false;const bM=(h=>m=>h*60+m)(...(b.time||"00:00").split(":").map(Number));return slM<bM+getBookingDur(b)+BMIN&&bM<slM+newDur+BMIN;}).length;return n>=(form.barberId?1:bc);};
   const total=calcTotal(form.services,salon.prices);
   const toggle=s=>setForm(p=>({...p,services:p.services.includes(s)?p.services.filter(x=>x!==s):[...p.services,s]}));
   const DAYS=t("book.days",{returnObjects:true});
