@@ -156,7 +156,7 @@ export default function Sidebar() {
           <span>🚪</span>
           تسجيل خروج
         </button>
-        <div className="text-center text-[10px] text-gray-600 mt-2">L66</div>
+        <div className="text-center text-[10px] text-gray-600 mt-2">L67</div>
       </div>
     </aside>
   );
