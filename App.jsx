@@ -1386,7 +1386,7 @@ export default function App(){
         supabase.functions.invoke('send-push-notification',{body:{
           target_type:"single",user_id:sid,user_type:"salon",
           title:`✂️ حجز جديد في ${salon?.name||""}`,
-          body:`${bk.name} | ${bk.time} | ${bk.date}`,
+          body:`${bk.name||"عميل"} | ${bk.time} | ${bk.date}`,
           data:_d,
         }}).catch(()=>{});
         // notify customer
@@ -2813,8 +2813,8 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
                     <span style={{fontWeight:sel?700:400,color:sel?"var(--p)":"var(--text-primary)",fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{svc}</span>
                   </div>
                   <div style={{display:"flex",gap:10,alignItems:"center",flexShrink:0,marginRight:4}}>
-                    {dur&&<span style={{fontSize:11,color:"var(--text-muted)"}}>{dur} {t("book.min_label")}</span>}
-                    <span style={{fontSize:12,fontWeight:700,color:sel?"var(--p)":"var(--text-primary)"}}>{price} {t("book.sar")}</span>
+                    {dur&&<span style={{fontSize:11,color:"var(--text-muted)",minWidth:26,textAlign:"center"}}>{dur}</span>}
+                    <span style={{fontSize:12,fontWeight:700,color:sel?"var(--p)":"var(--text-primary)",minWidth:28,textAlign:"center"}}>{price}</span>
                   </div>
                 </div>
               );
@@ -3567,7 +3567,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       <div style={{display:"flex",flexDirection:"column",gap:8}}>{bks.map(b=>(
         <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
           <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
-            {(()=>{const cust=customers.find(c=>c.phone&&b.phone&&c.phone.replace(/\D/g,"").slice(-9)===b.phone.replace(/\D/g,"").slice(-9));const cl=cust?getCustomerClassification(cust):null;return(<div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name}{cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>);})()}
+            {(()=>{const cust=customers.find(c=>c.phone&&b.phone&&c.phone.replace(/\D/g,"").slice(-9)===b.phone.replace(/\D/g,"").slice(-9));const cl=cust?getCustomerClassification(cust):null;return(<div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name||t("owner_dash.customer_fallback")}{cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}>{cl.label}</span>}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div></div>);})()}
             <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?t("notif.status_approved"):b.status==="rejected"?t("notif.status_rejected"):t("notif.status_pending")}</span>
           </div>
           {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>{t("notif.approve")}</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>{t("notif.reject")}</button></div>}
@@ -4711,7 +4711,7 @@ function BookingCalendar({salon,onUpdate}){
               <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:13,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name||t("owner_dash.customer_fallback")}</div>
                     <div style={{fontSize:11,color:"var(--text-muted)"}}>📞 {b.phone}</div>
                     <div style={{fontSize:11,color:"var(--text-muted)"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div>
                     <div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {b.time} - {b.total||0} ر</div>
@@ -5418,6 +5418,8 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
   const effectiveSec=onlySec==="hours"?"barbers":sec;
   const[showHoursInBarbers,setShowHoursInBarbers]=useState(false);
   const[sortMode,setSortMode]=useState(false);
+  const[sortSvcMode,setSortSvcMode]=useState(false);
+  const[expandedBarberDur,setExpandedBarberDur]=useState(null);
   const[f,setF]=useState({
     name:salon.name||"",
     phone:salon.phone||"",
@@ -5493,6 +5495,15 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     setSaving(false);
   };
 
+  const saveBarberDurations=async(barberIdx)=>{
+    try{
+      const barbers=f.barbers.map(async b=>({...b,photo:b.photo}));
+      await sb("salons","PATCH",{barbers:f.barbers},`?id=eq.${salon.id}`);
+      setSalons(p=>p.map(s=>s.id===salon.id?{...s,barbers:f.barbers}:s));
+      toast$&&toast$("✅ تم حفظ مدد الخدمات");
+    }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
+  };
+
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   const lbl={display:"block",fontSize:11,color:"var(--text-muted)",marginBottom:4,fontWeight:600};
   const box={background:"var(--surface-1)",borderRadius:13,padding:14,border:"1px solid var(--border-ui)",marginBottom:10};
@@ -5541,17 +5552,43 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 
 
       {sec==="services"&&<div style={box}>
-        <div style={hdr}>{t("owner_settings.services_title")}</div>
-        {f.services.map(svc=>(
-          <div key={svc} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,background:"var(--bg-input)",borderRadius:9,padding:"8px 10px",border:"1px solid var(--border-ui)"}}>
-            <span style={{flex:1,fontSize:13,color:"var(--text-primary)"}}>{svc}</span>
-            <input type="number" min="0" style={{width:65,padding:"6px 6px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--p)",fontSize:12,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
-              value={f.prices[svc]||0} onChange={e=>setF(p=>({...p,prices:{...p.prices,[svc]:+e.target.value}}))}/>
-            <span style={{fontSize:10,color:"var(--text-muted)",flexShrink:0}}>ر</span>
-            <input type="number" min="1" max="480" placeholder="د" title="المدة بالدقائق" style={{width:50,padding:"6px 4px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"#27ae60",fontSize:12,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
-              value={f.durations[svc]||""} onChange={e=>setF(p=>({...p,durations:{...p.durations,[svc]:+e.target.value||undefined}}))}/>
-            <span style={{fontSize:10,color:"var(--text-muted)",flexShrink:0}}>دق</span>
-            <button style={G.xBtn} onClick={()=>setF(p=>{const sv=p.services.filter(s=>s!==svc);const pr={...p.prices};delete pr[svc];const dr={...p.durations};delete dr[svc];return{...p,services:sv,prices:pr,durations:dr};})}>✕</button>
+        <div style={{...hdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <span>{t("owner_settings.services_title")}</span>
+          {f.services.length>0&&<button onClick={()=>setSortSvcMode(p=>!p)} style={{fontSize:11,padding:"3px 10px",borderRadius:7,border:`1.5px solid ${sortSvcMode?"var(--p)":"var(--border-ui)"}`,background:sortSvcMode?"var(--pa12)":"transparent",color:sortSvcMode?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>
+            {sortSvcMode?"✅ انتهى":"✏ ترتيب"}
+          </button>}
+        </div>
+        {/* رأس الجدول */}
+        {f.services.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 90px 80px 32px",gap:6,marginBottom:6,padding:"0 4px"}}>
+          <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700}}>{t("owner_settings.services_title")}</span>
+          <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>الوقت</span>
+          <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>السعر</span>
+          <span/>
+        </div>}
+        {f.services.map((svc,i)=>(
+          <div key={svc} style={{display:"grid",gridTemplateColumns:"1fr 90px 80px 32px",gap:6,marginBottom:6,alignItems:"center",background:"var(--bg-input)",borderRadius:9,padding:"6px 8px",border:"1px solid var(--border-ui)"}}>
+            {sortSvcMode&&<div style={{gridColumn:"1/-1",display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+              <div style={{display:"flex",gap:4}}>
+                <button onClick={()=>i>0&&setF(p=>{const a=[...p.services];[a[i-1],a[i]]=[a[i],a[i-1]];return{...p,services:a};})} disabled={i===0} style={{width:26,height:26,borderRadius:6,border:"1.5px solid var(--border-ui)",background:i===0?"transparent":"var(--surface-2)",color:i===0?"#444":"var(--p)",cursor:i===0?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>▲</button>
+                <button onClick={()=>i<f.services.length-1&&setF(p=>{const a=[...p.services];[a[i+1],a[i]]=[a[i],a[i+1]];return{...p,services:a};})} disabled={i===f.services.length-1} style={{width:26,height:26,borderRadius:6,border:"1.5px solid var(--border-ui)",background:i===f.services.length-1?"transparent":"var(--surface-2)",color:i===f.services.length-1?"#444":"var(--p)",cursor:i===f.services.length-1?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>▼</button>
+              </div>
+              <span style={{flex:1,fontSize:13,color:"var(--text-primary)",fontWeight:600}}>{svc}</span>
+              <button style={G.xBtn} onClick={()=>setF(p=>{const sv=p.services.filter(s=>s!==svc);const pr={...p.prices};delete pr[svc];const dr={...p.durations};delete dr[svc];return{...p,services:sv,prices:pr,durations:dr};})}>✕</button>
+            </div>}
+            {!sortSvcMode&&<>
+              <span style={{fontSize:13,color:"var(--text-primary)",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{svc}</span>
+              <div style={{display:"flex",alignItems:"center",gap:3}}>
+                <input type="number" min="1" max="480" placeholder="—" style={{flex:1,width:0,padding:"5px 4px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"#27ae60",fontSize:12,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
+                  value={f.durations[svc]||""} onChange={e=>setF(p=>({...p,durations:{...p.durations,[svc]:+e.target.value||undefined}}))}/>
+                <span style={{fontSize:9,color:"var(--text-muted)",flexShrink:0}}>دقيقة</span>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:3}}>
+                <input type="number" min="0" style={{flex:1,width:0,padding:"5px 4px",borderRadius:7,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--p)",fontSize:12,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
+                  value={f.prices[svc]||0} onChange={e=>setF(p=>({...p,prices:{...p.prices,[svc]:+e.target.value}}))}/>
+                <span style={{fontSize:9,color:"var(--text-muted)",flexShrink:0}}>ريال</span>
+              </div>
+              <button style={G.xBtn} onClick={()=>setF(p=>{const sv=p.services.filter(s=>s!==svc);const pr={...p.prices};delete pr[svc];const dr={...p.durations};delete dr[svc];return{...p,services:sv,prices:pr,durations:dr};})}>✕</button>
+            </>}
           </div>
         ))}
         <div style={{display:"flex",gap:7,marginTop:10}}>
@@ -5667,22 +5704,41 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
             {!sortMode&&b.active!==false&&<>
             {f.services.length>0&&(
               <div style={{marginBottom:10}}>
-                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6,fontWeight:600}}>⏱ مدة الخدمة (تجاوز الافتراضي)</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                <button onClick={()=>setExpandedBarberDur(expandedBarberDur===i?null:i)}
+                  style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:9,padding:"7px 10px",cursor:"pointer",fontFamily:"inherit"}}>
+                  <span style={{fontSize:11,color:"var(--text-muted)",fontWeight:600}}>⏱ مدد الخدمات ({f.services.filter(svc=>(b.durations||{})[svc]).length}/{f.services.length})</span>
+                  <span style={{fontSize:11,color:"var(--p)"}}>{expandedBarberDur===i?"▲":"▼"}</span>
+                </button>
+                {expandedBarberDur===i&&<div style={{marginTop:6,background:"var(--bg-input)",borderRadius:9,border:"1px solid var(--border-ui)",overflow:"hidden"}}>
+                  {/* رأس */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 70px 70px",gap:6,padding:"6px 10px",borderBottom:"1px solid var(--border-ui)"}}>
+                    <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700}}>الخدمة</span>
+                    <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>الافتراضي</span>
+                    <span style={{fontSize:10,color:"var(--p)",fontWeight:700,textAlign:"center"}}>وقت الحلاق</span>
+                  </div>
                   {f.services.map(svc=>{
-                    const defaultDur=f.durations[svc];
+                    const defaultDur=f.durations[svc]||"—";
                     const barberDur=(b.durations||{})[svc];
                     return(
-                      <div key={svc} style={{display:"flex",alignItems:"center",gap:4,background:"var(--surface-2)",borderRadius:7,padding:"3px 7px",border:"1px solid var(--border-ui)"}}>
-                        <span style={{fontSize:10,color:"var(--text-muted)"}}>{svc}</span>
-                        <input type="number" min="1" max="480" placeholder={defaultDur||"—"} title={`${svc} — مدة ${b.name||"الحلاق"}`}
-                          style={{width:42,padding:"3px 4px",borderRadius:5,border:`1.5px solid ${barberDur?"var(--p)":"var(--border-ui)"}`,background:"var(--bg-input)",color:"var(--p)",fontSize:11,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
-                          value={barberDur||""} onChange={e=>{const v=+e.target.value||undefined;setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,durations:{...(x.durations||{}),[svc]:v}}:x)}));}}/>
-                        <span style={{fontSize:9,color:"var(--text-muted)"}}>د</span>
+                      <div key={svc} style={{display:"grid",gridTemplateColumns:"1fr 70px 70px",gap:6,padding:"7px 10px",borderBottom:"1px solid rgba(var(--pr),.05)",alignItems:"center"}}>
+                        <span style={{fontSize:12,color:"var(--text-primary)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{svc}</span>
+                        <span style={{fontSize:11,color:"var(--text-muted)",textAlign:"center"}}>{defaultDur}{defaultDur!=="—"?" د":""}</span>
+                        <div style={{display:"flex",alignItems:"center",gap:3}}>
+                          <input type="number" min="1" max="480" placeholder={String(defaultDur)}
+                            style={{flex:1,width:0,padding:"4px 4px",borderRadius:6,border:`1.5px solid ${barberDur?"var(--p)":"var(--border-ui)"}`,background:"var(--surface-1)",color:"var(--p)",fontSize:11,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
+                            value={barberDur||""} onChange={e=>{const v=+e.target.value||undefined;setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,durations:{...(x.durations||{}),[svc]:v}}:x)}));}}/>
+                          <span style={{fontSize:9,color:"var(--text-muted)"}}>د</span>
+                        </div>
                       </div>
                     );
                   })}
-                </div>
+                  <div style={{padding:"8px 10px",borderTop:"1px solid var(--border-ui)"}}>
+                    <button onClick={()=>saveBarberDurations(i)}
+                      style={{width:"100%",padding:"8px",borderRadius:8,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontSize:12,fontFamily:"inherit"}}>
+                      💾 حفظ المدد
+                    </button>
+                  </div>
+                </div>}
               </div>
             )}
             <div style={{marginBottom:6}}>
