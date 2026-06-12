@@ -2810,8 +2810,12 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
             {/* رأس الأعمدة */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 66px 66px",padding:"8px 14px",gap:6,background:"var(--surface-2)",borderBottom:"1px solid var(--border-ui)"}}>
               <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:9,color:"var(--text-muted)",fontWeight:700}}>الخدمة</div>
-              <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:9,color:"var(--text-muted)",fontWeight:700,textAlign:"center",minWidth:46}}>الوقت</div>
-              <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:9,color:"var(--text-muted)",fontWeight:700,textAlign:"center",minWidth:46}}>السعر</div>
+              <div style={{display:"flex",justifyContent:"center",alignItems:"center"}}>
+                <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:12,color:"var(--text-muted)",fontWeight:700,minWidth:46,textAlign:"center"}}>الوقت</div>
+              </div>
+              <div style={{display:"flex",justifyContent:"center",alignItems:"center"}}>
+                <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:12,color:"var(--text-muted)",fontWeight:700,minWidth:46,textAlign:"center"}}>السعر</div>
+              </div>
             </div>
             {(salon.services||[]).map((svc,idx)=>{
               const sel=form.services.includes(svc);
@@ -5585,9 +5589,9 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           {!sortSvcMode&&(
             <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--border-ui)",marginBottom:10}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 90px 80px",padding:"6px 10px",background:"var(--surface-2)",borderBottom:"1px solid var(--border-ui)"}}>
-                <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700}}>الخدمة</span>
-                <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>الوقت</span>
-                <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>السعر</span>
+                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700}}>الخدمة</span>
+                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>الوقت</span>
+                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>السعر</span>
               </div>
               {f.services.map((svc,i)=>(
                 <div key={svc} style={{display:"grid",gridTemplateColumns:"1fr 90px 80px",gap:6,alignItems:"center",padding:"8px 10px",background:"var(--bg-input)",borderBottom:i<f.services.length-1?"1px solid var(--border-ui)":"none"}}>
