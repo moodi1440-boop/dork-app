@@ -2798,38 +2798,46 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
       {step===3&&<div style={G.fc}>
         <F label={t("book.services_label")} error={errors.services}>
           <div style={{borderRadius:12,overflow:"hidden",border:`1.5px solid ${errors.services?"#e74c3c":"var(--border-ui)"}`}}>
+            {/* رأس الأعمدة */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 54px 54px",padding:"6px 14px",background:"var(--surface-2)",borderBottom:"1px solid var(--border-ui)"}}>
+              <span style={{fontSize:9,color:"var(--text-muted)"}}>الخدمة</span>
+              <span style={{fontSize:9,color:"var(--text-muted)",textAlign:"center"}}>الوقت</span>
+              <span style={{fontSize:9,color:"var(--text-muted)",textAlign:"center"}}>السعر</span>
+            </div>
             {(salon.services||[]).map((svc,idx)=>{
               const sel=form.services.includes(svc);
               const price=salon.prices?.[svc]||0;
               const dur=getDur(svc);
               return(
                 <div key={svc}
-                  style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",cursor:"pointer",background:sel?"rgba(var(--pr),.1)":"transparent",borderBottom:idx<(salon.services||[]).length-1?"1px solid var(--border-ui)":"none"}}
+                  style={{display:"grid",gridTemplateColumns:"1fr 54px 54px",alignItems:"center",padding:"11px 14px",cursor:"pointer",background:sel?"rgba(var(--pr),.1)":"transparent",borderBottom:idx<(salon.services||[]).length-1?"1px solid var(--border-ui)":"none"}}
                   onClick={()=>toggle(svc)}>
-                  <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
                     <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--p)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                       {sel&&<span style={{color:"#000",fontSize:10,fontWeight:900,lineHeight:1}}>✓</span>}
                     </div>
                     <span style={{fontWeight:sel?700:400,color:sel?"var(--p)":"var(--text-primary)",fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{svc}</span>
                   </div>
-                  <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                    {dur&&<div style={{padding:"4px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"var(--surface-2)",fontSize:11,color:"var(--text-muted)",minWidth:30,textAlign:"center"}}>{dur}</div>}
-                    <div style={{padding:"4px 8px",borderRadius:7,border:`1px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa07)":"var(--surface-2)",fontSize:12,fontWeight:700,color:sel?"var(--p)":"var(--text-primary)",minWidth:30,textAlign:"center"}}>{price}</div>
+                  <div style={{display:"flex",justifyContent:"center",alignItems:"center"}}>
+                    {dur?<div style={{padding:"4px 6px",borderRadius:7,border:"1px solid var(--border-ui)",background:"var(--surface-2)",fontSize:11,color:"var(--text-muted)",minWidth:36,textAlign:"center"}}>{dur}</div>:<span style={{fontSize:10,color:"#444"}}>—</span>}
+                  </div>
+                  <div style={{display:"flex",justifyContent:"center",alignItems:"center"}}>
+                    <div style={{padding:"4px 6px",borderRadius:7,border:`1px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa07)":"var(--surface-2)",fontSize:12,fontWeight:700,color:sel?"var(--p)":"var(--text-primary)",minWidth:36,textAlign:"center"}}>{price}</div>
                   </div>
                 </div>
               );
             })}
           </div>
         </F>
-        {form.services.length>0&&<div style={{display:"flex",alignItems:"center",background:"var(--pa07)",borderRadius:10,padding:"8px 10px",marginTop:-4,gap:6}}>
-          <div style={{flex:1,padding:"7px 6px",borderRadius:8,border:"1px solid rgba(var(--pr),.25)",background:"rgba(255,255,255,.04)",textAlign:"center"}}>
-            <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:600}}>{form.services.length} خدمة</span>
+        {form.services.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 54px 54px",background:"var(--pa07)",borderRadius:10,padding:"8px 14px",marginTop:-4,gap:6}}>
+          <div style={{padding:"7px 6px",borderRadius:8,border:"1px solid rgba(var(--pr),.25)",background:"rgba(255,255,255,.04)",textAlign:"center"}}>
+            <span style={{fontSize:11,color:"var(--text-muted)",fontWeight:600}}>{form.services.length} خدمة</span>
           </div>
-          {totalDuration>0&&<div style={{flex:1,padding:"7px 6px",borderRadius:8,border:"1px solid rgba(var(--pr),.35)",background:"rgba(255,255,255,.04)",textAlign:"center"}}>
-            <span style={{fontSize:12,color:"var(--p)",fontWeight:700}}>{totalDuration} دقيقة</span>
-          </div>}
-          <div style={{flex:1,padding:"7px 6px",borderRadius:8,border:"1px solid rgba(var(--pr),.35)",background:"rgba(255,255,255,.04)",textAlign:"center"}}>
-            <span style={{fontSize:13,fontWeight:700,color:"var(--p)"}}>{total} {t("book.sar")}</span>
+          {totalDuration>0?<div style={{padding:"7px 4px",borderRadius:8,border:"1px solid rgba(var(--pr),.35)",background:"rgba(255,255,255,.04)",textAlign:"center"}}>
+            <span style={{fontSize:11,color:"var(--p)",fontWeight:700}}>{totalDuration} دقيقة</span>
+          </div>:<div/>}
+          <div style={{padding:"7px 4px",borderRadius:8,border:"1px solid rgba(var(--pr),.35)",background:"rgba(255,255,255,.04)",textAlign:"center"}}>
+            <span style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>{total} {t("book.sar")}</span>
           </div>
         </div>}
         <div style={{display:"flex",gap:8,marginTop:8}}><BtnBack toStep={2}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(v3())setStep(4);}}>{t("book.next")}</button></div>
