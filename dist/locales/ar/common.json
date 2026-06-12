@@ -302,7 +302,7 @@
     "book_btn": "احجز الان"
   },
   "salon_page": {
-    "back": "← رجوع",
+    "back": "رجوع",
     "book_tab": "📅 حجز",
     "reviews_count": "تقييم",
     "reviews_note": "آراء العملاء تظهر في الصفحة الرئيسية"
@@ -314,7 +314,9 @@
     "step4": "الموعد",
     "step5": "تأكيد",
     "today": "اليوم",
+    "tomorrow": "غداً",
     "min_label": "دق",
+    "field_duration": "الوقت المتوقع",
     "name_label": "اسمك الكريم",
     "name_ph": "الاسم الكامل",
     "phone_label": "رقم الجوال",
@@ -326,8 +328,8 @@
     "booked": "محجوز",
     "date_label": "التاريخ",
     "time_hint": "اختر الوقت",
-    "next": "التالي →",
-    "next_wait": "التالي (انتظار) →",
+    "next": "التالي",
+    "next_wait": "التالي (انتظار)",
     "confirm_title": "تأكيد الحجز",
     "confirm_wait_title": "تأكيد الانضمام للانتظار",
     "field_name": "الاسم",
