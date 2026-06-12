@@ -2752,7 +2752,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const v2=()=>{const e={};if(activeBarbers.length&&!form.barberId)e.barberId=t("book.err_barber");setErrors(e);return!Object.keys(e).length;};
   const v3=()=>{const e={};if(!form.services.length)e.services=t("book.err_service");setErrors(e);return!Object.keys(e).length;};
   const v4=()=>{const e={};if(!form.time&&!form.waitSlot)e.time=t("book.err_time");setErrors(e);return!Object.keys(e).length;};
-  const BtnBack=({toStep})=><button style={{background:"var(--surface-2)",color:"var(--text-muted)",border:"none",padding:"12px 16px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif",flexShrink:0}} onClick={()=>setStep(toStep)}>←</button>;
+  const BtnBack=({toStep})=><button style={{background:"var(--surface-2)",color:"var(--text-muted)",border:"none",padding:"12px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",flexShrink:0}} onClick={()=>setStep(toStep)}>{t("salon_page.back")}</button>;
   const inner=(
     <>
       {!inline&&<div style={G.salonBadge}><span style={{fontSize:20,color:"var(--p)"}}>✂</span><div style={{flex:1}}><div style={{fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>{salon.gov||salon.region}</div></div><button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg></button></div>}
