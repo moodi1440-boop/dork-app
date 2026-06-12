@@ -430,13 +430,14 @@ function playTone(id, vol=0.7){
 function getCustomerClassification(customer){
   const history=(customer?.history||[]);
   const total=history.filter(h=>h.status!=="rejected").length;
-  const completed=history.filter(h=>h.status==="approved").length;
-  const noShows=history.filter(h=>h.status==="cancelled"&&h.attendance==="no_show").length;
-  const lateCancels=history.filter(h=>h.status==="cancelled").length;
-  if(lateCancels>=3||noShows>=3)return{label:"⚠️ غير ملتزم",color:"#e74c3c",key:"unreliable"};
   if(total===0)return{label:"🆕 جديد",color:"#3498db",key:"new"};
-  if(completed>=5&&lateCancels===0)return{label:"🌟 مميز",color:"var(--gold)",key:"vip"};
-  if(completed>=2&&lateCancels<=1)return{label:"✅ منتظم",color:"#27ae60",key:"regular"};
+  const completed=history.filter(h=>h.status==="approved").length;
+  const cancelled=history.filter(h=>h.status==="cancelled").length;
+  const evalTotal=completed+cancelled;
+  const attendRate=evalTotal>0?Math.round((completed/evalTotal)*100):null;
+  if(cancelled>=3||(attendRate!==null&&attendRate<50))return{label:"⚠️ غير ملتزم",color:"#e74c3c",key:"unreliable"};
+  if(completed>=5&&cancelled===0)return{label:"🌟 مميز",color:"var(--gold)",key:"vip"};
+  if(attendRate!==null&&attendRate>=70)return{label:"✅ منتظم",color:"#27ae60",key:"regular"};
   return{label:"🆕 جديد",color:"#3498db",key:"new"};
 }
 
@@ -1435,6 +1436,17 @@ export default function App(){
       const bk=salon.bookings.find(b=>b.id===bid);
       if(!bk)return;
       await sb("bookings","PATCH",{status},`?id=eq.${bid}`);
+      if(status==="cancelled"){
+        sb("waiting_list","GET",null,`?select=id,name,phone,customer_id&salon_id=eq.${sid}&slot_date=eq.${bk.date}&slot_time=eq.${bk.time}&status=eq.waiting&limit=10`)
+          .then(waiters=>{
+            if(!Array.isArray(waiters)||!waiters.length)return;
+            const msg=`تفرّغ وقت ${bk.time} في ${salon.name} بتاريخ ${bk.date}. سارع بالحجز!`;
+            for(const w of waiters){
+              sb("notifications","POST",{target_type:"all",title:"✅ الوقت أصبح متاحاً!",body:msg,icon:"✅"}).catch(()=>{});
+              if(w.customer_id){supabase.functions.invoke('send-push-notification',{body:{target_type:"single",user_id:w.customer_id,user_type:"customer",title:"✅ الوقت أصبح متاحاً!",body:msg,data:{type:"slot_available",salon_id:String(sid)}}}).catch(()=>{});}
+            }
+          }).catch(()=>{});
+      }
       const bkn=normPhone(bk.phone);
       const targets=[];
       for(const c of targets){
@@ -2749,6 +2761,9 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const DAYS=t("book.days",{returnObjects:true});
   const days7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()+i);const dow=d.getDay();return{dateStr:d.toISOString().split("T")[0],dayName:DAYS[dow],dayNum:d.getDate(),isClosed:salon.closedDays?.includes(dow),isToday:i===0};});
   const toM=(tt)=>{const[h,m]=(tt||"").split(":").map(Number);return(h||0)*60+(m||0);};
+  const closingM=(()=>{if(barber?.shiftEnd)return toM(barber.shiftEnd);if(salon.shiftEnabled)return toM(salon.shift2End||salon.shift1End||"22:00");return toM(salon.workEnd||"22:00");})();
+  const slotsVisible=slots.filter(sl=>toM(sl)+(totalDuration||(salon.slotMin||SLOT_MIN))<=closingM);
+  const getBarberNextSlot=(b,date)=>{const bSlots=getSlotsForBarber(salon,b);const dSlots=date===todayStr()?bSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):bSlots;const bkDef=salon.slotMin||SLOT_MIN;const bMin2=salon.bufferMin??BUFFER_MIN;const todayBks=salon.bookings.filter(bk=>bk.date===date&&bk.status!=="rejected"&&(bk.barberId===b.id||bk.barberId==="any"));for(const sl of dSlots){const slM=(h=>m=>h*60+m)(...sl.split(":").map(Number));const busy=todayBks.some(bk=>{const bkM=(h=>m=>h*60+m)(...(bk.time||"00:00").split(":").map(Number));const bkSvcs=Array.isArray(bk.services)?bk.services:[];const bkBarberObj=salon.barbers?.find(x=>x.id===bk.barberId);const bkDur=bkSvcs.reduce((a,s)=>a+((bkBarberObj?.durations?.[s])||salonDurations[s]||0),0)||bkDef;return slM<bkM+bkDur+bMin2&&bkM<slM+bkDef+bMin2;});if(!busy)return sl;}return null;};
   const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");setErrors(e);return!Object.keys(e).length;};
   const v2=()=>{const e={};if(activeBarbers.length&&!form.barberId)e.barberId=t("book.err_barber");setErrors(e);return!Object.keys(e).length;};
   const v3=()=>{const e={};if(!form.services.length)e.services=t("book.err_service");setErrors(e);return!Object.keys(e).length;};
@@ -2770,24 +2785,17 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
           <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
             {activeBarbers.map(b=>{
               const active=form.barberId===b.id;
-              const now=new Date();
-              const currentMins=now.getHours()*60+now.getMinutes();
-              const salonOpen=(()=>{
-                if(salon.shiftEnabled)return(currentMins>=toM(salon.shift1Start)&&currentMins<=toM(salon.shift1End))||(currentMins>=toM(salon.shift2Start)&&currentMins<=toM(salon.shift2End));
-                return currentMins>=toM(salon.workStart||"09:00")&&currentMins<=toM(salon.workEnd||"22:00");
-              })();
-              const inShift=(()=>{
-                if(!salonOpen)return false;
-                if(b.shiftStart&&b.shiftEnd)return currentMins>=toM(b.shiftStart)&&currentMins<=toM(b.shiftEnd);
-                return true;
-              })();
+              const ns=getBarberNextSlot(b,form.date);
+              const nM=ns?(h=>m=>h*60+m)(...ns.split(":").map(Number)):null;
+              const nowM_=new Date().getHours()*60+new Date().getMinutes();
+              const isAvailNow=nM!==null&&nM<=nowM_+SLOT_STEP;
               return(
                 <div key={b.id}
                   style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 10px",borderRadius:10,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa12)":"var(--surface-2)",cursor:"pointer",minWidth:60}}
                   onClick={()=>setForm(p=>({...p,barberId:b.id,time:""}))}>
                   {b.photo?<img src={optimizeImageUrl(b.photo,36,36)} alt={b.name} style={{width:36,height:36,borderRadius:"50%",objectFit:"cover",border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`}}/>:<div style={{width:36,height:36,borderRadius:"50%",background:"var(--surface-2)",border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>💈</div>}
                   <span style={{fontSize:11,color:active?"var(--p)":"var(--text-muted)",fontWeight:active?700:400,textAlign:"center"}}>{b.name}</span>
-                  <span style={{fontSize:9,color:inShift?"#27ae60":"#e74c3c"}}>{inShift?t("book.barber_available"):t("book.barber_unavailable")}</span>
+                  <span style={{fontSize:9,color:ns?(isAvailNow?"#27ae60":"#f39c12"):"#e74c3c",textAlign:"center"}}>{ns?(isAvailNow?"متاح الآن":ns):"مشغول"}</span>
                 </div>
               );
             })}
@@ -2863,7 +2871,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {salon.closedDays?.length>0&&<div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>{t("book.closed_days_prefix")} {DAYS.filter((_,i)=>salon.closedDays.includes(i)).join(" - ")}</div>}
         <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:7}}>{t("book.time_hint")}{barber?` - ${barber.name}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
-        <div style={G.timeGrid}>{slots.map(sl=>{const full=slotFull(sl);const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={full&&!waiting} onClick={()=>!full&&setForm(p=>({...p,time:sl,waitSlot:""}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div>{full&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}</button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>
+        <div style={G.timeGrid}>{slotsVisible.map(sl=>{const full=slotFull(sl);const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={full&&!waiting} onClick={()=>!full&&setForm(p=>({...p,time:sl,waitSlot:""}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{sl}</div>{full&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}</button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:11,color:"#f39c12",textAlign:"center"}}>{t("book.wait_msg")} <strong>{form.waitSlot}</strong> {t("book.wait_notify")}</div>}
         <div style={{display:"flex",gap:8,marginTop:8}}><BtnBack toStep={3}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(v4())setStep(5);}}>{form.waitSlot?t("book.next_wait"):t("book.next")}</button></div>
       </div>}
