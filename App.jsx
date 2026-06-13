@@ -2781,7 +2781,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const salonDurations=salon.prices?.__durations||{};
   const getDur=(svc)=>barber?.durations?.[svc]||salonDurations[svc]||null;
   useEffect(()=>{
-    if(step!==4)return;
+    if(step!==3&&step!==4)return;
     sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=neq.rejected&select=id,barber_id,service,time,status,slot_duration_minutes`)
       .then(rows=>{if(Array.isArray(rows))setLiveBookings(rows.map(b=>({id:b.id,barberId:b.barber_id||"any",date:b.date||"",time:b.time||"",status:b.status||"pending",slotDuration:b.slot_duration_minutes||null,services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})()})));})
       .catch(()=>{});
@@ -2803,7 +2803,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");setErrors(e);return!Object.keys(e).length;};
   const v2=()=>{const e={};if(activeBarbers.length&&!form.barberId)e.barberId=t("book.err_barber");setErrors(e);return!Object.keys(e).length;};
   const v3=()=>{const e={};if(!form.services.length)e.services=t("book.err_service");setErrors(e);return!Object.keys(e).length;};
-  const v4=()=>{const e={};if(!form.time&&!form.waitSlot)e.time=t("book.err_time");setErrors(e);return!Object.keys(e).length;};
+  const v4=()=>{const e={};if(form.time&&slotFull(form.time)){setForm(p=>({...p,time:""}));e.time=t("book.err_time");}else if(!form.time&&!form.waitSlot){e.time=t("book.err_time");}setErrors(e);return!Object.keys(e).length;};
   const BtnBack=({toStep})=><button style={{background:"var(--surface-2)",color:"var(--text-muted)",border:"none",padding:"12px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",flexShrink:0}} onClick={()=>setStep(toStep)}>{t("salon_page.back")}</button>;
   const inner=(
     <>
@@ -2911,7 +2911,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {salon.closedDays?.length>0&&<div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>{t("book.closed_days_prefix")} {DAYS.filter((_,i)=>salon.closedDays.includes(i)).join(" - ")}</div>}
         <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:7}}>{t("book.time_hint")}{barber?` - ${barber.name}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
-        <div style={G.timeGrid}>{slotsVisible.map(sl=>{const full=slotFull(sl);const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={full&&!waiting} onClick={()=>!full&&setForm(p=>({...p,time:sl,waitSlot:""}))} style={{...G.ts,...(full?G.tsF:{}),...(sel?G.tsS:{})}}><div>{to12h(sl)}</div>{full&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}</button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>
+        <div style={G.timeGrid}>{slotsVisible.map(sl=>{const full=slotFull(sl);const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={full&&!waiting} onClick={()=>!full&&setForm(p=>({...p,time:sl,waitSlot:""}))} style={{...G.ts,...(full?G.tsF:{}),...(sel&&!full?G.tsS:{})}}><div>{to12h(sl)}</div>{full&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}</button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:11,color:"#f39c12",textAlign:"center"}}>{t("book.wait_msg")} <strong>{to12h(form.waitSlot)}</strong> {t("book.wait_notify")}</div>}
         <div style={{display:"flex",gap:8,marginTop:8}}><BtnBack toStep={3}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(v4())setStep(5);}}>{form.waitSlot?t("book.next_wait"):t("book.next")}</button></div>
       </div>}
