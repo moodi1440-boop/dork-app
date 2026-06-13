@@ -1386,16 +1386,17 @@ export default function App(){
       // post-insert conflict check — يتحقق بعد الإدراج لضمان عدم التعارض
       if(newBooking.id&&!isReschedule){
         await new Promise(r=>setTimeout(r,300));
-        const nowBks=await sb("bookings","GET",null,`?salon_id=eq.${sid}&date=eq.${bk.date}&status=neq.rejected&select=id,barber_id,time,created_at`).catch(()=>[]);
+        const nowBks=await sb("bookings","GET",null,`?salon_id=eq.${sid}&date=eq.${bk.date}&status=neq.rejected&select=id,barber_id,time,slot_duration_minutes,created_at`).catch(()=>[]);
         const slM2=toM(bk.time||"00:00");
-        const bkDef=salon.slotMin||SLOT_MIN;
+        const bkDef=bk.totalDuration||(salon.slotMin||SLOT_MIN);
         const bMin2=salon.bufferMin??BUFFER_MIN;
         const bc2=(salon.barbers||[]).filter(b=>b.active!==false).length||1;
         const rivals=(Array.isArray(nowBks)?nowBks:[]).filter(b=>{
           if(b.id===newBooking.id)return false;
           if(bk.barberId!=="any"&&b.barber_id!==bk.barberId&&b.barber_id!=="any")return false;
           const bM=toM(b.time||"00:00");
-          return slM2<bM+bkDef+bMin2&&bM<slM2+bkDef+bMin2;
+          const bDur2=b.slot_duration_minutes||(salon.slotMin||SLOT_MIN);
+          return slM2<bM+bDur2+bMin2&&bM<slM2+bkDef+bMin2;
         });
         const capacity=bk.barberId!=="any"?1:bc2;
         if(rivals.length>=capacity){
@@ -2802,7 +2803,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const toM=(tt)=>{const[h,m]=(tt||"").split(":").map(Number);return(h||0)*60+(m||0);};
   const closingM=(()=>{if(barber?.shiftEnd)return toM(barber.shiftEnd);if(salon.shiftEnabled)return toM(salon.shift2End||salon.shift1End||"22:00");return toM(salon.workEnd||"22:00");})();
   const slotsVisible=slots.filter(sl=>toM(sl)+(totalDuration||(salon.slotMin||SLOT_MIN))<=closingM);
-  const getBarberNextSlot=(b,date)=>{const bSlots=getSlotsForBarber(salon,b);const dSlots=date===todayStr()?bSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):bSlots;const bkDef=salon.slotMin||SLOT_MIN;const bMin2=salon.bufferMin??BUFFER_MIN;const todayBks=salon.bookings.filter(bk=>bk.date===date&&bk.status!=="rejected"&&bk.barberId===b.id);for(const sl of dSlots){const slM=toM(sl);const busy=todayBks.some(bk=>{const bkM=toM(bk.time||"00:00");const bkSvcs=Array.isArray(bk.services)?bk.services:[];const bkBarberObj=salon.barbers?.find(x=>x.id===bk.barberId);const bkDur=bkSvcs.reduce((a,s)=>a+((bkBarberObj?.durations?.[s])||salonDurations[s]||0),0)||bkDef;return slM<bkM+bkDur+bMin2&&bkM<slM+bkDef+bMin2;});if(!busy)return sl;}return null;};
+  const getBarberNextSlot=(b,date)=>{const bSlots=getSlotsForBarber(salon,b);const dSlots=date===todayStr()?bSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):bSlots;const bkDef=salon.slotMin||SLOT_MIN;const bMin2=salon.bufferMin??BUFFER_MIN;const newDur2=totalDuration||bkDef;const todayBks=liveBookings.filter(bk=>bk.date===date&&!["rejected","cancelled"].includes(bk.status)&&(bk.barberId===b.id||bk.barberId==="any"));for(const sl of dSlots){const slM=toM(sl);const busy=todayBks.some(bk=>{const bkM=toM(bk.time||"00:00");const bkDur=getBookingDur(bk);return slM<bkM+bkDur+bMin2&&bkM<slM+newDur2+bMin2;});if(!busy)return sl;}return null;};
   const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");setErrors(e);return!Object.keys(e).length;};
   const v2=()=>{const e={};if(activeBarbers.length&&!form.barberId)e.barberId=t("book.err_barber");setErrors(e);return!Object.keys(e).length;};
   const v3=()=>{const e={};if(!form.services.length)e.services=t("book.err_service");setErrors(e);return!Object.keys(e).length;};
@@ -2950,13 +2951,11 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
             }else{
               const slM=toM(form.time);
               const newDur=totalDuration||(salon.slotMin||SLOT_MIN);
-              const freshBks=await sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=neq.rejected&select=id,barber_id,service,time`).catch(()=>[]);
+              const freshBks=await sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=neq.rejected&select=id,barber_id,service,time,slot_duration_minutes`).catch(()=>[]);
               const conflict=(Array.isArray(freshBks)?freshBks:[]).filter(b=>{
                 if(form.barberId&&b.barber_id!==form.barberId&&b.barber_id!=="any")return false;
                 const bM=toM(b.time||"00:00");
-                const bSvcs=(()=>{try{return JSON.parse(b.service||"[]");}catch{return[];}})();
-                const bBarberObj=salon.barbers?.find(x=>x.id===b.barber_id);
-                const bDur=bSvcs.reduce((a,s)=>a+((bBarberObj?.durations?.[s])||salonDurations[s]||0),0)||(salon.slotMin||SLOT_MIN);
+                const bDur=b.slot_duration_minutes||(()=>{const bSvcs=(()=>{try{return JSON.parse(b.service||"[]");}catch{return[];}})();const bBarberObj=salon.barbers?.find(x=>x.id===b.barber_id);return bSvcs.reduce((a,s)=>a+((bBarberObj?.durations?.[s])||salonDurations[s]||0),0)||(salon.slotMin||SLOT_MIN);})();
                 return slM<bM+bDur+BMIN&&bM<slM+newDur+BMIN;
               }).length;
               if(conflict>=(form.barberId?1:bc)){alert("❌ هذا الوقت أصبح محجوزاً، اختر وقتاً آخر");setBooking(false);return;}
