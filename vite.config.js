@@ -6,7 +6,7 @@ export default defineConfig({
   root: '.',
   publicDir: 'public',
   define: {
-    __BUILD_TIME__: JSON.stringify("L80"),
+    __BUILD_TIME__: JSON.stringify("L81"),
   },
   build: {
     outDir: 'dist',
