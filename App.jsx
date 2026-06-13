@@ -672,7 +672,7 @@ function getSlotsForBarber(salon,barber){
   }
   return getSlotsForSalon(salon);
 }
-function todayStr(){return new Date().toISOString().split("T")[0];}
+function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function openMaps(url,name,addr){window.open(url?.trim()||`https://www.google.com/maps/search/${encodeURIComponent(name+" "+addr)}`,"_blank");}
 function calcTotal(svcs,prices){return(svcs||[]).reduce((a,s)=>a+(prices?.[s]||0),0);}
 function normPhone(p){return String(p||"").replace(/\D/g,"");}
