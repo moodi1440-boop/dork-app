@@ -1448,7 +1448,13 @@ export default function App(){
       toast$("🎉 تم إرسال طلب الحجز!");
       setView("home");
       await loadData();
-    }catch(e){toast$("❌ خطأ: "+e.message,"err");}
+    }catch(e){
+      if(e.message&&(e.message.includes("23505")||e.message.includes("unique")||e.message.includes("duplicate"))){
+        toast$("❌ هذا الوقت محجوز، يرجى اختيار وقت آخر","err");
+      }else{
+        toast$("❌ خطأ: "+e.message,"err");
+      }
+    }
   };
   const updateBookingStatus=async(sid,bid,status)=>{
     try{
