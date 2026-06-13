@@ -1382,6 +1382,26 @@ export default function App(){
         setRescheduleId(null);
       }
       const newBooking=inserted[0]||{};
+      // post-insert conflict check — يتحقق بعد الإدراج لضمان عدم التعارض
+      if(newBooking.id&&!isReschedule){
+        await new Promise(r=>setTimeout(r,300));
+        const nowBks=await sb("bookings","GET",null,`?salon_id=eq.${sid}&date=eq.${bk.date}&status=neq.rejected&select=id,barber_id,time,created_at`).catch(()=>[]);
+        const slM2=(h=>m=>h*60+m)(...(bk.time||"00:00").split(":").map(Number));
+        const bkDef=salon.slotMin||SLOT_MIN;
+        const bMin2=salon.bufferMin??BUFFER_MIN;
+        const bc2=(salon.barbers||[]).filter(b=>b.active!==false).length||1;
+        const rivals=(Array.isArray(nowBks)?nowBks:[]).filter(b=>{
+          if(b.id===newBooking.id)return false;
+          if(bk.barberId!=="any"&&b.barber_id!==bk.barberId&&b.barber_id!=="any")return false;
+          const bM=(h=>m=>h*60+m)(...(b.time||"00:00").split(":").map(Number));
+          return slM2<bM+bkDef+bMin2&&bM<slM2+bkDef+bMin2;
+        });
+        const capacity=bk.barberId!=="any"?1:bc2;
+        if(rivals.length>=capacity){
+          await sb("bookings","PATCH",{status:"rejected"},`?id=eq.${newBooking.id}`).catch(()=>{});
+          throw new Error("تم حجز هذا الوقت للتو، يرجى اختيار وقت آخر");
+        }
+      }
       if(newBooking&&newBooking.id){
         const _d={type:"new_booking",salon_id:String(sid),booking_id:String(newBooking.id)};
         // notify salon owner
