@@ -1375,6 +1375,7 @@ export default function App(){
         status:isReschedule?"approved":"pending",
         notes:bk.email||"",
         reminder_minutes:bk.reminderMins??60,
+        slot_duration_minutes:bk.totalDuration||(salon?.slotMin||SLOT_MIN),
       },"");
       if(isReschedule){
         await sb("bookings","PATCH",{status:"cancelled"},"?id=eq."+rescheduleOldId).catch(()=>{});
@@ -1449,7 +1450,7 @@ export default function App(){
       setView("home");
       await loadData();
     }catch(e){
-      if(e.message&&(e.message.includes("23505")||e.message.includes("unique")||e.message.includes("duplicate"))){
+      if(e.message&&(e.message.includes("23505")||e.message.includes("unique")||e.message.includes("duplicate")||e.message.includes("booking_overlap"))){
         toast$("❌ هذا الوقت محجوز، يرجى اختيار وقت آخر","err");
       }else{
         toast$("❌ خطأ: "+e.message,"err");
@@ -2956,7 +2957,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
                 return slM<bM+bDur+BMIN&&bM<slM+newDur+BMIN;
               }).length;
               if(conflict>=(form.barberId?1:bc)){alert("❌ هذا الوقت أصبح محجوزاً، اختر وقتاً آخر");setBooking(false);return;}
-              addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total,reminderMins},rescheduleId||null);
+              addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total,reminderMins,totalDuration},rescheduleId||null);
             }
           }}>{booking?"⏳...":form.waitSlot?t("book.confirm_wait_btn"):rescheduleId?t("book.reschedule_btn"):t("book.confirm_btn")}</button>
         </div>
