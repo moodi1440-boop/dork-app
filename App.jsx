@@ -2911,6 +2911,18 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
                 if(setView)setView("home");
               }catch(e){alert("❌ حدث خطأ، حاول مرة أخرى");setBooking(false);}
             }else{
+              const slM=(h=>m=>h*60+m)(...form.time.split(":").map(Number));
+              const newDur=totalDuration||(salon.slotMin||SLOT_MIN);
+              const freshBks=await sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=neq.rejected&select=id,barber_id,service,time`).catch(()=>[]);
+              const conflict=(Array.isArray(freshBks)?freshBks:[]).filter(b=>{
+                if(form.barberId&&b.barber_id!==form.barberId&&b.barber_id!=="any")return false;
+                const bM=(h=>m=>h*60+m)(...(b.time||"00:00").split(":").map(Number));
+                const bSvcs=(()=>{try{return JSON.parse(b.service||"[]");}catch{return[];}})();
+                const bBarberObj=salon.barbers?.find(x=>x.id===b.barber_id);
+                const bDur=bSvcs.reduce((a,s)=>a+((bBarberObj?.durations?.[s])||salonDurations[s]||0),0)||(salon.slotMin||SLOT_MIN);
+                return slM<bM+bDur+BMIN&&bM<slM+newDur+BMIN;
+              }).length;
+              if(conflict>=(form.barberId?1:bc)){alert("❌ هذا الوقت أصبح محجوزاً، اختر وقتاً آخر");setBooking(false);return;}
               addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total,reminderMins},rescheduleId||null);
             }
           }}>{booking?"⏳...":form.waitSlot?t("book.confirm_wait_btn"):rescheduleId?t("book.reschedule_btn"):t("book.confirm_btn")}</button>
