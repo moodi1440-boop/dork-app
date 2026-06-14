@@ -2792,7 +2792,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
       .finally(()=>setLoadingBookings(false));
   },[form.date,form.barberId]);
   const totalDuration=form.services.reduce((a,s)=>a+(getDur(s)||0),0);
-  const allSlots=barber?getSlotsForBarber(salon,barber):getSlotsForSalon(salon);
+  const allSlots=[...new Set(barber?getSlotsForBarber(salon,barber):getSlotsForSalon(salon))];
   const slots=form.date===todayStr()?allSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):allSlots;
   const BMIN=salon.bufferMin??BUFFER_MIN;
   const getBookingDur=b=>{if(b.slotDuration)return b.slotDuration;const svcs=Array.isArray(b.services)?b.services:[];const bBarber=salon.barbers?.find(x=>x.id===b.barberId);const dur=svcs.reduce((a,s)=>a+((bBarber?.durations?.[s])||salonDurations[s]||0),0);return dur||(salon.slotMin||SLOT_MIN);};
@@ -6962,6 +6962,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>📅 {h.date} - 🕐 {h.time}</div>
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>{Array.isArray(h.services)?h.services.join(" + "):h.service||""}</div>
                       <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>💰 {h.total||0} {t("cust_dash.sar")}</div>
+                      {(()=>{const svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+(s?.durations?.[svc]||0),0):0;const dur=svcDur||(s?.slotMin||40);const[hh,mm]=(h.time||"00:00").split(":").map(Number);const endM=hh*60+mm+dur;const eH=Math.floor(endM/60)%24;const eM=endM%60;const endStr=`${eH%12||12}:${String(eM).padStart(2,"0")} ${eH<12?"ص":"م"}`;return<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>⏱ من {to12h(h.time)} إلى {endStr}</div>;})()}
                       <div style={{fontSize:11,fontWeight:700,color:stColor,marginTop:3}}>{stLabel}</div>
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
