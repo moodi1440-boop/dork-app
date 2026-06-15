@@ -15,9 +15,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;900&family=Cinzel:wght@700;900&family=Playfair+Display:wght@700;900&family=Cormorant+SC:wght@700;900&display=swap" rel="stylesheet"/>
-    <script type="module" crossorigin src="/assets/index-jLRe_4d6.js"></script>
+  <style>
+    #dork-splash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;background:inherit;transition:opacity .25s}
+    #dork-splash .dl{font-size:46px;font-weight:900;color:#c9a84c;letter-spacing:3px;text-align:center;font-family:Cinzel,Georgia,serif}
+    #dork-splash .ds{font-size:13px;color:#c9a84caa;text-align:center;font-family:Cairo,sans-serif;margin-top:2px}
+    #dork-splash .db{width:50px;height:2px;background:#c9a84c33;border-radius:2px;margin:18px auto 0;overflow:hidden}
+    #dork-splash .db::after{content:'';display:block;width:25px;height:100%;background:#c9a84c;animation:dslide .9s ease-in-out infinite}
+    @keyframes dslide{0%{transform:translateX(-25px)}100%{transform:translateX(50px)}}
+  </style>
+    <script type="module" crossorigin src="/assets/index-OxLgI34H.js"></script>
   </head>
   <body>
+    <div id="dork-splash"><div><div class="dl">DORK</div><div class="ds">احجز</div><div class="db"></div></div></div>
     <div id="root"></div>
   </body>
 </html>
