@@ -1397,7 +1397,7 @@ export default function App(){
           if(bk.barberId!=="any"&&b.barber_id!==bk.barberId&&b.barber_id!=="any")return false;
           const bM=toM(b.time||"00:00");
           const bDur2=b.slot_duration_minutes||(salon.slotMin||SLOT_MIN);
-          return slM2<bM+bDur2+bMin2&&bM<slM2+bkDef+bMin2;
+          return slM2<bM+bDur2+bMin2&&bM<slM2+bkDef;
         });
         const capacity=bk.barberId!=="any"?1:bc2;
         if(rivals.length>=capacity){
@@ -2805,7 +2805,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const days7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()+i);const dow=d.getDay();const dateStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;return{dateStr,dayName:DAYS[dow],dayNum:d.getDate(),isClosed:salon.closedDays?.includes(dow),isToday:i===0};});
   const toM=(tt)=>{const[h,m]=(tt||"").split(":").map(Number);return(h||0)*60+(m||0);};
   const closingM=(()=>{if(barber?.shiftEnd)return toM(barber.shiftEnd);if(salon.shiftEnabled)return toM(salon.shift2End||salon.shift1End||"22:00");return toM(salon.workEnd||"22:00");})();
-  const slotsVisible=slots.filter(sl=>toM(sl)+(totalDuration||(salon.slotMin||SLOT_MIN))<=closingM);
+  const slotsVisible=slots.filter(sl=>toM(sl)+(totalDuration||(salon.slotMin||SLOT_MIN))<=closingM&&slotStatus(sl)!=="tight");
   const getBarberNextSlot=(b,date)=>{const bSlots=getSlotsForBarber(salon,b);const dSlots=date===todayStr()?bSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):bSlots;const bkDef=salon.slotMin||SLOT_MIN;const bMin2=salon.bufferMin??BUFFER_MIN;const newDur2=totalDuration||bkDef;const todayBks=liveBookings.filter(bk=>bk.date===date&&!["rejected","cancelled"].includes(bk.status)&&(bk.barberId===b.id||bk.barberId==="any"));for(const sl of dSlots){const slM=toM(sl);const busy=todayBks.some(bk=>{const bkM=toM(bk.time||"00:00");const bkDur=getExistingDur(bk);return slM<bkM+bkDur+bMin2&&bkM<slM+newDur2;});if(!busy)return sl;}return null;};
   const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");setErrors(e);return!Object.keys(e).length;};
   const v2=()=>{const e={};if(activeBarbers.length&&!form.barberId)e.barberId=t("book.err_barber");setErrors(e);return!Object.keys(e).length;};
