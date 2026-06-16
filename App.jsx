@@ -772,7 +772,7 @@ export default function App(){
   const[showDrawer,setShowDrawer]=useState(false);
   const[showSalonDrawer,setShowSalonDrawer]=useState(false);
   const[ownerTab,setOwnerTab]=useState(null);
-  const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
+  const[splash,setSplash]=useState(true);
   const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light"||t==="lgray")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
   const darkMode=themeMode==="dark"||themeMode==="dim";
   const setDarkMode=useCallback((v)=>setThemeMode(v?"dark":"light"),[]);
@@ -822,15 +822,16 @@ export default function App(){
     try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",(lt||lg)?"0":"1");}catch{}
   },[themeMode]);
 
-  // Splash Screen - يختفي بعد ثانيتين
-  useEffect(()=>{
-    const t=setTimeout(()=>setSplash(false),2000);
-    return()=>clearTimeout(t);
-  },[]);
 
   useEffect(() => {
     initializeWebPushNotifications().catch(() => {});
   }, []);
+
+  // إزالة الـ HTML splash فور أول render لـ React بدون فراغ
+  useEffect(()=>{
+    const el=document.getElementById("dork-splash");
+    if(el){el.style.opacity="0";setTimeout(()=>el.remove(),200);}
+  },[]);
 
   // -- تسجيل الدخول المستمر --
   const[ownerSession,setOwnerSession]=useState(()=>{try{const v=localStorage.getItem("dork_owner");return v?+v:null;}catch{return null;}});
@@ -1042,7 +1043,7 @@ export default function App(){
       console.error(e);
       setDbError(e.message);
     } finally {
-      if(!silent)setLoading(false);
+      if(!silent){setLoading(false);setSplash(false);}
     }
   }, []);
 
@@ -1315,11 +1316,9 @@ export default function App(){
   // Splash Screen
   if(splash) return(
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#09112e 0%,#0d1535 45%,#111d42 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",gap:0}}>
-      {/* Full brand logo as text */}
       <div style={{animation:"splashPulse 1.4s ease-in-out infinite",marginBottom:28}}>
         <div style={{fontSize:72,fontWeight:900,color:"var(--gold)",filter:"drop-shadow(0 4px 32px rgba(var(--gold-rgb),.5))",letterSpacing:2}}>دورك</div>
       </div>
-      {/* Loading spinner */}
       <div style={{width:36,height:36,border:"3px solid rgba(var(--gold-rgb),.15)",borderTop:"3px solid var(--gold)",borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
       <style dangerouslySetInnerHTML={{__html:`
         @keyframes splashPulse{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.04) translateY(-4px)}}
@@ -1397,7 +1396,7 @@ export default function App(){
           if(bk.barberId!=="any"&&b.barber_id!==bk.barberId&&b.barber_id!=="any")return false;
           const bM=toM(b.time||"00:00");
           const bDur2=b.slot_duration_minutes||(salon.slotMin||SLOT_MIN);
-          return bM<=slM2&&slM2<bM+bDur2;
+          return slM2<bM+bDur2+bMin2&&bM<slM2+bkDef+bMin2;
         });
         const capacity=bk.barberId!=="any"?1:bc2;
         if(rivals.length>=capacity){
@@ -1457,6 +1456,7 @@ export default function App(){
       }else{
         toast$("❌ خطأ: "+e.message,"err");
       }
+      throw e;
     }
   };
   const updateBookingStatus=async(sid,bid,status)=>{
@@ -2796,9 +2796,9 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const slots=form.date===todayStr()?allSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):allSlots;
   const BMIN=salon.bufferMin??BUFFER_MIN;
   const getExistingDur=b=>{if(b.slotDuration||b.slot_duration_minutes)return b.slotDuration||b.slot_duration_minutes;const svcs=Array.isArray(b.services)?b.services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})();const bBarber=salon.barbers?.find(x=>x.id===(b.barberId||b.barber_id));const dur=svcs.reduce((a,s)=>a+((bBarber?.durations?.[s])||salonDurations[s]||0),0);return dur||(salon.slotMin||SLOT_MIN);};
-  const checkConflict=(slM,newDur,bookings,barberId)=>bookings.filter(b=>{if(["rejected","cancelled"].includes(b.status))return false;const bId=b.barberId||b.barber_id;if(barberId&&barberId!=="any"&&bId!==barberId&&bId!=="any")return false;const bM=toM(b.time||"00:00");return bM<=slM&&slM<bM+getExistingDur(b);}).length;
+  const checkConflict=(slM,newDur,bookings,barberId)=>bookings.filter(b=>{if(["rejected","cancelled"].includes(b.status))return false;const bId=b.barberId||b.barber_id;if(barberId&&barberId!=="any"&&bId!==barberId&&bId!=="any")return false;const bM=toM(b.time||"00:00");return slM<bM+getExistingDur(b)+BMIN&&bM<slM+newDur+BMIN;}).length;
   const slotFull=sl=>{if(loadingBookings)return true;const slM=toM(sl);const newDur=totalDuration||(salon.slotMin||SLOT_MIN);const n=checkConflict(slM,newDur,liveBookings.filter(b=>b.date===form.date),form.barberId);return n>=(form.barberId?1:bc);};
-  const slotStatus=sl=>{if(loadingBookings)return"loading";const slM=toM(sl);const newDur=totalDuration||(salon.slotMin||SLOT_MIN);const dayBks=liveBookings.filter(b=>b.date===form.date&&!["rejected","cancelled"].includes(b.status));const bIdOf=b=>b.barberId||b.barber_id;const matches=dayBks.filter(b=>{if(form.barberId&&form.barberId!=="any"&&bIdOf(b)!==form.barberId&&bIdOf(b)!=="any")return false;const bM=toM(b.time||"00:00");return bM<=slM&&slM<bM+getExistingDur(b);});if(matches.length<(form.barberId?1:bc))return"free";const direct=matches.some(b=>{const bM=toM(b.time||"00:00");return bM<=slM&&slM<bM+getExistingDur(b);});return direct?"booked":"tight";};
+  const slotStatus=sl=>{if(loadingBookings)return"loading";const slM=toM(sl);const newDur=totalDuration||(salon.slotMin||SLOT_MIN);const dayBks=liveBookings.filter(b=>b.date===form.date&&!["rejected","cancelled"].includes(b.status));const bIdOf=b=>b.barberId||b.barber_id;const matches=dayBks.filter(b=>{if(form.barberId&&form.barberId!=="any"&&bIdOf(b)!==form.barberId&&bIdOf(b)!=="any")return false;const bM=toM(b.time||"00:00");return slM<bM+getExistingDur(b)+BMIN&&bM<slM+newDur+BMIN;});if(matches.length<(form.barberId?1:bc))return"free";const direct=matches.some(b=>{const bM=toM(b.time||"00:00");return bM<=slM&&slM<bM+getExistingDur(b);});return direct?"booked":"tight";};
   const total=calcTotal(form.services,salon.prices);
   const toggle=s=>setForm(p=>({...p,time:"",services:p.services.includes(s)?p.services.filter(x=>x!==s):[...p.services,s]}));
   const DAYS=t("book.days",{returnObjects:true});
@@ -2806,7 +2806,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const toM=(tt)=>{const[h,m]=(tt||"").split(":").map(Number);return(h||0)*60+(m||0);};
   const closingM=(()=>{if(barber?.shiftEnd)return toM(barber.shiftEnd);if(salon.shiftEnabled)return toM(salon.shift2End||salon.shift1End||"22:00");return toM(salon.workEnd||"22:00");})();
   const slotsVisible=slots.filter(sl=>toM(sl)+(totalDuration||(salon.slotMin||SLOT_MIN))<=closingM);
-  const getBarberNextSlot=(b,date)=>{const bSlots=getSlotsForBarber(salon,b);const dSlots=date===todayStr()?bSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):bSlots;const bkDef=salon.slotMin||SLOT_MIN;const bMin2=salon.bufferMin??BUFFER_MIN;const newDur2=totalDuration||bkDef;const todayBks=liveBookings.filter(bk=>bk.date===date&&!["rejected","cancelled"].includes(bk.status)&&(bk.barberId===b.id||bk.barberId==="any"));for(const sl of dSlots){const slM=toM(sl);const busy=todayBks.some(bk=>{const bkM=toM(bk.time||"00:00");const bkDur=getExistingDur(bk);return bkM<=slM&&slM<bkM+bkDur;});if(!busy)return sl;}return null;};
+  const getBarberNextSlot=(b,date)=>{const bSlots=getSlotsForBarber(salon,b);const dSlots=date===todayStr()?bSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):bSlots;const bkDef=salon.slotMin||SLOT_MIN;const bMin2=salon.bufferMin??BUFFER_MIN;const newDur2=totalDuration||bkDef;const todayBks=liveBookings.filter(bk=>bk.date===date&&!["rejected","cancelled"].includes(bk.status)&&(bk.barberId===b.id||bk.barberId==="any"));for(const sl of dSlots){const slM=toM(sl);const busy=todayBks.some(bk=>{const bkM=toM(bk.time||"00:00");const bkDur=getExistingDur(bk);return slM<bkM+bkDur+bMin2&&bkM<slM+newDur2+bMin2;});if(!busy)return sl;}return null;};
   const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");setErrors(e);return!Object.keys(e).length;};
   const v2=()=>{const e={};if(activeBarbers.length&&!form.barberId)e.barberId=t("book.err_barber");setErrors(e);return!Object.keys(e).length;};
   const v3=()=>{const e={};if(!form.services.length)e.services=t("book.err_service");setErrors(e);return!Object.keys(e).length;};
@@ -2918,7 +2918,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {salon.closedDays?.length>0&&<div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>{t("book.closed_days_prefix")} {DAYS.filter((_,i)=>salon.closedDays.includes(i)).join(" - ")}</div>}
         <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:7}}>{t("book.time_hint")}{barber?` - ${barber.name}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
-        {loadingBookings?<div style={{textAlign:"center",padding:"18px 0",color:"var(--text-muted)",fontSize:13}}>⏳ جاري التحقق من المواعيد...</div>:<div style={G.timeGrid}>{slotsVisible.map(sl=>{const st=slotStatus(sl);const full=st!=="free";const tight=st==="tight";const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={loadingBookings||(full&&!waiting)} onClick={()=>!full&&setForm(p=>({...p,time:p.time===sl?"":sl,waitSlot:""}))} style={{...G.ts,...(st!=="free"?G.tsF:{}),...(sel&&!full?G.tsS:{})}}><div>{to12h(sl)}</div>{st!=="free"&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}</button>{st==="booked"&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>}
+        {loadingBookings?<div style={{textAlign:"center",padding:"18px 0",color:"var(--text-muted)",fontSize:13}}>⏳ جاري التحقق من المواعيد...</div>:<div style={G.timeGrid}>{slotsVisible.map(sl=>{const st=slotStatus(sl);const full=st!=="free";const tight=st==="tight";const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={loadingBookings||(full&&!waiting)} onClick={()=>!full&&setForm(p=>({...p,time:p.time===sl?"":sl,waitSlot:""}))} style={{...G.ts,...(st==="booked"?G.tsF:{}),...(tight?G.tsTight:{}),...(sel&&!full?G.tsS:{})}}><div>{to12h(sl)}</div>{st==="booked"&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}{tight&&<div style={{fontSize:9,marginTop:1,color:"#e67e22"}}>الوقت لا يكفي</div>}</button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>}
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:11,color:"#f39c12",textAlign:"center"}}>{t("book.wait_msg")} <strong>{to12h(form.waitSlot)}</strong> {t("book.wait_notify")}</div>}
         <div style={{display:"flex",gap:8,marginTop:8}}><BtnBack toStep={3}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(v4())setStep(5);}}>{form.waitSlot?t("book.next_wait"):t("book.next")}</button></div>
       </div>}
@@ -2957,7 +2957,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
               const freshBks=await sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=not.in.(rejected,cancelled)&select=id,barber_id,service,time,slot_duration_minutes`).catch(()=>[]);
               const conflict=checkConflict(slM,newDur,Array.isArray(freshBks)?freshBks:[],form.barberId);
               if(conflict>=(form.barberId?1:bc)){alert("❌ هذا الوقت أصبح محجوزاً، اختر وقتاً آخر");setBooking(false);return;}
-              addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total,reminderMins,totalDuration},rescheduleId||null);
+              try{await addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total,reminderMins,totalDuration},rescheduleId||null);}catch(e){setBooking(false);}
             }
           }}>{booking?"⏳...":form.waitSlot?t("book.confirm_wait_btn"):rescheduleId?t("book.reschedule_btn"):t("book.confirm_btn")}</button>
         </div>
@@ -3514,8 +3514,10 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   const acceptFromWaiting=async(w)=>{
     if(!w.slotDate||!w.slotTime){alert("لا يوجد وقت محدد لهذا العميل");return;}
     try{
-      // إنشاء حجز مقبول مباشرة
-      await sb("bookings","POST",{salon_id:String(salon.id),customer_name:w.name,customer_phone:w.phone,date:w.slotDate,time:w.slotTime,status:"approved",service:"[]",barber_id:"any",barber_name:"",total:0});
+      // إنشاء حجز مقبول مباشرة — status pending ثم نحوّله approved لتجاوز أي trigger يمنع الإدراج المباشر
+      const inserted=await sb("bookings","POST",{salon_id:String(salon.id),customer_name:w.name,customer_phone:w.phone,date:w.slotDate,time:w.slotTime,status:"pending",service:"[]",barber_id:"any",barber_name:"",total:0});
+      const newId=(inserted&&inserted[0])?inserted[0].id:null;
+      if(newId)await sb("bookings","PATCH",{status:"approved"},`?id=eq.${newId}`).catch(()=>{});
       // تغيير الحالة لـ accepted
       await sb("waiting_list","PATCH",{status:"accepted"},"?id=eq."+w.id);
       // إشعار للمقبول
@@ -3528,7 +3530,13 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       }
       await loadWaiting();
       if(refreshSalonBookings)refreshSalonBookings(salon.id);
-    }catch(e){alert("❌ خطأ: "+e.message);}
+    }catch(e){
+      if(e.message&&e.message.includes("booking_overlap")){
+        alert("❌ هذا الوقت أصبح محجوزاً. يرجى التحقق من الجدول قبل القبول.");
+      }else{
+        alert("❌ خطأ: "+e.message);
+      }
+    }
   };
 
   const rejectFromWaiting=async(w)=>{

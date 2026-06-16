@@ -15,6 +15,7 @@ i18n
     fallbackLng: 'ar',
     ns: ['common'],
     defaultNS: 'common',
+    initImmediate: false,
     resources: {
       ar: { common: ar },
       en: { common: en },
