@@ -772,7 +772,7 @@ export default function App(){
   const[showDrawer,setShowDrawer]=useState(false);
   const[showSalonDrawer,setShowSalonDrawer]=useState(false);
   const[ownerTab,setOwnerTab]=useState(null);
-  const[splash,setSplash]=useState(true);
+  const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
   const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light"||t==="lgray")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
   const darkMode=themeMode==="dark"||themeMode==="dim";
   const setDarkMode=useCallback((v)=>setThemeMode(v?"dark":"light"),[]);
@@ -822,6 +822,12 @@ export default function App(){
     try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",(lt||lg)?"0":"1");}catch{}
   },[themeMode]);
 
+
+  // Splash Screen - يختفي بعد ثانيتين
+  useEffect(()=>{
+    const t=setTimeout(()=>setSplash(false),2000);
+    return()=>clearTimeout(t);
+  },[]);
 
   useEffect(() => {
     initializeWebPushNotifications().catch(() => {});
@@ -1044,7 +1050,6 @@ export default function App(){
       setDbError(e.message);
     } finally {
       if(!silent)setLoading(false);
-      setSplash(false);
     }
   }, []);
 
