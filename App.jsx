@@ -1043,7 +1043,8 @@ export default function App(){
       console.error(e);
       setDbError(e.message);
     } finally {
-      if(!silent){setLoading(false);setSplash(false);}
+      if(!silent)setLoading(false);
+      setSplash(false);
     }
   }, []);
 
