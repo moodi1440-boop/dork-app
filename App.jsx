@@ -2784,6 +2784,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const[errors,setErrors]=useState({});
   const[liveBookings,setLiveBookings]=useState([]);
   const[loadingBookings,setLoadingBookings]=useState(true);
+  const[waitingSlots,setWaitingSlots]=useState(new Set());
   const activeBarbers=(salon.barbers||[]).filter(b=>b.active!==false);
   const bc=activeBarbers.length||1;
   const barber=salon.barbers?.find(b=>b.id===form.barberId);
@@ -2797,6 +2798,12 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
       .catch(()=>{})
       .finally(()=>setLoadingBookings(false));
   },[form.date,form.barberId]);
+  useEffect(()=>{
+    if(!form.date)return;
+    sb("waiting_list","GET",null,`?salon_id=eq.${salon.id}&slot_date=eq.${form.date}&status=eq.waiting&select=slot_time&limit=50`)
+      .then(rows=>{if(Array.isArray(rows))setWaitingSlots(new Set(rows.map(r=>r.slot_time)));})
+      .catch(()=>{});
+  },[form.date]);
   const totalDuration=form.services.reduce((a,s)=>a+(getDur(s)||0),0);
   const allSlots=[...new Set(barber?getSlotsForBarber(salon,barber):getSlotsForSalon(salon))];
   const slots=form.date===todayStr()?allSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):allSlots;
@@ -2923,7 +2930,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {salon.closedDays?.length>0&&<div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>{t("book.closed_days_prefix")} {DAYS.filter((_,i)=>salon.closedDays.includes(i)).join(" - ")}</div>}
         <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:7}}>{t("book.time_hint")}{barber?` - ${barber.name}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
-        {loadingBookings?<div style={{textAlign:"center",padding:"18px 0",color:"var(--text-muted)",fontSize:13}}>⏳ جاري التحقق من المواعيد...</div>:<div style={G.timeGrid}>{slotsVisible.map(sl=>{const st=slotStatus(sl);const full=st!=="free";const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={loadingBookings||(full&&!waiting)} onClick={()=>!full&&setForm(p=>({...p,time:p.time===sl?"":sl,waitSlot:""}))} style={{...G.ts,...(st==="booked"?G.tsF:{}),...(sel&&!full?G.tsS:{})}}><div>{to12h(sl)}</div>{st==="booked"&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}</button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>}
+        {loadingBookings?<div style={{textAlign:"center",padding:"18px 0",color:"var(--text-muted)",fontSize:13}}>⏳ جاري التحقق من المواعيد...</div>:<div style={G.timeGrid}>{slotsVisible.map(sl=>{const st=slotStatus(sl);const full=st!=="free";const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={loadingBookings||(full&&!waiting)} onClick={()=>!full&&setForm(p=>({...p,time:p.time===sl?"":sl,waitSlot:""}))} style={{...G.ts,...(st==="booked"?G.tsF:{}),...(sel&&!full?G.tsS:{})}}><div>{to12h(sl)}</div>{st==="booked"&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}</button>{full&&(waitingSlots.has(sl)?<div style={{fontSize:9,padding:"3px 4px",borderRadius:6,textAlign:"center",color:"var(--text-muted)",opacity:.7}}>⏳ ممتلئ</div>:<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>)}</div>);})}</div>}
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:11,color:"#f39c12",textAlign:"center"}}>{t("book.wait_msg")} <strong>{to12h(form.waitSlot)}</strong> {t("book.wait_notify")}</div>}
         <div style={{display:"flex",gap:8,marginTop:8}}><BtnBack toStep={3}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(v4())setStep(5);}}>{form.waitSlot?t("book.next_wait"):t("book.next")}</button></div>
       </div>}
@@ -2952,8 +2959,8 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
             if(form.waitSlot){
               if(!form.name||!form.phone){alert(t("book.err_name_phone"));setBooking(false);return;}
               try{
-                const existing=await sb("waiting_list","GET",null,`?select=id&salon_id=eq.${salon.id}&slot_date=eq.${form.date}&slot_time=eq.${form.waitSlot}&phone=eq.${encodeURIComponent(form.phone)}&status=eq.waiting&limit=1`).catch(()=>[]);
-                if(Array.isArray(existing)&&existing.length){alert("⏳ أنت بالفعل في قائمة الانتظار لهذا الوقت");setBooking(false);return;}
+                const existing=await sb("waiting_list","GET",null,`?select=id,phone&salon_id=eq.${salon.id}&slot_date=eq.${form.date}&slot_time=eq.${form.waitSlot}&status=eq.waiting&limit=1`).catch(()=>[]);
+                if(Array.isArray(existing)&&existing.length){alert(existing[0].phone===form.phone?"⏳ أنت بالفعل في قائمة الانتظار لهذا الوقت":"⏳ قائمة الانتظار لهذا الوقت ممتلئة، اختر وقتاً آخر");setBooking(false);return;}
                 await sb("waiting_list","POST",{salon_id:salon.id,name:form.name,phone:form.phone,slot_date:form.date,slot_time:form.waitSlot,customer_id:null,status:"waiting"});
                 alert(t("book.success_wait"));
                 if(setView)setView("home");
@@ -3542,8 +3549,8 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       await loadWaiting();
       if(refreshSalonBookings)refreshSalonBookings(salon.id);
     }catch(e){
-      if(e.message&&e.message.includes("booking_overlap")){
-        alert("❌ هذا الوقت أصبح محجوزاً. يرجى التحقق من الجدول قبل القبول.");
+      if(e.message&&(e.message.includes("booking_overlap")||e.message.includes("prevent_double_booking")||e.message.includes("23505"))){
+        alert("❌ هذا الوقت ما زال محجوزاً فعلياً — يجب إلغاء الحجز الأصلي أولاً قبل قبول هذا العميل من قائمة الانتظار.");
       }else{
         alert("❌ خطأ: "+e.message);
       }
@@ -6974,7 +6981,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                 <div key={i} style={{...G.bItem,borderRight:`3px solid ${stColor}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                     <div>
-                      <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{s?.name||h.salonName||"صالون"}</div>
+                      <div style={{marginBottom:4}}><span style={{background:"var(--pa08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:20,padding:"5px 14px",display:"inline-block",fontSize:13,fontWeight:800,color:"var(--p)",fontFamily:"'Cairo',sans-serif",maxWidth:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s?.name||h.salonName||"صالون"}</span></div>
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>📅 {h.date} - 🕐 {h.time}</div>
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>{Array.isArray(h.services)?h.services.join(" + "):h.service||""}</div>
                       <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>💰 {h.total||0} {t("cust_dash.sar")}</div>
