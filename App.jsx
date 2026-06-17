@@ -1009,7 +1009,7 @@ export default function App(){
       if(!silent)setLoading(true);
       const [salonRows,bookingRows,custRows]=await Promise.all([
         sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
-        sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=1000"),
+        sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&order=created_at.desc&limit=1000"),
         sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&limit=500"),
       ]);
       const reviewRows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
@@ -1023,6 +1023,7 @@ export default function App(){
         barberId:b.barber_id||"any",barberName:b.barber_name||"",
         date:b.date||"",time:b.time||"",total:b.total||0,
         status:b.status||"pending",attendance:b.attendance||null,
+        slotDuration:b.slot_duration_minutes||null,
       });
       const salonsWithBookings=salonRows.map(row=>{
         const salon=toAppSalon(row);
@@ -1088,7 +1089,7 @@ export default function App(){
     if(!salonId)return;
     try{
       const rows=await sb("bookings","GET",null,
-        `?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&salon_id=eq.${salonId}&order=created_at.desc&limit=500`
+        `?select=id,salon_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&salon_id=eq.${salonId}&order=created_at.desc&limit=500`
       );
       setSalons(prev=>prev.map(salon=>
         String(salon.id)!==String(salonId)?salon:{
@@ -1099,6 +1100,7 @@ export default function App(){
             services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})(),
             barberId:b.barber_id||"any",barberName:b.barber_name||"",
             date:b.date||"",time:b.time||"",total:b.total||0,status:b.status||"pending",attendance:b.attendance||null,
+            slotDuration:b.slot_duration_minutes||null,
           })),
         }
       ));
@@ -1250,7 +1252,7 @@ export default function App(){
   const refreshSalonBookings=useCallback(async(salonId)=>{
     try{
       const rows=await sb("bookings","GET",null,
-        `?salon_id=eq.${salonId}&select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,created_at&order=created_at.desc&limit=500`
+        `?salon_id=eq.${salonId}&select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&order=created_at.desc&limit=500`
       );
       const bookings=rows.map(b=>({
         id:b.id,
@@ -1266,6 +1268,7 @@ export default function App(){
         total:b.total||0,
         status:b.status||"pending",
         attendance:b.attendance||null,
+        slotDuration:b.slot_duration_minutes||null,
       }));
       setSalons(prev=>prev.map(s=>String(s.id)===String(salonId)?{...s,bookings}:s));
     }catch(e){console.error(e);}
@@ -6967,7 +6970,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>📅 {h.date} - 🕐 {h.time}</div>
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>{Array.isArray(h.services)?h.services.join(" + "):h.service||""}</div>
                       <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>💰 {h.total||0} {t("cust_dash.sar")}</div>
-                      {(()=>{const svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+(s?.prices?.__durations?.[svc]||0),0):0;const dur=svcDur||(s?.slotMin||40);const[hh,mm]=(h.time||"00:00").split(":").map(Number);const endM=hh*60+mm+dur;const eH=Math.floor(endM/60)%24;const eM=endM%60;const endStr=`${eH%12||12}:${String(eM).padStart(2,"0")} ${eH<12?"ص":"م"}`;return<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>⏱ من {to12h(h.time)} إلى {endStr}</div>;})()}
+                      {(()=>{const bBarber=s?.barbers?.find(x=>x.id===realBooking?.barberId);const svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+((bBarber?.durations?.[svc])||s?.prices?.__durations?.[svc]||0),0):0;const dur=realBooking?.slotDuration||svcDur||(s?.slotMin||40);const[hh,mm]=(h.time||"00:00").split(":").map(Number);const endM=hh*60+mm+dur;const eH=Math.floor(endM/60)%24;const eM=endM%60;const endStr=`${eH%12||12}:${String(eM).padStart(2,"0")} ${eH<12?"ص":"م"}`;return<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>⏱ من {to12h(h.time)} إلى {endStr}</div>;})()}
                       <div style={{fontSize:11,fontWeight:700,color:stColor,marginTop:3}}>{stLabel}</div>
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
