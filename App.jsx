@@ -2068,12 +2068,15 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
   if(customerSession&&!ownerSession){
     return(
       <div style={G.topBar}>
-        {/* LEFT: زر القائمة */}
-        <button onClick={()=>setShowDrawer&&setShowDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showDrawer?"var(--pa15)":"rgba(255,255,255,.05)",border:`1.5px solid ${showDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
-          <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
-          <span style={{display:"block",width:14,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
-          <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
-        </button>
+        {/* LEFT: زر القائمة + زر الصفحة الرئيسية */}
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={()=>setShowDrawer&&setShowDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showDrawer?"var(--pa15)":"rgba(255,255,255,.05)",border:`1.5px solid ${showDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
+            <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
+            <span style={{display:"block",width:14,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
+            <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
+          </button>
+          <button onClick={()=>setView("home")} style={{width:44,height:44,borderRadius:12,background:"rgba(255,255,255,.05)",border:"1.5px solid var(--border-ui)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text-muted)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>
+        </div>
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
           <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
@@ -2085,11 +2088,14 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
   // صاحب الصالون: زر الدرج فقط
   if(ownerSession) return(
     <div style={G.topBar}>
-      <button onClick={()=>setShowSalonDrawer&&setShowSalonDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showSalonDrawer?"var(--pa15)":"rgba(255,255,255,.05)",border:`1.5px solid ${showSalonDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
-        <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
-        <span style={{display:"block",width:14,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
-        <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
-      </button>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <button onClick={()=>setShowSalonDrawer&&setShowSalonDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showSalonDrawer?"var(--pa15)":"rgba(255,255,255,.05)",border:`1.5px solid ${showSalonDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
+          <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
+          <span style={{display:"block",width:14,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
+          <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
+        </button>
+        <button onClick={()=>setView("ownerDash")} style={{width:44,height:44,borderRadius:12,background:"rgba(255,255,255,.05)",border:"1.5px solid var(--border-ui)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text-muted)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>
+      </div>
       <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>setView("ownerDash")}>
         <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
         <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,var(--pll) 0%,var(--p) 50%,var(--pd) 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
