@@ -2815,7 +2815,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");setErrors(e);return!Object.keys(e).length;};
   const v2=()=>{const e={};if(activeBarbers.length&&!form.barberId)e.barberId=t("book.err_barber");setErrors(e);return!Object.keys(e).length;};
   const v3=()=>{const e={};if(!form.services.length)e.services=t("book.err_service");setErrors(e);return!Object.keys(e).length;};
-  const v4=()=>{const e={};if(!form.time&&!form.waitSlot){e.time=t("book.err_time");}setErrors(e);return!Object.keys(e).length;};
+  const v4=()=>{const e={};if(form.time&&slotFull(form.time)){setForm(p=>({...p,time:""}));e.time=t("book.err_time");}else if(!form.time&&!form.waitSlot){e.time=t("book.err_time");}setErrors(e);return!Object.keys(e).length;};
   const BtnBack=({toStep})=><button style={{background:"var(--surface-2)",color:"var(--text-muted)",border:"none",padding:"12px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",flexShrink:0}} onClick={()=>setStep(toStep)}>{t("salon_page.back")}</button>;
   const inner=(
     <>
@@ -2923,7 +2923,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
         {salon.closedDays?.length>0&&<div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>{t("book.closed_days_prefix")} {DAYS.filter((_,i)=>salon.closedDays.includes(i)).join(" - ")}</div>}
         <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:7}}>{t("book.time_hint")}{barber?` - ${barber.name}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
-        {loadingBookings?<div style={{textAlign:"center",padding:"18px 0",color:"var(--text-muted)",fontSize:13}}>⏳ جاري التحقق من المواعيد...</div>:<div style={G.timeGrid}>{slotsVisible.map(sl=>{const sel=form.time===sl;return(<button key={sl} disabled={loadingBookings} onClick={()=>setForm(p=>({...p,time:p.time===sl?"":sl,waitSlot:""}))} style={{...G.ts,...(sel?G.tsS:{})}}><div>{to12h(sl)}</div></button>);})}</div>}
+        {loadingBookings?<div style={{textAlign:"center",padding:"18px 0",color:"var(--text-muted)",fontSize:13}}>⏳ جاري التحقق من المواعيد...</div>:<div style={G.timeGrid}>{slotsVisible.map(sl=>{const st=slotStatus(sl);const full=st!=="free";const tight=st==="tight";const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={loadingBookings||(full&&!waiting)} onClick={()=>!full&&setForm(p=>({...p,time:p.time===sl?"":sl,waitSlot:""}))} style={{...G.ts,...(st==="booked"?G.tsF:{}),...(tight?G.tsTight:{}),...(sel&&!full?G.tsS:{})}}><div>{to12h(sl)}</div>{st==="booked"&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}{tight&&<div style={{fontSize:9,marginTop:1,color:"#e67e22"}}>الوقت لا يكفي</div>}</button>{full&&<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>}</div>);})}</div>}
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:11,color:"#f39c12",textAlign:"center"}}>{t("book.wait_msg")} <strong>{to12h(form.waitSlot)}</strong> {t("book.wait_notify")}</div>}
         <div style={{display:"flex",gap:8,marginTop:8}}><BtnBack toStep={3}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(v4())setStep(5);}}>{form.waitSlot?t("book.next_wait"):t("book.next")}</button></div>
       </div>}
@@ -2963,22 +2963,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
               const newDur=totalDuration||(salon.slotMin||SLOT_MIN);
               const freshBks=await sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=not.in.(rejected,cancelled)&select=id,barber_id,service,time,slot_duration_minutes`).catch(()=>[]);
               const conflict=checkConflict(slM,newDur,Array.isArray(freshBks)?freshBks:[],form.barberId);
-              if(conflict>=(form.barberId?1:bc)){
-                const joinWait=window.confirm("❌ مدة الخدمة المختارة تتعارض مع حجز موجود في هذا الوقت.\nهل تريد الانضمام لقائمة الانتظار لهذا الوقت؟");
-                setBooking(false);
-                if(joinWait){
-                  if(!form.name||!form.phone){alert(t("book.err_name_phone"));return;}
-                  setBooking(true);
-                  try{
-                    const existing=await sb("waiting_list","GET",null,`?select=id&salon_id=eq.${salon.id}&slot_date=eq.${form.date}&slot_time=eq.${form.time}&phone=eq.${encodeURIComponent(form.phone)}&status=eq.waiting&limit=1`).catch(()=>[]);
-                    if(Array.isArray(existing)&&existing.length){alert("⏳ أنت بالفعل في قائمة الانتظار لهذا الوقت");setBooking(false);return;}
-                    await sb("waiting_list","POST",{salon_id:salon.id,name:form.name,phone:form.phone,slot_date:form.date,slot_time:form.time,customer_id:null,status:"waiting"});
-                    alert(t("book.success_wait"));
-                    if(setView)setView("home");
-                  }catch(e){alert("❌ حدث خطأ، حاول مرة أخرى");setBooking(false);}
-                }
-                return;
-              }
+              if(conflict>=(form.barberId?1:bc)){alert("❌ مدة الخدمة المختارة تتعارض مع حجز موجود في هذا الوقت، ارجع واختر وقتاً آخر");setBooking(false);return;}
               try{await addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total,reminderMins,totalDuration},rescheduleId||null);}catch(e){setBooking(false);}
             }
           }}>{booking?"⏳...":form.waitSlot?t("book.confirm_wait_btn"):rescheduleId?t("book.reschedule_btn"):t("book.confirm_btn")}</button>
