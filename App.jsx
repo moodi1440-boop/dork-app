@@ -1441,6 +1441,8 @@ export default function App(){
             bookingId:newBooking.id,
             status:"pending",
             phone:bk.phone||"",
+            barberId:bk.barberId||"any",
+            slotDuration:bk.totalDuration||null,
           };
           const hist=[...(c.history||[]),histItem];
           // نحفظ في localStorage كحل احتياطي
@@ -6976,7 +6978,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>📅 {h.date} - 🕐 {h.time}</div>
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>{Array.isArray(h.services)?h.services.join(" + "):h.service||""}</div>
                       <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>💰 {h.total||0} {t("cust_dash.sar")}</div>
-                      {(()=>{const bBarber=s?.barbers?.find(x=>x.id===realBooking?.barberId);const svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+((bBarber?.durations?.[svc])||s?.prices?.__durations?.[svc]||0),0):0;const dur=realBooking?.slotDuration||svcDur||(s?.slotMin||40);const[hh,mm]=(h.time||"00:00").split(":").map(Number);const endM=hh*60+mm+dur;const eH=Math.floor(endM/60)%24;const eM=endM%60;const endStr=`${eH%12||12}:${String(eM).padStart(2,"0")} ${eH<12?"ص":"م"}`;return<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>⏱ من {to12h(h.time)} إلى {endStr}</div>;})()}
+                      {(()=>{const bBarber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));const svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+((bBarber?.durations?.[svc])||s?.prices?.__durations?.[svc]||0),0):0;const dur=realBooking?.slotDuration||h.slotDuration||svcDur||(s?.slotMin||40);const[hh,mm]=(h.time||"00:00").split(":").map(Number);const endM=hh*60+mm+dur;const eH=Math.floor(endM/60)%24;const eM=endM%60;const endStr=`${eH%12||12}:${String(eM).padStart(2,"0")} ${eH<12?"ص":"م"}`;return<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>⏱ من {to12h(h.time)} إلى {endStr}</div>;})()}
                       <div style={{fontSize:11,fontWeight:700,color:stColor,marginTop:3}}>{stLabel}</div>
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
