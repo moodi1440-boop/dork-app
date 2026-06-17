@@ -13,5 +13,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </I18nextProvider>
   </React.StrictMode>,
 )
-const _sp = document.getElementById('dork-splash');
-if (_sp) { _sp.style.opacity = '0'; setTimeout(() => _sp.remove(), 280); }

@@ -833,12 +833,6 @@ export default function App(){
     initializeWebPushNotifications().catch(() => {});
   }, []);
 
-  // إزالة الـ HTML splash فور أول render لـ React بدون فراغ
-  useEffect(()=>{
-    const el=document.getElementById("dork-splash");
-    if(el){el.style.opacity="0";setTimeout(()=>el.remove(),200);}
-  },[]);
-
   // -- تسجيل الدخول المستمر --
   const[ownerSession,setOwnerSession]=useState(()=>{try{const v=localStorage.getItem("dork_owner");return v?+v:null;}catch{return null;}});
   const[customerSession,setCustomerSession]=useState(()=>{try{const v=localStorage.getItem("dork_customer");return v?JSON.parse(v):null;}catch{return null;}});
