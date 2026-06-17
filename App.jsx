@@ -2950,6 +2950,8 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
             if(form.waitSlot){
               if(!form.name||!form.phone){alert(t("book.err_name_phone"));setBooking(false);return;}
               try{
+                const existing=await sb("waiting_list","GET",null,`?select=id&salon_id=eq.${salon.id}&slot_date=eq.${form.date}&slot_time=eq.${form.waitSlot}&phone=eq.${encodeURIComponent(form.phone)}&status=eq.waiting&limit=1`).catch(()=>[]);
+                if(Array.isArray(existing)&&existing.length){alert("⏳ أنت بالفعل في قائمة الانتظار لهذا الوقت");setBooking(false);return;}
                 await sb("waiting_list","POST",{salon_id:salon.id,name:form.name,phone:form.phone,slot_date:form.date,slot_time:form.waitSlot,customer_id:null,status:"waiting"});
                 alert(t("book.success_wait"));
                 if(setView)setView("home");
@@ -3504,6 +3506,10 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
 
   const addToWaiting=async(name,phone,slotDate,slotTime)=>{
     try{
+      if(slotDate&&slotTime&&phone){
+        const existing=await sb("waiting_list","GET",null,`?select=id&salon_id=eq.${salon.id}&slot_date=eq.${slotDate}&slot_time=eq.${slotTime}&phone=eq.${encodeURIComponent(phone)}&status=eq.waiting&limit=1`).catch(()=>[]);
+        if(Array.isArray(existing)&&existing.length){alert("⏳ هذا العميل بالفعل في قائمة الانتظار لهذا الوقت");return;}
+      }
       await sb("waiting_list","POST",{salon_id:salon.id,name,phone,slot_date:slotDate||null,slot_time:slotTime||null});
       await loadWaiting();
     }catch{
