@@ -4429,7 +4429,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
 
   // ── حسابات ملخص اليوم (بتوقيت السعودية AST/GMT+3) ──
   const _td=getTodayDateInRiyadh();
-  const _tdBks=salon.bookings.filter(b=>b.date===_td);
+  const _tdBks=salon.bookings.filter(b=>b.date===_td&&b.status!=="cancelled");
   const _tdApproved=_tdBks.filter(b=>b.status==="approved");
   const _tdPending=_tdBks.filter(b=>b.status==="pending");
   const _tdRejected=_tdBks.filter(b=>b.status==="rejected");
@@ -4460,8 +4460,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   // ── حسابات حجوزات غداً ──
   const _tmrDate=new Date(_now);_tmrDate.setDate(_tmrDate.getDate()+1);
   const _tmr=_tmrDate.toLocaleDateString("en-CA",{timeZone:"Asia/Riyadh"});
-  const _tmrBks=salon.bookings.filter(b=>b.date===_tmr);
+  const _tmrBks=salon.bookings.filter(b=>b.date===_tmr&&b.status!=="cancelled");
   const _tmrApproved=_tmrBks.filter(b=>b.status==="approved");
+  const _tmrBookedSlotCount=new Set(_tmrApproved.map(b=>b.time)).size;
+  const _tmrOcc=Math.min(100,Math.round(_tmrBookedSlotCount/Math.max(_allSlots.length,1)*100));
   const _tmrPending=_tmrBks.filter(b=>b.status==="pending");
 
   return(
@@ -4599,15 +4601,17 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         )}
       </div>
 
-      {/* نسبة حجز اليوم - خارج مربع الأرباح */}
-      <div style={{background:`rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.08)`,border:`1px solid rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.25)`,borderRadius:12,padding:"10px 14px",marginBottom:18,display:"flex",alignItems:"center",gap:12}}>
-        <div style={{fontSize:26,fontWeight:900,color:_occ>=80?"#e74c3c":_occ>=50?"var(--p)":"#27ae60",lineHeight:1,minWidth:48,textAlign:"center"}}>{_occ}%</div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:5,fontWeight:600}}>نسبة حجز اليوم</div>
-          <div style={{height:7,background:"rgba(var(--pr),.12)",borderRadius:10,overflow:"hidden"}}>
-            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center"}}/>
+      {/* نسبة حجز اليوم وغداً - جنب بعض */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18}}>
+        {[{label:"نسبة حجز اليوم",occ:_occ},{label:"نسبة حجز غداً",occ:_tmrOcc}].map(({label,occ})=>(
+          <div key={label} style={{background:`rgba(${occ>=80?"231,76,60":occ>=50?"var(--pr)":"39,174,96"},.08)`,border:`1px solid rgba(${occ>=80?"231,76,60":occ>=50?"var(--pr)":"39,174,96"},.25)`,borderRadius:12,padding:"10px 12px"}}>
+            <div style={{fontSize:22,fontWeight:900,color:occ>=80?"#e74c3c":occ>=50?"var(--p)":"#27ae60",lineHeight:1,marginBottom:6,textAlign:"center"}}>{occ}%</div>
+            <div style={{fontSize:9,color:"var(--text-muted)",marginBottom:5,fontWeight:600,textAlign:"center"}}>{label}</div>
+            <div style={{height:7,background:"rgba(var(--pr),.12)",borderRadius:10,overflow:"hidden"}}>
+              <div className="occ-bar" style={{height:"100%",width:`${occ}%`,background:occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center"}}/>
+            </div>
           </div>
-        </div>
+        ))}
       </div>
 
       {/* حجوزات غداً */}
