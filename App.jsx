@@ -2070,12 +2070,12 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
       <div style={G.topBar}>
         {/* LEFT: زر القائمة + زر الصفحة الرئيسية */}
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <button onClick={()=>setShowDrawer&&setShowDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showDrawer?"var(--pa15)":"rgba(255,255,255,.05)",border:`1.5px solid ${showDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
+          <button onClick={()=>setShowDrawer&&setShowDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showDrawer?"var(--pa15)":"var(--surface-1)",border:`1.5px solid ${showDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
             <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
             <span style={{display:"block",width:14,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
             <span style={{display:"block",width:18,height:2,background:showDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
           </button>
-          <button onClick={()=>setView("home")} style={{width:44,height:44,borderRadius:12,background:"rgba(255,255,255,.05)",border:"1.5px solid var(--border-ui)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text-muted)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>
+          <button onClick={()=>setView("home")} style={{width:44,height:44,borderRadius:12,background:"var(--surface-1)",border:"1.5px solid var(--border-ui)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text-muted)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>
         </div>
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
@@ -2089,12 +2089,12 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
   if(ownerSession) return(
     <div style={G.topBar}>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <button onClick={()=>setShowSalonDrawer&&setShowSalonDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showSalonDrawer?"var(--pa15)":"rgba(255,255,255,.05)",border:`1.5px solid ${showSalonDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
+        <button onClick={()=>setShowSalonDrawer&&setShowSalonDrawer(v=>!v)} style={{width:44,height:44,borderRadius:12,background:showSalonDrawer?"var(--pa15)":"var(--surface-1)",border:`1.5px solid ${showSalonDrawer?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,padding:0,flexShrink:0,transition:"all 0.2s"}}>
           <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
           <span style={{display:"block",width:14,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
           <span style={{display:"block",width:18,height:2,background:showSalonDrawer?"var(--p)":"var(--text-muted)",borderRadius:2,transition:"all 0.2s"}}/>
         </button>
-        <button onClick={()=>setView("ownerDash")} style={{width:44,height:44,borderRadius:12,background:"rgba(255,255,255,.05)",border:"1.5px solid var(--border-ui)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text-muted)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>
+        <button onClick={()=>setView("ownerDash")} style={{width:44,height:44,borderRadius:12,background:"var(--surface-1)",border:"1.5px solid var(--border-ui)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text-muted)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>setView("ownerDash")}>
         <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
@@ -6987,12 +6987,14 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                 <div key={i} style={{...G.bItem,borderRight:`3px solid ${stColor}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                     <div>
-                      <div style={{marginBottom:4}}><span style={{background:"var(--pa08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:20,padding:"5px 14px",display:"inline-block",fontSize:13,fontWeight:800,color:"var(--p)",fontFamily:"'Cairo',sans-serif",maxWidth:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s?.name||h.salonName||"صالون"}</span></div>
-                      <div style={{fontSize:11,color:"var(--text-muted)"}}>📅 {h.date} - 🕐 {h.time}</div>
-                      <div style={{fontSize:11,color:"var(--text-muted)"}}>{Array.isArray(h.services)?h.services.join(" + "):h.service||""}</div>
-                      <div style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>💰 {h.total||0} {t("cust_dash.sar")}</div>
-                      {(()=>{const bBarber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));const barberLabel=realBooking?.barberName||h.barberName||bBarber?.name||"";return barberLabel?<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>💈 {barberLabel}</div>:null;})()}
-                      {(()=>{const bBarber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));const svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+((bBarber?.durations?.[svc])||s?.prices?.__durations?.[svc]||0),0):0;const dur=realBooking?.slotDuration||h.slotDuration||svcDur||(s?.slotMin||40);const[hh,mm]=(h.time||"00:00").split(":").map(Number);const endM=hh*60+mm+dur;const eH=Math.floor(endM/60)%24;const eM=endM%60;const endStr=`${eH%12||12}:${String(eM).padStart(2,"0")} ${eH<12?"ص":"م"}`;return<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>⏱ {dur} دقيقة - من {to12h(h.time)} إلى {endStr}</div>;})()}
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+                        <span style={{background:"var(--pa08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:20,padding:"5px 14px",display:"inline-block",fontSize:13,fontWeight:800,color:"var(--p)",fontFamily:"'Cairo',sans-serif",maxWidth:"100%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s?.name||h.salonName||"صالون"}</span>
+                        <span style={{fontSize:11,color:"var(--text-muted)"}}>📅 {h.date}</span>
+                      </div>
+                      <div style={{fontSize:11,color:"var(--text-muted)"}}>الخدمة: {Array.isArray(h.services)?h.services.join(" + "):h.service||""}</div>
+                      <div style={{fontSize:12,color:"var(--text-muted)"}}>السعر: <span style={{fontWeight:700,color:"var(--p)"}}>{h.total||0} {t("cust_dash.sar")}</span></div>
+                      {(()=>{const bBarber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));const svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+((bBarber?.durations?.[svc])||s?.prices?.__durations?.[svc]||0),0):0;const dur=realBooking?.slotDuration||h.slotDuration||svcDur||(s?.slotMin||40);const[hh,mm]=(h.time||"00:00").split(":").map(Number);const endM=hh*60+mm+dur;const eH=Math.floor(endM/60)%24;const eM=endM%60;const endStr=`${eH%12||12}:${String(eM).padStart(2,"0")} ${eH<12?"ص":"م"}`;return<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>الوقت: {to12h(h.time)} – {endStr} ({dur} دقيقة)</div>;})()}
+                      {(()=>{const bBarber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));const barberLabel=realBooking?.barberName||h.barberName||bBarber?.name||"";return barberLabel?<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>الحلاق: {barberLabel}</div>:null;})()}
                       <div style={{fontSize:11,fontWeight:700,color:stColor,marginTop:3}}>{stLabel}</div>
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
