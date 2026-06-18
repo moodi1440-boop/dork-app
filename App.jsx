@@ -779,6 +779,7 @@ export default function App(){
   const[compareSalons,setCompareSalons]=useState([]); // مقارنة صالونين
   const[pullRefreshing,setPullRefreshing]=useState(false); // Pull to refresh
   const[rescheduleId,setRescheduleId]=useState(null);
+  const[quickBookSeed,setQuickBookSeed]=useState(null);
 
   // تطبيق وضع الإضاءة (داكن / رمادي / فاتح / رمادي فاتح)
   useEffect(()=>{
@@ -1589,6 +1590,7 @@ export default function App(){
     salons,setSalons,approvedSalons,
     addSalon,
     addBooking,updateBookingStatus,loadData,refreshSalonBookings,rescheduleId,setRescheduleId,
+    quickBookSeed,setQuickBookSeed,
     customers,setCustomers,
     reviews,setReviews,
     toggleFav,favSet,customer,
@@ -2265,7 +2267,7 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 // ==============================================
 //  HOME
 // ==============================================
-function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing,loading,promotions,homeResetKey}){
+function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing,loading,promotions,homeResetKey,setQuickBookSeed}){
   const{t}=useTranslation();
   const[urgentMode,setUrgentMode]=useState(false);
   const[promoMode,setPromoMode]=useState(false);
@@ -2426,7 +2428,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
 
         {/* احجز سريع */}
         {lastSalon&&customer&&(
-          <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:"rgba(255,255,255,.05)",border:"1.5px solid var(--border-ui)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:24,transition:"all 0.2s"}} onClick={()=>{setSelSalon(lastSalon);setView("book");}} title="احجز سريع">
+          <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:"rgba(255,255,255,.05)",border:"1.5px solid var(--border-ui)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:24,transition:"all 0.2s"}} onClick={()=>{const lastH=customer.history[customer.history.length-1];setQuickBookSeed?.({services:lastH?.services||[],barberId:lastH?.barberId||""});setSelSalon(lastSalon);setView("book");}} title="احجز سريع">
             ⚡
           </button>
         )}
@@ -2788,12 +2790,18 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
 // ==============================================
 //  BOOK VIEW
 // ==============================================
-function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}){
+function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,quickBookSeed,setQuickBookSeed,toast$}){
   const{t}=useTranslation();
-  const[step,setStep]=useState(1);
+  const quickSeedRef=useRef(quickBookSeed);
+  const seed=quickSeedRef.current;
+  const seedServices=seed?(seed.services||[]).filter(s=>(salon.services||[]).includes(s)):[];
+  const seedBarberValid=!!(seed&&seed.barberId&&seed.barberId!=="any"&&(salon.barbers||[]).some(b=>b.id===seed.barberId&&b.active!==false));
+  const quickBookActive=!!seed&&seedServices.length>0;
+  const[step,setStep]=useState(quickBookActive?4:1);
+  const[quickSearching,setQuickSearching]=useState(quickBookActive);
   const[booking,setBooking]=useState(false);
   const[reminderMins,setReminderMins]=useState(()=>parseInt(localStorage.getItem("dork_reminder")||"60"));
-  const[form,setForm]=useState({name:customer?.name||"",phone:customer?.phone||"",email:customer?.email||"",services:[],barberId:"",date:todayStr(),time:"",waitSlot:""});
+  const[form,setForm]=useState(()=>quickBookActive?{name:customer?.name||"",phone:customer?.phone||"",email:customer?.email||"",services:seedServices,barberId:seedBarberValid?seed.barberId:"",date:todayStr(),time:"",waitSlot:""}:{name:customer?.name||"",phone:customer?.phone||"",email:customer?.email||"",services:[],barberId:"",date:todayStr(),time:"",waitSlot:""});
   const[errors,setErrors]=useState({});
   const[liveBookings,setLiveBookings]=useState([]);
   const[loadingBookings,setLoadingBookings]=useState(true);
@@ -2831,6 +2839,14 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const toM=(tt)=>{const[h,m]=(tt||"").split(":").map(Number);return(h||0)*60+(m||0);};
   const closingM=(()=>{if(barber?.shiftEnd)return toM(barber.shiftEnd);if(salon.shiftEnabled)return toM(salon.shift2End||salon.shift1End||"22:00");return toM(salon.workEnd||"22:00");})();
   const slotsVisible=slots.filter(sl=>toM(sl)+(totalDuration||(salon.slotMin||SLOT_MIN))<=closingM);
+  useEffect(()=>{
+    if(!quickSearching||loadingBookings)return;
+    const found=slotsVisible.find(sl=>slotStatus(sl)==="free");
+    if(found)setForm(p=>({...p,time:found}));
+    setQuickSearching(false);
+    setQuickBookSeed?.(null);
+    if(!found)toast$?.("⏳ كل المواعيد اليوم محجوزة، اختر وقتاً آخر","warn");else setStep(5);
+  },[quickSearching,loadingBookings]);
   const getBarberNextSlot=(b,date)=>{const bSlots=getSlotsForBarber(salon,b);const dSlots=date===todayStr()?bSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):bSlots;const bkDef=salon.slotMin||SLOT_MIN;const bMin2=salon.bufferMin??BUFFER_MIN;const newDur2=totalDuration||bkDef;const todayBks=liveBookings.filter(bk=>bk.date===date&&!["rejected","cancelled"].includes(bk.status)&&(bk.barberId===b.id||bk.barberId==="any"));for(const sl of dSlots){const slM=toM(sl);const busy=todayBks.some(bk=>{const bkM=toM(bk.time||"00:00");const bkDur=getExistingDur(bk);return bkM<slM+newDur2&&slM<bkM+bkDur;});if(!busy)return sl;}return null;};
   const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");setErrors(e);return!Object.keys(e).length;};
   const v2=()=>{const e={};if(activeBarbers.length&&!form.barberId)e.barberId=t("book.err_barber");setErrors(e);return!Object.keys(e).length;};
@@ -4381,6 +4397,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const{t,i18n}=useTranslation();
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
   const[activeCard,setActiveCard]=useState(null);
+  const[showTomorrow,setShowTomorrow]=useState(false);
   const[ownerNotifs,setOwnerNotifs]=useState(()=>{try{return JSON.parse(localStorage.getItem("dork_notifs")||"[]");}catch{return[];}});
   const[dashCashEntries,setDashCashEntries]=useState(()=>{try{return JSON.parse(localStorage.getItem(`dork_cash_${salon?.id}`)||"[]");}catch{return[];}});
   const[showDashCash,setShowDashCash]=useState(false);
@@ -4440,6 +4457,13 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const _mNames=t("owner_dash.months",{returnObjects:true});
   const _dayLabel=`${_dNames[_now.getDay()]}، ${_now.getDate()} ${_mNames[_now.getMonth()]}`;
 
+  // ── حسابات حجوزات غداً ──
+  const _tmrDate=new Date(_now);_tmrDate.setDate(_tmrDate.getDate()+1);
+  const _tmr=_tmrDate.toLocaleDateString("en-CA",{timeZone:"Asia/Riyadh"});
+  const _tmrBks=salon.bookings.filter(b=>b.date===_tmr);
+  const _tmrApproved=_tmrBks.filter(b=>b.status==="approved");
+  const _tmrPending=_tmrBks.filter(b=>b.status==="pending");
+
   return(
     <div style={{...G.page,direction:dir}}>
       <style>{`
@@ -4473,7 +4497,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         <>
 
       {/* ── بادج الصالون المحسّن (ثابت في لوحتي فقط) ── */}
-      <div style={{background:"rgba(var(--pr),.18)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",borderRadius:16,padding:16,border:"1.5px solid rgba(var(--pr),.45)",marginBottom:12,boxShadow:"0 4px 20px rgba(var(--pr),.12)"}}>
+      <div style={{background:"var(--surface-1)",borderRadius:16,padding:16,border:"1px solid var(--border-ui)",marginBottom:18}}>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {/* صف 1: اسم الصالون + التقييم */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
@@ -4503,25 +4527,27 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       )}
 
       {/* ── بطاقة ملخص اليوم ── */}
-      <div className="today-card" style={{background:"rgba(var(--pr),.20)",borderRadius:18,padding:"16px",marginBottom:12,border:"1.5px solid rgba(var(--pr),.60)",boxShadow:"0 4px 20px rgba(var(--pr),.12)"}}>
+      <div className="today-card" style={{background:"rgba(var(--pr),.20)",borderRadius:18,padding:"16px",marginBottom:18,border:"1.5px solid rgba(var(--pr),.60)",boxShadow:"0 4px 20px rgba(var(--pr),.12)"}}>
 
         {/* التاريخ */}
         <div style={{fontSize:14,fontWeight:800,color:"var(--p)",marginBottom:14}}>🌅 {_dayLabel}</div>
 
-        {/* إيرادات التطبيق + الكاش + الإجمالي */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
-          <div style={{background:"rgba(var(--pr),.12)",borderRadius:12,padding:"11px 8px",border:"1px solid rgba(var(--pr),.3)",textAlign:"center"}}>
-            <div style={{fontSize:20,fontWeight:900,color:"var(--p)",lineHeight:1}}>{_tdRevenue}</div>
+        {/* الإجمالي - الرقم الأهم، بارز فوق التفاصيل */}
+        <div style={{background:"rgba(241,196,15,.10)",borderRadius:12,padding:"14px 8px",border:"1.5px solid rgba(241,196,15,.4)",textAlign:"center",marginBottom:8}}>
+          <div style={{fontSize:32,fontWeight:900,color:"#f1c40f",lineHeight:1}}>{_tdTotal}</div>
+          <div style={{fontSize:11,color:"#f1c40f",marginTop:5,fontWeight:700}}>إجمالي اليوم</div>
+        </div>
+
+        {/* إيرادات التطبيق + الكاش */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+          <div style={{background:"rgba(var(--pr),.12)",borderRadius:12,padding:"9px 8px",border:"1px solid rgba(var(--pr),.3)",textAlign:"center"}}>
+            <div style={{fontSize:16,fontWeight:800,color:"var(--p)",lineHeight:1}}>{_tdRevenue}</div>
             <div style={{fontSize:9,color:"var(--p)",marginTop:4,opacity:.8,fontWeight:700}}>إيرادات التطبيق</div>
           </div>
-          <div style={{background:"rgba(39,174,96,.10)",borderRadius:12,padding:"11px 8px",border:"1px solid rgba(39,174,96,.3)",textAlign:"center",position:"relative"}}>
+          <div style={{background:"rgba(39,174,96,.10)",borderRadius:12,padding:"9px 8px",border:"1px solid rgba(39,174,96,.3)",textAlign:"center",position:"relative"}}>
             <button onClick={()=>setShowDashCash(v=>!v)} style={{position:"absolute",top:4,left:4,background:"rgba(39,174,96,.2)",border:"1px solid rgba(39,174,96,.4)",color:"#27ae60",borderRadius:6,fontSize:10,fontWeight:800,padding:"1px 5px",cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>+</button>
-            <div style={{fontSize:20,fontWeight:900,color:"#27ae60",lineHeight:1}}>{_tdCash}</div>
+            <div style={{fontSize:16,fontWeight:800,color:"#27ae60",lineHeight:1}}>{_tdCash}</div>
             <div style={{fontSize:9,color:"#27ae60",marginTop:4,fontWeight:700}}>إيرادات الكاش</div>
-          </div>
-          <div style={{background:"rgba(241,196,15,.10)",borderRadius:12,padding:"11px 8px",border:"1px solid rgba(241,196,15,.35)",textAlign:"center"}}>
-            <div style={{fontSize:20,fontWeight:900,color:"#f1c40f",lineHeight:1}}>{_tdTotal}</div>
-            <div style={{fontSize:9,color:"#f1c40f",marginTop:4,fontWeight:700}}>إجمالي اليوم</div>
           </div>
         </div>
 
@@ -4574,7 +4600,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       </div>
 
       {/* نسبة حجز اليوم - خارج مربع الأرباح */}
-      <div style={{background:`rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.08)`,border:`1px solid rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.25)`,borderRadius:12,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+      <div style={{background:`rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.08)`,border:`1px solid rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.25)`,borderRadius:12,padding:"10px 14px",marginBottom:18,display:"flex",alignItems:"center",gap:12}}>
         <div style={{fontSize:26,fontWeight:900,color:_occ>=80?"#e74c3c":_occ>=50?"var(--p)":"#27ae60",lineHeight:1,minWidth:48,textAlign:"center"}}>{_occ}%</div>
         <div style={{flex:1}}>
           <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:5,fontWeight:600}}>نسبة حجز اليوم</div>
@@ -4582,6 +4608,30 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center"}}/>
           </div>
         </div>
+      </div>
+
+      {/* حجوزات غداً */}
+      <div style={{border:"1px solid var(--border-ui)",borderRadius:12,marginBottom:18,overflow:"hidden"}}>
+        <div onClick={()=>setShowTomorrow(v=>!v)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",cursor:"pointer",background:"var(--surface-2)"}}>
+          <span style={{fontSize:15}}>📅</span>
+          <span style={{flex:1,fontSize:12,color:"var(--text-primary)",fontWeight:700}}>
+            غداً: {_tmrBks.length} حجوزات{_tmrBks.length>0?` (${_tmrApproved.length} مؤكدة، ${_tmrPending.length} انتظار)`:""}
+          </span>
+          <span style={{fontSize:10,color:"var(--text-muted)",transform:showTomorrow?"rotate(180deg)":"none",transition:"transform .2s"}}>▼</span>
+        </div>
+        {showTomorrow&&(
+          <div style={{padding:_tmrBks.length?"6px 0":"12px 14px",borderTop:"1px solid var(--border-ui)"}}>
+            {_tmrBks.length===0?
+              <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center"}}>لا توجد حجوزات غداً حتى الآن</div>
+            :_tmrBks.sort((a,b)=>(a.time||"").localeCompare(b.time||"")).map((b,i)=>(
+              <div key={b.id||i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",borderBottom:i<_tmrBks.length-1?"1px solid var(--border-ui)":"none"}}>
+                <span style={{fontSize:11,fontWeight:800,color:"var(--p)",minWidth:48}}>{to12h(b.time)}</span>
+                <span style={{flex:1,fontSize:12,color:"var(--text-primary)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.customerName||b.customer_name||t("owner_dash.customer")}</span>
+                <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:b.status==="approved"?"rgba(39,174,96,.15)":"rgba(243,156,18,.15)",color:b.status==="approved"?"#27ae60":"#f39c12"}}>{b.status==="approved"?t("owner_dash.filter_approved"):t("owner_dash.filter_pending")}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── الـ 4 مربعات ── */}
@@ -4599,7 +4649,10 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
                   style={{background:isOpen?`${color}18`:`${color}0f`,borderRadius:isOpen?"13px 13px 0 0":13,padding:"11px 6px",height:68,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",border:`1.5px solid ${isOpen?`${color}55`:`${color}1a`}`,borderBottom:isOpen?`1.5px solid ${color}55`:"",textAlign:"center",animationDelay:`${delay}ms`,cursor:"pointer",transition:"all .22s ease",boxShadow:isOpen?`0 0 14px ${color}1a`:"none"}}>
                   <div style={{fontSize:22,fontWeight:900,color,marginBottom:2,lineHeight:1}}>{value}</div>
                   <div style={{fontSize:10,color:isOpen?color:"#666",fontWeight:600,marginBottom:3}}>{label}</div>
-                  <div style={{fontSize:9,color:isOpen?color:"var(--text-muted)",lineHeight:1,transition:"transform .2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▼</div>
+                  <div style={{fontSize:8,color:isOpen?color:"var(--text-muted)",lineHeight:1,display:"flex",alignItems:"center",gap:2}}>
+                    {isOpen?"إخفاء":"التفاصيل"}
+                    <span style={{transition:"transform .2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▼</span>
+                  </div>
                 </div>
               );
             })}
