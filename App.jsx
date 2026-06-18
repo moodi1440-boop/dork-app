@@ -907,6 +907,7 @@ export default function App(){
   const[search,setSearch]=useState("");
   const[sortBy,setSortBy]=useState("");
   const[userLoc,setUserLoc]=useState(null);
+  const[homeResetKey,setHomeResetKey]=useState(0);
   const[settings,setSettings]=useState(()=>{try{const s=localStorage.getItem("bbv6_settings");if(!s)return{theme:"gold",defaultTone:"bell",fontSize:"md",bg:"none"};const p=JSON.parse(s);return{...p,bg:normalizeBgId(p.bg||"none")};}catch{return{theme:"gold",defaultTone:"bell",fontSize:"md",bg:"none"};}});
   useEffect(()=>{localStorage.setItem("bbv6_settings",JSON.stringify(settings));},[settings]);
 
@@ -1287,11 +1288,13 @@ export default function App(){
       const cust=customerSession;
       if(!cust)return;
       const now=new Date();
-      const reminderMins=parseInt(localStorage.getItem("dork_reminder")||"60");
+      const globalReminderMins=parseInt(localStorage.getItem("dork_reminder")||"60");
       const reminded=JSON.parse(localStorage.getItem("dork_auto_reminded")||"[]");
       const reviewed=JSON.parse(localStorage.getItem("dork_auto_review")||"[]");
       for(const h of (cust.history||[])){
         if(!h.date||!h.time||h.status==="rejected"||h.status==="cancelled")continue;
+        if(h.reminderMins===0)continue;
+        const reminderMins=(typeof h.reminderMins==="number"&&h.reminderMins>0)?h.reminderMins:globalReminderMins;
         const dt=new Date(`${h.date}T${h.time}`);
         const minsUntil=(dt-now)/60000;
         const minsAfter=(now-dt)/60000;
@@ -1444,6 +1447,7 @@ export default function App(){
             barberId:bk.barberId||"any",
             barberName:bk.barberName||"",
             slotDuration:bk.totalDuration||null,
+            reminderMins:typeof bk.reminderMins==="number"?bk.reminderMins:null,
           };
           const hist=[...(c.history||[]),histItem];
           // نحفظ في localStorage كحل احتياطي
@@ -1570,6 +1574,7 @@ export default function App(){
     setSortBy("");
     setFRegion("");setFGov("");setFCenter("");setFVillage("");
     setShowFavs(false);
+    setHomeResetKey(k=>k+1);
   };
 
   // حماية: لا تصفح بدون تسجيل دخول
@@ -1602,7 +1607,7 @@ export default function App(){
     darkMode,setDarkMode,themeMode,setThemeMode,
     compareSalons,setCompareSalons,
     handlePullRefresh,pullRefreshing,
-    resetHome,
+    resetHome,homeResetKey,
     persistUiToSupabase,
     loading,
     showDrawer,setShowDrawer,
@@ -2075,7 +2080,7 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
             <span style={{display:"block",width:14,height:2,background:"var(--p)",borderRadius:2,transition:"all 0.2s"}}/>
             <span style={{display:"block",width:18,height:2,background:"var(--p)",borderRadius:2,transition:"all 0.2s"}}/>
           </button>
-          <button onClick={()=>setView("home")} style={{width:44,height:44,borderRadius:12,background:"var(--surface-1)",border:"1.5px solid rgba(var(--pr),.3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--p)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>        </div>
+          <button onClick={()=>resetHome?resetHome():setView("home")} style={{width:44,height:44,borderRadius:12,background:"var(--surface-1)",border:"1.5px solid rgba(var(--pr),.3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--p)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>        </div>
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
           <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
@@ -2260,12 +2265,16 @@ function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
 // ==============================================
 //  HOME
 // ==============================================
-function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing,loading,promotions}){
+function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing,loading,promotions,homeResetKey}){
   const{t}=useTranslation();
   const[urgentMode,setUrgentMode]=useState(false);
   const[promoMode,setPromoMode]=useState(false);
   const[showSearch,setShowSearch]=useState(false);
   const[showRegionSelect,setShowRegionSelect]=useState(false);
+  useEffect(()=>{
+    if(homeResetKey===undefined)return;
+    setUrgentMode(false);setPromoMode(false);setShowSearch(false);setShowRegionSelect(false);
+  },[homeResetKey]);
 
   // Pull to Refresh
   const _ptStartY=useRef(0);const _ptActive=useRef(false);const _ptYRef=useRef(0);
@@ -2783,7 +2792,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId}
   const{t}=useTranslation();
   const[step,setStep]=useState(1);
   const[booking,setBooking]=useState(false);
-  const[reminderMins,setReminderMins]=useState(60);
+  const[reminderMins,setReminderMins]=useState(()=>parseInt(localStorage.getItem("dork_reminder")||"60"));
   const[form,setForm]=useState({name:customer?.name||"",phone:customer?.phone||"",email:customer?.email||"",services:[],barberId:"",date:todayStr(),time:"",waitSlot:""});
   const[errors,setErrors]=useState({});
   const[liveBookings,setLiveBookings]=useState([]);
@@ -6759,7 +6768,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
   const[showDeleteConfirm,setShowDeleteConfirm]=useState(false);
   const[editEmail,setEditEmail]=useState(customer?.email||"");
-  const[reminderMins,setReminderMins]=useState(60);
+  const[reminderMins,setReminderMins]=useState(()=>parseInt(localStorage.getItem("dork_reminder")||"60"));
+  useEffect(()=>{localStorage.setItem("dork_reminder",String(reminderMins));},[reminderMins]);
   const[myWaiting,setMyWaiting]=useState([]);
   useEffect(()=>{
     if(!customer?.phone)return;
@@ -6929,7 +6939,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <div key={s.id} style={G.bItem}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div>
-                    <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+                    <div style={{background:"var(--pa08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:20,padding:"5px 14px",display:"inline-block",fontSize:13,fontWeight:800,color:"var(--p)",fontFamily:"'Cairo',sans-serif",marginBottom:4}}>{s.name}</div>
                     <div style={{fontSize:11,color:"var(--text-muted)"}}>📍 {s.gov||s.region}{s.village?` - ${s.village}`:""}</div>
                     <div style={{fontSize:11,color:"var(--p)"}}>⭐ {s.rating}</div>
                   </div>
@@ -7583,7 +7593,7 @@ const G={
 
   mapsBtn:{background:"rgba(42,109,217,.12)",border:"1.5px solid #2a6dd9",color:"#6aadff",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600,whiteSpace:"nowrap"},
   pageBtn:{background:"rgba(100,60,180,.15)",border:"1.5px solid #7c4dff",color:"#b39ddb",padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600,whiteSpace:"nowrap"},
-  bookBtn:{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"8px 0",borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif"},
+  bookBtn:{flex:1,background:"var(--pa12)",color:"var(--p)",border:"1px solid rgba(var(--pr),.3)",padding:"8px 0",borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif"},
   delBtn:{background:"rgba(192,57,43,.15)",border:"1.5px solid #c0392b",color:"#e74c3c",padding:"5px 9px",borderRadius:8,cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:600},
   accBtn:{flex:1,background:"rgba(39,174,96,.15)",border:"1.5px solid #27ae60",color:"#4caf50",padding:"8px 0",borderRadius:9,cursor:"pointer",fontSize:13,fontFamily:"'Cairo',sans-serif",fontWeight:700},
   rejBtn:{flex:1,background:"rgba(192,57,43,.15)",border:"1.5px solid #c0392b",color:"#e74c3c",padding:"8px 0",borderRadius:9,cursor:"pointer",fontSize:13,fontFamily:"'Cairo',sans-serif",fontWeight:700},
