@@ -4462,8 +4462,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const _tmr=_tmrDate.toLocaleDateString("en-CA",{timeZone:"Asia/Riyadh"});
   const _tmrBks=salon.bookings.filter(b=>b.date===_tmr&&b.status!=="cancelled");
   const _tmrApproved=_tmrBks.filter(b=>b.status==="approved");
-  const _tmrBookedSlotCount=new Set(_tmrApproved.map(b=>b.time)).size;
-  const _tmrOcc=Math.min(100,Math.round(_tmrBookedSlotCount/Math.max(_allSlots.length,1)*100));
   const _tmrPending=_tmrBks.filter(b=>b.status==="pending");
 
   return(
@@ -4601,42 +4599,36 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         )}
       </div>
 
-      {/* نسبة حجز اليوم وغداً - جنب بعض */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18}}>
-        {[{label:"نسبة حجز اليوم",occ:_occ},{label:"نسبة حجز غداً",occ:_tmrOcc}].map(({label,occ})=>(
-          <div key={label} style={{background:`rgba(${occ>=80?"231,76,60":occ>=50?"var(--pr)":"39,174,96"},.08)`,border:`1px solid rgba(${occ>=80?"231,76,60":occ>=50?"var(--pr)":"39,174,96"},.25)`,borderRadius:12,padding:"10px 12px"}}>
-            <div style={{fontSize:22,fontWeight:900,color:occ>=80?"#e74c3c":occ>=50?"var(--p)":"#27ae60",lineHeight:1,marginBottom:6,textAlign:"center"}}>{occ}%</div>
-            <div style={{fontSize:9,color:"var(--text-muted)",marginBottom:5,fontWeight:600,textAlign:"center"}}>{label}</div>
-            <div style={{height:7,background:"rgba(var(--pr),.12)",borderRadius:10,overflow:"hidden"}}>
-              <div className="occ-bar" style={{height:"100%",width:`${occ}%`,background:occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center"}}/>
-            </div>
+      {/* نسبة حجز اليوم + حجوزات غداً - جنب بعض */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18,alignItems:"start"}}>
+        <div style={{background:`rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.08)`,border:`1px solid rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.25)`,borderRadius:12,padding:"10px 12px",display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:14,fontWeight:900,color:_occ>=80?"#e74c3c":_occ>=50?"var(--p)":"#27ae60"}}>{_occ}%</span>
+          <span style={{flex:1,fontSize:11,color:"var(--text-muted)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>نسبة حجز اليوم</span>
+          <div style={{width:40,height:7,background:"rgba(var(--pr),.12)",borderRadius:10,overflow:"hidden"}}>
+            <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center"}}/>
           </div>
-        ))}
+        </div>
+        <div onClick={()=>setShowTomorrow(v=>!v)} style={{background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:14}}>📅</span>
+          <span style={{flex:1,fontSize:11,color:"var(--text-primary)",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>غداً: {_tmrBks.length} حجوزات</span>
+          <span style={{fontSize:9,color:"var(--text-muted)"}}>{showTomorrow?"▲":"▼"}</span>
+        </div>
       </div>
 
-      {/* حجوزات غداً */}
-      <div style={{border:"1px solid var(--border-ui)",borderRadius:12,marginBottom:18,overflow:"hidden"}}>
-        <div onClick={()=>setShowTomorrow(v=>!v)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",cursor:"pointer",background:"var(--surface-2)"}}>
-          <span style={{fontSize:15}}>📅</span>
-          <span style={{flex:1,fontSize:12,color:"var(--text-primary)",fontWeight:700}}>
-            غداً: {_tmrBks.length} حجوزات{_tmrBks.length>0?` (${_tmrApproved.length} مؤكدة، ${_tmrPending.length} انتظار)`:""}
-          </span>
-          <span style={{fontSize:10,color:"var(--text-muted)",transform:showTomorrow?"rotate(180deg)":"none",transition:"transform .2s"}}>▼</span>
+      {/* تفاصيل حجوزات غداً */}
+      {showTomorrow&&(
+        <div style={{border:"1px solid var(--border-ui)",borderRadius:12,marginBottom:18,overflow:"hidden",padding:_tmrBks.length?"6px 0":"12px 14px"}}>
+          {_tmrBks.length===0?
+            <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center"}}>لا توجد حجوزات غداً حتى الآن</div>
+          :_tmrBks.sort((a,b)=>(a.time||"").localeCompare(b.time||"")).map((b,i)=>(
+            <div key={b.id||i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",borderBottom:i<_tmrBks.length-1?"1px solid var(--border-ui)":"none"}}>
+              <span style={{fontSize:11,fontWeight:800,color:"var(--p)",minWidth:48}}>{to12h(b.time)}</span>
+              <span style={{flex:1,fontSize:12,color:"var(--text-primary)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.customerName||b.customer_name||t("owner_dash.customer")}</span>
+              <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:b.status==="approved"?"rgba(39,174,96,.15)":"rgba(243,156,18,.15)",color:b.status==="approved"?"#27ae60":"#f39c12"}}>{b.status==="approved"?t("owner_dash.filter_approved"):t("owner_dash.filter_pending")}</span>
+            </div>
+          ))}
         </div>
-        {showTomorrow&&(
-          <div style={{padding:_tmrBks.length?"6px 0":"12px 14px",borderTop:"1px solid var(--border-ui)"}}>
-            {_tmrBks.length===0?
-              <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center"}}>لا توجد حجوزات غداً حتى الآن</div>
-            :_tmrBks.sort((a,b)=>(a.time||"").localeCompare(b.time||"")).map((b,i)=>(
-              <div key={b.id||i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",borderBottom:i<_tmrBks.length-1?"1px solid var(--border-ui)":"none"}}>
-                <span style={{fontSize:11,fontWeight:800,color:"var(--p)",minWidth:48}}>{to12h(b.time)}</span>
-                <span style={{flex:1,fontSize:12,color:"var(--text-primary)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.customerName||b.customer_name||t("owner_dash.customer")}</span>
-                <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:b.status==="approved"?"rgba(39,174,96,.15)":"rgba(243,156,18,.15)",color:b.status==="approved"?"#27ae60":"#f39c12"}}>{b.status==="approved"?t("owner_dash.filter_approved"):t("owner_dash.filter_pending")}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* ── الـ 4 مربعات ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:activeCard?0:14}}>
