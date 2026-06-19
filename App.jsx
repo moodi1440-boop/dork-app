@@ -1410,7 +1410,7 @@ export default function App(){
       // post-insert conflict check — يتحقق بعد الإدراج لضمان عدم التعارض
       if(newBooking.id&&!isReschedule){
         await new Promise(r=>setTimeout(r,300));
-        const nowBks=await sb("bookings","GET",null,`?salon_id=eq.${sid}&date=eq.${bk.date}&status=not.in.(rejected,cancelled)&select=id,barber_id,time,slot_duration_minutes,created_at`).catch(()=>[]);
+        const nowBks=await sb("bookings","GET",null,`?salon_id=eq.${sid}&date=eq.${bk.date}&status=not.in.(rejected,cancelled)&select=id,barber_id,time,slot_duration_minutes,created_at&limit=100`).catch(()=>[]);
         const slM2=toM(bk.time||"00:00");
         const bkDef=bk.totalDuration||(salon.slotMin||SLOT_MIN);
         const bMin2=salon.bufferMin??BUFFER_MIN;
@@ -2836,7 +2836,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
   useEffect(()=>{
     if(!form.date)return;
     setLoadingBookings(true);
-    sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=neq.rejected&select=id,barber_id,service,time,status,slot_duration_minutes`)
+    sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=neq.rejected&select=id,barber_id,service,time,status,slot_duration_minutes&limit=100`)
       .then(rows=>{if(Array.isArray(rows))setLiveBookings(rows.map(b=>({id:b.id,barberId:b.barber_id||"any",date:b.date||form.date,time:b.time||"",status:b.status||"pending",slotDuration:b.slot_duration_minutes||null,services:(()=>{try{return JSON.parse(b.service||"[]");}catch{return b.service?[b.service]:[]}})()})));})
       .catch(()=>{})
       .finally(()=>setLoadingBookings(false));
@@ -3019,7 +3019,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
             }else{
               const slM=toM(form.time);
               const newDur=totalDuration||(salon.slotMin||SLOT_MIN);
-              const freshBks=await sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=not.in.(rejected,cancelled)&select=id,barber_id,service,time,slot_duration_minutes`).catch(()=>[]);
+              const freshBks=await sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=not.in.(rejected,cancelled)&select=id,barber_id,service,time,slot_duration_minutes&limit=100`).catch(()=>[]);
               const conflict=checkConflict(slM,newDur,Array.isArray(freshBks)?freshBks:[],form.barberId);
               if(conflict>=(form.barberId?1:bc)){alert("❌ مدة الخدمة المختارة تتعارض مع حجز موجود في هذا الوقت، ارجع واختر وقتاً آخر");setBooking(false);return;}
               try{await addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total,reminderMins,totalDuration},rescheduleId||null);}catch(e){setBooking(false);}
@@ -5014,7 +5014,7 @@ function PromoPanel({salon,customers,toast$}){
     if(!c){setCodeError("أدخل الكود أولاً");return;}
     setCheckingCode(true);
     try{
-      const rows=await sb("promo_codes","GET",null,`?code=eq.${c}&active=eq.true&select=id,code,active,code_type,wa_credits,duration_days,expires_at,max_uses,used_count`);
+      const rows=await sb("promo_codes","GET",null,`?code=eq.${c}&active=eq.true&select=id,code,active,code_type,wa_credits,duration_days,expires_at,max_uses,used_count&limit=1`);
       if(!rows||rows.length===0){setCodeError("الكود غير صحيح أو منتهي");setCodeApplied(false);return;}
       const row=rows[0];
       // تحقق من انتهاء الصلاحية
