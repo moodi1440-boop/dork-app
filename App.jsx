@@ -5611,11 +5611,15 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
   const dragIndexRef=useRef(null);
   const startDrag=(list,index)=>(e)=>{
     e.preventDefault();
-    try{e.target.setPointerCapture?.(e.pointerId);}catch{}
+    const isTouch=e.type==="touchstart";
     dragIndexRef.current=index;
     setDragActive({list,index});
+    const point=ev=>isTouch?ev.touches[0]:ev;
     const onMove=(ev)=>{
-      const el=document.elementFromPoint(ev.clientX,ev.clientY)?.closest(`[data-drag-list="${list}"]`);
+      const pt=point(ev);
+      if(!pt)return;
+      if(isTouch)ev.preventDefault();
+      const el=document.elementFromPoint(pt.clientX,pt.clientY)?.closest(`[data-drag-list="${list}"]`);
       if(!el)return;
       const newIndex=+el.dataset.dragIndex;
       if(newIndex===dragIndexRef.current)return;
@@ -5628,16 +5632,26 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       dragIndexRef.current=newIndex;
       setDragActive({list,index:newIndex});
     };
-    const onUp=()=>{
+    const onEnd=()=>{
       dragIndexRef.current=null;
       setDragActive(null);
-      window.removeEventListener("pointermove",onMove);
-      window.removeEventListener("pointerup",onUp);
-      window.removeEventListener("pointercancel",onUp);
+      if(isTouch){
+        window.removeEventListener("touchmove",onMove);
+        window.removeEventListener("touchend",onEnd);
+        window.removeEventListener("touchcancel",onEnd);
+      }else{
+        window.removeEventListener("mousemove",onMove);
+        window.removeEventListener("mouseup",onEnd);
+      }
     };
-    window.addEventListener("pointermove",onMove);
-    window.addEventListener("pointerup",onUp);
-    window.addEventListener("pointercancel",onUp);
+    if(isTouch){
+      window.addEventListener("touchmove",onMove,{passive:false});
+      window.addEventListener("touchend",onEnd);
+      window.addEventListener("touchcancel",onEnd);
+    }else{
+      window.addEventListener("mousemove",onMove);
+      window.addEventListener("mouseup",onEnd);
+    }
   };
   const[f,setF]=useState({
     name:salon.name||"",
@@ -5799,7 +5813,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           {sortSvcMode&&f.services.map((svc,i)=>(
             <div key={svc} data-drag-list="services" data-drag-index={i} style={{display:"grid",gridTemplateColumns:"1fr",gap:6,marginBottom:6,alignItems:"center",background:"var(--bg-input)",borderRadius:9,padding:"6px 8px",border:"1px solid var(--border-ui)",opacity:dragActive?.list==="services"&&dragActive.index===i?.5:1}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span onPointerDown={startDrag("services",i)} style={{cursor:"grab",display:"flex",color:"var(--text-muted)",touchAction:"none",WebkitUserSelect:"none",userSelect:"none",WebkitTouchCallout:"none",padding:"10px 8px"}}><IconDragHandle size={16}/></span>
+                <span onTouchStart={startDrag("services",i)} onMouseDown={startDrag("services",i)} style={{cursor:"grab",display:"flex",color:"var(--text-muted)",touchAction:"none",WebkitUserSelect:"none",userSelect:"none",WebkitTouchCallout:"none",padding:"10px 8px"}}><IconDragHandle size={16}/></span>
                 <span style={{flex:1,fontSize:13,color:"var(--text-primary)",fontWeight:600}}>{svc}</span>
                 <button style={G.xBtn} onClick={()=>setF(p=>{const sv=p.services.filter(s=>s!==svc);const pr={...p.prices};delete pr[svc];const dr={...p.durations};delete dr[svc];return{...p,services:sv,prices:pr,durations:dr};})}><IconTrash size={14}/></button>
               </div>
@@ -5871,7 +5885,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           <div key={b.id} data-drag-list="barbers" data-drag-index={i}
             style={{marginBottom:10,background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:`1px solid ${sortMode?"var(--p)33":"var(--border-ui)"}`,overflow:"hidden",opacity:dragActive?.list==="barbers"&&dragActive.index===i?.5:1}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:sortMode?0:8}}>
-              {sortMode&&<span onPointerDown={startDrag("barbers",i)} style={{cursor:"grab",display:"flex",color:"var(--text-muted)",touchAction:"none",WebkitUserSelect:"none",userSelect:"none",WebkitTouchCallout:"none",padding:"10px 8px",flexShrink:0}}><IconDragHandle size={16}/></span>}
+              {sortMode&&<span onTouchStart={startDrag("barbers",i)} onMouseDown={startDrag("barbers",i)} style={{cursor:"grab",display:"flex",color:"var(--text-muted)",touchAction:"none",WebkitUserSelect:"none",userSelect:"none",WebkitTouchCallout:"none",padding:"10px 8px",flexShrink:0}}><IconDragHandle size={16}/></span>}
               {/* صورة الحلاق */}
               <div style={{position:"relative",flexShrink:0}}>
                 {b.photo
