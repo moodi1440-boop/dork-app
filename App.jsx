@@ -5612,8 +5612,19 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
   const startDrag=(list,index)=>(e)=>{
     e.preventDefault();
     const isTouch=e.type==="touchstart";
+    const row=e.currentTarget.closest(`[data-drag-list="${list}"]`);
+    if(!row)return;
+    const rowH=row.getBoundingClientRect().height||1;
+    const container=row.parentElement;
+    const rowCount=container.querySelectorAll(`[data-drag-list="${list}"]`).length;
+    const startY=isTouch?e.touches[0].clientY:e.clientY;
+    let lastIndex=index;
     dragIndexRef.current=index;
     setDragActive({list,index});
+    row.style.position="relative";
+    row.style.zIndex="50";
+    row.style.boxShadow="0 6px 18px rgba(0,0,0,.35)";
+    row.style.transition="none";
     const point=ev=>isTouch?ev.touches[0]:ev;
     let rafId=null;
     let pendingPt=null;
@@ -5621,18 +5632,10 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       rafId=null;
       const pt=pendingPt;
       if(!pt)return;
-      const el=document.elementFromPoint(pt.clientX,pt.clientY)?.closest(`[data-drag-list="${list}"]`);
-      if(!el)return;
-      const newIndex=+el.dataset.dragIndex;
-      if(newIndex===dragIndexRef.current)return;
-      setF(p=>{
-        const arr=[...p[list]];
-        const[moved]=arr.splice(dragIndexRef.current,1);
-        arr.splice(newIndex,0,moved);
-        return{...p,[list]:arr};
-      });
-      dragIndexRef.current=newIndex;
-      setDragActive({list,index:newIndex});
+      const dy=pt.clientY-startY;
+      row.style.transform=`translateY(${dy}px)`;
+      const rawIndex=index+Math.round(dy/rowH);
+      lastIndex=Math.max(0,Math.min(rowCount-1,rawIndex));
     };
     const onMove=(ev)=>{
       const pt=point(ev);
@@ -5641,10 +5644,26 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       pendingPt=pt;
       if(rafId==null)rafId=requestAnimationFrame(flush);
     };
+    const cleanupStyles=()=>{
+      row.style.position="";
+      row.style.zIndex="";
+      row.style.boxShadow="";
+      row.style.transition="";
+      row.style.transform="";
+    };
     const onEnd=()=>{
       if(rafId!=null){cancelAnimationFrame(rafId);rafId=null;}
+      cleanupStyles();
       dragIndexRef.current=null;
       setDragActive(null);
+      if(lastIndex!==index){
+        setF(p=>{
+          const arr=[...p[list]];
+          const[moved]=arr.splice(index,1);
+          arr.splice(lastIndex,0,moved);
+          return{...p,[list]:arr};
+        });
+      }
       if(isTouch){
         window.removeEventListener("touchmove",onMove);
         window.removeEventListener("touchend",onEnd);
