@@ -5615,10 +5615,12 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     dragIndexRef.current=index;
     setDragActive({list,index});
     const point=ev=>isTouch?ev.touches[0]:ev;
-    const onMove=(ev)=>{
-      const pt=point(ev);
+    let rafId=null;
+    let pendingPt=null;
+    const flush=()=>{
+      rafId=null;
+      const pt=pendingPt;
       if(!pt)return;
-      if(isTouch)ev.preventDefault();
       const el=document.elementFromPoint(pt.clientX,pt.clientY)?.closest(`[data-drag-list="${list}"]`);
       if(!el)return;
       const newIndex=+el.dataset.dragIndex;
@@ -5632,7 +5634,15 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       dragIndexRef.current=newIndex;
       setDragActive({list,index:newIndex});
     };
+    const onMove=(ev)=>{
+      const pt=point(ev);
+      if(!pt)return;
+      if(isTouch)ev.preventDefault();
+      pendingPt=pt;
+      if(rafId==null)rafId=requestAnimationFrame(flush);
+    };
     const onEnd=()=>{
+      if(rafId!=null){cancelAnimationFrame(rafId);rafId=null;}
       dragIndexRef.current=null;
       setDragActive(null);
       if(isTouch){
