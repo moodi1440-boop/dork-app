@@ -5611,6 +5611,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
   const dragIndexRef=useRef(null);
   const startDrag=(list,index)=>(e)=>{
     e.preventDefault();
+    try{e.target.setPointerCapture?.(e.pointerId);}catch{}
     dragIndexRef.current=index;
     setDragActive({list,index});
     const onMove=(ev)=>{
@@ -5632,9 +5633,11 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       setDragActive(null);
       window.removeEventListener("pointermove",onMove);
       window.removeEventListener("pointerup",onUp);
+      window.removeEventListener("pointercancel",onUp);
     };
     window.addEventListener("pointermove",onMove);
     window.addEventListener("pointerup",onUp);
+    window.addEventListener("pointercancel",onUp);
   };
   const[f,setF]=useState({
     name:salon.name||"",
@@ -5796,7 +5799,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           {sortSvcMode&&f.services.map((svc,i)=>(
             <div key={svc} data-drag-list="services" data-drag-index={i} style={{display:"grid",gridTemplateColumns:"1fr",gap:6,marginBottom:6,alignItems:"center",background:"var(--bg-input)",borderRadius:9,padding:"6px 8px",border:"1px solid var(--border-ui)",opacity:dragActive?.list==="services"&&dragActive.index===i?.5:1}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span onPointerDown={startDrag("services",i)} style={{cursor:"grab",display:"flex",color:"var(--text-muted)",touchAction:"none",padding:"2px 4px"}}><IconDragHandle size={16}/></span>
+                <span onPointerDown={startDrag("services",i)} style={{cursor:"grab",display:"flex",color:"var(--text-muted)",touchAction:"none",WebkitUserSelect:"none",userSelect:"none",WebkitTouchCallout:"none",padding:"10px 8px"}}><IconDragHandle size={16}/></span>
                 <span style={{flex:1,fontSize:13,color:"var(--text-primary)",fontWeight:600}}>{svc}</span>
                 <button style={G.xBtn} onClick={()=>setF(p=>{const sv=p.services.filter(s=>s!==svc);const pr={...p.prices};delete pr[svc];const dr={...p.durations};delete dr[svc];return{...p,services:sv,prices:pr,durations:dr};})}><IconTrash size={14}/></button>
               </div>
@@ -5868,7 +5871,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           <div key={b.id} data-drag-list="barbers" data-drag-index={i}
             style={{marginBottom:10,background:"var(--bg-input)",borderRadius:10,padding:"10px 12px",border:`1px solid ${sortMode?"var(--p)33":"var(--border-ui)"}`,overflow:"hidden",opacity:dragActive?.list==="barbers"&&dragActive.index===i?.5:1}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:sortMode?0:8}}>
-              {sortMode&&<span onPointerDown={startDrag("barbers",i)} style={{cursor:"grab",display:"flex",color:"var(--text-muted)",touchAction:"none",padding:"2px 4px",flexShrink:0}}><IconDragHandle size={16}/></span>}
+              {sortMode&&<span onPointerDown={startDrag("barbers",i)} style={{cursor:"grab",display:"flex",color:"var(--text-muted)",touchAction:"none",WebkitUserSelect:"none",userSelect:"none",WebkitTouchCallout:"none",padding:"10px 8px",flexShrink:0}}><IconDragHandle size={16}/></span>}
               {/* صورة الحلاق */}
               <div style={{position:"relative",flexShrink:0}}>
                 {b.photo
