@@ -21,11 +21,12 @@ RLS (Row Level Security) is a database security feature that controls which rows
 
 ### Solution
 
-Run the SQL migration file to enable public read access to the required tables:
+Run the secure RLS migration files to enable public read access to the required tables:
 
 ```sql
 -- Navigate to Supabase Dashboard > SQL Editor
--- Copy and paste the contents of: admin/fix-rls-policies.sql
+-- Copy and paste the contents of: supabase/migrations/production-rls-v2.sql
+-- and supabase/migrations/20260619_secure_reviews_insert.sql
 -- Click "Run" to execute
 ```
 
@@ -67,7 +68,7 @@ The app uses Supabase Realtime for live updates. Ensure Realtime is enabled for 
 
 2. **Getting 403 Forbidden errors:**
    - Your RLS policies are too restrictive
-   - Use the fix-rls-policies.sql to update them
+   - Use the migrations in `supabase/migrations/` to update them
 
 3. **Seeing demo data instead of real data:**
    - RLS policies are blocking the queries
