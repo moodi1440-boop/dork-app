@@ -53,7 +53,7 @@ function AddSalonModal({ onClose, onAdded }: { onClose: () => void; onAdded: () 
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-navy border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
           <h2 className="text-white font-bold">✂ إضافة صالون جديد</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
@@ -123,7 +123,7 @@ function QuickMessageModal({ salon, onClose }: { salon: Salon; onClose: () => vo
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-navy border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
           <h2 className="text-white font-bold text-sm">✉ رسالة إلى: {salon.name}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
@@ -200,8 +200,8 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-[#0f1117]">
+      <div className="bg-navy border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-navy">
           <h2 className="text-white font-bold">✏ تعديل: {salon.name}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
         </div>
@@ -317,7 +317,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                 <div key={i} className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">
                   <span className="flex-1 text-sm text-white">{svc}</span>
                   <input type="number" placeholder="السعر" value={f.prices[svc] ?? ""} onChange={(e) => upd("prices", { ...f.prices, [svc]: Number(e.target.value) })}
-                    className="w-24 bg-[#0d0d1a] border border-border rounded px-2 py-1 text-xs text-gold text-center focus:outline-none" />
+                    className="w-24 bg-navy border border-border rounded px-2 py-1 text-xs text-gold text-center focus:outline-none" />
                   <span className="text-xs text-gray-500">ر.س</span>
                   <button onClick={() => { const ns = f.services.filter((_, j) => j !== i); const np = { ...f.prices }; delete np[svc]; upd("services", ns); upd("prices", np); }}
                     className="text-red-400 hover:text-red-300 text-sm font-bold">✕</button>

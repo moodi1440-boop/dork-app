@@ -234,7 +234,7 @@ export default function PromoCodesPage() {
             {fCount === "1" && (
               <div className="flex gap-2">
                 <input value={fCode} onChange={e => setFCode(e.target.value.toUpperCase())}
-                  className="flex-1 bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white tracking-widest font-mono text-center focus:outline-none focus:border-gold"
+                  className="flex-1 bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white tracking-widest font-mono text-center focus:outline-none focus:border-gold"
                   maxLength={20} placeholder="الكود" />
                 <button onClick={() => setFCode(tab === "app" ? genApp() : genWa())}
                   className="px-4 py-2.5 border border-border text-gray-400 rounded-xl text-sm hover:text-white hover:border-gold/40 transition-colors">
@@ -251,7 +251,7 @@ export default function PromoCodesPage() {
             {/* اسم الصالون */}
             <input value={fNote} onChange={e => setFNote(e.target.value)}
               placeholder="اسم الصالون (ملاحظة اختيارية)"
-              className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
+              className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
 
             <div className="grid grid-cols-2 gap-3">
               {/* الحد الأقصى للاستخدام */}
@@ -261,13 +261,13 @@ export default function PromoCodesPage() {
                   <span className="text-gray-600 mr-1">(لكل كود)</span>
                 </label>
                 <input type="number" value={fMaxUses} onChange={e => setFMaxUses(e.target.value)} min="1"
-                  className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
+                  className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
               </div>
               {/* مدة الكود */}
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">المدة من أول استخدام</label>
                 <select value={fDuration} onChange={e => setFDuration(e.target.value)}
-                  className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold">
+                  className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold">
                   <option value="3">3 أيام</option>
                   <option value="7">7 أيام</option>
                   <option value="14">14 يوم</option>
@@ -284,7 +284,7 @@ export default function PromoCodesPage() {
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">عدد العملاء المجانيين</label>
                   <select value={fWaCred} onChange={e => setFWaCred(e.target.value)}
-                    className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold">
+                    className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold">
                     {[10, 20, 30, 50, 100].map(n => <option key={n} value={n}>{n} عميل</option>)}
                   </select>
                 </div>
@@ -292,7 +292,7 @@ export default function PromoCodesPage() {
                   <label className="text-xs text-gray-500 mb-1 block">رقم الجوال (للإرسال)</label>
                   <input value={fPhone} onChange={e => setFPhone(e.target.value)}
                     placeholder="966501234567"
-                    className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
+                    className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
                 </div>
               </div>
             )}
@@ -302,7 +302,7 @@ export default function PromoCodesPage() {
                 <label className="text-xs text-gray-500 mb-1 block">رقم الجوال (للإرسال)</label>
                 <input value={fPhone} onChange={e => setFPhone(e.target.value)}
                   placeholder="966501234567"
-                  className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
+                  className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
               </div>
             )}
 

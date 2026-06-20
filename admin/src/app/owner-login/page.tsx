@@ -46,7 +46,7 @@ export default function OwnerLoginPage() {
   const showError = submitted && error;
 
   return (
-    <div className="min-h-screen bg-[#0d0d1a] flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-navy flex items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gold/10 border border-gold/30 flex items-center justify-center text-3xl mx-auto mb-4 shadow-[0_0_24px_rgba(212,160,23,0.15)]">
@@ -56,12 +56,12 @@ export default function OwnerLoginPage() {
           <p className="text-gray-500 text-sm mt-1">سجّل دخولك لإدارة صالونك</p>
         </div>
 
-        <form onSubmit={login} className="bg-[#13131f] border border-[#2a2a3a] rounded-2xl p-6 space-y-4">
+        <form onSubmit={login} className="bg-card border border-border rounded-2xl p-6 space-y-4">
           <div>
             <label className="block text-xs text-gray-400 mb-1.5 font-semibold">رقم جوال الصالون</label>
             <input type="tel" inputMode="numeric" value={phone} onChange={handlePhoneChange} placeholder="05xxxxxxxx"
               autoComplete="tel"
-              className="w-full bg-[#0d0d1a] border border-[#2a2a3a] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
+              className="w-full bg-navy border border-border rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
           </div>
           {showError ? <div className="text-red-400 text-xs text-center">{error}</div> : null}
           <button type="submit" disabled={loading || !phone.trim()}

@@ -90,7 +90,7 @@ export default function ComparePage() {
                   <span>📞 {s.phone}</span>
                   <span>{statusLabel[s.status] ?? s.status}</span>
                 </div>
-                <div className="h-2 bg-[#0d0d1a] rounded-full overflow-hidden">
+                <div className="h-2 bg-navy rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gradient-to-l from-gold to-yellow-300 transition-all"
                     style={{ width: `${pct}%` }}

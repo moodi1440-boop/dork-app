@@ -99,7 +99,7 @@ export default function Sidebar() {
   return (
     <aside className="w-56 flex flex-col bg-card border-l border-border min-h-screen sticky top-0">
       {toast && (
-        <div className="fixed top-4 right-4 z-[100] max-w-xs bg-[#0f1117] border border-gold/40 rounded-2xl px-4 py-3 shadow-2xl animate-slide-in">
+        <div className="fixed top-4 right-4 z-[100] max-w-xs bg-navy border border-gold/40 rounded-2xl px-4 py-3 shadow-2xl animate-slide-in">
           <div className="flex items-start gap-3">
             <span className="text-gold text-lg mt-0.5">🔔</span>
             <div>
