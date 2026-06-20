@@ -63,7 +63,7 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
 
       // تسجيل Service Worker
       if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.register('/service-worker.js', {
+        const registration = await navigator.serviceWorker.register('/sw.js', {
           scope: '/',
         });
         console.log('Service Worker registered:', registration);

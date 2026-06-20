@@ -95,7 +95,7 @@ export const getAndStoreFCMToken = async (): Promise<string | null> => {
     // Register Service Worker
     if ("serviceWorker" in navigator) {
       try {
-        const registration = await navigator.serviceWorker.register("/service-worker.js", {
+        const registration = await navigator.serviceWorker.register("/sw.js", {
           scope: "/",
         });
         console.log("[FCM] Service Worker registered:", registration);

@@ -305,7 +305,7 @@ function NotificationInitializerComponent() {
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
           window.addEventListener('load', async () => {
             try {
-              const reg = await navigator.serviceWorker.register('/service-worker.js');
+              const reg = await navigator.serviceWorker.register('/sw.js');
               console.log('Service Worker registered');
             } catch (err) {
               console.error('Service Worker registration failed:', err);

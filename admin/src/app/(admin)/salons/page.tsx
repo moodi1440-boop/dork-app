@@ -7,7 +7,7 @@ interface Salon {
   region: string; gov: string; phone: string; rating: number;
   status: string; frozen: boolean; banned: boolean; total_paid: number;
   address: string; welcome_msg: string; closed_days: number[];
-  slot_min: number; services: string[]; prices: Record<string, number>;
+  slot_min: number; cancellation_window: number; services: string[]; prices: Record<string, number>;
   barbers: Array<{ name: string; photo?: string }>;
   shift_enabled: boolean; work_start: string; work_end: string;
   shift1_start: string; shift1_end: string; shift2_start: string; shift2_end: string;
@@ -157,6 +157,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
     owner_phone: salon.owner_phone ?? "", address: salon.address ?? "",
     rating: salon.rating ?? 5, welcome_msg: salon.welcome_msg ?? "",
     closed_days: salon.closed_days ?? [], slot_min: salon.slot_min ?? 40,
+    cancellation_window: salon.cancellation_window ?? 2,
     services: [...(salon.services ?? [])], prices: { ...(salon.prices ?? {}) },
     barbers: JSON.parse(JSON.stringify(salon.barbers ?? [])),
     shift_enabled: salon.shift_enabled ?? false,
@@ -178,7 +179,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
       const { error } = await sb.from("salons").update({
         name: f.name, owner: f.owner, phone: f.phone, owner_phone: f.owner_phone,
         address: f.address, rating: f.rating, welcome_msg: f.welcome_msg,
-        closed_days: f.closed_days, slot_min: f.slot_min,
+        closed_days: f.closed_days, slot_min: f.slot_min, cancellation_window: f.cancellation_window,
         services: f.services, prices: f.prices, barbers: f.barbers,
         shift_enabled: f.shift_enabled,
         work_start: f.work_start, work_end: f.work_end,
@@ -259,6 +260,17 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                     <button key={m} onClick={() => upd("slot_min", m)}
                       className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${f.slot_min === m ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500"}`}>
                       {m} د
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-2 font-semibold">⏳ نافذة الإلغاء (بالساعات)</label>
+                <div className="flex gap-2">
+                  {[1, 2, 4, 6, 12, 24].map((h) => (
+                    <button key={h} onClick={() => upd("cancellation_window", h)}
+                      className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${f.cancellation_window === h ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500"}`}>
+                      {h} س
                     </button>
                   ))}
                 </div>
