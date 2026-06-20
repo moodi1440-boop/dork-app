@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getAdminPassword } from "@/lib/admin-password";
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const path       = req.nextUrl.pathname;
   const isApi      = path.startsWith("/api");
   const isLogin    = path.startsWith("/login");
@@ -25,7 +26,7 @@ export function middleware(req: NextRequest) {
 
   // Admin panel auth
   const adminCookie = req.cookies.get("dork_admin")?.value;
-  const authed      = adminCookie === process.env.ADMIN_SECRET;
+  const authed      = !!adminCookie && adminCookie === (await getAdminPassword());
 
   if (!authed && !isLogin) return NextResponse.redirect(new URL("/login", req.url));
   if (authed  &&  isLogin) return NextResponse.redirect(new URL("/", req.url));

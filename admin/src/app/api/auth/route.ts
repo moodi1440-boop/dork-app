@@ -1,15 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase";
-
-async function getAdminPassword(): Promise<string> {
-  try {
-    const sb = createAdminClient();
-    const { data } = await sb.from("admin_config").select("value").eq("key", "admin_password").single();
-    const v = (data as Record<string, unknown> | null)?.value;
-    if (v && typeof v === "string") return v;
-  } catch {}
-  return process.env.ADMIN_SECRET ?? "admin";
-}
+import { getAdminPassword } from "@/lib/admin-password";
 
 export async function POST(req: NextRequest) {
   const { password } = await req.json();
