@@ -1,0 +1,77 @@
+const { createAdminClient } = require("./_lib/supabase-admin");
+const { verifyOwnerSession, hashOwnerPin } = require("./_lib/owner-session");
+const { parseCookies } = require("./_lib/cookies");
+
+// الحقول التي يملك صاحب الصالون صلاحية تعديلها بنفسه. أي حقل آخر (status,
+// banned, frozen, rating, total_paid, owner, owner_phone...) يبقى بيد الإدارة فقط.
+const OWNER_EDITABLE_FIELDS = [
+  "name", "phone", "address", "location_url", "welcome_msg", "closed_days",
+  "slot_min", "cancellation_window", "services", "prices", "barbers",
+  "shift_enabled", "work_start", "work_end", "shift1_start", "shift1_end",
+  "shift2_start", "shift2_end", "tone", "social",
+];
+
+async function readJson(req) {
+  if (req.body && typeof req.body === "object") return req.body;
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const raw = Buffer.concat(chunks).toString("utf8");
+  return raw ? JSON.parse(raw) : {};
+}
+
+async function getSalonId(req) {
+  const cookies = parseCookies(req);
+  return verifyOwnerSession(cookies["dork_owner_session"]);
+}
+
+module.exports = async (req, res) => {
+  const salonId = await getSalonId(req);
+  if (!salonId) {
+    res.status(401).json({ error: "unauthorized" });
+    return;
+  }
+
+  const sb = createAdminClient();
+
+  if (req.method === "GET") {
+    const { data, error } = await sb.from("salons").select("*").eq("id", salonId).single();
+    if (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+    delete data.owner_pin_hash;
+    res.status(200).json(data);
+    return;
+  }
+
+  if (req.method === "PATCH") {
+    try {
+      const rawBody = await readJson(req);
+      const body = {};
+      for (const field of OWNER_EDITABLE_FIELDS) {
+        if (field in rawBody) body[field] = rawBody[field];
+      }
+      if (typeof rawBody.new_pin === "string") {
+        const pin = rawBody.new_pin.trim();
+        if (!/^\d{6}$/.test(pin)) {
+          res.status(400).json({ error: "الرقم السري يجب أن يكون 6 أرقام" });
+          return;
+        }
+        body.owner_pin_hash = await hashOwnerPin(pin, salonId);
+      }
+
+      const { error } = await sb.from("salons").update(body).eq("id", salonId);
+      if (error) {
+        res.status(500).json({ error: error.message });
+        return;
+      }
+      res.status(200).json({ ok: true });
+    } catch (e) {
+      console.error("[owner-salon] error:", e);
+      res.status(500).json({ error: "خطأ بالسيرفر" });
+    }
+    return;
+  }
+
+  res.status(405).json({ error: "method not allowed" });
+};

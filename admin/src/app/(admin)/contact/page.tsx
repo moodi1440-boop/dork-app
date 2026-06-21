@@ -90,11 +90,11 @@ export default function ContactPage() {
                 <input value={f.label}
                   onChange={(e) => { const nf = [...social.customFields]; nf[i] = { ...nf[i], label: e.target.value }; setSocial((p) => ({ ...p, customFields: nf })); }}
                   placeholder="الاسم"
-                  className="flex-1 bg-[#0d0d1a] border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
+                  className="flex-1 bg-navy border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
                 <input value={f.value}
                   onChange={(e) => { const nf = [...social.customFields]; nf[i] = { ...nf[i], value: e.target.value }; setSocial((p) => ({ ...p, customFields: nf })); }}
                   placeholder="الرابط أو القيمة"
-                  className="flex-1 bg-[#0d0d1a] border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
+                  className="flex-1 bg-navy border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
                 <button onClick={() => setSocial((p) => ({ ...p, customFields: p.customFields.filter((_, j) => j !== i) }))}
                   className="text-red-400 hover:text-red-300 text-sm font-bold px-2">✕</button>
               </div>
@@ -102,9 +102,9 @@ export default function ContactPage() {
           </div>
           <div className="flex gap-2">
             <input value={newField.label} onChange={(e) => setNewField((p) => ({ ...p, label: e.target.value }))} placeholder="الاسم"
-              className="flex-1 bg-[#0d0d1a] border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
+              className="flex-1 bg-navy border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
             <input value={newField.value} onChange={(e) => setNewField((p) => ({ ...p, value: e.target.value }))} placeholder="القيمة"
-              className="flex-1 bg-[#0d0d1a] border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
+              className="flex-1 bg-navy border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
             <button
               onClick={() => { if (newField.label) { setSocial((p) => ({ ...p, customFields: [...p.customFields, newField] })); setNewField({ label: "", value: "" }); }}}
               className="px-3 py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-xs font-bold hover:bg-gold/20 transition-colors">➕</button>

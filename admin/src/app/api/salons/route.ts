@@ -14,14 +14,22 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(row);
 }
 
-const FULL_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,location_url,paused,created_at";
-const SAFE_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,address,welcome_msg,closed_days,slot_min,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone";
+const FULL_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,cancellation_window,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,location_url,paused,created_at";
+const SAFE_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,address,welcome_msg,closed_days,slot_min,cancellation_window,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone";
 
 export async function GET(req: NextRequest) {
   try {
     const sb     = createAdminClient();
     const status = req.nextUrl.searchParams.get("status");
     const search = req.nextUrl.searchParams.get("search");
+
+    if (req.nextUrl.searchParams.get("count") === "1") {
+      let q = sb.from("salons").select("id", { count: "exact", head: true });
+      if (status && status !== "all") q = q.eq("status", status);
+      const { count, error } = await q;
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ count: count ?? 0 });
+    }
 
     const buildQuery = (select: string) => {
       let q = sb.from("salons").select(select).order("id", { ascending: false });
@@ -40,8 +48,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const rows = data ?? [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = (data ?? []).map((s: any) => ({ ...s, bookings: [] }));
+    const salonIds = rows.map((s: any) => s.id);
+    const { data: bookingsData } = salonIds.length
+      ? await sb.from("bookings").select("salon_id,status,total").in("salon_id", salonIds)
+      : { data: [] as { salon_id: string; status: string; total: number }[] };
+
+    const bookingsBySalon = new Map<string, { status: string; total: number }[]>();
+    for (const b of bookingsData ?? []) {
+      const sid = String(b.salon_id);
+      if (!bookingsBySalon.has(sid)) bookingsBySalon.set(sid, []);
+      bookingsBySalon.get(sid)!.push({ status: b.status, total: b.total });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = rows.map((s: any) => ({ ...s, bookings: bookingsBySalon.get(String(s.id)) ?? [] }));
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

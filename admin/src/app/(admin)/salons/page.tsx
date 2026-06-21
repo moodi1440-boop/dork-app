@@ -7,7 +7,7 @@ interface Salon {
   region: string; gov: string; phone: string; rating: number;
   status: string; frozen: boolean; banned: boolean; total_paid: number;
   address: string; welcome_msg: string; closed_days: number[];
-  slot_min: number; services: string[]; prices: Record<string, number>;
+  slot_min: number; cancellation_window: number; services: string[]; prices: Record<string, number>;
   barbers: Array<{ name: string; photo?: string }>;
   shift_enabled: boolean; work_start: string; work_end: string;
   shift1_start: string; shift1_end: string; shift2_start: string; shift2_end: string;
@@ -37,14 +37,16 @@ function AddSalonModal({ onClose, onAdded }: { onClose: () => void; onAdded: () 
   const submit = async () => {
     if (!form.name || !form.phone) { setErr("اسم الصالون والجوال مطلوبان"); return; }
     setSaving(true);
-    const { error } = await sb.from("salons").insert({
-      name: form.name, owner: form.owner, phone: form.phone, owner_phone: form.ownerPhone,
-      region: form.region, gov: form.gov, address: form.address,
-      bookings: [], services: [], barbers: [], prices: {}, rating: 5,
-      work_start: "09:00", work_end: "23:00", status: "approved",
+    const res = await fetch("/api/salons", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: form.name, owner: form.owner, phone: form.phone, owner_phone: form.ownerPhone,
+        region: form.region, gov: form.gov, address: form.address,
+      }),
     });
     setSaving(false);
-    if (error) { setErr(error.message); return; }
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setErr(d.error || `HTTP ${res.status}`); return; }
     onAdded();
     onClose();
   };
@@ -53,7 +55,7 @@ function AddSalonModal({ onClose, onAdded }: { onClose: () => void; onAdded: () 
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-navy border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
           <h2 className="text-white font-bold">✂ إضافة صالون جديد</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
@@ -123,7 +125,7 @@ function QuickMessageModal({ salon, onClose }: { salon: Salon; onClose: () => vo
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-navy border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
           <h2 className="text-white font-bold text-sm">✉ رسالة إلى: {salon.name}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
@@ -157,6 +159,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
     owner_phone: salon.owner_phone ?? "", address: salon.address ?? "",
     rating: salon.rating ?? 5, welcome_msg: salon.welcome_msg ?? "",
     closed_days: salon.closed_days ?? [], slot_min: salon.slot_min ?? 40,
+    cancellation_window: salon.cancellation_window ?? 2,
     services: [...(salon.services ?? [])], prices: { ...(salon.prices ?? {}) },
     barbers: JSON.parse(JSON.stringify(salon.barbers ?? [])),
     shift_enabled: salon.shift_enabled ?? false,
@@ -169,26 +172,49 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
   const [saving, setSaving] = useState(false);
   const [newSvc, setNewSvc] = useState("");
   const [newBarber, setNewBarber] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [pinErr, setPinErr] = useState("");
+  const [pinSaved, setPinSaved] = useState(false);
 
   const upd = (k: string, v: unknown) => setF((p) => ({ ...p, [k]: v }));
 
   const save = async () => {
     setSaving(true);
     try {
-      const { error } = await sb.from("salons").update({
-        name: f.name, owner: f.owner, phone: f.phone, owner_phone: f.owner_phone,
-        address: f.address, rating: f.rating, welcome_msg: f.welcome_msg,
-        closed_days: f.closed_days, slot_min: f.slot_min,
-        services: f.services, prices: f.prices, barbers: f.barbers,
-        shift_enabled: f.shift_enabled,
-        work_start: f.work_start, work_end: f.work_end,
-        shift1_start: f.shift1_start, shift1_end: f.shift1_end,
-        shift2_start: f.shift2_start, shift2_end: f.shift2_end,
-        tone: f.tone, social: f.social,
-      }).eq("id", salon.id);
-      if (error) throw new Error(error.message);
+      const res = await fetch(`/api/salons/${salon.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: f.name, owner: f.owner, phone: f.phone, owner_phone: f.owner_phone,
+          address: f.address, rating: f.rating, welcome_msg: f.welcome_msg,
+          closed_days: f.closed_days, slot_min: f.slot_min, cancellation_window: f.cancellation_window,
+          services: f.services, prices: f.prices, barbers: f.barbers,
+          shift_enabled: f.shift_enabled,
+          work_start: f.work_start, work_end: f.work_end,
+          shift1_start: f.shift1_start, shift1_end: f.shift1_end,
+          shift2_start: f.shift2_start, shift2_end: f.shift2_end,
+          tone: f.tone, social: f.social,
+        }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `HTTP ${res.status}`); }
       onSave({ ...salon, ...f });
     } catch (e) { alert("خطأ: " + (e as Error).message); }
+    setSaving(false);
+  };
+
+  const setPin = async () => {
+    if (!/^\d{6}$/.test(newPin)) { setPinErr("الرقم السري يجب أن يكون 6 أرقام"); return; }
+    setPinErr(""); setSaving(true);
+    try {
+      const res = await fetch(`/api/salons/${salon.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ new_pin: newPin }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `HTTP ${res.status}`); }
+      setNewPin(""); setPinSaved(true);
+      setTimeout(() => setPinSaved(false), 2000);
+    } catch (e) { setPinErr((e as Error).message); }
     setSaving(false);
   };
 
@@ -200,8 +226,8 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0f1117] border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-[#0f1117]">
+      <div className="bg-navy border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-navy">
           <h2 className="text-white font-bold">✏ تعديل: {salon.name}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
         </div>
@@ -226,6 +252,20 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                     className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gold" />
                 </div>
               ))}
+              <div className="bg-card border border-border rounded-lg p-3 space-y-2">
+                <label className="block text-xs text-gray-400 font-semibold">🔑 تعيين/تغيير الرقم السري (PIN) لدخول المالك</label>
+                <div className="flex gap-2">
+                  <input type="text" inputMode="numeric" maxLength={6} value={newPin}
+                    onChange={(e) => { setNewPin(e.target.value.replace(/\D/g, "").slice(0, 6)); setPinErr(""); }}
+                    placeholder="٦ أرقام" dir="ltr"
+                    className="flex-1 bg-navy border border-border rounded-lg px-3 py-2 text-sm text-white text-center tracking-widest focus:outline-none focus:border-gold" />
+                  <button onClick={setPin} disabled={saving || !newPin}
+                    className="px-4 py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-xs font-bold hover:bg-gold/20 transition-colors disabled:opacity-50">
+                    {pinSaved ? "✅ تم" : "حفظ"}
+                  </button>
+                </div>
+                {pinErr && <div className="text-red-400 text-xs">❌ {pinErr}</div>}
+              </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1 font-semibold">التقييم ⭐</label>
                 <input type="number" min="1" max="5" step="0.1" value={f.rating}
@@ -259,6 +299,17 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                     <button key={m} onClick={() => upd("slot_min", m)}
                       className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${f.slot_min === m ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500"}`}>
                       {m} د
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-2 font-semibold">⏳ نافذة الإلغاء (بالساعات)</label>
+                <div className="flex gap-2">
+                  {[1, 2, 4, 6, 12, 24].map((h) => (
+                    <button key={h} onClick={() => upd("cancellation_window", h)}
+                      className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${f.cancellation_window === h ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500"}`}>
+                      {h} س
                     </button>
                   ))}
                 </div>
@@ -317,7 +368,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                 <div key={i} className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">
                   <span className="flex-1 text-sm text-white">{svc}</span>
                   <input type="number" placeholder="السعر" value={f.prices[svc] ?? ""} onChange={(e) => upd("prices", { ...f.prices, [svc]: Number(e.target.value) })}
-                    className="w-24 bg-[#0d0d1a] border border-border rounded px-2 py-1 text-xs text-gold text-center focus:outline-none" />
+                    className="w-24 bg-navy border border-border rounded px-2 py-1 text-xs text-gold text-center focus:outline-none" />
                   <span className="text-xs text-gray-500">ر.س</span>
                   <button onClick={() => { const ns = f.services.filter((_, j) => j !== i); const np = { ...f.prices }; delete np[svc]; upd("services", ns); upd("prices", np); }}
                     className="text-red-400 hover:text-red-300 text-sm font-bold">✕</button>
@@ -458,24 +509,24 @@ export default function SalonsPage() {
   };
 
   const updateStatus = async (id: string, newStatus: string) => {
-    await sb.from("salons").update({ status: newStatus }).eq("id", id);
+    await fetch(`/api/salons/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }) });
     load();
   };
 
   const toggleFreeze = async (s: Salon) => {
-    await sb.from("salons").update({ frozen: !s.frozen }).eq("id", s.id);
+    await fetch(`/api/salons/${s.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ frozen: !s.frozen }) });
     load();
   };
 
   const toggleBan = async (s: Salon) => {
     if (!confirm(s.banned ? "رفع الحظر عن هذا الصالون؟" : "حظر هذا الصالون نهائياً؟")) return;
-    await sb.from("salons").update({ banned: !s.banned }).eq("id", s.id);
+    await fetch(`/api/salons/${s.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ banned: !s.banned }) });
     load();
   };
 
   const deleteSalon = async (id: string) => {
     if (!confirm("هل أنت متأكد من حذف هذا الصالون؟")) return;
-    await sb.from("salons").delete().eq("id", id);
+    await fetch(`/api/salons/${id}`, { method: "DELETE" });
     load();
   };
 

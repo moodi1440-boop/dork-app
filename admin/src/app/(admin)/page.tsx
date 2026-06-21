@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { sb } from "@/lib/supabase-browser";
 
 interface Stats {
   totalBookings: number; pendingBookings: number;
@@ -61,49 +60,14 @@ function MonthlyChart({ data }: { data: { month: string; count: number }[] }) {
   );
 }
 
-const ARABIC_MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
-
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      type Booking = { status: string; total?: number; date?: string };
-      const [salonsRes, custRes] = await Promise.all([
-        sb.from("salons").select("id,status,bookings"),
-        sb.from("customers").select("id", { count: "exact", head: true }),
-      ]);
-      const allSalons   = (salonsRes.data ?? []) as Record<string, unknown>[];
-      const allBookings = allSalons.flatMap((s) => (s.bookings as Booking[]) ?? []);
-
-      const now = new Date();
-      const today = now.toISOString().split("T")[0];
-      const todayBks = allBookings.filter((b) => b.date === today);
-
-      const monthlyData = Array.from({ length: 6 }, (_, i) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        return { month: ARABIC_MONTHS[d.getMonth()], count: allBookings.filter((b) => b.date?.startsWith(key)).length };
-      });
-
-      setStats({
-        totalBookings:     allBookings.length,
-        pendingBookings:   allBookings.filter((b) => b.status === "pending").length,
-        confirmedBookings: allBookings.filter((b) => b.status === "confirmed").length,
-        completedBookings: allBookings.filter((b) => b.status === "completed" || b.status === "approved").length,
-        cancelledBookings: allBookings.filter((b) => b.status === "cancelled" || b.status === "canceled").length,
-        totalCustomers:    custRes.count ?? 0,
-        totalSalons:       allSalons.length,
-        approvedSalons:    allSalons.filter((s) => s.status === "approved").length,
-        pendingSalons:     allSalons.filter((s) => s.status === "pending").length,
-        suspendedSalons:   allSalons.filter((s) => s.status === "suspended").length,
-        rejectedSalons:    allSalons.filter((s) => s.status === "rejected").length,
-        revenue:           allBookings.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (Number(b.total) || 0), 0),
-        todayBookings:     todayBks.length,
-        todayRevenue:      todayBks.filter((b) => b.status === "approved" || b.status === "completed").reduce((a, b) => a + (Number(b.total) || 0), 0),
-        monthlyData,
-      });
+      const data = await fetch("/api/stats").then((r) => r.json());
+      setStats(data);
       setLoading(false);
     })();
   }, []);

@@ -146,24 +146,24 @@ export default function NotificationsPage() {
               <div className="flex-1">
                 <label className="block text-xs text-gray-400 mb-1.5 font-semibold">العنوان *</label>
                 <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} placeholder="عنوان الإشعار"
-                  className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
+                  className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
               </div>
               <div className="w-24">
                 <label className="block text-xs text-gray-400 mb-1.5 font-semibold">الأيقونة</label>
                 <input value={form.icon} onChange={(e) => setForm((p) => ({ ...p, icon: e.target.value }))} placeholder="🔔"
-                  className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white text-center focus:outline-none focus:border-gold" />
+                  className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white text-center focus:outline-none focus:border-gold" />
               </div>
             </div>
             <div>
               <label className="block text-xs text-gray-400 mb-1.5 font-semibold">التفاصيل</label>
               <input value={form.body} onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))} placeholder="نص الإشعار (اختياري)"
-                className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
+                className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
             </div>
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="block text-xs text-gray-400 mb-1.5 font-semibold">المستهدف</label>
                 <select value={form.target_type} onChange={(e) => setForm((p) => ({ ...p, target_type: e.target.value }))}
-                  className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold">
+                  className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold">
                   <option value="all">الكل</option>
                   <option value="salon">صالون محدد</option>
                   <option value="customer">عميل محدد</option>
@@ -173,7 +173,7 @@ export default function NotificationsPage() {
                 <div className="flex-1">
                   <label className="block text-xs text-gray-400 mb-1.5 font-semibold">رقم المعرّف</label>
                   <input type="number" value={form.target_id} onChange={(e) => setForm((p) => ({ ...p, target_id: e.target.value }))} placeholder="ID"
-                    className="w-full bg-[#0d0d1a] border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
+                    className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold" />
                 </div>
               )}
             </div>
@@ -202,7 +202,7 @@ export default function NotificationsPage() {
                 {n.body && <div className="text-xs text-gray-400 mt-0.5">{n.body}</div>}
                 <div className="flex items-center gap-3 mt-2">
                   <span className="text-xs text-gray-600">{fmt(n.created_at)}</span>
-                  <span className="text-xs text-gray-600 bg-[#0d0d1a] px-2 py-0.5 rounded-full">
+                  <span className="text-xs text-gray-600 bg-navy px-2 py-0.5 rounded-full">
                     {targetLabel[n.target_type] ?? n.target_type}
                     {n.target_id ? ` #${n.target_id}` : ""}
                   </span>

@@ -2,19 +2,19 @@
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
 
-type Booking = { id: string; salon_id: string; salonName: string; name: string; phone: string; services: string[]; barber_name: string; date: string; time: string; total: number; status: string; };
+type Booking = { id: string; salon_id: string; salonName: string; name: string; phone: string; barber_name: string; date: string; time: string; total: number; status: string; attendance: string | null; };
 
 const STATUSES = [
-  { value: "all",       label: "الكل",   color: "text-gray-300"   },
-  { value: "pending",   label: "معلقة",  color: "text-yellow-400" },
-  { value: "confirmed", label: "مؤكدة",  color: "text-blue-400"   },
-  { value: "completed", label: "مكتملة", color: "text-green-400"  },
-  { value: "cancelled", label: "ملغاة",  color: "text-red-400"    },
+  { value: "all",       label: "الكل",    color: "text-gray-300"   },
+  { value: "pending",   label: "معلقة",   color: "text-yellow-400" },
+  { value: "approved",  label: "مؤكدة",   color: "text-blue-400"   },
+  { value: "rejected",  label: "مرفوضة",  color: "text-orange-400" },
+  { value: "cancelled", label: "ملغاة",   color: "text-red-400"    },
 ];
 
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = { pending: "bg-yellow-400/10 text-yellow-400 border-yellow-400/30", confirmed: "bg-blue-400/10 text-blue-400 border-blue-400/30", completed: "bg-green-400/10 text-green-400 border-green-400/30", cancelled: "bg-red-400/10 text-red-400 border-red-400/30" };
-  const labels: Record<string, string> = { pending: "معلقة", confirmed: "مؤكدة", completed: "مكتملة", cancelled: "ملغاة" };
+  const map: Record<string, string> = { pending: "bg-yellow-400/10 text-yellow-400 border-yellow-400/30", approved: "bg-blue-400/10 text-blue-400 border-blue-400/30", rejected: "bg-orange-400/10 text-orange-400 border-orange-400/30", cancelled: "bg-red-400/10 text-red-400 border-red-400/30" };
+  const labels: Record<string, string> = { pending: "معلقة", approved: "مؤكدة", rejected: "مرفوضة", cancelled: "ملغاة" };
   return <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${map[status] ?? "bg-gray-500/10 text-gray-400 border-gray-400/30"}`}>{labels[status] ?? status}</span>;
 }
 
@@ -27,36 +27,30 @@ export default function BookingsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await sb.from("salons").select("id,name,bookings");
-    type B = Record<string, unknown>;
-    let all: Booking[] = (data ?? []).flatMap((s: Record<string, unknown>) =>
-      ((s.bookings as B[]) ?? []).map((b) => ({ ...b, salon_id: s.id, salonName: s.name } as Booking))
-    );
-    if (status !== "all") all = all.filter((b) => b.status === status);
-    if (dateFilter) all = all.filter((b) => b.date === dateFilter);
+    const params = new URLSearchParams();
+    if (status !== "all") params.set("status", status);
+    if (dateFilter) params.set("date", dateFilter);
+    const rows = await fetch(`/api/bookings?${params.toString()}`).then((r) => r.json());
+    let all: Booking[] = (Array.isArray(rows) ? rows : []).map((b: Record<string, unknown>) => ({
+      id: b.id, salon_id: b.salon_id, salonName: b.salonName ?? "",
+      name: b.name ?? "", phone: b.phone ?? "", barber_name: b.barber_name ?? "",
+      date: b.date, time: b.time, total: b.total ?? 0, status: b.status, attendance: b.attendance ?? null,
+    })) as Booking[];
     if (search) { const q = search.toLowerCase(); all = all.filter((b) => b.name?.toLowerCase().includes(q) || b.phone?.includes(q)); }
-    all.sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
-    setBookings(all.slice(0, 200));
+    setBookings(all);
     setLoading(false);
   }, [status, search, dateFilter]);
 
   useEffect(() => { load(); }, [load]);
 
   const updateStatus = async (booking: Booking, newStatus: string) => {
-    const { data: s } = await sb.from("salons").select("bookings").eq("id", booking.salon_id).single();
-    type B = Record<string, unknown>;
-    const bks: B[] = (s?.bookings as B[]) ?? [];
-    const idx = bks.findIndex((b) => String(b.id) === String(booking.id));
-    if (idx !== -1) { bks[idx] = { ...bks[idx], status: newStatus }; await sb.from("salons").update({ bookings: bks }).eq("id", booking.salon_id); }
+    await sb.from("bookings").update({ status: newStatus }).eq("id", booking.id);
     load();
   };
 
   const deleteBooking = async (booking: Booking) => {
     if (!confirm("هل أنت متأكد من حذف هذا الحجز؟")) return;
-    const { data: s } = await sb.from("salons").select("bookings").eq("id", booking.salon_id).single();
-    type B = Record<string, unknown>;
-    const bks: B[] = ((s?.bookings as B[]) ?? []).filter((b) => String(b.id) !== String(booking.id));
-    await sb.from("salons").update({ bookings: bks }).eq("id", booking.salon_id);
+    await sb.from("bookings").delete().eq("id", booking.id);
     load();
   };
 
@@ -105,8 +99,8 @@ export default function BookingsPage() {
                     <td className="px-4 py-3"><StatusBadge status={b.status} /></td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">
-                        {b.status === "pending"    && <button onClick={() => updateStatus(b, "confirmed")} className="px-2.5 py-1 rounded-lg text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20">تأكيد</button>}
-                        {(b.status === "pending" || b.status === "confirmed") && <button onClick={() => updateStatus(b, "cancelled")} className="px-2.5 py-1 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">إلغاء</button>}
+                        {b.status === "pending"   && <button onClick={() => updateStatus(b, "approved")} className="px-2.5 py-1 rounded-lg text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20">تأكيد</button>}
+                        {(b.status === "pending" || b.status === "approved") && <button onClick={() => updateStatus(b, "cancelled")} className="px-2.5 py-1 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">إلغاء</button>}
                         <button onClick={() => deleteBooking(b)} className="px-2.5 py-1 rounded-lg text-xs bg-gray-500/10 text-gray-400 border border-gray-500/20 hover:bg-gray-500/20">حذف</button>
                       </div>
                     </td>

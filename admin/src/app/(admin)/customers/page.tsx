@@ -77,24 +77,12 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [custRes, salonsRes] = await Promise.all([
-      sb.from("customers").select("*").eq("id", customerId).single(),
-      sb.from("salons").select("id,name,bookings"),
-    ]);
-    const c = custRes.data as Customer;
+    const data = await fetch(`/api/customers/${customerId}`).then((r) => r.json());
+    const c = data.customer as Customer;
     setCustomer(c);
     setPoints(c?.loyalty_points ?? 0);
     setNotes(c?.admin_notes ?? "");
-
-    type B = Record<string, unknown>;
-    const phone = c?.phone ?? "";
-    const bks: Booking[] = (salonsRes.data ?? []).flatMap((s: Record<string, unknown>) =>
-      ((s.bookings as B[]) ?? [])
-        .filter((b) => b.phone === phone || String(b.customer_id) === customerId)
-        .map((b) => ({ ...(b as object), salonName: s.name as string } as Booking))
-    );
-    bks.sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
-    setBookings(bks.slice(0, 10));
+    setBookings(((data.bookings ?? []) as Booking[]).slice(0, 10));
     setLoading(false);
   }, [customerId]);
 
@@ -153,7 +141,7 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
             {bookings.length === 0 ? <div className="text-center text-gray-600 text-sm py-4">لا توجد حجوزات</div> : (
               <div className="space-y-2">
                 {bookings.map((b, i) => (
-                  <div key={i} className="flex items-center justify-between bg-[#0d0d1a] rounded-lg px-3 py-2">
+                  <div key={i} className="flex items-center justify-between bg-navy rounded-lg px-3 py-2">
                     <div>
                       <div className="text-xs text-white">{b.date} - {b.time}</div>
                       <div className="text-xs text-gray-500">{b.salonName}</div>
@@ -171,7 +159,7 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
             <div className="text-xs text-gray-400 font-semibold mb-3">📝 ملاحظات داخلية (لا يراها العميل)</div>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
               placeholder="أضف ملاحظات خاصة عن هذا العميل..."
-              className="w-full bg-[#0d0d1a] border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold resize-none mb-3" />
+              className="w-full bg-navy border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold resize-none mb-3" />
             <button onClick={saveNotes} disabled={saving}
               className="w-full py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-sm font-bold hover:bg-gold/20 transition-colors disabled:opacity-50">
               {notesSaved ? "✅ تم الحفظ" : saving ? "جاري الحفظ..." : "💾 حفظ الملاحظات"}

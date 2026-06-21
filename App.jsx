@@ -35,7 +35,7 @@ class ErrorBoundary extends React.Component {
         <div style={{color:"#e74c3c",fontSize:14,fontWeight:700}}>خطأ في التطبيق</div>
         <div style={{color:"var(--text-muted)",fontSize:11,background:"var(--surface-2)",padding:"12px 16px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr"}}>{String(this.state.err)}</div>
         {this.state.info&&<div style={{color:"#666",fontSize:9,background:"#111",padding:"8px 12px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr",maxHeight:120,overflow:"auto"}}>{this.state.info}</div>}
-        <button onClick={()=>window.location.reload()} style={{background:"var(--gold)",color:"#000",border:"none",borderRadius:8,padding:"8px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer"}}>إعادة تحميل</button>
+        <button onClick={()=>window.location.reload()} style={{background:"var(--gold)",color:"var(--p-text)",border:"none",borderRadius:8,padding:"8px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer"}}>إعادة تحميل</button>
       </div>
     );
     return this.props.children;
@@ -73,6 +73,17 @@ async function sb(table, method, body, query = "") {
   }
   const text = await res.text();
   return text ? JSON.parse(text) : [];
+}
+
+async function ownerApi(method, body) {
+  const res = await fetch("/api/owner-salon", {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `owner-salon ${method} failed`);
+  return data;
 }
 
 // ========== Web Push Notifications (بدون Firebase) ==========
@@ -215,51 +226,9 @@ function toAppSalon(row) {
     password: row.password || "",
     cancellationWindow: row.cancellation_window || 2,
     createdAt: row.created_at,
+    totalPaid: row.total_paid || 0,
+    social: row.social || null,
     bookings: [],
-  };
-}
-
-// تحويل بيانات التطبيق > Supabase
-function toDbSalon(s) {
-  return {
-    name: s.name,
-    owner: s.owner,
-    owner_phone: s.ownerPhone,
-    region: s.region,
-    gov: s.gov,
-    center: s.center,
-    village: s.village,
-    phone: s.phone,
-    address: s.address,
-    location_url: s.locationUrl,
-    services: s.services,
-    prices: s.prices,
-    shift_enabled: s.shiftEnabled,
-    shift1_start: s.shift1Start,
-    shift1_end: s.shift1End,
-    shift2_start: s.shift2Start,
-    shift2_end: s.shift2End,
-    work_start: s.workStart,
-    work_end: s.workEnd,
-    barbers: s.barbers,
-    tone: s.tone,
-  };
-}
-
-function toAppBooking(row) {
-  return {
-    id: row.id,
-    salonId: row.salon_id,
-    name: row.name,
-    phone: row.phone,
-    email: row.email||"",
-    services: row.services || [],
-    barberId: row.barber_id,
-    barberName: row.barber_name,
-    date: row.date,
-    time: row.time,
-    total: row.total,
-    status: row.status,
   };
 }
 
@@ -714,13 +683,6 @@ function downloadICS(content,filename){
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-function googleCalLink({title,date,time,durationMins,location,details}){
-  const dtStart=icsDateTime(date,time);
-  const dtEnd=icsDateTime(date,time,durationMins||40);
-  const params=new URLSearchParams({action:"TEMPLATE",text:title,dates:`${dtStart}/${dtEnd}`,details:details||"",location:location||""});
-  return`https://calendar.google.com/calendar/render?${params.toString()}`;
-}
-
 function IconTrash({size=16,color="currentColor"}){
   return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -763,43 +725,6 @@ function getCachedData(key, fetcher, cacheDuration=86400000){
   });
 }
 
-function buildHomeReviewsFeed(customers, approvedSalons){
-  const byId=new Map(approvedSalons.map(s=>[Number(s.id),s]));
-  const approvedSet=new Set(approvedSalons.map(s=>Number(s.id)));
-  const rows=[];
-  let k=0;
-  for(const c of customers||[]){
-    for(const h of c.history||[]){
-      if(!h||!h.rating||h.rating<=0)continue;
-      const sid=Number(h.salonId);
-      if(!approvedSet.has(sid))continue;
-      const salon=byId.get(sid);
-      rows.push({
-        key:`hr-${k++}`,
-        salonId:sid,
-        salonName:(h.salonName||salon?.name||"صالون").trim(),
-        customerName:(c.name||"عميل").trim(),
-        rating:h.rating,
-        comment:(h.comment||"").trim(),
-        date:h.date||"",
-        time:h.time||"",
-      });
-    }
-  }
-  rows.sort((a,b)=>{
-    const d=(b.date||"").localeCompare(a.date||"");
-    if(d!==0)return d;
-    return (b.time||"").localeCompare(a.time||"");
-  });
-  return rows;
-}
-
-const DEMO_SALONS=[
-  {id:1,name:"صالون الأناقة",owner:"أحمد محمد",ownerPhone:"0501234567",region:"منطقة مكة المكرمة",gov:"محافظة جدة",center:"مركز جدة",village:"الروضة",phone:"0501234567",address:"شارع الملك عبدالعزيز",locationUrl:"https://maps.google.com/?q=21.5433,39.1728",services:["قص شعر","حلاقة لحية","تسريح"],prices:{"قص شعر":50,"حلاقة لحية":30,"تسريح":40},shiftEnabled:true,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"08:00",workEnd:"23:00",barbers:[{id:"b1",name:"أبو خالد"},{id:"b2",name:"محمد"}],tone:"bell",bookings:[],rating:4.8,status:"approved"},
-  {id:2,name:"بارشوب كلاسيك",owner:"سالم العتيبي",ownerPhone:"0559876543",region:"منطقة الرياض",gov:"محافظة الرياض",center:"مركز الرياض",village:"العليا",phone:"0559876543",address:"طريق الملك فهد",locationUrl:"https://maps.google.com/?q=24.6877,46.7219",services:["قص شعر","حلاقة كاملة","عناية بالبشرة"],prices:{"قص شعر":60,"حلاقة كاملة":80,"عناية بالبشرة":100},shiftEnabled:false,workStart:"10:00",workEnd:"23:00",barbers:[{id:"b3",name:"يوسف"},{id:"b4",name:"عبدالله"},{id:"b5",name:"فهد"}],tone:"welcome",bookings:[],rating:4.6,status:"approved"},
-  {id:3,name:"صالون النخبة",owner:"فهد القحطاني",ownerPhone:"0533445566",region:"منطقة عسير",gov:"محافظة أبها",center:"مركز أبها",village:"السودة",phone:"0533445566",address:"شارع الأمير سلطان",locationUrl:"https://maps.google.com/?q=18.2164,42.5053",services:["قص شعر","تسريح","صبغة شعر"],prices:{"قص شعر":45,"تسريح":35,"صبغة شعر":100},shiftEnabled:false,workStart:"09:00",workEnd:"22:00",barbers:[{id:"b6",name:"عبدالرحمن"}],tone:"scissors",bookings:[],rating:4.5,status:"pending"},
-];
-
 // ==============================================
 //  ROOT
 // ==============================================
@@ -831,7 +756,6 @@ export default function App(){
   const[showDrawer,setShowDrawer]=useState(false);
   const[showSalonDrawer,setShowSalonDrawer]=useState(false);
   const[ownerTab,setOwnerTab]=useState(null);
-  const[splash,setSplash]=useState(false); // Splash Screen - مُلغى
   const[themeMode,setThemeMode]=useState(()=>{try{const t=localStorage.getItem("dork_theme");if(t==="dark"||t==="dim"||t==="light"||t==="lgray")return t;return localStorage.getItem("dork_dark")==="0"?"light":"dark";}catch{return"dark";}});
   const darkMode=themeMode==="dark"||themeMode==="dim";
   const setDarkMode=useCallback((v)=>setThemeMode(v?"dark":"light"),[]);
@@ -866,7 +790,7 @@ export default function App(){
       setProp("--pa3","rgba(28,28,30,.3)");setProp("--pa4","rgba(28,28,30,.45)");
       setProp("--grad","linear-gradient(135deg,#b8b6b4,#d0cecd)");
       setProp("--grad2","linear-gradient(135deg,#d0cecd,#b8b6b4)");
-      setProp("--p-text","#1c1c1e");
+      setProp("--p-text","#ffffff");
       setProp("--chip-border","#5a5a5c");
       setProp("--gold","var(--p)");
       setProp("--gold-rgb","28,28,30");
@@ -882,12 +806,6 @@ export default function App(){
     try{localStorage.setItem("dork_theme",themeMode);localStorage.setItem("dork_dark",(lt||lg)?"0":"1");}catch{}
   },[themeMode]);
 
-
-  // Splash Screen - يختفي بعد ثانيتين
-  useEffect(()=>{
-    const t=setTimeout(()=>setSplash(false),2000);
-    return()=>clearTimeout(t);
-  },[]);
 
   useEffect(() => {
     initializeWebPushNotifications().catch(() => {});
@@ -1064,13 +982,30 @@ export default function App(){
 
   const toast$=(msg,type="ok")=>{setToast({msg,type});setTimeout(()=>setToast(null),3200);};
 
+  // فحص صلاحية كوكي جلسة صاحب الصالون عند تحميل التطبيق - لو كانت منتهية أو
+  // غير صالحة (مثلاً بعد 30 يوم أو حذف الكوكي يدويًا) نرجّعه لتسجيل الدخول
+  // بدل عرض لوحة تحكم ستفشل كل عملية حفظ فيها.
+  useEffect(()=>{
+    if(!ownerSession)return;
+    (async()=>{
+      try{
+        await ownerApi("GET");
+      }catch{
+        setOwnerSession(null);
+        setView("ownerLogin");
+        toast$("⏳ انتهت صلاحية جلستك، سجّل الدخول من جديد","err");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   // -- تحميل البيانات من Supabase --
   const loadData = useCallback(async (opts) => {
     const silent=opts&&opts.silent;
     try {
       if(!silent)setLoading(true);
       const [salonRows,bookingRows,custRows]=await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,created_at&status=eq.approved&order=created_at.desc&limit=500"),
+        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at&status=eq.approved&order=created_at.desc&limit=500"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&order=created_at.desc&limit=1000"),
         sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&limit=500"),
       ]);
@@ -1380,21 +1315,6 @@ export default function App(){
   },[customerSession]);
 
 
-  // Splash Screen
-  if(splash) return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#09112e 0%,#0d1535 45%,#111d42 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",gap:0}}>
-      <div style={{animation:"splashPulse 1.4s ease-in-out infinite",marginBottom:28}}>
-        <div style={{fontSize:72,fontWeight:900,color:"var(--gold)",filter:"drop-shadow(0 4px 32px rgba(var(--gold-rgb),.5))",letterSpacing:2}}>دورك</div>
-      </div>
-      <div style={{width:36,height:36,border:"3px solid rgba(var(--gold-rgb),.15)",borderTop:"3px solid var(--gold)",borderRadius:"50%",animation:"spin 0.9s linear infinite"}}/>
-      <style dangerouslySetInnerHTML={{__html:`
-        @keyframes splashPulse{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.04) translateY(-4px)}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes fadeInCards{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-      `}}/>
-    </div>
-  );
-
   // العميل لما يسجل دخول يروح للصفحة الرئيسية مباشرة
   const handleCustomerLogin=(c)=>{setCustomerSession(c);setView("home");registerPushSubForUser("customer",c.id);};
   // customer helpers
@@ -1416,8 +1336,12 @@ export default function App(){
   // -- CRUD operations > Supabase --
   const addSalon=async(s)=>{
     try{
-      const dbData=toDbSalon(s);
-      await sb("salons","POST",dbData,"");
+      const res=await fetch("/api/register-salon",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(s),
+      });
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||"register-salon failed");
       toast$("✅ تم إرسال طلب تسجيل الصالون - في انتظار موافقة الإدارة");
       setView("home");
       await loadData();
@@ -1684,6 +1608,7 @@ export default function App(){
     showSalonDrawer,setShowSalonDrawer,
     ownerTab,setOwnerTab,
     promotions,setPromotions,pollPromotions,
+    setCustDashNav,
   };
 
   return(
@@ -2190,149 +2115,6 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
 }
 
 // ==============================================
-//  HOME — آراء العملاء — Horizontal Minimalist Carousel
-// ==============================================
-function HomeReviewsSection({customers,approvedSalons,setSelSalon,setView}){
-  const{t}=useTranslation();
-  const reviews=buildHomeReviewsFeed(customers,approvedSalons);
-  const [activeIdx,setActiveIdx]=useState(0);
-  const scrollRef=useRef(null);
-  const timerRef=useRef(null);
-  const gold="var(--gold)";
-  const goldStar="var(--gold)";
-  const dimStar="rgba(var(--gold-rgb),.18)";
-  const shown=reviews.slice(0,16);
-
-  const scrollTo=idx=>{
-    if(!scrollRef.current)return;
-    const el=scrollRef.current.children[idx];
-    if(el)el.scrollIntoView({behavior:"smooth",block:"nearest",inline:"start"});
-    setActiveIdx(idx);
-  };
-
-  // auto-scroll every 4 s, pause on user hover
-  const startTimer=()=>{
-    clearInterval(timerRef.current);
-    if(shown.length<2)return;
-    timerRef.current=setInterval(()=>{
-      setActiveIdx(prev=>{
-        const next=(prev+1)%shown.length;
-        if(scrollRef.current&&scrollRef.current.children[next])
-          scrollRef.current.children[next].scrollIntoView({behavior:"smooth",block:"nearest",inline:"start"});
-        return next;
-      });
-    },4000);
-  };
-  useEffect(()=>{startTimer();return()=>clearInterval(timerRef.current);},[shown.length]);
-
-  const openSalon=sid=>{
-    const s=approvedSalons.find(x=>Number(x.id)===Number(sid));
-    if(s){setSelSalon(s);setView("salon");}
-  };
-
-  const globalAvg=reviews.length
-    ?Math.round(reviews.reduce((a,r)=>a+r.rating,0)/reviews.length*10)/10
-    :0;
-
-  return(
-    <div style={{padding:"16px 0 8px",borderTop:"1px solid rgba(var(--gold-rgb),.1)"}}>
-      {/* ── Header row ── */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",marginBottom:12}}>
-        <div>
-          <div style={{fontSize:14,fontWeight:800,color:"var(--text-primary)",letterSpacing:.4}}>{t("home_reviews.title")}</div>
-          <div style={{fontSize:10,color:gold,opacity:.85}}>{t("home_reviews.subtitle")}</div>
-        </div>
-        {reviews.length>0&&(
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"4px 10px",borderRadius:10,background:"rgba(var(--gold-rgb),.07)",border:"1px solid rgba(var(--gold-rgb),.18)"}}>
-            <span style={{fontSize:14,fontWeight:900,color:goldStar,lineHeight:1}}>{globalAvg}</span>
-            <span style={{fontSize:8,color:"var(--text-muted)",marginTop:1}}>{reviews.length} {t("home_reviews.reviews_count")}</span>
-          </div>
-        )}
-      </div>
-
-      {/* ── Carousel track ── */}
-      {reviews.length===0?(
-        <div style={{margin:"0 16px",padding:"18px 14px",borderRadius:14,background:"var(--shell-bg)",border:"1px dashed rgba(var(--gold-rgb),.2)",textAlign:"center"}}>
-          <div style={{fontSize:12,color:"var(--text-muted)"}}>{t("home_reviews.empty")}</div>
-        </div>
-      ):(
-        <>
-          <div
-            ref={scrollRef}
-            onMouseEnter={()=>clearInterval(timerRef.current)}
-            onMouseLeave={startTimer}
-            onTouchStart={()=>clearInterval(timerRef.current)}
-            onTouchEnd={startTimer}
-            onScroll={e=>{
-              const c=e.currentTarget;
-              const cardW=(c.children[0]?.offsetWidth||260)+10;
-              setActiveIdx(Math.round(c.scrollLeft/cardW));
-            }}
-            style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,paddingLeft:16,paddingRight:8,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none"}}>
-            {shown.map((r,i)=>(
-              <div
-                key={r.key}
-                style={{
-                  scrollSnapAlign:"start",
-                  flex:"0 0 calc(88% - 24px)",
-                  maxWidth:310,
-                  background:"var(--surface-1)",
-                  border:`1px solid rgba(var(--gold-rgb),${i===activeIdx?.42:.18})`,
-                  borderRadius:16,
-                  padding:"14px 14px 12px",
-                  transition:"border-color .3s",
-                  display:"flex",flexDirection:"column",gap:0,
-                }}>
-                {/* Salon name */}
-                <div style={{fontSize:12,fontWeight:800,color:"var(--gold)",marginBottom:8,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:.2}}>
-                  ✂ {r.salonName}
-                </div>
-                {/* Customer + stars */}
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                  <span style={{fontSize:11,color:"var(--text-primary)",fontWeight:600}}>
-                    👤 {r.customerName}
-                  </span>
-                  <div style={{display:"flex",gap:1}}>
-                    {[1,2,3,4,5].map(n=>(
-                      <span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:dimStar,lineHeight:1}}>★</span>
-                    ))}
-                  </div>
-                </div>
-                {/* Divider */}
-                <div style={{height:1,background:"rgba(var(--gold-rgb),.08)",marginBottom:10}}/>
-                {/* Comment */}
-                <div style={{fontSize:11,color:"var(--text-muted)",fontStyle:r.comment?"italic":"normal",lineHeight:1.55,flex:1,minHeight:32}}>
-                  {r.comment?`«${r.comment}»`:t("home_reviews.no_comment")}
-                </div>
-                {/* Date */}
-                <div style={{fontSize:9,color:"var(--text-muted)",marginTop:8,paddingTop:6,borderTop:"1px solid rgba(var(--gold-rgb),.06)"}}>
-                  📅 {r.date||"—"}{r.time?` · ${to12h(r.time)}`:""}
-                </div>
-                {/* عرض الكل — minimalist gold-border button */}
-                <button
-                  onClick={e=>{e.stopPropagation();openSalon(r.salonId);}}
-                  style={{marginTop:12,width:"100%",background:"transparent",border:"1px solid rgba(var(--gold-rgb),.45)",color:gold,borderRadius:8,padding:"7px 0",cursor:"pointer",fontSize:11,fontFamily:"'Cairo',sans-serif",fontWeight:700,letterSpacing:.4}}>
-                  {t("home_reviews.view_all")}
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Scroll dots ── */}
-          {shown.length>1&&(
-            <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:10,padding:"0 16px"}}>
-              {shown.map((_,i)=>(
-                <button key={i} onClick={()=>scrollTo(i)} style={{width:i===activeIdx?18:6,height:6,borderRadius:3,background:i===activeIdx?gold:"rgba(var(--gold-rgb),.2)",border:"none",cursor:"pointer",padding:0,transition:"width .3s,background .3s"}}/>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-// ==============================================
 //  HOME
 // ==============================================
 function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing,loading,promotions,homeResetKey,setQuickBookSeed,fPriceMin,setFPriceMin,fPriceMax,setFPriceMax}){
@@ -2449,7 +2231,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   return(
     <div style={G.page}>
       {/* Pull to refresh */}
-      {(_ptY>8||pullRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${pullRefreshing?10:Math.max(_ptY-16,0)}px)`,zIndex:100,transition:pullRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"#000",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{pullRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}>↻</span>:_ptY>=_PT?"↑":"↓"}</div>}
+      {(_ptY>8||pullRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${pullRefreshing?10:Math.max(_ptY-16,0)}px)`,zIndex:100,transition:pullRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"var(--p-text)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{pullRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}>↻</span>:_ptY>=_PT?"↑":"↓"}</div>}
 
       {/* Region Select - قائمة متدرجة */}
       {showRegionSelect&&(()=>{
@@ -2566,7 +2348,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
                <div style={{fontSize:36,marginBottom:12}}>📍</div>
                <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>أضف موقعك لمشاهدة العروض القريبة</div>
                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:16}}>نعرض لك العروض من الأقرب إليك تلقائياً</div>
-               <button onClick={()=>setView("custSettings")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"var(--p)",color:"#000",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>← الإعدادات</button>
+               <button onClick={()=>setView("custSettings")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"var(--p)",color:"var(--p-text)",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>← الإعدادات</button>
              </div>
             :sortedSalons.length===0
               ?<div style={G.empty}>{promoMode?"لا توجد عروض نشطة الآن":urgentMode?t("home.no_salons_open"):t("home.no_salons")}</div>
@@ -2595,18 +2377,6 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         }
       </div>
 
-    </div>
-  );
-}
-function LocFilter({icon,label,value,onChange,options,all}){
-  return(
-    <div style={G.fRow}>
-      <span style={{fontSize:13,flexShrink:0}}>{icon}</span>
-      <span style={{fontSize:11,color:"var(--p)",flexShrink:0,minWidth:50}}>{label}</span>
-      <select style={G.fSel} value={value} onChange={e=>onChange(e.target.value)}>
-        <option value="">{all}</option>
-        {options.map(o=><option key={o} value={o}>{o}</option>)}
-      </select>
     </div>
   );
 }
@@ -2855,6 +2625,14 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
             <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div>
             <div style={{fontSize:11,color:"var(--text-muted)"}}>{salon.gov||salon.region}{salon.village?` > ${salon.village}`:""}</div>
             <div style={{fontSize:11,color:"var(--text-muted)"}}>👤 {salon.owner} - 📞 {salon.phone}</div>
+            {salon.social?.enabled&&(salon.social.whatsapp||salon.social.twitter||salon.social.telegramUser||salon.social.email)&&(
+              <div style={{display:"flex",gap:10,marginTop:4}}>
+                {salon.social.whatsapp&&<a href={`https://wa.me/966${salon.social.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="واتساب الصالون" aria-label="واتساب الصالون">💬</a>}
+                {salon.social.twitter&&<a href={`https://twitter.com/${salon.social.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="تويتر/X الصالون" aria-label="تويتر/X الصالون">🐦</a>}
+                {salon.social.telegramUser&&<a href={`https://t.me/${salon.social.telegramUser.replace("@","")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="تيليجرام الصالون" aria-label="تيليجرام الصالون">✈️</a>}
+                {salon.social.email&&<a href={`mailto:${salon.social.email}`} style={{fontSize:15,textDecoration:"none"}} title="بريد الصالون" aria-label="بريد الصالون">✉️</a>}
+              </div>
+            )}
             {salonReviews.length>0&&<>
               <div style={{fontSize:12,color:"#e8c04a",marginTop:2}}>⭐ {avgRating} ({salonReviews.length} {t("salon_page.reviews_count")})</div>
               <div style={{fontSize:9,color:"var(--text-muted)",marginTop:2}}>{t("salon_page.reviews_note")}</div>
@@ -3001,7 +2779,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
                   onClick={()=>toggle(svc)}>
                   <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
                     <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--p)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                      {sel&&<span style={{color:"#000",fontSize:10,fontWeight:900,lineHeight:1}}>✓</span>}
+                      {sel&&<span style={{color:"var(--p-text)",fontSize:10,fontWeight:900,lineHeight:1}}>✓</span>}
                     </div>
                     <span style={{fontWeight:sel?700:400,color:sel?"var(--p)":"var(--text-primary)",fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{svc}</span>
                   </div>
@@ -3805,7 +3583,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
 // ==============================================
 function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
   const{t}=useTranslation();
-  const[form,setForm]=useState({name:"",owner:"",ownerPhone:"",region:"",gov:"",center:"",village:"",phone:"",address:"",locationUrl:"",services:[],prices:{},shiftEnabled:false,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"09:00",workEnd:"22:00",barbers:[{id:"b"+Date.now(),name:""}],tone:"bell"});
+  const[form,setForm]=useState({name:"",owner:"",ownerPhone:"",region:"",gov:"",center:"",village:"",phone:"",address:"",locationUrl:"",services:[],prices:{},shiftEnabled:false,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"09:00",workEnd:"22:00",barbers:[{id:"b"+Date.now(),name:""}],tone:"bell",pin:"",pinConfirm:""});
   const[errors,setErrors]=useState({});
   const[locMethod,setLocMethod]=useState("link");
   const[detecting,setDetecting]=useState(false);
@@ -3913,6 +3691,8 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
     if(!form.locationUrl.trim())e.locationUrl=t("register.err_location");
     if(!form.services.length)e.services=t("register.err_service");
     if(form.barbers.some(b=>!b.name.trim()))e.barbers=t("register.err_barbers");
+    if(!/^\d{6}$/.test(form.pin))e.pin=t("register.err_pin");
+    else if(form.pin!==form.pinConfirm)e.pinConfirm=t("register.err_pin_mismatch");
     setErrors(e); return!Object.keys(e).length;
   };
 
@@ -4056,7 +3836,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
               <div style={{width:44,height:44,borderRadius:"50%",background:b.photo?"transparent":"var(--surface-2)",border:`2px dashed var(--p)`,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
                 {b.photo?<img src={optimizeImageUrl(b.photo,44,44)} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:<span style={{fontSize:18,color:"var(--p)"}}>📷</span>}
               </div>
-              <div style={{position:"absolute",bottom:-2,right:-2,background:"var(--p)",borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#000",cursor:"pointer"}}>+</div>
+              <div style={{position:"absolute",bottom:-2,right:-2,background:"var(--p)",borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"var(--p-text)",cursor:"pointer"}}>+</div>
             </div>
             <input style={{...fi(),...{flex:1}}} placeholder={`${t("register.barber_ph")} ${i+1}`} value={b.name} onChange={e=>upBarber(b.id,e.target.value)}/>
             {form.barbers.length>1&&<button style={G.xBtn} onClick={()=>rmBarber(b.id)}><IconTrash size={14}/></button>}
@@ -4098,6 +3878,13 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           {TONES.map(tn=><div key={tn.id} style={{...G.chip,...(form.tone===tn.id?G.chipOn:{})}} onClick={()=>{setForm(p=>({...p,tone:tn.id}));playTone(tn.id,0.8);}}>{tn.label}</div>)}
         </div>
         <div style={{fontSize:11,color:"var(--text-muted)"}}>{t("register.tone_hint")}</div>
+      </div>
+
+      <div style={G.fc}>
+        <SL>{t("register.pin_section")}</SL>
+        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>{t("register.pin_hint")}</div>
+        <F label={t("register.pin_label")} error={errors.pin}><input style={fi(errors.pin)} type="password" inputMode="numeric" placeholder="••••••" value={form.pin} onChange={e=>setForm(p=>({...p,pin:e.target.value.replace(/\D/g,"").slice(0,6)}))}/></F>
+        <F label={t("register.pin_confirm_label")} error={errors.pinConfirm}><input style={fi(errors.pinConfirm)} type="password" inputMode="numeric" placeholder="••••••" value={form.pinConfirm} onChange={e=>setForm(p=>({...p,pinConfirm:e.target.value.replace(/\D/g,"").slice(0,6)}))}/></F>
       </div>
 
       <div style={{display:"flex",gap:8,marginBottom:30}}><BtnBack toStep={3}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(validate())addSalon(form);}}>{t("register.submit")}</button></div>
@@ -4344,7 +4131,7 @@ function CompareSalonsView({salons,setView,setSelSalon}){
             <div style={{fontSize:11,color:"var(--p)",fontWeight:700,marginBottom:8}}>{t("compare.services_of")} {s.name.split(" ")[0]}</div>
             {s.services.map(sv=>(
               <div key={sv} style={{display:"flex",justifyContent:"space-between",marginBottom:4,fontSize:11}}>
-                <span style={{color:"#fff"}}>{sv}</span>
+                <span style={{color:"var(--text-primary)"}}>{sv}</span>
                 <span style={{color:"var(--p)"}}>{s.prices?.[sv]||0} {t("compare.sar")}</span>
               </div>
             ))}
@@ -4408,7 +4195,7 @@ function NearMapView({salons,setView,setSelSalon}){
       {!userLoc?(
         <div style={{textAlign:"center",padding:"40px 20px"}}>
           <div style={{fontSize:50,marginBottom:12}}>📍</div>
-          <div style={{fontSize:14,color:"#fff",fontWeight:700,marginBottom:8}}>{t("near_map.intro_title")}</div>
+          <div style={{fontSize:14,color:"var(--text-primary)",fontWeight:700,marginBottom:8}}>{t("near_map.intro_title")}</div>
           <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:20}}>{t("near_map.intro_body")}</div>
           <button style={G.sub} onClick={detect} disabled={loading}>
             {loading?t("near_map.detecting"):t("near_map.detect_btn")}
@@ -4427,7 +4214,7 @@ function NearMapView({salons,setView,setSelSalon}){
                   onClick={()=>{setSelSalon(s);setView("salon");}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <div>
-                      <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {s.name}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>✂ {s.name}</div>
                       <div style={{fontSize:11,color:"var(--text-muted)"}}>📍 {s.gov||s.region}{s.village?" - "+s.village:""}</div>
                     </div>
                     <div style={{textAlign:"left",flexShrink:0}}>
@@ -4470,41 +4257,38 @@ function ShareBtn({salon}){
 // ==============================================
 //  OWNER LOGIN + DASHBOARD
 // ==============================================
-function OwnerLogin({salons,setOwnerSession,setOwnerTab,setView,toast$}){
+function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
   const{t}=useTranslation();
-  const[tab,setTab]=useState("phone");
-  const[phone,setPhone]=useState(""); const[err,setErr]=useState("");
-  const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
-  const loginWithPhone=()=>{
-    const s=salons.find(x=>x.ownerPhone===phone.trim()||x.phone===phone.trim());
-    if(!s){setErr(t("owner_login.err_not_found"));return;}
-    if(s.banned){setErr(t("owner_login.err_banned"));return;}
-    if(s.frozen){setErr(t("owner_login.err_frozen"));return;}
-    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",s.id);
-  };
-  const loginWithPin=()=>{
-    const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
-    if(!s){setPinErr(t("owner_login.err_pin_wrong"));setPin("");return;}
-    if(s.banned){setPinErr(t("owner_login.err_pin_banned"));return;}
-    if(s.frozen){setPinErr(t("owner_login.err_pin_frozen"));return;}
-    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",s.id);
+  const[phone,setPhone]=useState("");
+  const[pin,setPin]=useState("");
+  const[err,setErr]=useState("");
+  const[loading,setLoading]=useState(false);
+  const login=async()=>{
+    if(!phone.trim()||pin.length!==6){setErr(t("owner_login.err_pin_wrong"));return;}
+    setLoading(true); setErr("");
+    try{
+      const res=await fetch("/api/owner-auth",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({phone:phone.trim(),pin}),
+      });
+      const data=await res.json();
+      if(!res.ok){
+        setErr(t(`owner_login.${data.code||"err_generic"}`));
+        setLoading(false); return;
+      }
+      setOwnerSession(data.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",data.id);
+    }catch{
+      setErr(t("owner_login.err_generic"));
+    }
+    setLoading(false);
   };
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={{...G.tabRow,marginBottom:16}}>
-        <button style={{...G.tabBtn,flex:1,...(tab==="phone"?G.tabOn:{})}} onClick={()=>{setTab("phone");setErr("");setPinErr("");}}>{t("owner_login.phone_tab")}</button>
-        <button style={{...G.tabBtn,flex:1,...(tab==="pin"?G.tabOn:{})}} onClick={()=>{setTab("pin");setErr("");setPinErr("");}}>{t("owner_login.pin_tab")}</button>
-      </div>
       <div style={G.fc}>
-        {tab==="phone"?<>
-          <SL>{t("owner_login.phone_hint")}</SL>
-          <F label={t("owner_login.phone_label")} error={err}><input style={fi(err)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
-          <button style={G.sub} onClick={loginWithPhone}>{t("owner_login.login_btn")}</button>
-        </>:<>
-          <SL>{t("owner_login.pin_hint")}</SL>
-          <F label={t("owner_login.pin_label")} error={pinErr}><input style={fi(pinErr)} type="password" inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}}/></F>
-          <button style={G.sub} onClick={loginWithPin}>{t("owner_login.login_btn")}</button>
-        </>}
+        <SL>{t("owner_login.phone_hint")}</SL>
+        <F label={t("owner_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+        <F label={t("owner_login.pin_label")} error={err}><input style={fi(err)} type="password" inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setErr("");}}/></F>
+        <button style={{...G.sub,opacity:loading?0.7:1}} disabled={loading} onClick={login}>{t("owner_login.login_btn")}</button>
       </div>
       <div style={{margin:"0 0 16px",background:"rgba(var(--pr),.06)",border:"1.5px dashed rgba(var(--pr),.4)",borderRadius:13,padding:"18px 16px",textAlign:"center"}}>
         <div style={{fontSize:15,color:"var(--p)",fontWeight:700,marginBottom:6}}>{t("owner_login.no_salon_title")}</div>
@@ -4606,7 +4390,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         .pending-pulse{animation:pulse 2s infinite;}
       `}</style>
       <div style={G.fp}>
-      {(_oPtY>8||_oPtRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${_oPtRefreshing?10:Math.max(_oPtY-16,0)}px)`,zIndex:100,transition:_oPtRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"#000",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{_oPtRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}>↻</span>:_oPtY>=_OPT?"↑":"↓"}</div>}
+      {(_oPtY>8||_oPtRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${_oPtRefreshing?10:Math.max(_oPtY-16,0)}px)`,zIndex:100,transition:_oPtRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"var(--p-text)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{_oPtRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}>↻</span>:_oPtY>=_OPT?"↑":"↓"}</div>}
 
       {/* بانر إشعارات الإدارة */}
       {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
@@ -4707,7 +4491,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:11,color:"var(--p)",opacity:.7,marginBottom:2}}>{t("owner_dash.next_booking")}</div>
               <div style={{fontSize:13,fontWeight:800,color:"var(--p)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                {_nextBk.customerName||_nextBk.customer_name||t("owner_dash.customer")} — {to12h(_nextBk.time)}
+                {_nextBk.name||t("owner_dash.customer")} — {to12h(_nextBk.time)}
               </div>
             </div>
             <div style={{fontSize:11,fontWeight:800,color:"var(--p)",background:"rgba(var(--pr),.2)",padding:"4px 9px",borderRadius:8,flexShrink:0,whiteSpace:"nowrap"}}>
@@ -4747,7 +4531,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           :_tmrBks.sort((a,b)=>(a.time||"").localeCompare(b.time||"")).map((b,i)=>(
             <div key={b.id||i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",borderBottom:i<_tmrBks.length-1?"1px solid var(--border-ui)":"none"}}>
               <span style={{fontSize:11,fontWeight:800,color:"var(--p)",minWidth:48}}>{to12h(b.time)}</span>
-              <span style={{flex:1,fontSize:12,color:"var(--text-primary)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.customerName||b.customer_name||t("owner_dash.customer")}</span>
+              <span style={{flex:1,fontSize:12,color:"var(--text-primary)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.name||t("owner_dash.customer")}</span>
               <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:b.status==="approved"?"rgba(39,174,96,.15)":"rgba(243,156,18,.15)",color:b.status==="approved"?"#27ae60":"#f39c12"}}>{b.status==="approved"?t("owner_dash.filter_approved"):t("owner_dash.filter_pending")}</span>
             </div>
           ))}
@@ -4882,7 +4666,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
             <div key={r.id} style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 13px"}}>
               {/* العميل */}
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                <span style={{fontSize:12,color:"#c0c0d0",fontWeight:700}}>👤 {r.customer_name||t("owner_dash.customer_fallback")}</span>
+                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700}}>👤 {r.customer_name||t("owner_dash.customer_fallback")}</span>
                 <div style={{display:"flex",gap:1}}>
                   {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(var(--gold-rgb),.18)"}}>★</span>)}
                 </div>
@@ -4894,7 +4678,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
               {hasReply&&!(replyDraft[r.id]!=null&&replyDraft[r.id]!==r.owner_reply)&&(
                 <div style={{padding:"8px 10px",background:"rgba(var(--pr),.07)",borderRight:"3px solid var(--p)",borderRadius:"0 8px 8px 0",marginBottom:6}}>
                   <div style={{fontSize:10,color:gold,fontWeight:700,marginBottom:2}}>{t("owner_dash.reply_label")}</div>
-                  <div style={{fontSize:11,color:"#c8c8a8",lineHeight:1.5}}>{r.owner_reply}</div>
+                  <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.5}}>{r.owner_reply}</div>
                   <div style={{display:"flex",gap:6,marginTop:8}}>
                     <button onClick={()=>setReplyDraft(p=>({...p,[r.id]:r.owner_reply}))} style={{fontSize:10,padding:"4px 10px",borderRadius:6,border:"1px solid var(--pa25)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit"}}>{t("owner_dash.reply_edit")}</button>
                     <button onClick={()=>deleteReply(r.id)} style={{fontSize:10,padding:"4px 10px",borderRadius:6,border:"1px solid #e74c3c55",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}}>{t("owner_dash.reply_delete")}</button>
@@ -5000,7 +4784,7 @@ function BookingCalendar({salon,onUpdate}){
               <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:13,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name||t("owner_dash.customer_fallback")}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>👤 {b.name||t("owner_dash.customer_fallback")}</div>
                     <div style={{fontSize:11,color:"var(--text-muted)"}}>📞 {b.phone}</div>
                     <div style={{fontSize:11,color:"var(--text-muted)"}}>✂ {Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div>
                     <div style={{fontSize:11,color:"var(--p)"}}>📅 {b.date} {to12h(b.time)} - {b.total||0} ر</div>
@@ -5449,7 +5233,7 @@ function PromoPanel({salon,customers,toast$}){
                         <div style={{fontSize:11,color:"var(--text-muted)"}}>{tp.desc}</div>
                       </div>
                       <div style={{width:20,height:20,borderRadius:"50%",border:`2.5px solid var(--p)`,background:sel?"var(--p)":"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        {sel&&<span style={{fontSize:9,color:"#000",fontWeight:900}}>✓</span>}
+                        {sel&&<span style={{fontSize:9,color:"var(--p-text)",fontWeight:900}}>✓</span>}
                       </div>
                     </button>
                   );
@@ -5677,7 +5461,7 @@ function MessagesPanel({salon,toast$}){
           <div key={m.id} style={{display:"flex",justifyContent:m.from==="owner"?"flex-end":"flex-start"}}>
             <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="owner"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="owner"?"var(--pa25)":"#1a1a2e",border:`1px solid ${m.from==="owner"?"var(--pa4)":"var(--border-ui)"}`}}>
               <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{m.from==="owner"?t("messages.from_you"):t("messages.from_admin")}</div>
-              <div style={{fontSize:13,color:"#fff"}}>{m.text}</div>
+              <div style={{fontSize:13,color:m.from==="owner"?"var(--text-primary)":"#fff"}}>{m.text}</div>
               <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}</div>
             </div>
           </div>
@@ -5816,6 +5600,15 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
   const dragIdx=useRef(null);
   const dragOverIdx=useRef(null);
   const upd=(k,v)=>setF(p=>({...p,[k]:v}));
+  const savePin=async()=>{
+    try{
+      await ownerApi("PATCH",{new_pin:f._editTempPin});
+      toast$&&toast$(t("owner_settings.success_pin"));
+      setF(p=>({...p,_editPinStep:null,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));
+    }catch{
+      setF(p=>({...p,_editPinErr:"تعذر حفظ PIN، حاول مرة أخرى"}));
+    }
+  };
   const detectSalonLocation=()=>{
     if(!navigator.geolocation){toast$&&toast$("❌ المتصفح لا يدعم تحديد الموقع","err");return;}
     setDetecting(true);
@@ -5852,7 +5645,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         services:f.services,prices:{...f.prices,__durations:f.durations},
         barbers:compressedBarbers,tone:f.tone,
       };
-      await sb("salons","PATCH",patch,`?id=eq.${salon.id}`);
+      await ownerApi("PATCH",patch);
       setSalons(p=>p.map(s=>s.id===salon.id?{...s,name:f.name,phone:f.phone,address:f.address,locationUrl:f.locationUrl,shiftEnabled:f.shiftEnabled,shift1Start:f.shift1Start,shift1End:f.shift1End,shift2Start:f.shift2Start,shift2End:f.shift2End,workStart:f.workStart,workEnd:f.workEnd,services:f.services,prices:{...f.prices,__durations:f.durations},barbers:compressedBarbers,tone:f.tone}:s));
       toast$&&toast$(t("owner_settings.success"));
     }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
@@ -5861,8 +5654,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 
   const saveBarberDurations=async(barberIdx)=>{
     try{
-      const barbers=f.barbers.map(async b=>({...b,photo:b.photo}));
-      await sb("salons","PATCH",{barbers:f.barbers},`?id=eq.${salon.id}`);
+      await ownerApi("PATCH",{barbers:f.barbers});
       setSalons(p=>p.map(s=>s.id===salon.id?{...s,barbers:f.barbers}:s));
       toast$&&toast$("✅ تم حفظ مدد الخدمات");
     }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
@@ -6091,7 +5883,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                   })}
                   <div style={{padding:"8px 10px",borderTop:"1px solid var(--border-ui)"}}>
                     <button onClick={()=>saveBarberDurations(i)}
-                      style={{width:"100%",padding:"8px",borderRadius:8,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontSize:12,fontFamily:"inherit"}}>
+                      style={{width:"100%",padding:"8px",borderRadius:8,border:"none",background:"var(--p)",color:"var(--p-text)",cursor:"pointer",fontWeight:700,fontSize:12,fontFamily:"inherit"}}>
                       💾 حفظ المدد
                     </button>
                   </div>
@@ -6167,35 +5959,24 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       {sec==="pin"&&<div style={box}>
         <div style={hdr}>{t("owner_settings.pin_title")}</div>
         <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:14,lineHeight:1.6}}>{t("owner_settings.pin_hint")}</div>
-        <button onClick={()=>setF(p=>({...p,_editPinStep:"select",_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--p)",background:"rgba(var(--pr),.1)",color:"var(--p)",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
+        <button onClick={()=>setF(p=>({...p,_editPinStep:"enter",_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--p)",background:"rgba(var(--pr),.1)",color:"var(--p)",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
           {t("owner_settings.change_pin")}
         </button>
         {f._editPinStep&&(
           <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
             <div style={{background:"var(--surface-1)",borderRadius:20,padding:24,maxWidth:350,width:"100%",border:"1.5px solid var(--pa25)"}}>
-              {f._editPinStep==="select"?<>
-                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t("owner_settings.pin_select_title")}</div>
-                <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center",marginBottom:20}}>{t("owner_settings.pin_select_hint")}</div>
-                <div style={{display:"flex",gap:12,marginBottom:16}}>
-                  <button onClick={()=>setF(p=>({...p,_editPinLength:4,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===4?"rgba(var(--pr),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                    {t("owner_settings.pin_4")}
-                  </button>
-                  <button onClick={()=>setF(p=>({...p,_editPinLength:6,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===6?"rgba(var(--pr),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                    {t("owner_settings.pin_6")}
-                  </button>
-                </div>
-              </>:f._editPinStep==="enter"?<>
-                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t("owner_settings.pin_enter")} ({f._editPinLength})</div>
-                <input type="password" maxLength={f._editPinLength} value={f._editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editTempPin:val}));if(val.length===f._editPinLength)setTimeout(()=>setF(p=>({...p,_editPinStep:"confirm"})),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editTempPin.length===f._editPinLength)setF(p=>({...p,_editPinStep:"confirm"}));}} />
+              {f._editPinStep==="enter"?<>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t("owner_settings.pin_enter")} (6)</div>
+                <input type="password" maxLength={6} value={f._editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setF(p=>({...p,_editTempPin:val}));if(val.length===6)setTimeout(()=>setF(p=>({...p,_editPinStep:"confirm"})),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="••••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editTempPin.length===6)setF(p=>({...p,_editPinStep:"confirm"}));}} />
               </>:f._editPinStep==="confirm"?<>
                 <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t("owner_settings.pin_confirm_title")}</div>
-                <input type="password" maxLength={f._editPinLength} value={f._editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editPinConfirm:val}));if(val.length===f._editPinLength&&f._editTempPin!==val){setF(p=>({...p,_editPinErr:t("owner_settings.pin_mismatch")}));}else{setF(p=>({...p,_editPinErr:""}));}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${f._editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm){const salonIdStr=String(salon.id);localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));toast$&&toast$(t("owner_settings.success_pin"));setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));}}} />
+                <input type="password" maxLength={6} value={f._editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setF(p=>({...p,_editPinConfirm:val}));if(val.length===6&&f._editTempPin!==val){setF(p=>({...p,_editPinErr:t("owner_settings.pin_mismatch")}));}else{setF(p=>({...p,_editPinErr:""}));}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${f._editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="••••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editPinConfirm.length===6&&f._editTempPin===f._editPinConfirm){savePin();}}} />
                 {f._editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{f._editPinErr}</div>}
                 <div style={{display:"flex",gap:8,marginTop:16}}>
-                  <button onClick={()=>{if(f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm){const salonIdStr=String(salon.id);localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));toast$&&toast$(t("owner_settings.success_pin"));setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));}}} disabled={f._editPinConfirm.length!==f._editPinLength||f._editTempPin!==f._editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"var(--p)":"var(--border-ui)",color:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"#000":"#555",cursor:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                  <button onClick={()=>{if(f._editPinConfirm.length===6&&f._editTempPin===f._editPinConfirm){savePin();}}} disabled={f._editPinConfirm.length!==6||f._editTempPin!==f._editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:f._editPinConfirm.length===6&&f._editTempPin===f._editPinConfirm?"var(--p)":"var(--border-ui)",color:f._editPinConfirm.length===6&&f._editTempPin===f._editPinConfirm?"#000":"#555",cursor:f._editPinConfirm.length===6&&f._editTempPin===f._editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
                     {t("owner_settings.save")}
                   </button>
-                  <button onClick={()=>setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                  <button onClick={()=>setF(p=>({...p,_editPinStep:null,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
                     {t("owner_settings.cancel")}
                   </button>
                 </div>
@@ -6309,7 +6090,7 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
         <button style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",marginBottom:10}} onClick={()=>setPinStep("select")}>{t("cust_drawer.change_pin")}</button>
         <div style={{display:"flex",gap:10}}>
           <button style={{flex:1,padding:"13px",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:"inherit"}} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>{t("cust_drawer.cancel")}</button>
-          <button style={{flex:1,padding:"13px",borderRadius:12,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:"inherit"}} onClick={save}>{t("cust_drawer.save")}</button>
+          <button style={{flex:1,padding:"13px",borderRadius:12,border:"none",background:"var(--p)",color:"var(--p-text)",cursor:"pointer",fontWeight:700,fontSize:14,fontFamily:"inherit"}} onClick={save}>{t("cust_drawer.save")}</button>
         </div>
       </>)}
       {pinStep==="select"&&(
@@ -6323,7 +6104,7 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
           </div>
           <div style={{marginTop:16,display:"flex",gap:10}}>
             <button style={{flex:1,padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>setPinStep(null)}>{t("cust_drawer.cancel")}</button>
-            <button style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>{setPinStep("enter");setTempPin("");}}>{t("cust_drawer.pin_enter")}</button>
+            <button style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"var(--p)",color:"var(--p-text)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>{setPinStep("enter");setTempPin("");}}>{t("cust_drawer.pin_enter")}</button>
           </div>
         </div>
       )}
@@ -6334,7 +6115,7 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
           <input type="password" inputMode="numeric" maxLength={pinLen} value={tempPin} onChange={e=>setTempPin(e.target.value.replace(/\D/g,"").slice(0,pinLen))} style={{...inp,textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:16}}/>
           <div style={{display:"flex",gap:10}}>
             <button style={{flex:1,padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>setPinStep("select")}>{t("cust_drawer.cancel")}</button>
-            <button style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>{if(tempPin.length===pinLen)setPinStep("confirm");}}>{t("cust_drawer.pin_enter")}</button>
+            <button style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"var(--p)",color:"var(--p-text)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>{if(tempPin.length===pinLen)setPinStep("confirm");}}>{t("cust_drawer.pin_enter")}</button>
           </div>
         </div>
       )}
@@ -6345,7 +6126,7 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
           {pinErr&&<div style={{color:"#e74c3c",fontSize:12,marginBottom:10}}>{pinErr}</div>}
           <div style={{display:"flex",gap:10}}>
             <button style={{flex:1,padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>setPinStep("enter")}>{t("cust_drawer.cancel")}</button>
-            <button style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={savePin}>{t("cust_drawer.pin_save")}</button>
+            <button style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"var(--p)",color:"var(--p-text)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={savePin}>{t("cust_drawer.pin_save")}</button>
           </div>
         </div>
       )}
@@ -6617,7 +6398,7 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
 // ==============================================
 //  CUSTOMER LOGIN + DASHBOARD
 // ==============================================
-function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$}){
+function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$,setCustDashNav}){
   const{t}=useTranslation();
   const[tab,setTab]=useState("login");
   const[loginMethod,setLoginMethod]=useState("phone");
@@ -6784,7 +6565,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(exists.length){setErr(t("cust_login.err_exists"));return;}
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[]},"");
       const nc=toAppCustomer(rows[0]);
-      setCustomerSession(nc);setView("custDash");
+      setCustomerSession(nc);setCustDashNav&&setCustDashNav({tab:"settings",section:false});setView("custDash");
       localStorage.setItem("dork_biometric_id",String(nc.id));
       setOtpSent(false);setOtpCode("");setOtpTimer(0);setOtpExpired(false);
       toast$&&toast$(t("cust_login.success_reg"),"success");
@@ -6977,7 +6758,7 @@ function AttendanceView({customer,salons}){
               return(
                 <div key={r.id||i} style={{background:"var(--surface-1)",borderRadius:10,padding:"12px 14px",
                   borderRight:`3px solid ${st.color}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>✂ {getSalonName(r)}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>✂ {getSalonName(r)}</div>
                   <div style={{fontSize:12,fontWeight:700,color:st.color,background:`${st.color}22`,
                     padding:"4px 10px",borderRadius:20}}>{st.label}</div>
                 </div>
@@ -7077,8 +6858,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const confirmDeleteAccount=async()=>{
     try{
       await sb("customers","DELETE",null,`?id=eq.${customer.id}`);
-      const {data:{user}}=await supabase.auth.getUser();
-      if(user)await supabase.auth.admin.deleteUser(user.id);
+      await supabase.auth.signOut().catch(()=>{});
       setCustomerSession(null);setView("entry");
     }catch(e){alert("خطأ: "+e.message);}
     setShowDeleteConfirm(false);
@@ -7119,7 +6899,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             <div style={{fontSize:16,fontWeight:700,color:"var(--p)",marginBottom:10}}>{t("cust_dash.loc_title")}</div>
             <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:20,lineHeight:1.7}}>{t("cust_dash.loc_body")}</div>
             <div style={{display:"flex",gap:10}}>
-              <button style={{flex:1,padding:13,borderRadius:12,border:"none",background:"var(--p)",color:"#000",cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit"}} onClick={saveCustomerLocation}>{t("cust_dash.loc_yes")}</button>
+              <button style={{flex:1,padding:13,borderRadius:12,border:"none",background:"var(--p)",color:"var(--p-text)",cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit"}} onClick={saveCustomerLocation}>{t("cust_dash.loc_yes")}</button>
               <button style={{flex:1,padding:13,borderRadius:12,border:"1px solid #444",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontSize:13,fontFamily:"inherit"}} onClick={()=>setShowLocPrompt(false)}>{t("cust_dash.loc_later")}</button>
             </div>
           </div>
@@ -7206,7 +6986,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               return(
                 <div key={w.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderTop:"1px solid #f39c1222"}}>
                   <div>
-                    <div style={{fontSize:12,color:"#fff",fontWeight:600}}>✂ {s?.name||"صالون"}</div>
+                    <div style={{fontSize:12,color:"var(--text-primary)",fontWeight:600}}>✂ {s?.name||"صالون"}</div>
                     <div style={{fontSize:11,color:"#f39c12"}}>⏰ {w.slot_date} - {w.slot_time}</div>
                     <div style={{fontSize:10,color:"var(--text-muted)"}}>{t("cust_dash.waiting_confirm")}</div>
                   </div>
@@ -7283,23 +7063,21 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                     const updated=[...rev].reverse();
                     setCustomers(p=>p.map(c=>c.id===customer.id?{...c,history:updated}:c));
                     try{await sb("customers","PATCH",{history:updated},`?id=eq.${customer.id}`);}catch{}
-                    // كتابة التقييم في جدول reviews المستقل
+                    // كتابة التقييم في جدول reviews المستقل عبر السيرفر (يتحقق من وجود حجز معتمد فعلي)
                     try{
                       const salonId=Number(h.salonId);
                       const existing=(reviews||[]).find(rv=>Number(rv.salon_id)===salonId&&Number(rv.customer_id)===Number(customer.id)&&rv.booking_date===h.date);
-                      let allSalonReviews=(reviews||[]).filter(rv=>Number(rv.salon_id)===salonId);
-                      if(existing){
-                        await sb("reviews","PATCH",{rating:r,comment},`?id=eq.${existing.id}`);
-                        allSalonReviews=allSalonReviews.map(rv=>rv.id===existing.id?{...rv,rating:r,comment}:rv);
-                        setReviews(p=>p.map(rv=>rv.id===existing.id?{...rv,rating:r,comment}:rv));
-                      }else{
-                        const res=await sb("reviews","POST",{salon_id:salonId,customer_id:Number(customer.id),customer_name:customer.name,rating:r,comment,booking_date:h.date});
-                        if(res&&res[0]){allSalonReviews=[...allSalonReviews,res[0]];setReviews(p=>[...p,res[0]]);}
+                      const apiRes=await fetch("/api/submit-review",{
+                        method:"POST",headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({salonId,customerId:Number(customer.id),customerName:customer.name,rating:r,comment,bookingDate:h.date}),
+                      });
+                      const data=await apiRes.json();
+                      if(!apiRes.ok)throw new Error(data.error||"submit-review failed");
+                      if(data.review){
+                        if(existing)setReviews(p=>p.map(rv=>rv.id===existing.id?data.review:rv));
+                        else setReviews(p=>[...p,data.review]);
                       }
-                      // حساب المتوسط من كل تقييمات الصالون (دقيق 100%)
-                      const newRating=allSalonReviews.length?Math.round(allSalonReviews.reduce((a,rv)=>a+rv.rating,0)/allSalonReviews.length*10)/10:r;
-                      await sb("salons","PATCH",{rating:newRating},`?id=eq.${salonId}`);
-                      setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:newRating}:s));
+                      setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:data.rating}:s));
                     }catch(e){console.error(e);}
                   }}/>}
                 </div>
@@ -7323,7 +7101,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                     <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
                       <span style={{fontSize:20}}>{n.icon}</span>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{n.title}</div>
+                        <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{n.title}</div>
                         <div style={{fontSize:12,color:"var(--text-muted)",marginTop:2}}>{n.body}</div>
                         <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3}}>{n.time}</div>
                       </div>
@@ -7568,7 +7346,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
             const active=settings.theme===t.id;
             return(
               <button key={t.id} onClick={()=>applyTheme(t.id)}
-                style={{padding:"14px 6px",borderRadius:12,border:`2px solid ${active?t.color:"var(--border-ui)"}`,background:active?t.color+"22":"var(--surface-2)",color:"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)"}}>
+                style={{padding:"14px 6px",borderRadius:12,border:`2px solid ${active?t.color:"var(--border-ui)"}`,background:active?t.color+"22":"var(--surface-2)",color:"var(--text-primary)",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)"}}>
                 <span style={{fontSize:22}}>{t.emoji}</span>
                 <div style={{width:24,height:24,borderRadius:"50%",background:t.color,boxShadow:active?`0 0 0 3px ${t.color}55`:"none"}}/>
                 <span style={{fontSize:11,color:active?t.color:"var(--text-muted)"}}>{t.label}</span>
@@ -7711,8 +7489,8 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
             <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:8}}>{title}</div>
             {Array.isArray(steps)&&steps.map((s,i)=>(
               <div key={i} style={{display:"flex",gap:8,marginBottom:6,alignItems:"flex-start"}}>
-                <div style={{width:20,height:20,borderRadius:"50%",background:"var(--p)",color:"#000",fontSize:11,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
-                <div style={{fontSize:12,color:"#ccc",lineHeight:1.6}}>{s}</div>
+                <div style={{width:20,height:20,borderRadius:"50%",background:"var(--p)",color:"var(--p-text)",fontSize:11,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+                <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.6}}>{s}</div>
               </div>
             ))}
           </div>
@@ -7744,7 +7522,7 @@ function FAQItem({q,a}){
   const[open,setOpen]=useState(false);
   return(
     <div style={{marginBottom:8,borderRadius:10,border:"1px solid var(--border-ui)",overflow:"hidden"}}>
-      <button style={{width:"100%",padding:"11px 14px",background:"var(--bg-input)",border:"none",color:"#fff",fontSize:13,fontWeight:700,textAlign:"right",cursor:"pointer",fontFamily:"inherit",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={()=>setOpen(p=>!p)}>
+      <button style={{width:"100%",padding:"11px 14px",background:"var(--bg-input)",border:"none",color:"var(--text-primary)",fontSize:13,fontWeight:700,textAlign:"right",cursor:"pointer",fontFamily:"inherit",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={()=>setOpen(p=>!p)}>
         <span>{q}</span><span style={{color:"var(--p)",fontSize:14,transform:open?"rotate(180deg)":"rotate(0)",transition:"transform .2s"}}>v</span>
       </button>
       {open&&<div style={{padding:"10px 14px",background:"var(--surface-1)",fontSize:12,color:"var(--text-muted)",lineHeight:1.7}}>{a}</div>}
@@ -7802,6 +7580,7 @@ const CSS=`
   button:active{opacity:.82;}
   @keyframes promoPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(231,76,60,.5);}60%{transform:scale(1.06);box-shadow:0 0 0 7px rgba(231,76,60,0);}}
   .promo-badge-anim{animation:promoPulse 1.8s ease-in-out infinite;}
+  @keyframes fadeInCards{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
   @keyframes promoBounce{0%,100%{transform:scale(1) rotate(-6deg);}50%{transform:scale(1.28) rotate(6deg);}}
   .promo-fire-anim{animation:promoBounce 1.1s ease-in-out infinite;display:inline-block;}
   @keyframes promoGlow{0%,100%{box-shadow:0 4px 18px rgba(var(--pr),.35);}50%{box-shadow:0 4px 32px rgba(var(--pr),.65),0 0 0 5px rgba(var(--pr),.12);}}
@@ -7865,7 +7644,7 @@ const G={
 
   steps:{display:"flex",marginBottom:11},
   si:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,opacity:.3,transition:"opacity .2s"},
-  sd:{width:24,height:24,borderRadius:"50%",background:"var(--p)",color:"#000",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"},
+  sd:{width:24,height:24,borderRadius:"50%",background:"var(--p)",color:"var(--p-text)",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"},
 
   chip:{padding:"5px 11px",borderRadius:20,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"'Cairo',sans-serif"},
   chipOn:{background:"var(--pa12)",border:"1.5px solid var(--p)",color:"var(--p)"},

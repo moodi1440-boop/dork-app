@@ -1,44 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
-type BookingEntry = Record<string, unknown>;
-
 export async function GET(req: NextRequest) {
   const sb     = createAdminClient();
   const status = req.nextUrl.searchParams.get("status");
+  const date   = req.nextUrl.searchParams.get("date");
   const search = req.nextUrl.searchParams.get("search")?.toLowerCase() ?? "";
 
-  const { data, error } = await sb
-    .from("salons")
-    .select("id,name,bookings")
-    .order("id", { ascending: false });
+  let query = sb
+    .from("bookings")
+    .select("id,salon_id,customer_name,customer_phone,barber_name,date,time,total,status,attendance")
+    .order("date", { ascending: false }).order("time", { ascending: false })
+    .limit(200);
+  if (status && status !== "all") query = query.eq("status", status);
+  if (date) query = query.eq("date", date);
 
+  const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const allBookings: BookingEntry[] = (data ?? []).flatMap((salon: Record<string, unknown>) => {
-    const salonBookings = (salon.bookings as BookingEntry[]) ?? [];
-    return salonBookings.map((b) => ({
-      ...b,
-      salon_id: salon.id,
-      salonName: salon.name,
-    }));
-  });
+  const rows = data ?? [];
+  const salonIds = Array.from(new Set(rows.map((b) => b.salon_id)));
+  const { data: salonsData } = salonIds.length
+    ? await sb.from("salons").select("id,name").in("id", salonIds)
+    : { data: [] as { id: string; name: string }[] };
+  const nameById = new Map((salonsData ?? []).map((s) => [String(s.id), s.name as string]));
 
-  const filtered = allBookings.filter((b) => {
-    if (status && status !== "all" && b.status !== status) return false;
-    if (search) {
-      const name  = ((b.name  as string) ?? "").toLowerCase();
-      const phone = ((b.phone as string) ?? "").toLowerCase();
-      if (!name.includes(search) && !phone.includes(search)) return false;
-    }
-    return true;
-  });
+  let result = rows.map((b) => ({
+    id: b.id, salon_id: b.salon_id, salonName: nameById.get(String(b.salon_id)) ?? "",
+    name: b.customer_name, phone: b.customer_phone, barber_name: b.barber_name,
+    date: b.date, time: b.time, total: b.total, status: b.status, attendance: b.attendance,
+  }));
 
-  filtered.sort((a, b) => {
-    const da = String(a.date ?? "");
-    const db = String(b.date ?? "");
-    return db.localeCompare(da);
-  });
+  if (search) {
+    result = result.filter((b) =>
+      (b.name ?? "").toLowerCase().includes(search) || (b.phone ?? "").toLowerCase().includes(search)
+    );
+  }
 
-  return NextResponse.json(filtered.slice(0, 200));
+  return NextResponse.json(result);
 }
