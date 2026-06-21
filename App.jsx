@@ -6516,14 +6516,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setOtpExpired(false);
     setResendTimer(60);
     setErr("❌ خطأ في الاتصال - تحقق من الإنترنت");
-    try{
-      const {data:{user}}=await supabase.auth.getUser();
-      if(user&&user.email===email.trim()){
-        await supabase.auth.admin.deleteUser(user.id);
-      }
-    }catch(cleanupErr){
-      console.error("Cleanup failed:",cleanupErr.message);
-    }
   }finally{
     setSending(false);
   }
