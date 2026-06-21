@@ -5,7 +5,6 @@ interface FCMTokenRequest {
   user_type: "salon" | "admin" | "customer";
   user_id: number;
   device_token: string;
-  device_name?: string;
 }
 
 interface DeleteTokenRequest {
@@ -14,7 +13,6 @@ interface DeleteTokenRequest {
 
 interface UpdateTokenRequest {
   device_token: string;
-  last_used_at?: string;
 }
 
 export async function GET(req: NextRequest) {
@@ -54,7 +52,7 @@ export async function POST(req: NextRequest) {
     const sb = createAdminClient();
     const body: FCMTokenRequest = await req.json();
 
-    const { user_type, user_id, device_token, device_name } = body;
+    const { user_type, user_id, device_token } = body;
 
     // Validate required fields
     if (!user_type || !user_id || !device_token) {
@@ -79,7 +77,6 @@ export async function POST(req: NextRequest) {
         .from("fcm_tokens")
         .update({
           is_active: true,
-          last_used_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("id", existing.id);
@@ -105,7 +102,6 @@ export async function POST(req: NextRequest) {
         user_type,
         user_id,
         device_token,
-        device_name,
         is_active: true,
       })
       .select()
@@ -122,7 +118,6 @@ export async function POST(req: NextRequest) {
       id: data.id,
       user_type,
       user_id,
-      device_name,
     });
 
     return NextResponse.json({
@@ -144,7 +139,7 @@ export async function PATCH(req: NextRequest) {
     const sb = createAdminClient();
     const body: UpdateTokenRequest = await req.json();
 
-    const { device_token, last_used_at } = body;
+    const { device_token } = body;
 
     if (!device_token) {
       return NextResponse.json(
@@ -156,7 +151,6 @@ export async function PATCH(req: NextRequest) {
     const { error } = await sb
       .from("fcm_tokens")
       .update({
-        last_used_at: last_used_at || new Date().toISOString(),
         is_active: true,
         updated_at: new Date().toISOString(),
       })

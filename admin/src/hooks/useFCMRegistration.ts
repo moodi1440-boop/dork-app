@@ -108,7 +108,6 @@ export function useFCMRegistration(options: FCMRegistrationOptions) {
           user_type: options.userType,
           user_id: options.userId,
           device_token: fcmToken,
-          device_name: options.deviceName || navigator.userAgent,
           is_active: true,
         });
 
