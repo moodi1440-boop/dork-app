@@ -4,9 +4,10 @@ import { createAdminClient } from "@/lib/supabase";
 export async function GET() {
   const sb = createAdminClient();
 
-  const [salonsRes, customersRes] = await Promise.all([
-    sb.from("salons").select("id,status,bookings"),
+  const [salonsRes, customersRes, bookingsRes] = await Promise.all([
+    sb.from("salons").select("id,status"),
     sb.from("customers").select("id", { count: "exact", head: true }),
+    sb.from("bookings").select("status,total,date").limit(5000),
   ]);
 
   const allSalons      = salonsRes.data ?? [];
@@ -16,9 +17,7 @@ export async function GET() {
   const rejectedSalons  = allSalons.filter((s: Record<string, unknown>) => s.status === "rejected").length;
 
   type Booking = { status: string; total?: number; date?: string };
-  const allBookings = allSalons.flatMap(
-    (s: Record<string, unknown>) => (s.bookings as Booking[]) ?? []
-  );
+  const allBookings: Booking[] = bookingsRes.data ?? [];
 
   const now   = new Date();
   const today = now.toISOString().split("T")[0];
