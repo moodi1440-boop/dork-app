@@ -4,6 +4,9 @@ import { getAdminPassword } from "@/lib/admin-password";
 export async function POST(req: NextRequest) {
   const { password } = await req.json();
   const correct = await getAdminPassword();
+  if (correct === null) {
+    return NextResponse.json({ error: "لم يتم ضبط كلمة مرور الإدارة. اضبط متغيّر ADMIN_SECRET أولاً." }, { status: 503 });
+  }
   if (password !== correct) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

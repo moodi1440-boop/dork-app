@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cookies } from "next/headers";
+import { verifyOwnerSession } from "@/lib/owner-session";
 
 async function getSalonId(): Promise<string | null> {
   const cookieStore = await cookies();
-  return cookieStore.get("dork_owner_session")?.value ?? null;
+  return verifyOwnerSession(cookieStore.get("dork_owner_session")?.value);
 }
 
 export async function GET(req: NextRequest) {
