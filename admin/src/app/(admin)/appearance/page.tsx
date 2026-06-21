@@ -67,7 +67,7 @@ export default function AppearancePage() {
             <button key={m.id} onClick={() => setAdminTheme(m.id)}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${adminTheme === m.id ? "border-gold/50 bg-gold/10 text-white" : "border-border text-gray-400 hover:border-gold/20"}`}>
               <span className="w-5 h-5 rounded-full flex-shrink-0"
-                style={{ background: m.bg, boxShadow: adminTheme === m.id ? "0 0 0 2px rgb(var(--adm-accent))" : "0 0 0 1px #333" }} />
+                style={{ background: m.bg, boxShadow: adminTheme === m.id ? "0 0 0 2px rgb(var(--adm-accent))" : "0 0 0 1px rgb(var(--adm-border))" }} />
               <span className="text-sm font-semibold">{m.label}</span>
             </button>
           ))}
