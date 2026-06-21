@@ -77,24 +77,12 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [custRes, salonsRes] = await Promise.all([
-      sb.from("customers").select("*").eq("id", customerId).single(),
-      sb.from("salons").select("id,name,bookings"),
-    ]);
-    const c = custRes.data as Customer;
+    const data = await fetch(`/api/customers/${customerId}`).then((r) => r.json());
+    const c = data.customer as Customer;
     setCustomer(c);
     setPoints(c?.loyalty_points ?? 0);
     setNotes(c?.admin_notes ?? "");
-
-    type B = Record<string, unknown>;
-    const phone = c?.phone ?? "";
-    const bks: Booking[] = (salonsRes.data ?? []).flatMap((s: Record<string, unknown>) =>
-      ((s.bookings as B[]) ?? [])
-        .filter((b) => b.phone === phone || String(b.customer_id) === customerId)
-        .map((b) => ({ ...(b as object), salonName: s.name as string } as Booking))
-    );
-    bks.sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
-    setBookings(bks.slice(0, 10));
+    setBookings(((data.bookings ?? []) as Booking[]).slice(0, 10));
     setLoading(false);
   }, [customerId]);
 

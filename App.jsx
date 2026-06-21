@@ -75,9 +75,15 @@ async function sb(table, method, body, query = "") {
   return text ? JSON.parse(text) : [];
 }
 
-async function hashOwnerPin(pin, salonId) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${pin}:${salonId}`));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+async function ownerApi(method, body) {
+  const res = await fetch("/api/owner-salon", {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `owner-salon ${method} failed`);
+  return data;
 }
 
 // ========== Web Push Notifications (بدون Firebase) ==========
@@ -223,33 +229,6 @@ function toAppSalon(row) {
     totalPaid: row.total_paid || 0,
     social: row.social || null,
     bookings: [],
-  };
-}
-
-// تحويل بيانات التطبيق > Supabase
-function toDbSalon(s) {
-  return {
-    name: s.name,
-    owner: s.owner,
-    owner_phone: s.ownerPhone,
-    region: s.region,
-    gov: s.gov,
-    center: s.center,
-    village: s.village,
-    phone: s.phone,
-    address: s.address,
-    location_url: s.locationUrl,
-    services: s.services,
-    prices: s.prices,
-    shift_enabled: s.shiftEnabled,
-    shift1_start: s.shift1Start,
-    shift1_end: s.shift1End,
-    shift2_start: s.shift2Start,
-    shift2_end: s.shift2End,
-    work_start: s.workStart,
-    work_end: s.workEnd,
-    barbers: s.barbers,
-    tone: s.tone,
   };
 }
 
@@ -1003,6 +982,23 @@ export default function App(){
 
   const toast$=(msg,type="ok")=>{setToast({msg,type});setTimeout(()=>setToast(null),3200);};
 
+  // فحص صلاحية كوكي جلسة صاحب الصالون عند تحميل التطبيق - لو كانت منتهية أو
+  // غير صالحة (مثلاً بعد 30 يوم أو حذف الكوكي يدويًا) نرجّعه لتسجيل الدخول
+  // بدل عرض لوحة تحكم ستفشل كل عملية حفظ فيها.
+  useEffect(()=>{
+    if(!ownerSession)return;
+    (async()=>{
+      try{
+        await ownerApi("GET");
+      }catch{
+        setOwnerSession(null);
+        setView("ownerLogin");
+        toast$("⏳ انتهت صلاحية جلستك، سجّل الدخول من جديد","err");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   // -- تحميل البيانات من Supabase --
   const loadData = useCallback(async (opts) => {
     const silent=opts&&opts.silent;
@@ -1340,8 +1336,12 @@ export default function App(){
   // -- CRUD operations > Supabase --
   const addSalon=async(s)=>{
     try{
-      const dbData=toDbSalon(s);
-      await sb("salons","POST",dbData,"");
+      const res=await fetch("/api/register-salon",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(s),
+      });
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||"register-salon failed");
       toast$("✅ تم إرسال طلب تسجيل الصالون - في انتظار موافقة الإدارة");
       setView("home");
       await loadData();
@@ -3583,7 +3583,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
 // ==============================================
 function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
   const{t}=useTranslation();
-  const[form,setForm]=useState({name:"",owner:"",ownerPhone:"",region:"",gov:"",center:"",village:"",phone:"",address:"",locationUrl:"",services:[],prices:{},shiftEnabled:false,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"09:00",workEnd:"22:00",barbers:[{id:"b"+Date.now(),name:""}],tone:"bell"});
+  const[form,setForm]=useState({name:"",owner:"",ownerPhone:"",region:"",gov:"",center:"",village:"",phone:"",address:"",locationUrl:"",services:[],prices:{},shiftEnabled:false,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"09:00",workEnd:"22:00",barbers:[{id:"b"+Date.now(),name:""}],tone:"bell",pin:"",pinConfirm:""});
   const[errors,setErrors]=useState({});
   const[locMethod,setLocMethod]=useState("link");
   const[detecting,setDetecting]=useState(false);
@@ -3691,6 +3691,8 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
     if(!form.locationUrl.trim())e.locationUrl=t("register.err_location");
     if(!form.services.length)e.services=t("register.err_service");
     if(form.barbers.some(b=>!b.name.trim()))e.barbers=t("register.err_barbers");
+    if(!/^\d{6}$/.test(form.pin))e.pin=t("register.err_pin");
+    else if(form.pin!==form.pinConfirm)e.pinConfirm=t("register.err_pin_mismatch");
     setErrors(e); return!Object.keys(e).length;
   };
 
@@ -3876,6 +3878,13 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           {TONES.map(tn=><div key={tn.id} style={{...G.chip,...(form.tone===tn.id?G.chipOn:{})}} onClick={()=>{setForm(p=>({...p,tone:tn.id}));playTone(tn.id,0.8);}}>{tn.label}</div>)}
         </div>
         <div style={{fontSize:11,color:"var(--text-muted)"}}>{t("register.tone_hint")}</div>
+      </div>
+
+      <div style={G.fc}>
+        <SL>{t("register.pin_section")}</SL>
+        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>{t("register.pin_hint")}</div>
+        <F label={t("register.pin_label")} error={errors.pin}><input style={fi(errors.pin)} type="password" inputMode="numeric" placeholder="••••••" value={form.pin} onChange={e=>setForm(p=>({...p,pin:e.target.value.replace(/\D/g,"").slice(0,6)}))}/></F>
+        <F label={t("register.pin_confirm_label")} error={errors.pinConfirm}><input style={fi(errors.pinConfirm)} type="password" inputMode="numeric" placeholder="••••••" value={form.pinConfirm} onChange={e=>setForm(p=>({...p,pinConfirm:e.target.value.replace(/\D/g,"").slice(0,6)}))}/></F>
       </div>
 
       <div style={{display:"flex",gap:8,marginBottom:30}}><BtnBack toStep={3}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(validate())addSalon(form);}}>{t("register.submit")}</button></div>
@@ -4248,41 +4257,38 @@ function ShareBtn({salon}){
 // ==============================================
 //  OWNER LOGIN + DASHBOARD
 // ==============================================
-function OwnerLogin({salons,setOwnerSession,setOwnerTab,setView,toast$}){
+function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
   const{t}=useTranslation();
-  const[tab,setTab]=useState("phone");
-  const[phone,setPhone]=useState(""); const[err,setErr]=useState("");
-  const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
-  const loginWithPhone=()=>{
-    const s=salons.find(x=>x.ownerPhone===phone.trim()||x.phone===phone.trim());
-    if(!s){setErr(t("owner_login.err_not_found"));return;}
-    if(s.banned){setErr(t("owner_login.err_banned"));return;}
-    if(s.frozen){setErr(t("owner_login.err_frozen"));return;}
-    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",s.id);
-  };
-  const loginWithPin=()=>{
-    const s=salons.find(s=>{const savedPin=localStorage.getItem(`dork_owner_pin_${s.id}`);return savedPin&&savedPin===pin;});
-    if(!s){setPinErr(t("owner_login.err_pin_wrong"));setPin("");return;}
-    if(s.banned){setPinErr(t("owner_login.err_pin_banned"));return;}
-    if(s.frozen){setPinErr(t("owner_login.err_pin_frozen"));return;}
-    setOwnerSession(s.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",s.id);
+  const[phone,setPhone]=useState("");
+  const[pin,setPin]=useState("");
+  const[err,setErr]=useState("");
+  const[loading,setLoading]=useState(false);
+  const login=async()=>{
+    if(!phone.trim()||pin.length!==6){setErr(t("owner_login.err_pin_wrong"));return;}
+    setLoading(true); setErr("");
+    try{
+      const res=await fetch("/api/owner-auth",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({phone:phone.trim(),pin}),
+      });
+      const data=await res.json();
+      if(!res.ok){
+        setErr(t(`owner_login.${data.code||"err_generic"}`));
+        setLoading(false); return;
+      }
+      setOwnerSession(data.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",data.id);
+    }catch{
+      setErr(t("owner_login.err_generic"));
+    }
+    setLoading(false);
   };
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={{...G.tabRow,marginBottom:16}}>
-        <button style={{...G.tabBtn,flex:1,...(tab==="phone"?G.tabOn:{})}} onClick={()=>{setTab("phone");setErr("");setPinErr("");}}>{t("owner_login.phone_tab")}</button>
-        <button style={{...G.tabBtn,flex:1,...(tab==="pin"?G.tabOn:{})}} onClick={()=>{setTab("pin");setErr("");setPinErr("");}}>{t("owner_login.pin_tab")}</button>
-      </div>
       <div style={G.fc}>
-        {tab==="phone"?<>
-          <SL>{t("owner_login.phone_hint")}</SL>
-          <F label={t("owner_login.phone_label")} error={err}><input style={fi(err)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
-          <button style={G.sub} onClick={loginWithPhone}>{t("owner_login.login_btn")}</button>
-        </>:<>
-          <SL>{t("owner_login.pin_hint")}</SL>
-          <F label={t("owner_login.pin_label")} error={pinErr}><input style={fi(pinErr)} type="password" inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}}/></F>
-          <button style={G.sub} onClick={loginWithPin}>{t("owner_login.login_btn")}</button>
-        </>}
+        <SL>{t("owner_login.phone_hint")}</SL>
+        <F label={t("owner_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+        <F label={t("owner_login.pin_label")} error={err}><input style={fi(err)} type="password" inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setErr("");}}/></F>
+        <button style={{...G.sub,opacity:loading?0.7:1}} disabled={loading} onClick={login}>{t("owner_login.login_btn")}</button>
       </div>
       <div style={{margin:"0 0 16px",background:"rgba(var(--pr),.06)",border:"1.5px dashed rgba(var(--pr),.4)",borderRadius:13,padding:"18px 16px",textAlign:"center"}}>
         <div style={{fontSize:15,color:"var(--p)",fontWeight:700,marginBottom:6}}>{t("owner_login.no_salon_title")}</div>
@@ -5595,14 +5601,10 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
   const dragOverIdx=useRef(null);
   const upd=(k,v)=>setF(p=>({...p,[k]:v}));
   const savePin=async()=>{
-    const salonIdStr=String(salon.id);
     try{
-      const hash=await hashOwnerPin(f._editTempPin,salonIdStr);
-      await sb("salons","PATCH",{owner_pin_hash:hash},`?id=eq.${salonIdStr}`);
-      localStorage.setItem(`dork_owner_pin_${salonIdStr}`,f._editTempPin);
-      localStorage.setItem(`dork_owner_pin_length_${salonIdStr}`,String(f._editPinLength));
+      await ownerApi("PATCH",{new_pin:f._editTempPin});
       toast$&&toast$(t("owner_settings.success_pin"));
-      setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));
+      setF(p=>({...p,_editPinStep:null,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}));
     }catch{
       setF(p=>({...p,_editPinErr:"تعذر حفظ PIN، حاول مرة أخرى"}));
     }
@@ -5643,7 +5645,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         services:f.services,prices:{...f.prices,__durations:f.durations},
         barbers:compressedBarbers,tone:f.tone,
       };
-      await sb("salons","PATCH",patch,`?id=eq.${salon.id}`);
+      await ownerApi("PATCH",patch);
       setSalons(p=>p.map(s=>s.id===salon.id?{...s,name:f.name,phone:f.phone,address:f.address,locationUrl:f.locationUrl,shiftEnabled:f.shiftEnabled,shift1Start:f.shift1Start,shift1End:f.shift1End,shift2Start:f.shift2Start,shift2End:f.shift2End,workStart:f.workStart,workEnd:f.workEnd,services:f.services,prices:{...f.prices,__durations:f.durations},barbers:compressedBarbers,tone:f.tone}:s));
       toast$&&toast$(t("owner_settings.success"));
     }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
@@ -5652,8 +5654,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 
   const saveBarberDurations=async(barberIdx)=>{
     try{
-      const barbers=f.barbers.map(async b=>({...b,photo:b.photo}));
-      await sb("salons","PATCH",{barbers:f.barbers},`?id=eq.${salon.id}`);
+      await ownerApi("PATCH",{barbers:f.barbers});
       setSalons(p=>p.map(s=>s.id===salon.id?{...s,barbers:f.barbers}:s));
       toast$&&toast$("✅ تم حفظ مدد الخدمات");
     }catch(e){toast$&&toast$("❌ خطأ: "+e.message,"err");}
@@ -5958,35 +5959,24 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       {sec==="pin"&&<div style={box}>
         <div style={hdr}>{t("owner_settings.pin_title")}</div>
         <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:14,lineHeight:1.6}}>{t("owner_settings.pin_hint")}</div>
-        <button onClick={()=>setF(p=>({...p,_editPinStep:"select",_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--p)",background:"rgba(var(--pr),.1)",color:"var(--p)",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
+        <button onClick={()=>setF(p=>({...p,_editPinStep:"enter",_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--p)",background:"rgba(var(--pr),.1)",color:"var(--p)",fontSize:13,fontFamily:"inherit",fontWeight:700,cursor:"pointer"}}>
           {t("owner_settings.change_pin")}
         </button>
         {f._editPinStep&&(
           <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
             <div style={{background:"var(--surface-1)",borderRadius:20,padding:24,maxWidth:350,width:"100%",border:"1.5px solid var(--pa25)"}}>
-              {f._editPinStep==="select"?<>
-                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t("owner_settings.pin_select_title")}</div>
-                <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center",marginBottom:20}}>{t("owner_settings.pin_select_hint")}</div>
-                <div style={{display:"flex",gap:12,marginBottom:16}}>
-                  <button onClick={()=>setF(p=>({...p,_editPinLength:4,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===4?"rgba(var(--pr),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                    {t("owner_settings.pin_4")}
-                  </button>
-                  <button onClick={()=>setF(p=>({...p,_editPinLength:6,_editPinStep:"enter"}))} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:f._editPinLength===6?"rgba(var(--pr),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                    {t("owner_settings.pin_6")}
-                  </button>
-                </div>
-              </>:f._editPinStep==="enter"?<>
-                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t("owner_settings.pin_enter")} ({f._editPinLength})</div>
-                <input type="password" maxLength={f._editPinLength} value={f._editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editTempPin:val}));if(val.length===f._editPinLength)setTimeout(()=>setF(p=>({...p,_editPinStep:"confirm"})),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editTempPin.length===f._editPinLength)setF(p=>({...p,_editPinStep:"confirm"}));}} />
+              {f._editPinStep==="enter"?<>
+                <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t("owner_settings.pin_enter")} (6)</div>
+                <input type="password" maxLength={6} value={f._editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setF(p=>({...p,_editTempPin:val}));if(val.length===6)setTimeout(()=>setF(p=>({...p,_editPinStep:"confirm"})),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="••••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editTempPin.length===6)setF(p=>({...p,_editPinStep:"confirm"}));}} />
               </>:f._editPinStep==="confirm"?<>
                 <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t("owner_settings.pin_confirm_title")}</div>
-                <input type="password" maxLength={f._editPinLength} value={f._editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,f._editPinLength);setF(p=>({...p,_editPinConfirm:val}));if(val.length===f._editPinLength&&f._editTempPin!==val){setF(p=>({...p,_editPinErr:t("owner_settings.pin_mismatch")}));}else{setF(p=>({...p,_editPinErr:""}));}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${f._editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm){savePin();}}} />
+                <input type="password" maxLength={6} value={f._editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setF(p=>({...p,_editPinConfirm:val}));if(val.length===6&&f._editTempPin!==val){setF(p=>({...p,_editPinErr:t("owner_settings.pin_mismatch")}));}else{setF(p=>({...p,_editPinErr:""}));}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${f._editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="••••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&f._editPinConfirm.length===6&&f._editTempPin===f._editPinConfirm){savePin();}}} />
                 {f._editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{f._editPinErr}</div>}
                 <div style={{display:"flex",gap:8,marginTop:16}}>
-                  <button onClick={()=>{if(f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm){savePin();}}} disabled={f._editPinConfirm.length!==f._editPinLength||f._editTempPin!==f._editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"var(--p)":"var(--border-ui)",color:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"#000":"#555",cursor:f._editPinConfirm.length===f._editPinLength&&f._editTempPin===f._editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                  <button onClick={()=>{if(f._editPinConfirm.length===6&&f._editTempPin===f._editPinConfirm){savePin();}}} disabled={f._editPinConfirm.length!==6||f._editTempPin!==f._editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:f._editPinConfirm.length===6&&f._editTempPin===f._editPinConfirm?"var(--p)":"var(--border-ui)",color:f._editPinConfirm.length===6&&f._editTempPin===f._editPinConfirm?"#000":"#555",cursor:f._editPinConfirm.length===6&&f._editTempPin===f._editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
                     {t("owner_settings.save")}
                   </button>
-                  <button onClick={()=>setF(p=>({...p,_editPinStep:null,_editPinLength:4,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                  <button onClick={()=>setF(p=>({...p,_editPinStep:null,_editTempPin:"",_editPinConfirm:"",_editPinErr:""}))} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
                     {t("owner_settings.cancel")}
                   </button>
                 </div>
@@ -7073,23 +7063,21 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                     const updated=[...rev].reverse();
                     setCustomers(p=>p.map(c=>c.id===customer.id?{...c,history:updated}:c));
                     try{await sb("customers","PATCH",{history:updated},`?id=eq.${customer.id}`);}catch{}
-                    // كتابة التقييم في جدول reviews المستقل
+                    // كتابة التقييم في جدول reviews المستقل عبر السيرفر (يتحقق من وجود حجز معتمد فعلي)
                     try{
                       const salonId=Number(h.salonId);
                       const existing=(reviews||[]).find(rv=>Number(rv.salon_id)===salonId&&Number(rv.customer_id)===Number(customer.id)&&rv.booking_date===h.date);
-                      let allSalonReviews=(reviews||[]).filter(rv=>Number(rv.salon_id)===salonId);
-                      if(existing){
-                        await sb("reviews","PATCH",{rating:r,comment},`?id=eq.${existing.id}`);
-                        allSalonReviews=allSalonReviews.map(rv=>rv.id===existing.id?{...rv,rating:r,comment}:rv);
-                        setReviews(p=>p.map(rv=>rv.id===existing.id?{...rv,rating:r,comment}:rv));
-                      }else{
-                        const res=await sb("reviews","POST",{salon_id:salonId,customer_id:Number(customer.id),customer_name:customer.name,rating:r,comment,booking_date:h.date});
-                        if(res&&res[0]){allSalonReviews=[...allSalonReviews,res[0]];setReviews(p=>[...p,res[0]]);}
+                      const apiRes=await fetch("/api/submit-review",{
+                        method:"POST",headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({salonId,customerId:Number(customer.id),customerName:customer.name,rating:r,comment,bookingDate:h.date}),
+                      });
+                      const data=await apiRes.json();
+                      if(!apiRes.ok)throw new Error(data.error||"submit-review failed");
+                      if(data.review){
+                        if(existing)setReviews(p=>p.map(rv=>rv.id===existing.id?data.review:rv));
+                        else setReviews(p=>[...p,data.review]);
                       }
-                      // حساب المتوسط من كل تقييمات الصالون (دقيق 100%)
-                      const newRating=allSalonReviews.length?Math.round(allSalonReviews.reduce((a,rv)=>a+rv.rating,0)/allSalonReviews.length*10)/10:r;
-                      await sb("salons","PATCH",{rating:newRating},`?id=eq.${salonId}`);
-                      setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:newRating}:s));
+                      setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:data.rating}:s));
                     }catch(e){console.error(e);}
                   }}/>}
                 </div>

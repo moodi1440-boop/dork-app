@@ -23,6 +23,14 @@ export async function GET(req: NextRequest) {
     const status = req.nextUrl.searchParams.get("status");
     const search = req.nextUrl.searchParams.get("search");
 
+    if (req.nextUrl.searchParams.get("count") === "1") {
+      let q = sb.from("salons").select("id", { count: "exact", head: true });
+      if (status && status !== "all") q = q.eq("status", status);
+      const { count, error } = await q;
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ count: count ?? 0 });
+    }
+
     const buildQuery = (select: string) => {
       let q = sb.from("salons").select(select).order("id", { ascending: false });
       if (status && status !== "all") q = q.eq("status", status);

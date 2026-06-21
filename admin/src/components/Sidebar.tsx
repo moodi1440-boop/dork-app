@@ -31,26 +31,34 @@ export default function Sidebar() {
   };
 
   useEffect(() => {
+    const fetchPendingCount = () => fetch("/api/salons?status=pending&count=1").then((r) => r.json()).then((d) => d.count ?? 0);
+
     const loadCounts = async () => {
       try {
-        const [msgs, notifs, salonsRes] = await Promise.all([
+        const [msgs, notifs, pendingCount] = await Promise.all([
           fetch("/api/messages").then((r) => r.json()),
           fetch("/api/notifications?unread=1").then((r) => r.json()),
-          sb.from("salons").select("id", { count: "exact", head: true }).eq("status", "pending"),
+          fetchPendingCount(),
         ]);
         const totalUnread = (Array.isArray(msgs) ? msgs : []).reduce((a: number, s: { unread: number }) => a + (s.unread ?? 0), 0);
         setUnreadMsgs(totalUnread);
         setUnreadNotifs(Array.isArray(notifs) ? notifs.length : 0);
-        setPendingSalons(salonsRes.count ?? 0);
+        setPendingSalons(pendingCount);
       } catch {}
     };
     loadCounts();
 
-    const msgInterval = setInterval(async () => {
+    const pollInterval = setInterval(async () => {
       try {
         const msgs = await fetch("/api/messages").then((r) => r.json());
         const totalUnread = (Array.isArray(msgs) ? msgs : []).reduce((a: number, s: { unread: number }) => a + (s.unread ?? 0), 0);
         setUnreadMsgs(totalUnread);
+
+        const pendingCount = await fetchPendingCount();
+        setPendingSalons((prev) => {
+          if (pendingCount > prev) showToast("✂ يوجد طلب تسجيل صالون جديد بانتظار المراجعة");
+          return pendingCount;
+        });
       } catch {}
     }, 30000);
 
@@ -65,21 +73,10 @@ export default function Sidebar() {
           .then((notifs) => setUnreadNotifs(Array.isArray(notifs) ? notifs.length : 0))
           .catch(() => {});
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "salons" }, (payload) => {
-        const s = payload.new as { status?: string; name?: string };
-        if (s?.status === "pending") {
-          setPendingSalons((prev) => prev + 1);
-          showToast(`✂ طلب تسجيل جديد: ${s.name ?? "صالون جديد"}`);
-        }
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "salons" }, () => {
-        sb.from("salons").select("id", { count: "exact", head: true }).eq("status", "pending")
-          .then((res) => setPendingSalons(res.count ?? 0));
-      })
       .subscribe();
 
     return () => {
-      clearInterval(msgInterval);
+      clearInterval(pollInterval);
       sb.removeChannel(notifChannel);
     };
   }, []);

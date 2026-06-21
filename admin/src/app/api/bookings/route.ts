@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase";
 export async function GET(req: NextRequest) {
   const sb     = createAdminClient();
   const status = req.nextUrl.searchParams.get("status");
+  const date   = req.nextUrl.searchParams.get("date");
   const search = req.nextUrl.searchParams.get("search")?.toLowerCase() ?? "";
 
   let query = sb
@@ -12,6 +13,7 @@ export async function GET(req: NextRequest) {
     .order("date", { ascending: false }).order("time", { ascending: false })
     .limit(200);
   if (status && status !== "all") query = query.eq("status", status);
+  if (date) query = query.eq("date", date);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

@@ -49,7 +49,10 @@
     "err_frozen": "🔒 Salon geçici olarak donduruldu — yönetici ile iletişime geçin",
     "err_pin_wrong": "PIN kodu yanlış",
     "err_pin_banned": "🚫 Bu salon yasaklandı",
-    "err_pin_frozen": "🔒 Salon geçici olarak donduruldu"
+    "err_pin_frozen": "🔒 Salon geçici olarak donduruldu",
+    "err_locked": "Tekrarlanan hatalı denemeler nedeniyle giriş geçici olarak kilitlendi, daha sonra tekrar deneyin",
+    "err_no_pin": "Bu salon için henüz PIN ayarlanmadı, yönetici ile iletişime geçin",
+    "err_generic": "Sunucuya bağlanılamadı, tekrar deneyin"
   },
   "cust_login": {
     "biometric": "👆 Parmak İzi ile Giriş",
@@ -355,7 +358,15 @@
     "confirm_btn": "Rezervasyonu Onayla",
     "confirm_wait_btn": "Bekleme Listesine Katıl",
     "reschedule_btn": "Yeniden Planla",
-    "days": ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"],
+    "days": [
+      "Pazar",
+      "Pazartesi",
+      "Salı",
+      "Çarşamba",
+      "Perşembe",
+      "Cuma",
+      "Cumartesi"
+    ],
     "closed_day": "⚠ Salon kapalı",
     "closed_days_prefix": "🚫 Kapalı günler:",
     "success_wait": "✅ Bekleme listesine eklendiniz! Yer açıldığında bildirim alacaksınız."
@@ -371,8 +382,29 @@
     "status_active": "✅ Aktif",
     "status_rejected": "❌ Reddedildi",
     "status_pending": "⏳ Yönetici Onayı Bekleniyor",
-    "days": ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"],
-    "months": ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"],
+    "days": [
+      "Pazar",
+      "Pazartesi",
+      "Salı",
+      "Çarşamba",
+      "Perşembe",
+      "Cuma",
+      "Cumartesi"
+    ],
+    "months": [
+      "Ocak",
+      "Şubat",
+      "Mart",
+      "Nisan",
+      "Mayıs",
+      "Haziran",
+      "Temmuz",
+      "Ağustos",
+      "Eylül",
+      "Ekim",
+      "Kasım",
+      "Aralık"
+    ],
     "salon_name": "✂ İsim",
     "salon_active": "Aktif",
     "salon_phone": "📞 Telefon",
@@ -502,7 +534,13 @@
     "err_barbers": "Berber adlarını girin",
     "sar": "SAR",
     "village_label": "Mahalle / Köy",
-    "village_detail_label": "Mahalle / Köy / Detay"
+    "village_detail_label": "Mahalle / Köy / Detay",
+    "pin_section": "Salon panosuna giriş için PIN",
+    "pin_hint": "Daha sonra salonu yönetmek için sahibin telefon numarasıyla birlikte buna ihtiyacınız olacak",
+    "pin_label": "PIN (6 hane)",
+    "pin_confirm_label": "PIN'i Onayla",
+    "err_pin": "6 haneli bir PIN girin",
+    "err_pin_mismatch": "PIN'ler eşleşmiyor"
   },
   "faq": {
     "title": "❓ Sık Sorulan Sorular",
@@ -576,13 +614,34 @@
     "agree": "Şartlar ve Koşulları kabul ediyorum",
     "enter": "Uygulamaya Gir ✂",
     "items": [
-      {"title": "1. Müşteri Yükümlülüğü", "content": "Müşteri rezervasyon saatinde hazır bulunmalıdır. Önceden haber vermeden gecikme veya devamsızlık durumunda salon rezervasyonu iptal edebilir."},
-      {"title": "2. Salon Yükümlülüğü", "content": "Salon, rezervasyon saatinde hizmeti sunmak ve müşteri taleplerine mümkün olan en kısa sürede yanıt vermekle yükümlüdür."},
-      {"title": "3. İptal Politikası", "content": "Rezervasyonlar en az bir saat öncesinden iptal edilebilir. Tekrarlayan iptaller rezervasyon önceliğini etkileyebilir."},
-      {"title": "4. Veri Gizliliği", "content": "Kullanıcı verileri tamamen gizli tutulur ve açık onay olmaksızın üçüncü taraflarla paylaşılmaz."},
-      {"title": "5. Yönetim Yükümlülükleri", "content": "DORK yönetimi, kullanım koşullarını ihlal eden herhangi bir hesabı askıya alma veya iptal etme hakkını saklı tutar."},
-      {"title": "6. Hizmet Kalitesi", "content": "Yönetim, salon tarafından sağlanan hizmetin kalitesinden sorumlu değildir. Her türlü anlaşmazlık müşteri ile salon arasında çözülür."},
-      {"title": "7. Değişiklikler", "content": "DORK yönetimi, kullanıcıları bilgilendirerek bu şartları istediği zaman değiştirme hakkını saklı tutar."}
+      {
+        "title": "1. Müşteri Yükümlülüğü",
+        "content": "Müşteri rezervasyon saatinde hazır bulunmalıdır. Önceden haber vermeden gecikme veya devamsızlık durumunda salon rezervasyonu iptal edebilir."
+      },
+      {
+        "title": "2. Salon Yükümlülüğü",
+        "content": "Salon, rezervasyon saatinde hizmeti sunmak ve müşteri taleplerine mümkün olan en kısa sürede yanıt vermekle yükümlüdür."
+      },
+      {
+        "title": "3. İptal Politikası",
+        "content": "Rezervasyonlar en az bir saat öncesinden iptal edilebilir. Tekrarlayan iptaller rezervasyon önceliğini etkileyebilir."
+      },
+      {
+        "title": "4. Veri Gizliliği",
+        "content": "Kullanıcı verileri tamamen gizli tutulur ve açık onay olmaksızın üçüncü taraflarla paylaşılmaz."
+      },
+      {
+        "title": "5. Yönetim Yükümlülükleri",
+        "content": "DORK yönetimi, kullanım koşullarını ihlal eden herhangi bir hesabı askıya alma veya iptal etme hakkını saklı tutar."
+      },
+      {
+        "title": "6. Hizmet Kalitesi",
+        "content": "Yönetim, salon tarafından sağlanan hizmetin kalitesinden sorumlu değildir. Her türlü anlaşmazlık müşteri ile salon arasında çözülür."
+      },
+      {
+        "title": "7. Değişiklikler",
+        "content": "DORK yönetimi, kullanıcıları bilgilendirerek bu şartları istediği zaman değiştirme hakkını saklı tutar."
+      }
     ]
   },
   "settings": {
@@ -641,48 +700,93 @@
     "dark_header": "🌙 Aydınlatma Modu",
     "dark_hint": "Gözlerinize uygun modu seçin",
     "dark_modes": {
-      "dark":  { "label": "Karanlık", "desc": "Gece için rahat" },
-      "dim":   { "label": "Loş",      "desc": "Dengeli ve sakin" },
-      "lgray": { "label": "Açık Gri", "desc": "Nötr ve zarif" },
-      "light": { "label": "Aydınlık", "desc": "Gündüz için net" }
+      "dark": {
+        "label": "Karanlık",
+        "desc": "Gece için rahat"
+      },
+      "dim": {
+        "label": "Loş",
+        "desc": "Dengeli ve sakin"
+      },
+      "lgray": {
+        "label": "Açık Gri",
+        "desc": "Nötr ve zarif"
+      },
+      "light": {
+        "label": "Aydınlık",
+        "desc": "Gündüz için net"
+      }
     },
     "tone_header": "🔔 Uyarı Tonu",
     "tone_hint": "Önizlemek için dokunun",
     "tones": {
-      "scissors":   "Makas ✂",
-      "razor":      "Jilet 🪒",
-      "bell":       "Kapı Zili 🔔",
-      "cash":       "Yazar Kasa 💰",
-      "welcome":    "Hoş Geldiniz 🎉",
-      "chime3":     "Üçlü Zil 🎶",
-      "alert":      "Acil Uyarı ⚡",
-      "classic":    "Klasik 🎵",
+      "scissors": "Makas ✂",
+      "razor": "Jilet 🪒",
+      "bell": "Kapı Zili 🔔",
+      "cash": "Yazar Kasa 💰",
+      "welcome": "Hoş Geldiniz 🎉",
+      "chime3": "Üçlü Zil 🎶",
+      "alert": "Acil Uyarı ⚡",
+      "classic": "Klasik 🎵",
       "barberpole": "Berber Direği 💈",
-      "clippers":   "Elektrikli Makine ⚡",
-      "towel":      "Sıcak Havlu 🧖",
-      "mirror":     "Ayna ✨",
-      "spray":      "Su Spreyi 💦",
-      "magazine":   "Bekleme Dergisi 📖",
-      "fanfare":    "Fanfar 🎺",
-      "vip":        "VIP Giriş 👑"
+      "clippers": "Elektrikli Makine ⚡",
+      "towel": "Sıcak Havlu 🧖",
+      "mirror": "Ayna ✨",
+      "spray": "Su Spreyi 💦",
+      "magazine": "Bekleme Dergisi 📖",
+      "fanfare": "Fanfar 🎺",
+      "vip": "VIP Giriş 👑"
     },
     "social_header": "📱 Sosyal Medya",
     "social_readonly": "🔒 Yalnızca görüntüleme — düzenleme admin panelinden",
     "social_empty": "Henüz sosyal medya linki eklenmemiş",
     "guide_header": "📖 Kullanım Kılavuzu",
     "guide_client_title": "👤 Müşteriler İçin",
-    "guide_client_steps": ["Ana sayfada salon arayın", "Salona dokunun ve hizmet ile berberi seçin", "Randevu ayarlayın ve rezervasyon isteği gönderin", "Salonun onayını bekleyin", "Ziyaretten sonra deneyiminizi değerlendirin"],
+    "guide_client_steps": [
+      "Ana sayfada salon arayın",
+      "Salona dokunun ve hizmet ile berberi seçin",
+      "Randevu ayarlayın ve rezervasyon isteği gönderin",
+      "Salonun onayını bekleyin",
+      "Ziyaretten sonra deneyiminizi değerlendirin"
+    ],
     "guide_salon_title": "✂ Salonlar İçin",
-    "guide_salon_steps": ["Makas düğmesiyle salonunuzu kaydedin", "Hizmetlerinizi, fiyatlarınızı ve çalışma saatlerinizi ekleyin", "Admin onayını bekleyin", "Rezervasyonları panonuzdan alın", "Aylık ve yıllık istatistiklerinizi takip edin"],
+    "guide_salon_steps": [
+      "Makas düğmesiyle salonunuzu kaydedin",
+      "Hizmetlerinizi, fiyatlarınızı ve çalışma saatlerinizi ekleyin",
+      "Admin onayını bekleyin",
+      "Rezervasyonları panonuzdan alın",
+      "Aylık ve yıllık istatistiklerinizi takip edin"
+    ],
     "faq_header": "❓ Sıkça Sorulan Sorular",
     "faqs": [
-      {"q": "Randevu nasıl alınır?", "a": "Salon arayın, üzerine dokunun, hizmet ve zamanı seçin, ardından isteği gönderin."},
-      {"q": "Rezervasyon ücretsiz mi?", "a": "Evet, DORK üzerinden rezervasyon müşteriler için tamamen ücretsizdir."},
-      {"q": "Geç kalırsam ne olur?", "a": "Hemen salonla iletişime geçin. Tekrarlayan gecikmeler önceliğinizi etkileyebilir."},
-      {"q": "Rezervasyonu nasıl iptal ederim?", "a": "Salonla doğrudan telefon numarasıyla iletişime geçin."},
-      {"q": "Salonumu nasıl kaydederim?", "a": "Üst çubukta makas simgesine dokunun."},
-      {"q": "Sadakat puanları nedir?", "a": "Her rezervasyonda kazanılan ve admin tarafından etkinleştirildiğinde indirim sağlayan puanlar."},
-      {"q": "Salon kaydı onaylanması ne kadar sürer?", "a": "Genellikle 24 ila 48 saat."}
+      {
+        "q": "Randevu nasıl alınır?",
+        "a": "Salon arayın, üzerine dokunun, hizmet ve zamanı seçin, ardından isteği gönderin."
+      },
+      {
+        "q": "Rezervasyon ücretsiz mi?",
+        "a": "Evet, DORK üzerinden rezervasyon müşteriler için tamamen ücretsizdir."
+      },
+      {
+        "q": "Geç kalırsam ne olur?",
+        "a": "Hemen salonla iletişime geçin. Tekrarlayan gecikmeler önceliğinizi etkileyebilir."
+      },
+      {
+        "q": "Rezervasyonu nasıl iptal ederim?",
+        "a": "Salonla doğrudan telefon numarasıyla iletişime geçin."
+      },
+      {
+        "q": "Salonumu nasıl kaydederim?",
+        "a": "Üst çubukta makas simgesine dokunun."
+      },
+      {
+        "q": "Sadakat puanları nedir?",
+        "a": "Her rezervasyonda kazanılan ve admin tarafından etkinleştirildiğinde indirim sağlayan puanlar."
+      },
+      {
+        "q": "Salon kaydı onaylanması ne kadar sürer?",
+        "a": "Genellikle 24 ila 48 saat."
+      }
     ],
     "danger_header": "⚠ Tehlikeli Bölge",
     "danger_hint": "Yerel verileri silin ve uygulamayı ilk haline döndürün",

@@ -27,23 +27,15 @@ export default function BookingsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let query = sb.from("bookings")
-      .select("id,salon_id,customer_name,customer_phone,barber_name,date,time,total,status,attendance")
-      .order("date", { ascending: false }).order("time", { ascending: false }).limit(200);
-    if (status !== "all") query = query.eq("status", status);
-    if (dateFilter) query = query.eq("date", dateFilter);
-    const { data: rows } = await query;
-    const list = rows ?? [];
-    const salonIds = Array.from(new Set(list.map((b) => b.salon_id)));
-    const { data: salonsData } = salonIds.length
-      ? await sb.from("salons").select("id,name").in("id", salonIds)
-      : { data: [] as { id: string; name: string }[] };
-    const nameById = new Map((salonsData ?? []).map((s) => [String(s.id), s.name as string]));
-    let all: Booking[] = list.map((b) => ({
-      id: b.id, salon_id: b.salon_id, salonName: nameById.get(String(b.salon_id)) ?? "",
-      name: b.customer_name ?? "", phone: b.customer_phone ?? "", barber_name: b.barber_name ?? "",
+    const params = new URLSearchParams();
+    if (status !== "all") params.set("status", status);
+    if (dateFilter) params.set("date", dateFilter);
+    const rows = await fetch(`/api/bookings?${params.toString()}`).then((r) => r.json());
+    let all: Booking[] = (Array.isArray(rows) ? rows : []).map((b: Record<string, unknown>) => ({
+      id: b.id, salon_id: b.salon_id, salonName: b.salonName ?? "",
+      name: b.name ?? "", phone: b.phone ?? "", barber_name: b.barber_name ?? "",
       date: b.date, time: b.time, total: b.total ?? 0, status: b.status, attendance: b.attendance ?? null,
-    }));
+    })) as Booking[];
     if (search) { const q = search.toLowerCase(); all = all.filter((b) => b.name?.toLowerCase().includes(q) || b.phone?.includes(q)); }
     setBookings(all);
     setLoading(false);
