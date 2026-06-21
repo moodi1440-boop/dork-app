@@ -49,7 +49,10 @@
     "err_frozen": "🔒 Salon is temporarily frozen — contact admin",
     "err_pin_wrong": "Incorrect PIN code",
     "err_pin_banned": "🚫 This salon has been banned",
-    "err_pin_frozen": "🔒 Salon is temporarily frozen"
+    "err_pin_frozen": "🔒 Salon is temporarily frozen",
+    "err_locked": "Login temporarily locked due to repeated failed attempts, try again later",
+    "err_no_pin": "No PIN set for this salon yet, contact admin",
+    "err_generic": "Could not connect to the server, try again"
   },
   "cust_login": {
     "biometric": "👆 Fingerprint Login",
@@ -355,7 +358,15 @@
     "confirm_btn": "Confirm Booking",
     "confirm_wait_btn": "Join Waiting List",
     "reschedule_btn": "Reschedule",
-    "days": ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+    "days": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
     "closed_day": "⚠ Salon is closed on",
     "closed_days_prefix": "🚫 Closed on:",
     "success_wait": "✅ Added to waiting list! You'll be notified when the slot opens."
@@ -371,8 +382,29 @@
     "status_active": "✅ Active",
     "status_rejected": "❌ Rejected",
     "status_pending": "⏳ Awaiting Admin Approval",
-    "days": ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
-    "months": ["January","February","March","April","May","June","July","August","September","October","November","December"],
+    "days": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
     "salon_name": "✂ Name",
     "salon_active": "Active",
     "salon_phone": "📞 Phone",
@@ -502,7 +534,13 @@
     "err_barbers": "Enter barbers' names",
     "sar": "SAR",
     "village_label": "District / Village",
-    "village_detail_label": "District / Village / Detail"
+    "village_detail_label": "District / Village / Detail",
+    "pin_section": "PIN for salon dashboard login",
+    "pin_hint": "You'll need this with the owner's phone number to log in and manage the salon later",
+    "pin_label": "PIN (6 digits)",
+    "pin_confirm_label": "Confirm PIN",
+    "err_pin": "Enter a 6-digit PIN",
+    "err_pin_mismatch": "The PINs don't match"
   },
   "faq": {
     "title": "❓ FAQ",
@@ -576,13 +614,34 @@
     "agree": "I agree to the Terms & Conditions",
     "enter": "Enter App ✂",
     "items": [
-      {"title": "1. Client Obligation", "content": "The client must arrive at the booked time. In case of delay or absence without prior notice, the salon has the right to cancel the booking."},
-      {"title": "2. Salon Obligation", "content": "The salon must provide the service at the booked time and respond to client requests as soon as possible."},
-      {"title": "3. Cancellation Policy", "content": "Bookings can be cancelled at least one hour in advance. Repeated cancellations may affect booking priority."},
-      {"title": "4. Data Privacy", "content": "User data is kept strictly confidential and is not shared with third parties without explicit consent."},
-      {"title": "5. Management Obligations", "content": "DORK management reserves the right to suspend or cancel any account that violates the terms of use."},
-      {"title": "6. Service Quality", "content": "The management is not responsible for the quality of service provided by the salon. Any dispute is resolved directly between the client and the salon."},
-      {"title": "7. Amendments", "content": "DORK management reserves the right to amend these terms at any time with user notification."}
+      {
+        "title": "1. Client Obligation",
+        "content": "The client must arrive at the booked time. In case of delay or absence without prior notice, the salon has the right to cancel the booking."
+      },
+      {
+        "title": "2. Salon Obligation",
+        "content": "The salon must provide the service at the booked time and respond to client requests as soon as possible."
+      },
+      {
+        "title": "3. Cancellation Policy",
+        "content": "Bookings can be cancelled at least one hour in advance. Repeated cancellations may affect booking priority."
+      },
+      {
+        "title": "4. Data Privacy",
+        "content": "User data is kept strictly confidential and is not shared with third parties without explicit consent."
+      },
+      {
+        "title": "5. Management Obligations",
+        "content": "DORK management reserves the right to suspend or cancel any account that violates the terms of use."
+      },
+      {
+        "title": "6. Service Quality",
+        "content": "The management is not responsible for the quality of service provided by the salon. Any dispute is resolved directly between the client and the salon."
+      },
+      {
+        "title": "7. Amendments",
+        "content": "DORK management reserves the right to amend these terms at any time with user notification."
+      }
     ]
   },
   "settings": {
@@ -641,48 +700,93 @@
     "dark_header": "🌙 Lighting Mode",
     "dark_hint": "Choose the mode that suits your eyes",
     "dark_modes": {
-      "dark":  { "label": "Dark",       "desc": "Comfortable at night" },
-      "dim":   { "label": "Dim",        "desc": "Balanced and calm" },
-      "lgray": { "label": "Light Gray", "desc": "Neutral and elegant" },
-      "light": { "label": "Light",      "desc": "Clear during the day" }
+      "dark": {
+        "label": "Dark",
+        "desc": "Comfortable at night"
+      },
+      "dim": {
+        "label": "Dim",
+        "desc": "Balanced and calm"
+      },
+      "lgray": {
+        "label": "Light Gray",
+        "desc": "Neutral and elegant"
+      },
+      "light": {
+        "label": "Light",
+        "desc": "Clear during the day"
+      }
     },
     "tone_header": "🔔 Alert Tone",
     "tone_hint": "Tap to preview",
     "tones": {
-      "scissors":   "Scissors ✂",
-      "razor":      "Razor 🪒",
-      "bell":       "Door Bell 🔔",
-      "cash":       "Cash Register 💰",
-      "welcome":    "Welcome 🎉",
-      "chime3":     "Triple Chime 🎶",
-      "alert":      "Urgent Alert ⚡",
-      "classic":    "Classic 🎵",
+      "scissors": "Scissors ✂",
+      "razor": "Razor 🪒",
+      "bell": "Door Bell 🔔",
+      "cash": "Cash Register 💰",
+      "welcome": "Welcome 🎉",
+      "chime3": "Triple Chime 🎶",
+      "alert": "Urgent Alert ⚡",
+      "classic": "Classic 🎵",
       "barberpole": "Barber Pole 💈",
-      "clippers":   "Electric Clippers ⚡",
-      "towel":      "Hot Towel 🧖",
-      "mirror":     "Mirror ✨",
-      "spray":      "Water Spray 💦",
-      "magazine":   "Waiting Magazine 📖",
-      "fanfare":    "Fanfare 🎺",
-      "vip":        "VIP Entry 👑"
+      "clippers": "Electric Clippers ⚡",
+      "towel": "Hot Towel 🧖",
+      "mirror": "Mirror ✨",
+      "spray": "Water Spray 💦",
+      "magazine": "Waiting Magazine 📖",
+      "fanfare": "Fanfare 🎺",
+      "vip": "VIP Entry 👑"
     },
     "social_header": "📱 Social Media",
     "social_readonly": "🔒 View only — edit from admin panel",
     "social_empty": "No social media links added yet",
     "guide_header": "📖 User Guide",
     "guide_client_title": "👤 For Clients",
-    "guide_client_steps": ["Search for a salon on the home page", "Tap the salon and choose the service and barber", "Set the appointment and send the booking request", "Wait for the salon's confirmation", "After the visit, rate your experience"],
+    "guide_client_steps": [
+      "Search for a salon on the home page",
+      "Tap the salon and choose the service and barber",
+      "Set the appointment and send the booking request",
+      "Wait for the salon's confirmation",
+      "After the visit, rate your experience"
+    ],
     "guide_salon_title": "✂ For Salons",
-    "guide_salon_steps": ["Register your salon using the scissors button", "Add your services, prices, and working hours", "Wait for admin approval", "Receive bookings from your dashboard", "Track your monthly and annual statistics"],
+    "guide_salon_steps": [
+      "Register your salon using the scissors button",
+      "Add your services, prices, and working hours",
+      "Wait for admin approval",
+      "Receive bookings from your dashboard",
+      "Track your monthly and annual statistics"
+    ],
     "faq_header": "❓ Frequently Asked Questions",
     "faqs": [
-      {"q": "How do I book an appointment?", "a": "Search for a salon, tap on it, choose the service and time, then send the request."},
-      {"q": "Is booking free?", "a": "Yes, booking through DORK is completely free for customers."},
-      {"q": "What if I'm late?", "a": "Contact the salon immediately. Repeated lateness may affect your priority."},
-      {"q": "How do I cancel my booking?", "a": "Contact the salon directly via phone number."},
-      {"q": "How do I register my salon?", "a": "Tap the scissors icon in the top bar."},
-      {"q": "What are loyalty points?", "a": "Points earned with each booking for discounts when activated by admin."},
-      {"q": "How long does salon registration approval take?", "a": "Usually 24 to 48 hours."}
+      {
+        "q": "How do I book an appointment?",
+        "a": "Search for a salon, tap on it, choose the service and time, then send the request."
+      },
+      {
+        "q": "Is booking free?",
+        "a": "Yes, booking through DORK is completely free for customers."
+      },
+      {
+        "q": "What if I'm late?",
+        "a": "Contact the salon immediately. Repeated lateness may affect your priority."
+      },
+      {
+        "q": "How do I cancel my booking?",
+        "a": "Contact the salon directly via phone number."
+      },
+      {
+        "q": "How do I register my salon?",
+        "a": "Tap the scissors icon in the top bar."
+      },
+      {
+        "q": "What are loyalty points?",
+        "a": "Points earned with each booking for discounts when activated by admin."
+      },
+      {
+        "q": "How long does salon registration approval take?",
+        "a": "Usually 24 to 48 hours."
+      }
     ],
     "danger_header": "⚠ Danger Zone",
     "danger_hint": "Delete local data and reset the app to its initial state",
