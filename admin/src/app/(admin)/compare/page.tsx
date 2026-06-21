@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { exportCSV } from "@/lib/csv";
 
 interface SalonRow {
   id: number; name: string; owner: string; phone: string;
@@ -32,18 +33,6 @@ export default function ComparePage() {
   const sorted = [...salons].sort((a, b) => b.rating - a.rating);
   const maxRating = 5;
 
-  const exportCSV = () => {
-    const rows = [
-      ["الترتيب", "الصالون", "المالك", "الهاتف", "التقييم", "الحالة"],
-      ...sorted.map((s, i) => [i + 1, s.name, s.owner, s.phone, s.rating, s.status]),
-    ];
-    const csv = rows.map((r) => r.join(",")).join("\n");
-    const a = document.createElement("a");
-    a.href = "data:text/csv;charset=utf-8,﻿" + encodeURIComponent(csv);
-    a.download = "تقرير_دورك.csv";
-    a.click();
-  };
-
   if (loading) return <div className="p-8 text-center text-gold animate-pulse">جاري التحميل...</div>;
 
   const medals: Record<number, string> = { 0: "🥇", 1: "🥈", 2: "🥉" };
@@ -63,8 +52,11 @@ export default function ComparePage() {
       </div>
 
       <div className="flex gap-3 mb-6">
-        <button onClick={exportCSV}
-          className="flex-1 py-2.5 rounded-xl text-sm font-bold border bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors">
+        <button onClick={() => exportCSV(
+          "تقرير_دورك.csv",
+          ["الترتيب", "الصالون", "المالك", "الهاتف", "التقييم", "الحالة"],
+          sorted.map((s, i) => [i + 1, s.name, s.owner, s.phone, s.rating, s.status])
+        )} className="flex-1 py-2.5 rounded-xl text-sm font-bold border bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors">
           📊 تصدير CSV
         </button>
       </div>

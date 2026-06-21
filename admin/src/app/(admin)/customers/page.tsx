@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
+import { exportCSV } from "@/lib/csv";
 
 interface Customer { id: string; name: string; phone: string; email: string; loyalty_points: number; loyalty_frozen: boolean; admin_notes?: string; blocked?: boolean; favs?: unknown[]; }
 type Booking = { id: string; date: string; time: string; services: string[]; total: number; status: string; salonName?: string; };
@@ -207,10 +208,19 @@ export default function CustomersPage() {
           <h1 className="text-2xl font-black text-white">العملاء</h1>
           <p className="text-gray-400 text-sm mt-1">{customers.length} عميل</p>
         </div>
-        <button onClick={() => setShowAdd(true)}
-          className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
-          ➕ إضافة عميل
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => exportCSV(
+            "العملاء.csv",
+            ["الاسم", "الجوال", "البريد", "نقاط الولاء", "الحالة"],
+            customers.map((c) => [c.name, c.phone, c.email ?? "", c.loyalty_points ?? 0, c.blocked ? "محظور" : c.loyalty_frozen ? "مجمّد" : "نشط"])
+          )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
+            📊 تصدير CSV
+          </button>
+          <button onClick={() => setShowAdd(true)}
+            className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
+            ➕ إضافة عميل
+          </button>
+        </div>
       </div>
       <div className="mb-6">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 بحث باسم العميل أو الجوال..."

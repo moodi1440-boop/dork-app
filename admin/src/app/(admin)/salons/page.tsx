@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
+import { exportCSV } from "@/lib/csv";
 
 interface Salon {
   id: string; name: string; owner: string; owner_phone: string;
@@ -547,10 +548,19 @@ export default function SalonsPage() {
           <h1 className="text-2xl font-black text-white">الصالونات</h1>
           <p className="text-gray-400 text-sm mt-1">{salons.length} صالون</p>
         </div>
-        <button onClick={() => setShowAdd(true)}
-          className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
-          ➕ إضافة صالون
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => exportCSV(
+            "الصالونات.csv",
+            ["الاسم", "المالك", "الجوال", "المنطقة", "التقييم", "الحالة", "الرصيد"],
+            salons.map((s) => [s.name, s.owner, s.phone, s.region ?? "", s.rating ?? 0, s.status, s.total_paid ?? 0])
+          )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
+            📊 تصدير CSV
+          </button>
+          <button onClick={() => setShowAdd(true)}
+            className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
+            ➕ إضافة صالون
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">
