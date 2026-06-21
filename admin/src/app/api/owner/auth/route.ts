@@ -2,11 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { cookies } from "next/headers";
 import { hashOwnerPin, signOwnerSession } from "@/lib/owner-session";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const MAX_FAILS     = 5;
 const LOCK_MINUTES   = 15;
 
 export async function POST(req: NextRequest) {
+  const { allowed, retryAfterSeconds } = checkRateLimit(`owner-auth:${getClientIp(req)}`);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `محاولات كثيرة، حاول بعد ${Math.ceil(retryAfterSeconds / 60)} دقيقة` },
+      { status: 429 }
+    );
+  }
+
   const sb = createAdminClient();
   const { phone, pin } = await req.json();
   if (!phone || !pin) return NextResponse.json({ error: "missing fields" }, { status: 400 });

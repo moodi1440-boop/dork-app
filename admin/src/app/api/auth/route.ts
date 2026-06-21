@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminPassword } from "@/lib/admin-password";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  const { allowed, retryAfterSeconds } = checkRateLimit(`admin-auth:${getClientIp(req)}`);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `محاولات كثيرة، حاول بعد ${Math.ceil(retryAfterSeconds / 60)} دقيقة` },
+      { status: 429 }
+    );
+  }
+
   const { password } = await req.json();
   const correct = await getAdminPassword();
   if (correct === null) {
