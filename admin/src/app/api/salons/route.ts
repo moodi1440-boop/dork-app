@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(row);
 }
 
-const FULL_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,cancellation_window,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,location_url,paused,created_at";
+const FULL_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,cancellation_window,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,location_url,paused,created_at";
 const SAFE_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,address,welcome_msg,closed_days,slot_min,cancellation_window,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone";
 
 export async function GET(req: NextRequest) {
