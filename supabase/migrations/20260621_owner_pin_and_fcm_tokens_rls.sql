@@ -65,8 +65,8 @@ CREATE POLICY "fcm_service_role_all" ON fcm_tokens
   WITH CHECK (true);
 
 -- تقييد إضافي على مستوى الأعمدة: anon يحدّث فقط حالة التفعيل
--- ووقت آخر استخدام، ولا يستطيع تغيير device_token أو user_id أو
+-- ووقت آخر تحديث، ولا يستطيع تغيير device_token أو user_id أو
 -- user_type لأي صف (وهو ما كان يسمح، نظريًا، بخطف رمز إشعارات
 -- صالون آخر عبر إعادة ربطه برقم مستخدم مختلف).
 REVOKE UPDATE ON fcm_tokens FROM anon;
-GRANT UPDATE (last_used_at, is_active) ON fcm_tokens TO anon;
+GRANT UPDATE (updated_at, is_active) ON fcm_tokens TO anon;
