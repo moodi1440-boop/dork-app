@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
+// الحقول التي يملك الأدمن صلاحية تعديلها عبر هذا المسار.
+const ADMIN_EDITABLE_FIELDS = [
+  "name", "phone", "email", "admin_notes", "loyalty_points", "loyalty_frozen", "blocked",
+] as const;
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const sb = createAdminClient();
 
@@ -27,8 +32,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const sb   = createAdminClient();
-  const body = await req.json();
+  const sb      = createAdminClient();
+  const rawBody = await req.json() as Record<string, unknown>;
+
+  const body: Record<string, unknown> = {};
+  for (const field of ADMIN_EDITABLE_FIELDS) {
+    if (field in rawBody) body[field] = rawBody[field];
+  }
+
   const { error } = await sb.from("customers").update(body).eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

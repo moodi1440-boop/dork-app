@@ -6565,7 +6565,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(exists.length){setErr(t("cust_login.err_exists"));return;}
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[]},"");
       const nc=toAppCustomer(rows[0]);
-      setCustomerSession(nc);setCustDashNav&&setCustDashNav({tab:"settings",section:false});setView("custDash");
+      setCustomerSession(nc);setView("home");
       localStorage.setItem("dork_biometric_id",String(nc.id));
       setOtpSent(false);setOtpCode("");setOtpTimer(0);setOtpExpired(false);
       toast$&&toast$(t("cust_login.success_reg"),"success");

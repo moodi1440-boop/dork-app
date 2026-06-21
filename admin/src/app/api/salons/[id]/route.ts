@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { hashOwnerPin } from "@/lib/owner-session";
 
+// الحقول التي يملك الأدمن صلاحية تعديلها عبر هذا المسار. total_paid يُحدَّث
+// فقط عبر /api/finance، وحقول PIN تُحدَّث عبر new_pin أدناه — لا تُضاف هنا.
+const ADMIN_EDITABLE_FIELDS = [
+  "name", "owner", "owner_phone", "phone", "region", "gov", "address", "rating",
+  "welcome_msg", "closed_days", "slot_min", "cancellation_window", "services",
+  "prices", "barbers", "shift_enabled", "work_start", "work_end",
+  "shift1_start", "shift1_end", "shift2_start", "shift2_end", "tone", "social",
+  "status", "frozen", "banned",
+] as const;
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const sb = createAdminClient();
 
@@ -16,15 +26,19 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const sb   = createAdminClient();
-  const body = await req.json() as Record<string, unknown> & { new_pin?: string };
+  const sb      = createAdminClient();
+  const rawBody = await req.json() as Record<string, unknown> & { new_pin?: string };
 
-  if (body.new_pin !== undefined) {
-    const pin = String(body.new_pin || "").trim();
+  const body: Record<string, unknown> = {};
+  for (const field of ADMIN_EDITABLE_FIELDS) {
+    if (field in rawBody) body[field] = rawBody[field];
+  }
+
+  if (rawBody.new_pin !== undefined) {
+    const pin = String(rawBody.new_pin || "").trim();
     if (!/^\d{6}$/.test(pin)) {
       return NextResponse.json({ error: "الرقم السري يجب أن يكون 6 أرقام" }, { status: 400 });
     }
-    delete body.new_pin;
     body.owner_pin_hash = await hashOwnerPin(pin, params.id);
     body.owner_pin_fails = 0;
     body.owner_pin_locked_until = null;
