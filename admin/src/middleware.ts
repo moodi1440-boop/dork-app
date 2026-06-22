@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getAdminPassword } from "@/lib/admin-password";
 import { verifyOwnerSession } from "@/lib/owner-session";
+import { verifyAdminUserSession } from "@/lib/admin-session";
+
+// مصادَق إن كانت كلمة المرور الموحّدة صحيحة (الكوكي القديم dork_admin)
+// أو كانت جلسة حساب RBAC مُسمّى صالحة (dork_admin_session) — إضافية،
+// لا تُبطل الآلية القديمة.
+async function isAdminAuthed(req: NextRequest, correct: string | null): Promise<boolean> {
+  const adminCookie = req.cookies.get("dork_admin")?.value;
+  if (correct !== null && !!adminCookie && adminCookie === correct) return true;
+  const sessionCookie = req.cookies.get("dork_admin_session")?.value;
+  return (await verifyAdminUserSession(sessionCookie)) !== null;
+}
 
 export async function middleware(req: NextRequest) {
   const path       = req.nextUrl.pathname;
@@ -21,8 +32,7 @@ export async function middleware(req: NextRequest) {
 
   // All other admin API routes: require the admin cookie, no exceptions
   if (isApi) {
-    const adminCookie = req.cookies.get("dork_admin")?.value;
-    const authed = correct !== null && !!adminCookie && adminCookie === correct;
+    const authed = await isAdminAuthed(req, correct);
     if (!authed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     return NextResponse.next();
   }
@@ -41,8 +51,7 @@ export async function middleware(req: NextRequest) {
   if (path === "/owner-login") return NextResponse.next();
 
   // Admin panel auth
-  const adminCookie = req.cookies.get("dork_admin")?.value;
-  const authed      = correct !== null && !!adminCookie && adminCookie === correct;
+  const authed = await isAdminAuthed(req, correct);
 
   if (!authed && !isLogin) return NextResponse.redirect(new URL("/login", req.url));
   if (authed  &&  isLogin) return NextResponse.redirect(new URL("/", req.url));

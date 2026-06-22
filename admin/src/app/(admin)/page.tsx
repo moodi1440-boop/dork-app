@@ -11,6 +11,19 @@ interface Stats {
   monthlyData: { month: string; count: number }[];
 }
 
+interface Health { status: "ok" | "error"; dbLatencyMs: number; }
+
+function HealthBadge({ health }: { health: Health | null }) {
+  if (!health) return null;
+  const ok = health.status === "ok";
+  return (
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold ${ok ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-red-500/10 border-red-500/30 text-red-400"}`}>
+      <span className={`w-2 h-2 rounded-full ${ok ? "bg-green-400" : "bg-red-400"} animate-pulse`} />
+      {ok ? `النظام يعمل (${health.dbLatencyMs}ms)` : "تعذّر الاتصال بقاعدة البيانات"}
+    </div>
+  );
+}
+
 function StatCard({ icon, label, value, sub, color = "gold", alert = false }: {
   icon: string; label: string; value: string | number; sub?: string; color?: string; alert?: boolean;
 }) {
@@ -61,7 +74,8 @@ function MonthlyChart({ data }: { data: { month: string; count: number }[] }) {
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats]   = useState<Stats | null>(null);
+  const [health, setHealth] = useState<Health | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -70,6 +84,7 @@ export default function DashboardPage() {
       setStats(data);
       setLoading(false);
     })();
+    fetch("/api/health").then((r) => r.json()).then(setHealth).catch(() => setHealth({ status: "error", dbLatencyMs: 0 }));
   }, []);
 
   if (loading) return (
@@ -83,9 +98,12 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-black text-white">لوحة التحكم</h1>
-        <p className="text-gray-400 text-sm mt-1">نظرة عامة على أداء المنصة</p>
+      <div className="mb-8 flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-black text-white">لوحة التحكم</h1>
+          <p className="text-gray-400 text-sm mt-1">نظرة عامة على أداء المنصة</p>
+        </div>
+        <HealthBadge health={health} />
       </div>
 
       {/* Row 1: Main KPIs */}

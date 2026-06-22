@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+import { logAdminAction } from "@/lib/audit-log";
 
 export async function GET(req: NextRequest) {
   const sb     = createAdminClient();
@@ -71,5 +72,6 @@ export async function PATCH(req: NextRequest) {
   const newPaid = (Number((data as Record<string, unknown>)?.total_paid) || 0) + amount;
   const { error } = await sb.from("salons").update({ total_paid: newPaid }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logAdminAction("finance.record_payment", "salon", id, { amount, newPaid });
   return NextResponse.json({ ok: true, newPaid });
 }

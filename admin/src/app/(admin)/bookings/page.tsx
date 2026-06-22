@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
+import { exportCSV } from "@/lib/csv";
 
 type Booking = { id: string; salon_id: string; salonName: string; name: string; phone: string; barber_name: string; date: string; time: string; total: number; status: string; attendance: string | null; };
 
@@ -56,7 +57,16 @@ export default function BookingsPage() {
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-      <div className="mb-6"><h1 className="text-2xl font-black text-white">الحجوزات</h1><p className="text-gray-400 text-sm mt-1">{bookings.length} حجز</p></div>
+      <div className="mb-6 flex items-center justify-between">
+        <div><h1 className="text-2xl font-black text-white">الحجوزات</h1><p className="text-gray-400 text-sm mt-1">{bookings.length} حجز</p></div>
+        <button onClick={() => exportCSV(
+          "الحجوزات.csv",
+          ["العميل", "الجوال", "الصالون", "التاريخ", "الوقت", "الإجمالي", "الحالة"],
+          bookings.map((b) => [b.name, b.phone, b.salonName, b.date, b.time, b.total, b.status])
+        )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
+          📊 تصدير CSV
+        </button>
+      </div>
       <div className="flex flex-wrap gap-3 mb-6">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 بحث باسم العميل أو الجوال..."
           className="flex-1 min-w-48 bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
@@ -76,6 +86,15 @@ export default function BookingsPage() {
           ))}
         </div>
       </div>
+      {!loading && status === "pending" && bookings.length > 1 && (
+        <div className="mb-4">
+          <button
+            onClick={() => { if (confirm(`تأكيد جميع الحجوزات المعلقة (${bookings.length}) دفعة واحدة؟`)) bookings.forEach((b) => updateStatus(b, "approved")); }}
+            className="w-full py-3 bg-green-500/10 border border-green-500/30 text-green-400 rounded-2xl font-bold text-sm hover:bg-green-500/20 transition-colors">
+            ✅ تأكيد الكل ({bookings.length} حجوزات)
+          </button>
+        </div>
+      )}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {loading ? <div className="text-center py-16 text-gold animate-pulse">جاري التحميل...</div>
          : bookings.length === 0 ? <div className="text-center py-16 text-gray-500">لا توجد حجوزات</div>

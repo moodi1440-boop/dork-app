@@ -1616,7 +1616,7 @@ export default function App(){
       <div id="dork-bg" style={dorkBgStyle}/>
       <style>{CSS}</style>
       {/* بانر خطأ الاتصال - يظهر فقط عند الخطأ */}
-      {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"#3a1a1a",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>❌ خطأ في الاتصال بقاعدة البيانات — تحقق من الاتصال</div>}
+      {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"rgba(231,76,60,.12)",borderBottom:"1px solid rgba(231,76,60,.3)",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl"}}>❌ خطأ في الاتصال بقاعدة البيانات — تحقق من الاتصال</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34"}}>{toast.msg}</div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
       <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} activeDrawerItem={activeDrawerItem} setActiveDrawerItem={setActiveDrawerItem} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
@@ -4117,8 +4117,8 @@ function CompareSalonsView({salons,setView,setSelSalon}){
         <div key={l} style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:6,alignItems:"center"}}>
           <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"center"}}>{l}</div>
           {[{v:av,side:"a"},{v:bv,side:"b"}].map(({v,side})=>(
-            <div key={side} style={{background:better===side?"var(--pa12)":"#13131f",border:`1px solid ${better===side?"var(--p)":"var(--border-ui)"}`,borderRadius:9,padding:"8px 6px",textAlign:"center"}}>
-              <div style={{fontSize:14,fontWeight:better===side?900:400,color:better===side?"var(--p)":"#aaa"}}>{v}</div>
+            <div key={side} style={{background:better===side?"var(--pa12)":"var(--surface-1)",border:`1px solid ${better===side?"var(--p)":"var(--border-ui)"}`,borderRadius:9,padding:"8px 6px",textAlign:"center"}}>
+              <div style={{fontSize:14,fontWeight:better===side?900:400,color:better===side?"var(--p)":"var(--text-muted)"}}>{v}</div>
               {better===side&&<div style={{fontSize:9,color:"var(--p)"}}>{t("compare.better")}</div>}
             </div>
           ))}
@@ -5459,9 +5459,9 @@ function MessagesPanel({salon,toast$}){
         {msgs.length===0&&<div style={G.empty}>{t("messages.empty")}</div>}
         {msgs.map(m=>(
           <div key={m.id} style={{display:"flex",justifyContent:m.from==="owner"?"flex-end":"flex-start"}}>
-            <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="owner"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="owner"?"var(--pa25)":"#1a1a2e",border:`1px solid ${m.from==="owner"?"var(--pa4)":"var(--border-ui)"}`}}>
+            <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="owner"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="owner"?"var(--pa25)":"var(--surface-2)",border:`1px solid ${m.from==="owner"?"var(--pa4)":"var(--border-ui)"}`}}>
               <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{m.from==="owner"?t("messages.from_you"):t("messages.from_admin")}</div>
-              <div style={{fontSize:13,color:m.from==="owner"?"var(--text-primary)":"#fff"}}>{m.text}</div>
+              <div style={{fontSize:13,color:"var(--text-primary)"}}>{m.text}</div>
               <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}</div>
             </div>
           </div>
@@ -6516,14 +6516,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setOtpExpired(false);
     setResendTimer(60);
     setErr("❌ خطأ في الاتصال - تحقق من الإنترنت");
-    try{
-      const {data:{user}}=await supabase.auth.getUser();
-      if(user&&user.email===email.trim()){
-        await supabase.auth.admin.deleteUser(user.id);
-      }
-    }catch(cleanupErr){
-      console.error("Cleanup failed:",cleanupErr.message);
-    }
   }finally{
     setSending(false);
   }
@@ -7217,7 +7209,6 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <div style={{marginBottom:6,fontWeight:700,color:"var(--gold)"}}>سيتم حذف:</div>
               <div>✗ حسابك بشكل نهائي</div>
               <div>✗ جميع معلوماتك الشخصية</div>
-              <div>✗ سجل حجوزاتك</div>
             </div>
             <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:10,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700}}>
               ⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف</div>
