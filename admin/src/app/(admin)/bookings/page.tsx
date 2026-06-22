@@ -86,6 +86,15 @@ export default function BookingsPage() {
           ))}
         </div>
       </div>
+      {!loading && status === "pending" && bookings.length > 1 && (
+        <div className="mb-4">
+          <button
+            onClick={() => { if (confirm(`تأكيد جميع الحجوزات المعلقة (${bookings.length}) دفعة واحدة؟`)) bookings.forEach((b) => updateStatus(b, "approved")); }}
+            className="w-full py-3 bg-green-500/10 border border-green-500/30 text-green-400 rounded-2xl font-bold text-sm hover:bg-green-500/20 transition-colors">
+            ✅ تأكيد الكل ({bookings.length} حجوزات)
+          </button>
+        </div>
+      )}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {loading ? <div className="text-center py-16 text-gold animate-pulse">جاري التحميل...</div>
          : bookings.length === 0 ? <div className="text-center py-16 text-gray-500">لا توجد حجوزات</div>
