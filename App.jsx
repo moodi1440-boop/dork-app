@@ -31,7 +31,7 @@ class ErrorBoundary extends React.Component {
   render(){
     if(this.state.err)return(
       <div style={{minHeight:"100vh",background:"#09112e",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:20,gap:12}}>
-        <div style={{fontSize:32}}>⚠️</div>
+        <div style={{display:"flex",justifyContent:"center"}}><IconWarning size={32}/></div>
         <div style={{color:"#e74c3c",fontSize:14,fontWeight:700}}>خطأ في التطبيق</div>
         <div style={{color:"var(--text-muted)",fontSize:11,background:"var(--surface-2)",padding:"12px 16px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr"}}>{String(this.state.err)}</div>
         {this.state.info&&<div style={{color:"#666",fontSize:9,background:"#111",padding:"8px 12px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr",maxHeight:120,overflow:"auto"}}>{this.state.info}</div>}
@@ -758,6 +758,13 @@ function IconBlocked({size=16,color="#e74c3c"}){
     <line x1="6" y1="18" x2="18" y2="6"/>
   </svg>);
 }
+function IconWarning({size=16,color="#f0a020"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.9 3.9c.5-.85 1.7-.85 2.2 0l8.1 13.9c.5.85-.1 1.9-1.1 1.9H3.9c-1 0-1.6-1.05-1.1-1.9z"/>
+    <line x1="12" y1="10" x2="12" y2="14.5"/>
+    <circle cx="12" cy="17.3" r="1" fill={color} stroke="none"/>
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
@@ -765,12 +772,13 @@ function NotifIcon({icon,size=20}){
   if(icon==="🔔")return <IconBell size={size} color="var(--p)" dot={false}/>;
   if(icon==="⭐")return <IconStar size={size}/>;
   if(icon==="🚫")return <IconBlocked size={size}/>;
+  if(icon==="⚠"||icon==="⚠️")return <IconWarning size={size}/>;
   return <span style={{fontSize:size}}>{icon}</span>;
 }
 function LabelWithIcon({label,size=11}){
-  const m=label.match(/^(✅|❌)\s*(.*)$/);
+  const m=label.match(/^(✅|❌|⚠️?)\s*(.*)$/);
   if(!m)return <>{label}</>;
-  return <span style={{display:"inline-flex",alignItems:"center",gap:4}}>{m[1]==="✅"?<IconSuccess size={size}/>:<IconError size={size}/>}{m[2]}</span>;
+  return <span style={{display:"inline-flex",alignItems:"center",gap:4}}>{m[1]==="✅"?<IconSuccess size={size}/>:m[1]==="❌"?<IconError size={size}/>:<IconWarning size={size}/>}{m[2]}</span>;
 }
 
 // تحسين الصور: إضافة parameters للحصول على thumbnails محسّنة
@@ -1959,7 +1967,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowDel(false)}>
           <div style={{width:"100%",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--gold)",borderBottom:"none",boxShadow:"0 -8px 32px rgba(var(--gold-rgb),.15)"}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
-              <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
+              <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><IconWarning size={36}/></div>
               <div style={{fontSize:16,fontWeight:900,color:"var(--text-primary)",marginBottom:6}}>{t("cust_drawer.delete_title")}</div>
               <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.6}}>{t("cust_drawer.delete_body")}</div>
             </div>
@@ -5150,7 +5158,7 @@ function PromoPanel({salon,customers,toast$}){
                   <div>
                     <div style={{fontSize:13,fontWeight:800,color:isPending?"#e74c3c":pkgColor(pr.package)}}>{pkgInfo?.label} {pkgInfo?.medal}</div>
                     <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2}}>
-                      {pr.package==="gold"?`${pr.customer_count||"--"} عميل`:pr.duration_days===0?"⚠️ 5 دقائق":`${pr.duration_days||1} يوم`}
+                      {pr.package==="gold"?`${pr.customer_count||"--"} عميل`:pr.duration_days===0?<LabelWithIcon label="⚠️ 5 دقائق" size={10}/>:`${pr.duration_days||1} يوم`}
                       {" · "}<span style={{color:pr.price===0?"#27ae60":"var(--text-muted)"}}>{pr.price===0?"مجاني":`${pr.price} ريال`}</span>
                     </div>
                   </div>
@@ -5225,7 +5233,7 @@ function PromoPanel({salon,customers,toast$}){
                 const p=selectedPkg;
                 return(
                   <button key={d.days} onClick={()=>setDurationDays(d.days)} style={{padding:"16px",borderRadius:14,border:`2px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa12)":"var(--surface-1)",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s",display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:sel?"0 4px 14px rgba(var(--gold-rgb),.12)":"none"}}>
-                    <span style={{fontSize:14,fontWeight:700,color:sel?"var(--p)":"var(--text-muted)"}}>{d.label}</span>
+                    <span style={{fontSize:14,fontWeight:700,color:sel?"var(--p)":"var(--text-muted)"}}><LabelWithIcon label={d.label} size={13}/></span>
                     <span style={{fontSize:16,fontWeight:900,color:sel?"var(--p)":"var(--text-muted)"}}>{p?.prices[d.days]} ر</span>
                   </button>
                 );
@@ -7290,7 +7298,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowDeleteConfirm(false)}>
           <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--gold)",borderBottom:"none",boxShadow:"0 -8px 32px rgba(var(--gold-rgb),.15)"}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
-              <div style={{fontSize:36,marginBottom:10}}>⚠️</div>
+              <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><IconWarning size={36}/></div>
               <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:6}}>حذف الحساب نهائياً</div>
               <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
             </div>
