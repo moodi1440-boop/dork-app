@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const [useAccount, setUseAccount] = useState(false);
+  const [username, setUsername] = useState("");
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,13 +17,13 @@ export default function LoginPage() {
     const res = await fetch("/api/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: pwd }),
+      body: JSON.stringify(useAccount ? { username, password: pwd } : { password: pwd }),
     });
     if (res.ok) {
       router.push("/");
       router.refresh();
     } else {
-      setError("كلمة المرور غير صحيحة");
+      setError(useAccount ? "بيانات الدخول غير صحيحة" : "كلمة المرور غير صحيحة");
     }
     setLoading(false);
   }
@@ -42,7 +44,21 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="bg-card border border-border rounded-2xl p-8 shadow-2xl">
           <h2 className="text-lg font-bold text-white mb-6 text-center">تسجيل الدخول</h2>
 
-          <div className="mb-5">
+          {useAccount && (
+            <div className="mb-5">
+              <label className="block text-sm text-gray-400 mb-2">اسم المستخدم</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="اسم المستخدم"
+                className="w-full bg-navy border border-border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-gold transition-colors"
+                required
+              />
+            </div>
+          )}
+
+          <div className="mb-3">
             <label className="block text-sm text-gray-400 mb-2">كلمة المرور</label>
             <input
               type="password"
@@ -53,6 +69,10 @@ export default function LoginPage() {
               required
             />
           </div>
+
+          <button type="button" onClick={() => setUseAccount((v) => !v)} className="text-xs text-gray-500 hover:text-gold mb-5 block">
+            {useAccount ? "استخدام كلمة مرور الإدارة الموحّدة" : "تسجيل دخول بحساب مُسمّى؟"}
+          </button>
 
           {error && (
             <p className="text-red-400 text-sm text-center mb-4">{error}</p>

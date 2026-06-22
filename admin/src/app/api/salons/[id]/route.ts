@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { hashOwnerPin } from "@/lib/owner-session";
+import { logAdminAction } from "@/lib/audit-log";
 
 // الحقول التي يملك الأدمن صلاحية تعديلها عبر هذا المسار. total_paid يُحدَّث
 // فقط عبر /api/finance، وحقول PIN تُحدَّث عبر new_pin أدناه — لا تُضاف هنا.
@@ -46,6 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { error } = await sb.from("salons").update(body).eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logAdminAction("salon.update", "salon", params.id, { fields: Object.keys(body) });
   return NextResponse.json({ ok: true });
 }
 
@@ -53,5 +55,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const sb = createAdminClient();
   const { error } = await sb.from("salons").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logAdminAction("salon.delete", "salon", params.id);
   return NextResponse.json({ ok: true });
 }

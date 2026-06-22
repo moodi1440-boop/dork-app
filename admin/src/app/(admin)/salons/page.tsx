@@ -91,6 +91,83 @@ const STATUSES = [
   { value: "rejected", label: "مرفوضة" },
 ];
 
+type SalonDoc = { id: number; doc_type: string; doc_url: string; status: string; admin_note: string | null; created_at: string };
+
+function DocumentsModal({ salon, onClose }: { salon: Salon; onClose: () => void }) {
+  const [docs, setDocs] = useState<SalonDoc[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [docType, setDocType] = useState("");
+  const [docUrl, setDocUrl] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  const load = async () => {
+    const data = await fetch(`/api/salons/${salon.id}/documents`).then((r) => r.json());
+    setDocs(Array.isArray(data) ? data : []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const addDoc = async () => {
+    if (!docType.trim() || !docUrl.trim()) return;
+    setAdding(true);
+    await fetch(`/api/salons/${salon.id}/documents`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc_type: docType.trim(), doc_url: docUrl.trim() }) });
+    setDocType(""); setDocUrl("");
+    setAdding(false);
+    load();
+  };
+
+  const review = async (doc: SalonDoc, status: string) => {
+    await fetch(`/api/salon-documents/${doc.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+    load();
+  };
+
+  const statusLabel: Record<string, string> = { pending: "بانتظار المراجعة", verified: "موثّق", rejected: "مرفوض" };
+  const statusColor: Record<string, string> = { pending: "bg-yellow-400/10 text-yellow-400 border-yellow-400/30", verified: "bg-green-400/10 text-green-400 border-green-400/30", rejected: "bg-red-400/10 text-red-400 border-red-400/30" };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-navy border border-border rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="text-white font-bold text-sm">📄 مستندات: {salon.name}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex gap-2 flex-wrap">
+            <input value={docType} onChange={(e) => setDocType(e.target.value)} placeholder="نوع المستند (سجل تجاري...)"
+              className="flex-1 min-w-32 bg-card border border-border rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
+            <input value={docUrl} onChange={(e) => setDocUrl(e.target.value)} placeholder="رابط المستند"
+              className="flex-1 min-w-32 bg-card border border-border rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
+            <button onClick={addDoc} disabled={adding || !docType.trim() || !docUrl.trim()}
+              className="px-4 py-2 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 disabled:opacity-50">إضافة</button>
+          </div>
+          {loading ? <div className="text-center py-6 text-gold animate-pulse text-sm">جاري التحميل...</div>
+           : docs.length === 0 ? <div className="text-center py-6 text-gray-500 text-sm">لا توجد مستندات مضافة</div>
+           : (
+            <div className="space-y-2">
+              {docs.map((d) => (
+                <div key={d.id} className="bg-card border border-border rounded-xl p-3">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="font-semibold text-white text-sm">{d.doc_type}</div>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${statusColor[d.status] ?? ""}`}>{statusLabel[d.status] ?? d.status}</span>
+                  </div>
+                  <a href={d.doc_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 text-xs underline break-all">{d.doc_url}</a>
+                  {d.status === "pending" && (
+                    <div className="flex gap-1.5 mt-2">
+                      <button onClick={() => review(d, "verified")} className="px-2.5 py-1 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20">✅ توثيق</button>
+                      <button onClick={() => review(d, "rejected")} className="px-2.5 py-1 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">❌ رفض</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     pending:   "bg-yellow-400/10 text-yellow-400 border-yellow-400/30",
@@ -459,6 +536,7 @@ export default function SalonsPage() {
   const [loading,   setLoading]   = useState(true);
   const [editing,   setEditing]   = useState<Salon | null>(null);
   const [messaging, setMessaging] = useState<Salon | null>(null);
+  const [documenting, setDocumenting] = useState<Salon | null>(null);
   const [pinned,    setPinned]    = useState<string[]>([]);
   const [weekSalon, setWeekSalon] = useState("");
   const [showAdd,   setShowAdd]   = useState(false);
@@ -541,6 +619,7 @@ export default function SalonsPage() {
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       {editing   && <SalonModal salon={editing} onClose={() => setEditing(null)} onSave={(s) => { setSalons((p) => p.map((x) => x.id === s.id ? s : x)); setEditing(null); }} />}
       {messaging && <QuickMessageModal salon={messaging} onClose={() => setMessaging(null)} />}
+      {documenting && <DocumentsModal salon={documenting} onClose={() => setDocumenting(null)} />}
       {showAdd   && <AddSalonModal onClose={() => setShowAdd(false)} onAdded={load} />}
 
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
@@ -673,6 +752,10 @@ export default function SalonsPage() {
                   <button onClick={() => setMessaging(s)}
                     className="px-3 py-1.5 rounded-lg text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors font-semibold">
                     ✉ مراسلة
+                  </button>
+                  <button onClick={() => setDocumenting(s)}
+                    className="px-3 py-1.5 rounded-lg text-xs bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors font-semibold">
+                    📄 مستندات
                   </button>
                   <button onClick={() => toggleFreeze(s)}
                     className={`px-3 py-1.5 rounded-lg text-xs border font-semibold transition-colors ${isFrozen ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20" : "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"}`}>

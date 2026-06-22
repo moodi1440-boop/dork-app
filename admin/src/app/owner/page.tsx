@@ -15,11 +15,13 @@ interface Booking {
 
 interface Message { id: string; text: string; from_admin: boolean; created_at: string; }
 interface WaitingEntry { id: string; name: string; phone?: string; created_at: string; }
+interface SupportTicket { id: string; subject: string; message: string; status: string; priority: string; admin_reply: string | null; created_at: string; }
 
 const TABS = [
   { value: "bookings", label: "الحجوزات",      icon: "📅" },
   { value: "messages",  label: "الرسائل",       icon: "💬" },
   { value: "waiting",   label: "قائمة الانتظار", icon: "⏳" },
+  { value: "support",   label: "الدعم",          icon: "🎫" },
   { value: "settings",  label: "إعدادات الصالون", icon: "⚙️" },
 ];
 
@@ -201,6 +203,66 @@ function WaitingTab() {
   );
 }
 
+function SupportTab() {
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+
+  const load = useCallback(async () => {
+    const data = await fetch("/api/owner/support-tickets").then((r) => r.json());
+    setTickets(Array.isArray(data) ? data : []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const submit = async () => {
+    if (!subject.trim() || !message.trim()) return;
+    setSending(true);
+    await fetch("/api/owner/support-tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject: subject.trim(), message: message.trim() }) });
+    setSubject(""); setMessage("");
+    setSending(false);
+    load();
+  };
+
+  const statusLabel: Record<string, string> = { open: "مفتوحة", in_progress: "قيد المعالجة", resolved: "محلولة" };
+  const statusColor: Record<string, string> = { open: "bg-yellow-400/10 text-yellow-400 border-yellow-400/30", in_progress: "bg-blue-400/10 text-blue-400 border-blue-400/30", resolved: "bg-green-400/10 text-green-400 border-green-400/30" };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-card border border-border rounded-2xl p-5">
+        <h2 className="text-sm font-bold text-white mb-3">فتح تذكرة دعم جديدة</h2>
+        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="العنوان"
+          className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold mb-3" />
+        <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="تفصيل المشكلة أو الطلب" rows={3}
+          className="w-full bg-navy border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold mb-3" />
+        <button onClick={submit} disabled={sending || !subject.trim() || !message.trim()}
+          className="px-5 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors disabled:opacity-50">
+          {sending ? "جاري الإرسال..." : "إرسال للدعم"}
+        </button>
+      </div>
+      {loading ? <div className="text-center py-10 text-gold animate-pulse">جاري التحميل...</div>
+       : tickets.length === 0 ? <div className="text-center py-10 text-gray-500">لا توجد تذاكر بعد</div>
+       : tickets.map((t) => (
+        <div key={t.id} className="bg-card border border-border rounded-2xl p-5">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="font-bold text-white">{t.subject}</div>
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${statusColor[t.status] ?? ""}`}>{statusLabel[t.status] ?? t.status}</span>
+          </div>
+          <p className="text-gray-300 text-sm mb-2 whitespace-pre-wrap">{t.message}</p>
+          {t.admin_reply && (
+            <div className="bg-navy border border-gold/20 rounded-xl px-4 py-2.5 text-sm text-gold">
+              <div className="text-xs text-gray-500 mb-1">رد الإدارة:</div>{t.admin_reply}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SettingsTab({ salon, onSaved }: { salon: Salon; onSaved: (s: Salon) => void }) {
   const [form,    setForm]    = useState(salon);
   const [saving,  setSaving]  = useState(false);
@@ -328,6 +390,7 @@ export default function OwnerDashboardPage() {
         {tab === "bookings" && <BookingsTab />}
         {tab === "messages" && <MessagesTab />}
         {tab === "waiting"  && <WaitingTab />}
+        {tab === "support"  && <SupportTab />}
         {tab === "settings" && <SettingsTab salon={salon} onSaved={setSalon} />}
       </div>
     </div>

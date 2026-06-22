@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
+import { logAdminAction } from "@/lib/audit-log";
 
 // الحقول التي يملك الأدمن صلاحية تعديلها عبر هذا المسار.
 const ADMIN_EDITABLE_FIELDS = [
@@ -49,6 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { error } = await sb.from("customers").update(body).eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logAdminAction("customer.update", "customer", params.id, { fields: Object.keys(body) });
   return NextResponse.json({ ok: true });
 }
 
@@ -56,5 +58,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const sb = createAdminClient();
   const { error } = await sb.from("customers").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logAdminAction("customer.delete", "customer", params.id);
   return NextResponse.json({ ok: true });
 }
