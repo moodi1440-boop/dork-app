@@ -685,9 +685,11 @@ function downloadICS(content,filename){
   URL.revokeObjectURL(url);
 }
 function IconTrash({size=16,color="currentColor"}){
-  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6.5h18"/>
+    <path d="M8 6.5V4.3a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2.2"/>
+    <path d="M18.5 6.5l-1.1 13.3a2.5 2.5 0 0 1-2.5 2.3h-5.8a2.5 2.5 0 0 1-2.5-2.3L5.5 6.5"/>
+    <path d="M9 11l.4 6" strokeWidth="1.5"/><path d="M12 11v6" strokeWidth="1.5"/><path d="M15 11l-.4 6" strokeWidth="1.5"/>
   </svg>);
 }
 function IconShare({size=16,color="currentColor"}){
