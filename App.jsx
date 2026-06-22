@@ -747,11 +747,17 @@ function IconBell({size=16,color="currentColor",dot=true}){
     {dot&&<circle cx="17.5" cy="6" r="2.6" fill="#e74c3c" stroke="none"/>}
   </svg>);
 }
+function IconStar({size=16,color="var(--gold)"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+    <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.4l-5.9 3.2 1.3-6.6-4.9-4.6 6.6-.8z"/>
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
   if(icon==="✂")return <IconScissors size={size} color="var(--p)"/>;
   if(icon==="🔔")return <IconBell size={size} color="var(--p)" dot={false}/>;
+  if(icon==="⭐")return <IconStar size={size}/>;
   return <span style={{fontSize:size}}>{icon}</span>;
 }
 function LabelWithIcon({label,size=11}){
@@ -2554,7 +2560,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           )}
         </div>
         <button onClick={onViewReviews} style={{border:"1.5px solid rgba(var(--gold-rgb),.4)",borderRadius:10,padding:"6px 10px",minWidth:"65px",textAlign:"center",flex:"0 0 auto",background:"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-          <div style={{fontSize:16,fontWeight:900,color:"var(--gold)"}}>⭐ {displayRating}</div>
+          <div style={{fontSize:16,fontWeight:900,color:"var(--gold)",display:"flex",alignItems:"center",gap:4}}><IconStar size={15}/>{displayRating}</div>
           <div style={{fontSize:8,color:"var(--text-muted)"}}>({reviewCount})</div>
         </button>
       </div>
@@ -2694,7 +2700,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
               </div>
             )}
             {salonReviews.length>0&&<>
-              <div style={{fontSize:12,color:"#e8c04a",marginTop:2}}>⭐ {avgRating} ({salonReviews.length} {t("salon_page.reviews_count")})</div>
+              <div style={{fontSize:12,color:"#e8c04a",marginTop:2,display:"flex",alignItems:"center",gap:4}}><IconStar size={11} color="#e8c04a"/>{avgRating} ({salonReviews.length} {t("salon_page.reviews_count")})</div>
               <div style={{fontSize:9,color:"var(--text-muted)",marginTop:2}}>{t("salon_page.reviews_note")}</div>
             </>}
           </div>
@@ -4281,7 +4287,7 @@ function NearMapView({salons,setView,setSelSalon}){
                       <div style={{fontSize:14,fontWeight:900,color:s.dist<5?"#27ae60":s.dist<20?"var(--p)":"#888"}}>
                         {s.dist<999?`${s.dist.toFixed(1)} ${t("near_map.km")}`:"-"}
                       </div>
-                      <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2}}>⭐ {s.rating}</div>
+                      <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2,display:"flex",alignItems:"center",gap:3}}><IconStar size={9}/>{s.rating}</div>
                     </div>
                   </div>
                 </div>
@@ -4473,7 +4479,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
               <span style={{fontSize:14,fontWeight:800,color:"var(--p)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{salon.name}</span>
             </div>
             <div style={{background:"var(--pa08)",border:"1.5px solid rgba(var(--gold-rgb),.4)",borderRadius:10,padding:"5px 10px",display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
-              <span style={{fontSize:14,fontWeight:900,color:"var(--gold)"}}>⭐ {(salon.rating||0).toFixed(1)}</span>
+              <span style={{fontSize:14,fontWeight:900,color:"var(--gold)",display:"inline-flex",alignItems:"center",gap:4}}><IconStar size={13}/>{(salon.rating||0).toFixed(1)}</span>
             </div>
           </div>
           {/* الجوال */}
@@ -7031,7 +7037,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                   <div>
                     <div style={{background:"var(--pa08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:20,padding:"5px 14px",display:"inline-block",fontSize:13,fontWeight:800,color:"var(--p)",fontFamily:"'Cairo',sans-serif",marginBottom:4}}>{s.name}</div>
                     <div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:3}}><IconPin size={10}/>{s.gov||s.region}{s.village?` - ${s.village}`:""}</div>
-                    <div style={{fontSize:11,color:"var(--p)"}}>⭐ {s.rating}</div>
+                    <div style={{fontSize:11,color:"var(--p)",display:"flex",alignItems:"center",gap:3}}><IconStar size={10}/>{s.rating}</div>
                   </div>
                   <div style={{display:"flex",gap:6}}>
                     <button style={G.bookBtn} onClick={()=>{setSelSalon(s);setView("book");}}>{t("cust_dash.book_btn")}</button>
@@ -7334,8 +7340,8 @@ function InlineStarRating({rated,comment,onRate}){
           style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl",resize:"none",minHeight:60,marginBottom:8}}
           placeholder="أضف تعليقاً (اختياري)..."
           value={txt} onChange={e=>setTxt(e.target.value)}/>
-        <button style={{...G.sub,padding:"8px 0",fontSize:12}} onClick={()=>onRate(sel,txt)}>
-          إرسال التقييم ⭐
+        <button style={{...G.sub,padding:"8px 0",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={()=>onRate(sel,txt)}>
+          إرسال التقييم <IconStar size={12}/>
         </button>
       </>}
     </div>
