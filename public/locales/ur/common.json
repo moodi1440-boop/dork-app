@@ -216,7 +216,8 @@
     "from_admin": "انتظامیہ",
     "placeholder": "انتظامیہ کو پیغام لکھیں...",
     "send": "بھیجیں",
-    "sending": "..."
+    "sending": "...",
+    "read": "پڑھ لیا گیا"
   },
   "notif": {
     "no_bookings": "کوئی بکنگ نہیں",
