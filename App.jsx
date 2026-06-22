@@ -729,6 +729,11 @@ function IconScissors({size=16,color="currentColor"}){
     <line x1="8.3" y1="9" x2="12" y2="12.6"/>
   </svg>);
 }
+function IconClose({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
+    <line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
@@ -1849,7 +1854,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
       <div style={{position:"fixed",top:0,right:0,bottom:0,width:"82%",maxWidth:340,background:"var(--shell-bg)",zIndex:1101,transform:open?"translateX(0)":"translateX(110%)",transition:"transform 0.3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",display:"flex",flexDirection:"column",direction:"rtl",boxShadow:open?"-4px 0 32px rgba(0,0,0,.6)":"none"}}>
         {/* رأس الـ Drawer */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 20px 16px",borderBottom:"1px solid var(--border-ui)",background:"var(--shell-bg)",position:"sticky",top:0,zIndex:1}}>
-          <button onClick={onClose} aria-label="إغلاق القائمة" style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+          <button onClick={onClose} aria-label="إغلاق القائمة" style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IconClose size={16}/></button>
           <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>{t("cust_drawer.title")}</span>
         </div>
         {/* بطاقة العميل */}
@@ -2003,7 +2008,7 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
       {open&&<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:1100,backdropFilter:"blur(2px)"}}/>}
       <div style={{position:"fixed",top:0,right:0,bottom:0,width:"82%",maxWidth:340,background:"var(--shell-bg)",zIndex:1101,transform:open?"translateX(0)":"translateX(110%)",transition:"transform 0.3s cubic-bezier(.4,0,.2,1)",overflowY:"auto",display:"flex",flexDirection:"column",direction:dir,boxShadow:open?"-4px 0 32px rgba(0,0,0,.6)":"none"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 20px 16px",borderBottom:"1px solid var(--border-ui)",background:"var(--shell-bg)",position:"sticky",top:0,zIndex:1}}>
-          <button onClick={onClose} aria-label="إغلاق القائمة" style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+          <button onClick={onClose} aria-label="إغلاق القائمة" style={{width:32,height:32,borderRadius:8,background:"rgba(255,255,255,.06)",border:"none",color:"var(--text-muted)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IconClose size={16}/></button>
           <span style={{fontSize:15,fontWeight:700,color:"var(--p)"}}>{t("salon_drawer.title")}</span>
         </div>
         <div style={{height:8}}/>
@@ -2280,7 +2285,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         const selStyle=(active)=>({flex:1,minWidth:72,height:32,borderRadius:8,border:`1.5px solid ${active?"var(--gold)":"#333"}`,background:"rgba(12,12,22,.97)",color:active?"var(--gold)":"#777",fontSize:11,fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:"0 6px",cursor:"pointer",outline:"none"});
         return(
           <div style={{background:"rgba(0,0,0,.5)",borderBottom:"1px solid rgba(var(--gold-rgb),.15)",padding:"8px 10px",display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
-            <button onClick={()=>{setShowRegionSelect(false);setFRegion("");setFGov("");setFCenter("");setFVillage("");}} aria-label="إلغاء فلتر المنطقة" style={{background:"transparent",border:"none",color:"var(--text-muted)",fontSize:15,cursor:"pointer",padding:"2px 4px",flexShrink:0,lineHeight:1}}>✕</button>
+            <button onClick={()=>{setShowRegionSelect(false);setFRegion("");setFGov("");setFCenter("");setFVillage("");}} aria-label="إلغاء فلتر المنطقة" style={{background:"transparent",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:"2px 4px",flexShrink:0,display:"flex",alignItems:"center"}}><IconClose size={14}/></button>
             <select value={fRegion||""} onChange={e=>{setFRegion(e.target.value);setFGov("");setFCenter("");setFVillage("");}} style={selStyle(!!fRegion)}>
               <option value="">المنطقة</option>
               {allLoc.map(r=><option key={r.region} value={r.region}>{r.region}</option>)}
@@ -2310,7 +2315,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       {/* Price Filter - نطاق سعري */}
       {showPriceFilter&&(
         <div style={{background:"rgba(0,0,0,.5)",borderBottom:"1px solid rgba(var(--gold-rgb),.15)",padding:"8px 10px",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-          <button onClick={()=>{setShowPriceFilter(false);setFPriceMin("");setFPriceMax("");}} aria-label="إلغاء فلتر السعر" style={{background:"transparent",border:"none",color:"var(--text-muted)",fontSize:15,cursor:"pointer",padding:"2px 4px",flexShrink:0,lineHeight:1}}>✕</button>
+          <button onClick={()=>{setShowPriceFilter(false);setFPriceMin("");setFPriceMax("");}} aria-label="إلغاء فلتر السعر" style={{background:"transparent",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:"2px 4px",flexShrink:0,display:"flex",alignItems:"center"}}><IconClose size={14}/></button>
           <span style={{fontSize:11,color:"var(--text-muted)"}}>{t("home.price_from")}</span>
           <input type="number" min="0" inputMode="numeric" aria-label={t("home.price_from")} value={fPriceMin} onChange={e=>setFPriceMin(e.target.value)} style={{width:72,height:32,borderRadius:8,border:"1.5px solid #333",background:"rgba(12,12,22,.97)",color:"var(--gold)",fontSize:12,fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:"0 8px",outline:"none"}}/>
           <span style={{fontSize:11,color:"var(--text-muted)"}}>{t("home.price_to")}</span>
@@ -2368,7 +2373,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid var(--border-ui)",padding:"8px 12px",gap:6,cursor:"text"}}>
           <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
           <input autoFocus style={{flex:1,background:"transparent",border:"none",color:"var(--text-primary)",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl",WebkitAppearance:"none",appearance:"none"}} placeholder={t("home.search_ph")} value={search} onChange={e=>setSearch(e.target.value)} onBlur={()=>{if(!search)setShowSearch(false);}}/>
-          {search&&<button style={{background:"transparent",border:"none",color:"var(--text-muted)",cursor:"pointer",fontSize:11,padding:0,WebkitAppearance:"none",appearance:"none"}} onClick={()=>setSearch("")} aria-label="مسح البحث">✕</button>}
+          {search&&<button style={{background:"transparent",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:0,WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center"}} onClick={()=>setSearch("")} aria-label="مسح البحث"><IconClose size={12}/></button>}
         </div>
       </div>
       )}
@@ -3143,7 +3148,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
               <div style={{flex:1,position:"relative"}}>
                 <button onClick={()=>{setBarberPeriod("day");setShowBarberDayPicker(v=>!v);setShowBarberMonthPicker(false);setShowBarberYearPicker(false);}} style={{width:"100%",padding:"5px 6px",borderRadius:9,border:`1.5px solid ${barberPeriod==="day"?"var(--p)":"var(--border-ui)"}`,background:barberPeriod==="day"?"var(--pa12)":"transparent",color:barberPeriod==="day"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"space-between",gap:2}}>
                   <span>اليوم</span>
-                  {barberDay!==todayDefault&&<span onClick={(e)=>{e.stopPropagation();setBarberDay(todayDefault);}} style={{fontSize:9,color:"#e74c3c",fontWeight:700}}>✕</span>}
+                  {barberDay!==todayDefault&&<span onClick={(e)=>{e.stopPropagation();setBarberDay(todayDefault);}} style={{display:"inline-flex"}}><IconClose size={9} color="#e74c3c"/></span>}
                 </button>
                 {barberPeriod==="day"&&showBarberDayPicker&&(
                   <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--gold)",borderRadius:10,padding:6,maxHeight:180,overflowY:"auto",zIndex:20,marginTop:3}}>
@@ -3159,7 +3164,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
               <div style={{flex:1,position:"relative"}}>
                 <button onClick={()=>{setBarberPeriod("month");setShowBarberMonthPicker(v=>!v);setShowBarberDayPicker(false);setShowBarberYearPicker(false);}} style={{width:"100%",padding:"5px 6px",borderRadius:9,border:`1.5px solid ${barberPeriod==="month"?"var(--p)":"var(--border-ui)"}`,background:barberPeriod==="month"?"var(--pa12)":"transparent",color:barberPeriod==="month"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"space-between",gap:2}}>
                   <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"70%"}}>{_months[barberM]||"الشهر"}</span>
-                  {barberM!==nowM&&<span onClick={(e)=>{e.stopPropagation();setBarberM(nowM);}} style={{fontSize:9,color:"#e74c3c",fontWeight:700}}>✕</span>}
+                  {barberM!==nowM&&<span onClick={(e)=>{e.stopPropagation();setBarberM(nowM);}} style={{display:"inline-flex"}}><IconClose size={9} color="#e74c3c"/></span>}
                 </button>
                 {barberPeriod==="month"&&showBarberMonthPicker&&(
                   <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--gold)",borderRadius:10,padding:6,maxHeight:180,overflowY:"auto",zIndex:20,marginTop:3}}>
@@ -3174,7 +3179,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
               <div style={{flex:1,position:"relative"}}>
                 <button onClick={()=>{setBarberPeriod("year");setShowBarberYearPicker(v=>!v);setShowBarberDayPicker(false);setShowBarberMonthPicker(false);}} style={{width:"100%",padding:"5px 6px",borderRadius:9,border:`1.5px solid ${barberPeriod==="year"?"var(--p)":"var(--border-ui)"}`,background:barberPeriod==="year"?"var(--pa12)":"transparent",color:barberPeriod==="year"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"space-between",gap:2}}>
                   <span>{barberY}</span>
-                  {barberY!==nowY&&<span onClick={(e)=>{e.stopPropagation();setBarberY(nowY);}} style={{fontSize:9,color:"#e74c3c",fontWeight:700}}>✕</span>}
+                  {barberY!==nowY&&<span onClick={(e)=>{e.stopPropagation();setBarberY(nowY);}} style={{display:"inline-flex"}}><IconClose size={9} color="#e74c3c"/></span>}
                 </button>
                 {barberPeriod==="year"&&showBarberYearPicker&&(
                   <div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--surface-2)",border:"1px solid var(--gold)",borderRadius:10,padding:6,maxHeight:180,overflowY:"auto",zIndex:20,marginTop:3}}>
@@ -3796,7 +3801,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           <input style={fi()} placeholder={t("register.village_ph")} value={form.village} onChange={e=>setForm(p=>({...p,village:e.target.value}))}/>
         </F>}
         {form.center&&<button style={G.otherBtn} onClick={()=>setShowAddLoc(s=>!s)}>
-          {showAddLoc?"✕ إغلاق":t("register.add_location_btn")}
+          {showAddLoc?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconClose size={12}/>إغلاق</span>:t("register.add_location_btn")}
         </button>}
         {showAddLoc&&form.center&&<div style={{background:"rgba(42,109,217,.06)",border:"1px solid #2a6dd9",borderRadius:10,padding:12,marginTop:4}}>
           <div style={{fontSize:12,color:"#6aadff",marginBottom:8,fontWeight:700}}>{t("register.add_location_title")}</div>
@@ -4521,7 +4526,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             <button onClick={addDashCash}
               style={{flex:"0 0 auto",padding:"9px 14px",borderRadius:9,border:"none",background:"var(--grad)",color:"var(--p-text,#000)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✓ حفظ</button>
             <button onClick={()=>{setShowDashCash(false);setDashCashBarber("");setDashCashAmt("");}}
-              style={{flex:"0 0 auto",padding:"9px 10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>✕</button>
+              style={{flex:"0 0 auto",padding:"9px 10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><IconClose size={14}/></button>
           </div>
         )}
 
