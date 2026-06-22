@@ -216,7 +216,8 @@
     "from_admin": "Yönetici",
     "placeholder": "Yöneticiye mesaj yazın...",
     "send": "Gönder",
-    "sending": "..."
+    "sending": "...",
+    "read": "Okundu"
   },
   "notif": {
     "no_bookings": "Rezervasyon yok",

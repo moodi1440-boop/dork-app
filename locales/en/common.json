@@ -216,7 +216,8 @@
     "from_admin": "Admin",
     "placeholder": "Write a message to admin...",
     "send": "Send",
-    "sending": "..."
+    "sending": "...",
+    "read": "Read"
   },
   "notif": {
     "no_bookings": "No bookings",
