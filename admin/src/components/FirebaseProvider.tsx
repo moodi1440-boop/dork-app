@@ -17,9 +17,11 @@ export default function FirebaseProvider({ children }: { children: React.ReactNo
       try {
         const token = await requestNotificationPermission();
         if (token) {
-          // Save token to database
-          // Note: In a real app, you'd get the actual user info from auth
-          await saveFCMTokenToDB("admin", 1, token, "Admin Panel");
+          // هوية الأدمن الحقيقية من جلسته (حساب RBAC فرعي) — لا تسجيل
+          // بدون id حقيقي، لتجنّب خلط كل المتصفحات تحت هوية وهمية واحدة
+          const me = await fetch("/api/me").then((r) => r.json()).catch(() => null);
+          if (!me?.id) return;
+          await saveFCMTokenToDB("admin", me.id, token, me.username || "Admin Panel");
 
           // Listen to messages in foreground
           const unsubscribe = listenToMessages((message) => {
