@@ -2490,7 +2490,7 @@ function SalonReviewsView({salon,reviews,setView}){
               <span style={{fontSize:28,fontWeight:900,color:"var(--gold)",lineHeight:1}}>{avg}</span>
               <div>
                 <div style={{display:"flex",gap:2,marginBottom:2}}>
-                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:16,color:n<=Math.round(avg)?"var(--gold)":"rgba(var(--gold-rgb),.2)"}}>★</span>)}
+                  {[1,2,3,4,5].map(n=><IconStar key={n} size={16} color={n<=Math.round(avg)?"var(--gold)":"rgba(var(--gold-rgb),.2)"}/>)}
                 </div>
                 <div style={{fontSize:10,color:"var(--text-muted)"}}>{salonReviews.length} {t("salon_reviews.rating_unit")}</div>
               </div>
@@ -2505,7 +2505,7 @@ function SalonReviewsView({salon,reviews,setView}){
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.comment?6:0}}>
                 <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700}}>👤 {r.name}</span>
                 <div style={{display:"flex",gap:1}}>
-                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?"var(--gold)":"rgba(var(--gold-rgb),.18)"}}>★</span>)}
+                  {[1,2,3,4,5].map(n=><IconStar key={n} size={13} color={n<=r.rating?"var(--gold)":"rgba(var(--gold-rgb),.18)"}/>)}
                 </div>
               </div>
               {r.comment&&<div style={{fontSize:12,color:"var(--text-muted)",fontStyle:"italic",lineHeight:1.5,marginBottom:5}}>«{r.comment}»</div>}
@@ -4025,7 +4025,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
           <DorkLogoSvg size={26}/>
           <div>
             <div style={{fontSize:15,fontWeight:900,color:"var(--text-primary)"}}>{t("all_reviews.title")}</div>
-            <div style={{fontSize:10,color:gold,opacity:.8}}>{feed.length} {t("all_reviews.rating_unit")} — {t("all_reviews.avg_prefix")} {globalAvg} ★</div>
+            <div style={{fontSize:10,color:gold,opacity:.8,display:"flex",alignItems:"center",gap:3}}>{feed.length} {t("all_reviews.rating_unit")} — {t("all_reviews.avg_prefix")} {globalAvg} <IconStar size={10} color={gold}/></div>
           </div>
         </div>
         <input
@@ -4044,7 +4044,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
           {dist.map(({star,count})=>(
             <button key={star} onClick={()=>setFilter(star===filter?0:star)}
               style={{flex:"0 0 auto",display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:20,border:`1px solid ${filter===star?gold:"rgba(var(--gold-rgb),.2)"}`,background:filter===star?"rgba(var(--gold-rgb),.12)":"transparent",color:filter===star?goldStar:"var(--text-muted)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"}}>
-              {"★".repeat(star)} ({count})
+              {Array.from({length:star}).map((_,i)=><IconStar key={i} size={9}/>)} ({count})
             </button>
           ))}
         </div>
@@ -4063,7 +4063,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
                 <IconScissors size={12} color={gold}/>{r.salonName}
               </div>
               <div style={{display:"flex",gap:1,flexShrink:0,marginRight:8}}>
-                {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:dimStar}}>★</span>)}
+                {[1,2,3,4,5].map(n=><IconStar key={n} size={13} color={n<=r.rating?goldStar:dimStar}/>)}
               </div>
             </div>
             <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:r.comment?8:0}}>👤 {r.customerName}</div>
@@ -4716,7 +4716,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:28,fontWeight:900,color:goldStar,lineHeight:1}}>{avg||"—"}</div>
           <div style={{display:"flex",gap:1,justifyContent:"center",margin:"4px 0"}}>
-            {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=Math.round(avg)?goldStar:"rgba(var(--gold-rgb),.2)"}}>★</span>)}
+            {[1,2,3,4,5].map(n=><IconStar key={n} size={13} color={n<=Math.round(avg)?goldStar:"rgba(var(--gold-rgb),.2)"}/>)}
           </div>
           <div style={{fontSize:10,color:"var(--text-muted)"}}>{salonReviews.length} {t("salon_page.reviews_count")}</div>
         </div>
@@ -4749,7 +4749,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                 <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700}}>👤 {r.customer_name||t("owner_dash.customer_fallback")}</span>
                 <div style={{display:"flex",gap:1}}>
-                  {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:13,color:n<=r.rating?goldStar:"rgba(var(--gold-rgb),.18)"}}>★</span>)}
+                  {[1,2,3,4,5].map(n=><IconStar key={n} size={13} color={n<=r.rating?goldStar:"rgba(var(--gold-rgb),.18)"}/>)}
                 </div>
               </div>
               {r.comment&&<div style={{fontSize:11,color:"var(--text-muted)",fontStyle:"italic",lineHeight:1.5,marginBottom:4}}>«{r.comment}»</div>}
@@ -7116,7 +7116,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       {(()=>{const bBarber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));const barberLabel=realBooking?.barberName||h.barberName||bBarber?.name||"";return barberLabel?<div style={{fontSize:12,color:"var(--text-muted)",marginTop:2}}>الحلاق: <span style={{fontWeight:700,color:"var(--p)"}}>{barberLabel}</span></div>:null;})()}                      <div style={{fontSize:11,fontWeight:700,color:stColor,marginTop:3}}>{stLabel}</div>
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
-                      {h.rating>0&&<div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><span key={n} style={{fontSize:12,color:n<=h.rating?"var(--p)":"#333"}}>★</span>)}</div>}
+                      {h.rating>0&&<div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><IconStar key={n} size={12} color={n<=h.rating?"var(--p)":"#333"}/>)}</div>}
                       {s&&<button style={{...G.bookBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setSelSalon(s);setView("book");}}>{t("cust_dash.book_again")}</button>}
                       <button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>scheduleReminder({...h,salonName:s?.name})}>{t("cust_dash.remind_btn")}</button>
                       {status==="approved"&&<button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>{
@@ -7331,7 +7331,7 @@ function InlineStarRating({rated,comment,onRate}){
   if(rated>0) return(
     <div style={{marginTop:8,borderTop:"1px solid #1e1e2e",paddingTop:8}}>
       <div style={{display:"flex",gap:1,marginBottom:comment?4:0}}>
-        {[1,2,3,4,5].map(n=><span key={n} style={{fontSize:18,color:n<=rated?"var(--gold)":"#333"}}>★</span>)}
+        {[1,2,3,4,5].map(n=><IconStar key={n} size={18} color={n<=rated?"var(--gold)":"#333"}/>)}
         <span style={{fontSize:11,color:"var(--text-muted)",marginRight:6,alignSelf:"center"}}>{labels[rated]}</span>
       </div>
       {comment&&<div style={{fontSize:12,color:"var(--text-muted)",fontStyle:"italic"}}>"{comment}"</div>}
@@ -7343,10 +7343,10 @@ function InlineStarRating({rated,comment,onRate}){
       <div style={{display:"flex",alignItems:"center",gap:3,marginBottom:8}}>
         {[1,2,3,4,5].map(n=>(
           <span key={n}
-            style={{fontSize:28,cursor:"pointer",color:n<=(hover||sel)?"var(--gold)":"var(--border-ui)",transition:"color .1s",lineHeight:1,userSelect:"none"}}
+            style={{cursor:"pointer",transition:"color .1s",lineHeight:1,userSelect:"none"}}
             onMouseEnter={()=>setHover(n)}
             onMouseLeave={()=>setHover(0)}
-            onClick={()=>setSel(n)}>★</span>
+            onClick={()=>setSel(n)}><IconStar size={28} color={n<=(hover||sel)?"var(--gold)":"var(--border-ui)"}/></span>
         ))}
         {(hover||sel)>0&&<span style={{fontSize:11,color:"var(--p)",marginRight:6,fontWeight:600}}>{labels[hover||sel]}</span>}
       </div>
