@@ -540,6 +540,7 @@ export default function SalonsPage() {
   const [pinned,    setPinned]    = useState<string[]>([]);
   const [weekSalon, setWeekSalon] = useState("");
   const [showAdd,   setShowAdd]   = useState(false);
+  const [autoApprove, setAutoApprove] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -573,7 +574,14 @@ export default function SalonsPage() {
         setWeekSalon(weekRow?.value ? String(weekRow.value) : "");
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       }, (_e) => { console.error("Error loading settings"); });
+    fetch("/api/settings").then((r) => r.json()).then((d) => setAutoApprove(Boolean(d.auto_approve_salons))).catch(() => {});
   }, []);
+
+  const toggleAutoApprove = async () => {
+    const next = !autoApprove;
+    setAutoApprove(next);
+    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ auto_approve_salons: next }) });
+  };
 
   const togglePin = async (id: string) => {
     const np = pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id];
@@ -654,6 +662,17 @@ export default function SalonsPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="mb-4 flex items-center justify-between gap-3 bg-card border border-border rounded-2xl p-4">
+        <div>
+          <div className="text-sm font-bold text-white">🤖 القبول التلقائي للصوالين الجديدة</div>
+          <div className="text-xs text-gray-400 mt-0.5">عند التفعيل، تُقبل الصوالين الجديدة تلقائياً دون مراجعة الإدارة</div>
+        </div>
+        <button onClick={toggleAutoApprove}
+          className={`px-4 py-2 rounded-xl text-sm font-bold border transition-colors ${autoApprove ? "bg-green-500/10 text-green-400 border-green-500/30" : "bg-card text-gray-400 border-border"}`}>
+          {autoApprove ? "✅ مفعّل" : "⭘ متوقف"}
+        </button>
       </div>
 
       {!loading && status === "pending" && sorted.length > 1 && (
