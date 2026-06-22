@@ -91,14 +91,14 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
 
   const patch = async (body: Record<string, unknown>) => {
     setSaving(true);
-    await sb.from("customers").update(body).eq("id", customerId);
+    await fetch(`/api/customers/${customerId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     await load();
     setSaving(false);
   };
 
   const saveNotes = async () => {
     setSaving(true);
-    await sb.from("customers").update({ admin_notes: notes }).eq("id", customerId);
+    await fetch(`/api/customers/${customerId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ admin_notes: notes }) });
     setSaving(false);
     setNotesSaved(true);
     setTimeout(() => setNotesSaved(false), 2000);
@@ -170,7 +170,7 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
             className={`w-full py-2.5 rounded-xl text-sm font-semibold border transition-colors ${customer.blocked ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20" : "bg-red-900/20 text-red-400 border-red-800/30 hover:bg-red-900/30"}`}>
             {customer.blocked ? "✅ رفع الحظر عن العميل" : "🚫 حظر العميل"}
           </button>
-          <button onClick={async () => { if (!confirm("حذف العميل نهائياً؟")) return; await sb.from("customers").delete().eq("id", customerId); onClose(); }}
+          <button onClick={async () => { if (!confirm("حذف العميل نهائياً؟")) return; await fetch(`/api/customers/${customerId}`, { method: "DELETE" }); onClose(); }}
             className="w-full py-2.5 bg-red-900/20 border border-red-800/30 text-red-400 rounded-xl text-sm font-semibold hover:bg-red-900/30 transition-colors">
             🗑 حذف العميل نهائياً
           </button>
@@ -259,7 +259,7 @@ export default function CustomersPage() {
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">
                         <button onClick={() => setSelected(c.id)} className="px-2.5 py-1 rounded-lg text-xs bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors">تفاصيل</button>
-                        <button onClick={async () => { await sb.from("customers").update({ loyalty_frozen: !c.loyalty_frozen }).eq("id", c.id); load(); }}
+                        <button onClick={async () => { await fetch(`/api/customers/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ loyalty_frozen: !c.loyalty_frozen }) }); load(); }}
                           className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${c.loyalty_frozen ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}`}>
                           {c.loyalty_frozen ? "رفع التجميد" : "تجميد"}
                         </button>

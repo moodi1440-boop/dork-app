@@ -25,12 +25,13 @@ export async function GET() {
     try { appearance = { ...appearance, ...JSON.parse(appRow.ui_settings) }; } catch {}
   }
 
-  // قراءة إعدادات الإدارة من admin_config (pinned, week_salon)
+  // قراءة إعدادات الإدارة من admin_config (pinned, week_salon, auto_approve_salons)
   const { data: configRows } = await sb.from("admin_config").select("key,value");
   const pinned    = configRows?.find((r: Record<string, unknown>) => r.key === "pinned")?.value ?? [];
   const week_salon = configRows?.find((r: Record<string, unknown>) => r.key === "week_salon")?.value ?? null;
+  const auto_approve_salons = configRows?.find((r: Record<string, unknown>) => r.key === "auto_approve_salons")?.value ?? false;
 
-  return NextResponse.json({ loyalty, social, appearance, pinned, week_salon });
+  return NextResponse.json({ loyalty, social, appearance, pinned, week_salon, auto_approve_salons });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -55,8 +56,8 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  // تحديث pinned و week_salon في admin_config
-  for (const key of ["pinned", "week_salon"] as const) {
+  // تحديث pinned و week_salon و auto_approve_salons في admin_config
+  for (const key of ["pinned", "week_salon", "auto_approve_salons"] as const) {
     if (key in body) {
       const { error } = await sb.from("admin_config").upsert({ key, value: body[key] }, { onConflict: "key" });
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });

@@ -9,7 +9,7 @@ async function readJson(req) {
   return raw ? JSON.parse(raw) : {};
 }
 
-function toDbSalon(s) {
+function toDbSalon(s, status) {
   return {
     name: s.name, owner: s.owner, owner_phone: s.ownerPhone,
     region: s.region, gov: s.gov, center: s.center, village: s.village,
@@ -20,7 +20,7 @@ function toDbSalon(s) {
     shift2_start: s.shift2Start, shift2_end: s.shift2End,
     work_start: s.workStart, work_end: s.workEnd,
     barbers: s.barbers, tone: s.tone,
-    status: "pending",
+    status,
   };
 }
 
@@ -46,7 +46,9 @@ module.exports = async (req, res) => {
     }
 
     const sb = createAdminClient();
-    const { data, error } = await sb.from("salons").insert(toDbSalon(body)).select("id").single();
+    const { data: configRow } = await sb.from("admin_config").select("value").eq("key", "auto_approve_salons").single();
+    const status = configRow?.value === true ? "approved" : "pending";
+    const { data, error } = await sb.from("salons").insert(toDbSalon(body, status)).select("id").single();
     if (error) {
       res.status(500).json({ error: error.message });
       return;

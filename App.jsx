@@ -253,6 +253,7 @@ function toAppCustomer(row) {
     locationLat: row.location_lat||null,
     locationLng: row.location_lng||null,
     createdAt: row.created_at||new Date().toISOString(),
+    blocked: row.blocked||false,
   };
 }
 
@@ -1007,7 +1008,7 @@ export default function App(){
       const [salonRows,bookingRows,custRows]=await Promise.all([
         sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at&status=eq.approved&order=created_at.desc&limit=500"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&order=created_at.desc&limit=1000"),
-        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&limit=500"),
+        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&limit=500"),
       ]);
       const reviewRows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
       const promoRows=await sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]);
@@ -6423,6 +6424,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(!savedId){toast$&&toast$("❌ لم تُسجّل البصمة بعد - سجّل دخول أولاً","err");return;}
       const c=customers.find(x=>String(x.id)===savedId);
       if(!c){toast$&&toast$("❌ لم يُعثر على الحساب","err");return;}
+      if(c.blocked){toast$&&toast$("🚫 تم حظر هذا الحساب - تواصل مع الدعم","err");return;}
       setCustomerSession(c);setView("home");
       toast$&&toast$("✅ تم الدخول بالبصمة");
     }catch(e){toast$&&toast$("❌ فشل التحقق","err");}
@@ -6431,9 +6433,10 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const loginWithPhone=async()=>{
     if(!phone.trim()){setErr(t("cust_login.err_phone"));return;}
     try{
-      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
+      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(!rows.length){setErr(t("cust_login.err_not_found"));return;}
       const c=toAppCustomer(rows[0]);
+      if(c.blocked){setErr("🚫 تم حظر هذا الحساب - تواصل مع الدعم");return;}
       setCustomerSession(c);setView("home");
       localStorage.setItem("dork_biometric_id",String(c.id));
     }catch(e){setErr("خطأ: "+e.message);}
@@ -6442,6 +6445,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const loginWithPin=async()=>{
     const c=customers.find(cust=>{const savedPin=localStorage.getItem(`dork_customer_pin_${cust.id}`);return savedPin&&savedPin===pin;});
     if(!c){setPinErr(t("cust_login.err_pin_wrong"));setPin("");return;}
+    if(c.blocked){setPinErr("🚫 تم حظر هذا الحساب - تواصل مع الدعم");setPin("");return;}
     setCustomerSession(c);setView("home");
     localStorage.setItem("dork_biometric_id",String(c.id));
   };
@@ -6553,9 +6557,12 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         }
         return;
       }
-      const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
+      const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(exists.length){setErr(t("cust_login.err_exists"));return;}
-      const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[]},"");
+      const{data:isBlacklisted}=await supabase.rpc("is_blacklisted",{p_phone:phone.trim(),p_email:email.trim()}).catch(()=>({data:false}));
+      if(isBlacklisted){setErr("🚫 لا يمكن إنشاء حساب بهذه البيانات");return;}
+      const authUid=data?.user?.id||null;
+      const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[],auth_uid:authUid},"");
       const nc=toAppCustomer(rows[0]);
       setCustomerSession(nc);setView("home");
       localStorage.setItem("dork_biometric_id",String(nc.id));
@@ -6612,12 +6619,15 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               provider.setCustomParameters({prompt:"select_account"});
               const result=await fb.auth().signInWithPopup(provider);
               const gUser={name:result.user.displayName||"مستخدم",email:result.user.email||"",googleUid:result.user.uid};
-              const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at&google_uid=eq.${gUser.googleUid}&limit=1`);
+              const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&google_uid=eq.${gUser.googleUid}&limit=1`);
               if(rows.length){
                 const c=toAppCustomer(rows[0]);
+                if(c.blocked){toast$&&toast$("🚫 تم حظر هذا الحساب - تواصل مع الدعم","err");return;}
                 setCustomerSession(c);setView("home");
                 localStorage.setItem("dork_biometric_id",String(c.id));
               }else{
+                const{data:blEmail}=await supabase.rpc("is_blacklisted",{p_phone:"",p_email:gUser.email}).catch(()=>({data:false}));
+                if(blEmail){toast$&&toast$("🚫 لا يمكن إنشاء حساب بهذا البريد","err");return;}
                 const newRows=await sb("customers","POST",{name:gUser.name,phone:"",email:gUser.email,google_uid:gUser.googleUid,history:[],favs:[]},"");
                 const nc=toAppCustomer(newRows[0]);
                 setCustomerSession(nc);setView("home");
@@ -6849,7 +6859,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   const confirmDeleteAccount=async()=>{
     try{
-      await sb("customers","DELETE",null,`?id=eq.${customer.id}`);
+      const{error}=await supabase.functions.invoke("delete-account",{body:{customerId:customer.id}});
+      if(error)throw error;
       await supabase.auth.signOut().catch(()=>{});
       setCustomerSession(null);setView("entry");
     }catch(e){alert("خطأ: "+e.message);}
