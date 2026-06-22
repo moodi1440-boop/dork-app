@@ -740,10 +740,18 @@ function IconPin({size=16,color="currentColor"}){
     <circle cx="12" cy="9" r="2.6" fill="#fff"/>
   </svg>);
 }
+function IconBell({size=16,color="currentColor",dot=true}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 9a6 6 0 1 1 12 0c0 4 1.4 5.6 2 6.4H4c.6-.8 2-2.4 2-6.4z"/>
+    <path d="M9.5 18.5a2.5 2.5 0 0 0 5 0"/>
+    {dot&&<circle cx="17.5" cy="6" r="2.6" fill="#e74c3c" stroke="none"/>}
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
   if(icon==="✂")return <IconScissors size={size} color="var(--p)"/>;
+  if(icon==="🔔")return <IconBell size={size} color="var(--p)" dot={false}/>;
   return <span style={{fontSize:size}}>{icon}</span>;
 }
 function LabelWithIcon({label,size=11}){
@@ -1912,7 +1920,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         {(fcmStatus.includes("permission-denied")||fcmStatus.includes("permission-blocked")||fcmStatus.includes("permission-error"))&&(
           <div style={{margin:"0 16px 12px"}}>
             <div style={{padding:"10px 14px",background:"rgba(231,76,60,.12)",border:"1px solid rgba(231,76,60,.3)",borderRadius:"10px 10px 0 0",fontSize:11,color:"#e74c3c",textAlign:"center",lineHeight:1.5}}>الإشعارات محظورة — اضغط الزر لتفعيلها</div>
-            <button onClick={handleEnableNotifications} style={{width:"100%",padding:"13px",background:"var(--grad)",color:"#000",border:"none",borderRadius:"0 0 10px 10px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>تفعيل الإشعارات 🔔</button>
+            <button onClick={handleEnableNotifications} style={{width:"100%",padding:"13px",background:"var(--grad)",color:"#000",border:"none",borderRadius:"0 0 10px 10px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>تفعيل الإشعارات <IconBell size={14}/></button>
             {fcmMsg&&<div style={{marginTop:8,padding:"8px 12px",background:"rgba(243,156,18,.12)",border:"1px solid rgba(243,156,18,.3)",borderRadius:8,fontSize:11,color:"#f39c12",textAlign:"center"}}>{fcmMsg}</div>}
           </div>
         )}
@@ -7154,7 +7162,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <div>
             {notifs.length>0&&<button style={{...G.pageBtn,width:"100%",marginBottom:10,color:"#e74c3c",border:"1px solid #e74c3c"}} onClick={clearAll}>🗑 مسح الكل</button>}
             {notifs.length===0
-              ?<div style={G.empty}>🔔 لا توجد إشعارات</div>
+              ?<div style={{...G.empty,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconBell size={14} dot={false}/>لا توجد إشعارات</div>
               :<div style={{display:"flex",flexDirection:"column",gap:8}}>
                 {notifs.map(n=>(
                   <div key={n.id} style={{...G.bItem,borderRight:`3px solid ${n.read?"var(--border-ui)":"var(--p)"}`}}>
@@ -7177,7 +7185,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       {/* التذكيرات */}
       {tab==="remind"&&(
         <div style={{background:"var(--surface-1)",borderRadius:10,padding:"14px 14px",border:"1px solid var(--border-ui)"}}>
-          <div style={{fontSize:13,color:"var(--p)",fontWeight:700,marginBottom:12}}>🔔 وقت التذكير بالمواعيد</div>
+          <div style={{fontSize:13,color:"var(--p)",fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",gap:5}}><IconBell size={13}/>وقت التذكير بالمواعيد</div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
             {[{v:30,l:"30 د"},{v:60,l:"ساعة"},{v:120,l:"ساعتين"},{v:1440,l:"يوم"}].map(({v,l})=>(
               <button key={v} onClick={()=>setReminderMins(v)}
