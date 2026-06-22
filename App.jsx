@@ -5413,9 +5413,9 @@ function MessagesPanel({salon,toast$}){
   // تحميل الرسائل من Supabase
   const loadMsgs=useCallback(async()=>{
     try{
-      const data=await sb("messages","GET",null,`?select=id,salon_id,from_admin,text,created_at&salon_id=eq.${salon.id}&order=created_at.asc&limit=50`);
+      const data=await sb("messages","GET",null,`?select=id,salon_id,from_admin,text,created_at,read_at&salon_id=eq.${salon.id}&order=created_at.asc&limit=50`);
       if(Array.isArray(data)&&data.length>0){
-        const converted=data.map(m=>({id:m.id,from:m.from_admin?"admin":"owner",text:m.text,time:new Date(m.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit",hour12:true})}));
+        const converted=data.map(m=>({id:m.id,from:m.from_admin?"admin":"owner",text:m.text,readAt:m.read_at||null,time:new Date(m.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit",hour12:true})}));
         setMsgs(converted);
         try{localStorage.setItem(KEY,JSON.stringify(converted));}catch{}
       }
@@ -5425,6 +5425,11 @@ function MessagesPanel({salon,toast$}){
   },[salon.id,KEY]);
 
   useEffect(()=>{loadMsgs();},[loadMsgs]);
+
+  // تعليم رسائل الإدارة كمقروءة عند فتح المحادثة
+  useEffect(()=>{
+    fetch("/api/mark-messages-read",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({salonId:salon.id})}).catch(()=>{});
+  },[salon.id]);
 
   // Realtime subscription للرسائل الجديدة
   useEffect(()=>{
@@ -5463,7 +5468,7 @@ function MessagesPanel({salon,toast$}){
             <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="owner"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="owner"?"var(--pa25)":"var(--surface-2)",border:`1px solid ${m.from==="owner"?"var(--pa4)":"var(--border-ui)"}`}}>
               <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{m.from==="owner"?t("messages.from_you"):t("messages.from_admin")}</div>
               <div style={{fontSize:13,color:"var(--text-primary)"}}>{m.text}</div>
-              <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}</div>
+              <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}{m.from==="owner"&&m.readAt?` · ✓✓ ${t("messages.read")}`:""}</div>
             </div>
           </div>
         ))}

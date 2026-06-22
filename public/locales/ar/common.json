@@ -216,7 +216,8 @@
     "from_admin": "الإدارة",
     "placeholder": "اكتب رسالة للإدارة...",
     "send": "إرسال",
-    "sending": "..."
+    "sending": "...",
+    "read": "تمت القراءة"
   },
   "notif": {
     "no_bookings": "لا توجد حجوزات",
