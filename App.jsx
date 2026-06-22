@@ -700,6 +700,11 @@ function IconDragHandle({size=16,color="currentColor"}){
     <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
   </svg>);
 }
+function IconHeart({size=16,color="currentColor",filled=false}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill={filled?color:"none"} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+  </svg>);
+}
 
 // تحسين الصور: إضافة parameters للحصول على thumbnails محسّنة
 function optimizeImageUrl(url, width=100, height=100){
@@ -2542,7 +2547,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           <IconShare size={16}/>
         </button>
         <button onClick={()=>onFav?.()} title="المفضلة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:fav?"var(--gold)":"#aaa",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
-          {fav?"♥":"♡"}
+          <IconHeart size={16} filled={fav}/>
         </button>
         <button onClick={onCompare} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"var(--text-muted)",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
           ⚖
@@ -2617,7 +2622,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
         <div style={G.fh}>
           <button style={G.bb} onClick={()=>setView("home")}>{t("salon_page.back")}</button>
           <h2 style={{...G.ft,flex:1}}>{salon.name}</h2>
-          <button style={{...G.favBtn,...(fav?G.favOn:{}),fontSize:20}} onClick={()=>toggleFav(salon.id)}>{fav?"♥":"♡"}</button>
+          <button style={{...G.favBtn,...(fav?G.favOn:{}),display:"inline-flex",alignItems:"center",justifyContent:"center"}} onClick={()=>toggleFav(salon.id)}><IconHeart size={20} filled={fav}/></button>
           <ShareBtn salon={salon}/>
         </div>
         <div style={G.salonBadge}>
@@ -6976,7 +6981,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                   </div>
                   <div style={{display:"flex",gap:6}}>
                     <button style={G.bookBtn} onClick={()=>{setSelSalon(s);setView("book");}}>{t("cust_dash.book_btn")}</button>
-                    <button style={{...G.favBtn,fontSize:18,color:"#e74c3c"}} onClick={()=>toggleFav(s.id)}>♥</button>
+                    <button style={{...G.favBtn,color:"#e74c3c",display:"inline-flex",alignItems:"center",justifyContent:"center"}} onClick={()=>toggleFav(s.id)}><IconHeart size={18} filled/></button>
                   </div>
                 </div>
               </div>
