@@ -6859,8 +6859,9 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   const confirmDeleteAccount=async()=>{
     try{
-      const{error}=await supabase.functions.invoke("delete-account",{body:{customerId:customer.id}});
-      if(error)throw error;
+      const res=await fetch("/api/delete-account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:customer.id})});
+      const d=await res.json().catch(()=>({}));
+      if(!res.ok)throw new Error(d.error||"فشل حذف الحساب");
       await supabase.auth.signOut().catch(()=>{});
       setCustomerSession(null);setView("entry");
     }catch(e){alert("خطأ: "+e.message);}
