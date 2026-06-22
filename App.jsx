@@ -752,12 +752,19 @@ function IconStar({size=16,color="var(--gold)"}){
     <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.4l-5.9 3.2 1.3-6.6-4.9-4.6 6.6-.8z"/>
   </svg>);
 }
+function IconBlocked({size=16,color="#e74c3c"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
+    <circle cx="12" cy="12" r="9"/>
+    <line x1="6" y1="18" x2="18" y2="6"/>
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
   if(icon==="✂")return <IconScissors size={size} color="var(--p)"/>;
   if(icon==="🔔")return <IconBell size={size} color="var(--p)" dot={false}/>;
   if(icon==="⭐")return <IconStar size={size}/>;
+  if(icon==="🚫")return <IconBlocked size={size}/>;
   return <span style={{fontSize:size}}>{icon}</span>;
 }
 function LabelWithIcon({label,size=11}){
@@ -6494,7 +6501,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(!savedId){toast$&&toast$("لم تُسجّل البصمة بعد - سجّل دخول أولاً","err");return;}
       const c=customers.find(x=>String(x.id)===savedId);
       if(!c){toast$&&toast$("لم يُعثر على الحساب","err");return;}
-      if(c.blocked){toast$&&toast$("🚫 تم حظر هذا الحساب - تواصل مع الدعم","err");return;}
+      if(c.blocked){toast$&&toast$("تم حظر هذا الحساب - تواصل مع الدعم","err");return;}
       setCustomerSession(c);setView("home");
       toast$&&toast$("تم الدخول بالبصمة");
     }catch(e){toast$&&toast$("فشل التحقق","err");}
@@ -6506,7 +6513,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(!rows.length){setErr(t("cust_login.err_not_found"));return;}
       const c=toAppCustomer(rows[0]);
-      if(c.blocked){setErr("🚫 تم حظر هذا الحساب - تواصل مع الدعم");return;}
+      if(c.blocked){setErr("تم حظر هذا الحساب - تواصل مع الدعم");return;}
       setCustomerSession(c);setView("home");
       localStorage.setItem("dork_biometric_id",String(c.id));
     }catch(e){setErr("خطأ: "+e.message);}
@@ -6515,7 +6522,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const loginWithPin=async()=>{
     const c=customers.find(cust=>{const savedPin=localStorage.getItem(`dork_customer_pin_${cust.id}`);return savedPin&&savedPin===pin;});
     if(!c){setPinErr(t("cust_login.err_pin_wrong"));setPin("");return;}
-    if(c.blocked){setPinErr("🚫 تم حظر هذا الحساب - تواصل مع الدعم");setPin("");return;}
+    if(c.blocked){setPinErr("تم حظر هذا الحساب - تواصل مع الدعم");setPin("");return;}
     setCustomerSession(c);setView("home");
     localStorage.setItem("dork_biometric_id",String(c.id));
   };
@@ -6630,7 +6637,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(exists.length){setErr(t("cust_login.err_exists"));return;}
       const{data:isBlacklisted}=await supabase.rpc("is_blacklisted",{p_phone:phone.trim(),p_email:email.trim()}).catch(()=>({data:false}));
-      if(isBlacklisted){setErr("🚫 لا يمكن إنشاء حساب بهذه البيانات");return;}
+      if(isBlacklisted){setErr("لا يمكن إنشاء حساب بهذه البيانات");return;}
       const authUid=data?.user?.id||null;
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[],auth_uid:authUid},"");
       const nc=toAppCustomer(rows[0]);
@@ -6692,12 +6699,12 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&google_uid=eq.${gUser.googleUid}&limit=1`);
               if(rows.length){
                 const c=toAppCustomer(rows[0]);
-                if(c.blocked){toast$&&toast$("🚫 تم حظر هذا الحساب - تواصل مع الدعم","err");return;}
+                if(c.blocked){toast$&&toast$("تم حظر هذا الحساب - تواصل مع الدعم","err");return;}
                 setCustomerSession(c);setView("home");
                 localStorage.setItem("dork_biometric_id",String(c.id));
               }else{
                 const{data:blEmail}=await supabase.rpc("is_blacklisted",{p_phone:"",p_email:gUser.email}).catch(()=>({data:false}));
-                if(blEmail){toast$&&toast$("🚫 لا يمكن إنشاء حساب بهذا البريد","err");return;}
+                if(blEmail){toast$&&toast$("لا يمكن إنشاء حساب بهذا البريد","err");return;}
                 const newRows=await sb("customers","POST",{name:gUser.name,phone:"",email:gUser.email,google_uid:gUser.googleUid,history:[],favs:[]},"");
                 const nc=toAppCustomer(newRows[0]);
                 setCustomerSession(nc);setView("home");
@@ -7114,7 +7121,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       }}>{t("cust_dash.add_calendar")}</button>}
                       {(status==="pending"||status==="approved")&&realBooking?.id&&(<>
                         <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{if(window.confirm("هل تريد تعديل موعدك؟ سيُلغى الحجز الحالي عند تأكيد الجديد.")){setRescheduleId(realBooking.id);setSelSalon(s);setView("book");}}}>✏️ تعديل</button>
-                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}} onClick={async()=>{
+                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={async()=>{
                           if(!window.confirm("هل تريد إلغاء هذا الحجز؟"))return;
                           try{
                             const bookDT=new Date(`${h.date}T${h.time}`);
@@ -7125,7 +7132,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                             sb("notifications","POST",{target_type:"all",title:"إلغاء حجز",body:`${customer?.name||""} ألغى حجزه في ${h.date} - ${to12h(h.time)}${lateCancel?" (إلغاء متأخر)":""}`,icon:"🚫"}).catch(()=>{});
                             await loadData({silent:true});
                           }catch(e){toast$("خطأ في الإلغاء","err");}
-                        }}>🚫 إلغاء</button>
+                        }}><IconBlocked size={13}/> إلغاء</button>
                       </>)}
                     </div>
                   </div>
