@@ -826,6 +826,95 @@ function IconLock({size=16,color="currentColor"}){
     <circle cx="12" cy="15.5" r="1.3" fill={color} stroke="none"/><line x1="12" y1="16.8" x2="12" y2="18.3"/>
   </svg>);
 }
+function IconChart({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="10"/>
+  </svg>);
+}
+function IconGlobe({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/>
+    <path d="M12 3c2.5 2.5 4 5.7 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.7-4-9s1.5-6.5 4-9z"/>
+  </svg>);
+}
+function IconMobile({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="6" y="2" width="12" height="20" rx="3"/><line x1="10" y1="4.3" x2="14" y2="4.3"/><line x1="10" y1="19" x2="14" y2="19"/>
+  </svg>);
+}
+function IconChat({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 11.5a8.4 8.4 0 0 1-12.2 7.4L4 20l1.2-4.6A8.4 8.4 0 1 1 21 11.5z"/>
+  </svg>);
+}
+function IconCall({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 3a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c1 .3 2 .6 3 .7a2 2 0 0 1 1.7 2.1z"/>
+  </svg>);
+}
+function IconMoneyBag({size=16,color="#c9952c"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9.2"/><path d="M12 7v10"/>
+    <path d="M15 9.3c0-1.5-1.4-2.7-3-2.7s-3 1.1-3 2.5c0 1.4 1.3 2 3 2.5 1.8.5 3 1.1 3 2.5S13.6 17 12 17s-3-1.1-3-2.7"/>
+  </svg>);
+}
+function IconCash({size=16,color="#27ae60"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9.2"/><path d="M12 7v10"/>
+    <path d="M15 9.3c0-1.5-1.4-2.7-3-2.7s-3 1.1-3 2.5c0 1.4 1.3 2 3 2.5 1.8.5 3 1.1 3 2.5S13.6 17 12 17s-3-1.1-3-2.7"/>
+  </svg>);
+}
+function IconMoon({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+  </svg>);
+}
+function IconQuestion({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9.3 8.3a2.7 2.7 0 1 1 3.9 2.4c-.8.4-1.2 1-1.2 1.9"/><line x1="12" y1="17.5" x2="12" y2="17.6"/>
+  </svg>);
+}
+function IconLogout({size=16,color="#e74c3c"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5" y="2" width="11" height="20" rx="1"/><circle cx="13" cy="12" r="1" fill={color} stroke="none"/>
+    <polyline points="16,8 21,12 16,16"/><line x1="21" y1="12" x2="9" y2="12"/>
+  </svg>);
+}
+function IconGroup({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="8" r="3.2"/><path d="M3.3 19c0-3.2 2.5-5 5.7-5s5.7 1.8 5.7 5"/>
+    <circle cx="17" cy="9" r="2.6"/><path d="M15 13.2c2.6.3 4.7 1.9 4.7 4.8"/>
+  </svg>);
+}
+function IconXLogo({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/>
+  </svg>);
+}
+function IconTelegram({size=16,color="#2980d9"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+    <path d="M22 2L2 9.5l6.5 2.3L11 19l3-4.5 5 3.5z"/>
+  </svg>);
+}
+function IconCamera({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.4"/>
+  </svg>);
+}
+function IconGear({size=16,color="#fff",bg="#8e8e93"}){
+  const teeth=[0,20,40,60,80,100,120,140,160,180,200,220,240,260,280,300,320,340];
+  return(<svg width={size} height={size} viewBox="0 0 24 24">
+    <rect x="0.5" y="0.5" width="23" height="23" rx="5" fill={bg}/>
+    <g fill={color}>
+      <circle cx="12" cy="12" r="9" fill="none" stroke={color} strokeWidth="1.6"/>
+      {teeth.map(a=><rect key={a} x="11.3" y="1.6" width="1.4" height="2.6" rx="0.6" transform={`rotate(${a} 12 12)`}/>)}
+      <line x1="12" y1="12" x2="12" y2="6.5" stroke={color} strokeWidth="0.8"/>
+      <line x1="12" y1="12" x2="7.2" y2="14.8" stroke={color} strokeWidth="0.8"/>
+      <line x1="12" y1="12" x2="16.8" y2="14.8" stroke={color} strokeWidth="0.8"/>
+      <circle cx="12" cy="12" r="1.3" fill={bg} stroke={color} strokeWidth="0.6"/>
+    </g>
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
@@ -843,6 +932,21 @@ function NotifIcon({icon,size=20}){
   if(icon==="🔄")return <IconRefresh size={size} color="var(--p)"/>;
   if(icon==="📋")return <IconClipboard size={size} color="var(--p)"/>;
   if(icon==="🔐")return <IconLock size={size} color="var(--p)"/>;
+  if(icon==="📊")return <IconChart size={size} color="var(--p)"/>;
+  if(icon==="🌐")return <IconGlobe size={size} color="var(--p)"/>;
+  if(icon==="📱")return <IconMobile size={size} color="var(--p)"/>;
+  if(icon==="💬")return <IconChat size={size} color="var(--p)"/>;
+  if(icon==="📞")return <IconCall size={size} color="var(--p)"/>;
+  if(icon==="💰")return <IconMoneyBag size={size}/>;
+  if(icon==="💵")return <IconCash size={size}/>;
+  if(icon==="🌙")return <IconMoon size={size} color="var(--p)"/>;
+  if(icon==="❓")return <IconQuestion size={size} color="var(--p)"/>;
+  if(icon==="🚪")return <IconLogout size={size}/>;
+  if(icon==="👥")return <IconGroup size={size} color="var(--p)"/>;
+  if(icon==="🐦")return <IconXLogo size={size} color="var(--p)"/>;
+  if(icon==="✈"||icon==="✈️")return <IconTelegram size={size}/>;
+  if(icon==="📷")return <IconCamera size={size} color="var(--p)"/>;
+  if(icon==="⚙")return <IconGear size={size}/>;
   return <span style={{fontSize:size}}>{icon}</span>;
 }
 function LabelWithIcon({label,size=11}){
@@ -2023,7 +2127,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowLogout(false)}>
           <div style={{width:"100%",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--border-ui)",borderBottom:"none"}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
-              <div style={{fontSize:36,marginBottom:10}}>🚪</div>
+              <div style={{fontSize:36,marginBottom:10,display:"flex",justifyContent:"center"}}><NotifIcon icon="🚪" size={36}/></div>
               <div style={{fontSize:16,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>{t("cust_drawer.logout_title")}</div>
               <div style={{fontSize:12,color:"var(--text-muted)"}}>{t("cust_drawer.logout_body")}</div>
             </div>
@@ -2139,8 +2243,8 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
         <Row icon="❓" label={t("salon_drawer.faq")} active={view==="ownerFaq"} onClick={()=>nav(()=>setView("ownerFaq"))}/>
 
         <div style={{height:16}}/>
-        <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:dir==="rtl"?"right":"left",WebkitAppearance:"none",appearance:"none"}}>
-          🚪 {t("salon_drawer.logout_btn")}
+        <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:dir==="rtl"?"right":"left",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",gap:8}}>
+          <NotifIcon icon="🚪" size={16}/> {t("salon_drawer.logout_btn")}
         </button>
         <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>{t("salon_drawer.version")} {APP_VERSION}</div>
         <div style={{height:40}}/>
@@ -2149,7 +2253,7 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowLogout(false)}>
           <div style={{width:"100%",background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--border-ui)",borderBottom:"none",direction:dir}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
-              <div style={{fontSize:36,marginBottom:10}}>🚪</div>
+              <div style={{fontSize:36,marginBottom:10,display:"flex",justifyContent:"center"}}><NotifIcon icon="🚪" size={36}/></div>
               <div style={{fontSize:16,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>{t("salon_drawer.logout_title")}</div>
               <div style={{fontSize:12,color:"var(--text-muted)"}}>{t("salon_drawer.logout_body")}</div>
             </div>
@@ -2184,7 +2288,7 @@ function EntryView({setView}){
     <div style={{minHeight:"100vh",background:"var(--shell-bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 28px",gap:40,position:"relative",direction:dir}}>
       <div style={{position:"absolute",top:20,right:20,zIndex:10}}>
         {showLang&&<div onClick={()=>setShowLang(false)} style={{position:"fixed",inset:0,zIndex:9}}/>}
-        <button onClick={()=>setShowLang(v=>!v)} style={{width:40,height:40,borderRadius:12,border:"1.5px solid var(--border-ui)",background:showLang?"var(--pa08)":"transparent",color:"var(--text-primary)",fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",WebkitAppearance:"none",appearance:"none",position:"relative",zIndex:11}}>🌐</button>
+        <button onClick={()=>setShowLang(v=>!v)} style={{width:40,height:40,borderRadius:12,border:"1.5px solid var(--border-ui)",background:showLang?"var(--pa08)":"transparent",color:"var(--text-primary)",fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",WebkitAppearance:"none",appearance:"none",position:"relative",zIndex:11}}><NotifIcon icon="🌐" size={20}/></button>
         {showLang&&(
           <div style={{position:"absolute",top:"110%",right:0,background:"var(--surface-1)",borderRadius:12,border:"1px solid var(--border-ui)",overflow:"hidden",zIndex:12,minWidth:160,boxShadow:"0 4px 24px rgba(0,0,0,.4)"}}>
             {LANGS.map((l,i)=>{
@@ -2663,7 +2767,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           ⏰ {salon.shiftEnabled?(salon.shift1Start&&salon.shift1End?`${to12h(salon.shift1Start.slice(0,5))}-${to12h(salon.shift1End.slice(0,5))}`:"--:-- - --:--"):(salon.workStart&&salon.workEnd?`${to12h(salon.workStart.slice(0,5))}-${to12h(salon.workEnd.slice(0,5))}`:"--:-- - --:--")}
         </div>
         <div>
-          👥 {salon.barbers?.length||1} {t("salon_card.barber_unit")} - 20 min
+          <NotifIcon icon="👥" size={12}/> {salon.barbers?.length||1} {t("salon_card.barber_unit")} - 20 min
         </div>
       </div>
 
@@ -2776,12 +2880,12 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
           <div style={{flex:1}}>
             <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div>
             <div style={{fontSize:11,color:"var(--text-muted)"}}>{salon.gov||salon.region}{salon.village?` > ${salon.village}`:""}</div>
-            <div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:4}}><IconUser size={10}/>{salon.owner} - 📞 {salon.phone}</div>
+            <div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:4}}><IconUser size={10}/>{salon.owner} - <NotifIcon icon="📞" size={10}/> {salon.phone}</div>
             {salon.social?.enabled&&(salon.social.whatsapp||salon.social.twitter||salon.social.telegramUser||salon.social.email)&&(
               <div style={{display:"flex",gap:10,marginTop:4}}>
-                {salon.social.whatsapp&&<a href={`https://wa.me/966${salon.social.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="واتساب الصالون" aria-label="واتساب الصالون">💬</a>}
-                {salon.social.twitter&&<a href={`https://twitter.com/${salon.social.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="تويتر/X الصالون" aria-label="تويتر/X الصالون">🐦</a>}
-                {salon.social.telegramUser&&<a href={`https://t.me/${salon.social.telegramUser.replace("@","")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="تيليجرام الصالون" aria-label="تيليجرام الصالون">✈️</a>}
+                {salon.social.whatsapp&&<a href={`https://wa.me/966${salon.social.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="واتساب الصالون" aria-label="واتساب الصالون"><NotifIcon icon="💬" size={15}/></a>}
+                {salon.social.twitter&&<a href={`https://twitter.com/${salon.social.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="تويتر/X الصالون" aria-label="تويتر/X الصالون"><NotifIcon icon="🐦" size={15}/></a>}
+                {salon.social.telegramUser&&<a href={`https://t.me/${salon.social.telegramUser.replace("@","")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="تيليجرام الصالون" aria-label="تيليجرام الصالون"><NotifIcon icon="✈" size={15}/></a>}
                 {salon.social.email&&<a href={`mailto:${salon.social.email}`} style={{fontSize:15,textDecoration:"none"}} title="بريد الصالون" aria-label="بريد الصالون">✉️</a>}
               </div>
             )}
@@ -2797,7 +2901,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
         <div style={G.tabRow}>
           <button style={{...G.tabBtn,...(tab==="book"?G.tabOn:{})}} onClick={()=>setTab("book")}>{t("salon_page.book_tab")}</button>
           {canManage&&<button style={{...G.tabBtn,...(tab==="notif"?G.tabOn:{})}} onClick={()=>{setTab("notif");refreshSalonBookings(salon.id);}} aria-label="الإشعارات والحجوزات المعلقة">🔔{pending>0&&<span style={G.notifDot}>{pending}</span>}</button>}
-          {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")} aria-label="إحصائيات الصالون">📊</button>}
+          {canManage&&<button style={{...G.tabBtn,...(tab==="stats"?G.tabOn:{})}} onClick={()=>setTab("stats")} aria-label="إحصائيات الصالون"><NotifIcon icon="📊" size={16}/></button>}
         </div>
         {tab==="book"&&<BookView salon={salon} addBooking={addBooking} onBack={null} inline setView={setView} rescheduleId={rescheduleId} customer={customer}/>}
         {tab==="notif"&&canManage&&<NotifPanel salon={salon} onUpdate={updateBookingStatus} customers={customers} refreshSalonBookings={refreshSalonBookings}/>}
@@ -3336,11 +3440,11 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
                       <div style={{fontSize:10,color:col,fontWeight:600,marginTop:1}}>{rev} ر</div>
                     </div>
                     <div style={{background:"rgba(255,255,255,.07)",borderRadius:8,padding:"6px 4px",textAlign:"center"}}>
-                      <div style={{fontSize:9,color:`${col}bb`,marginBottom:3,fontWeight:600}}>💵 كاش</div>
+                      <div style={{fontSize:9,color:`${col}bb`,marginBottom:3,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:3}}><NotifIcon icon="💵" size={10}/> كاش</div>
                       <div style={{fontSize:12,fontWeight:700,color:barberCash>0?"#27ae60":col}}>{barberCash} ر</div>
                     </div>
                     <div style={{background:`${col}20`,borderRadius:8,padding:"6px 4px",textAlign:"center",border:`1px solid ${col}33`}}>
-                      <div style={{fontSize:9,color:`${col}bb`,marginBottom:3,fontWeight:600}}>📊 الإجمالي</div>
+                      <div style={{fontSize:9,color:`${col}bb`,marginBottom:3,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:3}}><NotifIcon icon="📊" size={10}/> الإجمالي</div>
                       <div style={{fontSize:13,fontWeight:700,color:col}}>{rev+barberCash} ر</div>
                     </div>
                   </div>
@@ -3378,7 +3482,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
 
       {/* ── تحليل العملاء ── */}
       <div style={{background:"var(--surface-1)",borderRadius:14,padding:"12px",border:"1px solid var(--border-ui)",marginBottom:14}}>
-        <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10}}>👥 تحليل العملاء</div>
+        <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10,display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="👥" size={13}/> تحليل العملاء</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div style={{background:"rgba(39,174,96,.08)",border:"1px solid rgba(39,174,96,.25)",borderRadius:10,padding:"10px",textAlign:"center"}}>
             <div style={{fontSize:22,fontWeight:900,color:"#27ae60"}}>{newCusts.length}</div>
@@ -3435,21 +3539,21 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
       </div>
 
       {/* ── الأرباح ── */}
-      <div style={{fontSize:12,fontWeight:800,color:"var(--p)",marginBottom:8}}>💰 الأرباح</div>
+      <div style={{fontSize:12,fontWeight:800,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="💰" size={14}/> الأرباح</div>
       <div style={{background:"rgba(var(--pr),.12)",borderRadius:14,padding:"14px",border:"1.5px solid rgba(var(--pr),.3)",marginBottom:14}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:12}}>
           {[{l:"اليوم",app:salonDayRevenue,cash:todayCash},{l:"الشهر",app:salonMonthRevenue,cash:monthCash},{l:"السنة",app:salonYearRevenue,cash:yearCash}].map(({l,app,cash})=>(
             <div key={l} style={{background:"rgba(var(--pr),.1)",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid rgba(var(--pr),.2)"}}>
               <div style={{fontSize:9,color:"var(--text-muted)",marginBottom:3}}>{l}</div>
               <div style={{fontSize:15,fontWeight:900,color:"var(--p)"}}>{app+cash} ر</div>
-              <div style={{fontSize:9,color:"var(--text-muted)"}}>📱{app} + 💵{cash}</div>
+              <div style={{fontSize:9,color:"var(--text-muted)",display:"flex",alignItems:"center",justifyContent:"center",gap:3}}><NotifIcon icon="📱" size={9}/>{app} + <NotifIcon icon="💵" size={9}/>{cash}</div>
             </div>
           ))}
         </div>
         {/* سجل الكاش اليوم */}
         <div style={{borderTop:"1px solid rgba(var(--pr),.2)",paddingTop:10}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:11,color:"var(--text-muted)"}}>💵 إيراد كاش اليوم</div>
+            <div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="💵" size={12}/> إيراد كاش اليوم</div>
             <button onClick={()=>setShowCashForm(!showCashForm)} style={{padding:"4px 10px",borderRadius:8,border:"1px solid rgba(var(--pr),.4)",background:"var(--pa08)",color:"var(--p)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>+ أضف</button>
           </div>
           {showCashForm&&(
@@ -3469,7 +3573,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
               )}
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
                 <div>
-                  <label style={{display:"block",fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}>💵 المبلغ</label>
+                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}><NotifIcon icon="💵" size={10}/> المبلغ</label>
                   <div style={{position:"relative"}}>
                     <input type="number" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} placeholder="0"
                       style={{width:"100%",padding:"8px 30px 8px 8px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:14,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",direction:"ltr",textAlign:"right",fontWeight:700}}/>
@@ -3697,7 +3801,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
                         {w.name}
                         {cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}><LabelWithIcon label={cl.label} size={9}/></span>}
                       </div>
-                      <div style={{fontSize:11,color:"var(--text-muted)"}}>📞 {w.phone}</div>
+                      <div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:4}}><NotifIcon icon="📞" size={11}/> {w.phone}</div>
                       {w.slotTime&&<div style={{fontSize:11,color:"var(--p)",fontWeight:700}}>⏰ {w.slotDate} - {w.slotTime}</div>}
                       <div style={{fontSize:10,color:"var(--text-muted)"}}>{t("notif.added_at")} {w.addedAt}</div>
                     </div>
@@ -3719,7 +3823,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       <div style={{display:"flex",flexDirection:"column",gap:8}}>{bks.map(b=>(
         <div key={b.id} style={{...G.bItem,borderRight:`3px solid ${b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"var(--pl)"}`}}>
           <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
-            {(()=>{const cust=customers.find(c=>c.phone&&b.phone&&c.phone.replace(/\D/g,"").slice(-9)===b.phone.replace(/\D/g,"").slice(-9));const cl=cust?getCustomerClassification(cust):null;return(<div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><IconUser size={12}/>{b.name||t("owner_dash.customer_fallback")}{cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}><LabelWithIcon label={cl.label} size={9}/></span>}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>📞 {b.phone}</div><div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:4}}><IconScissors size={11}/>{Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)",display:"flex",alignItems:"center",gap:4}}><IconCalendar size={11}/>{b.date} {to12h(b.time)} - {b.total||0} ر</div></div>);})()}
+            {(()=>{const cust=customers.find(c=>c.phone&&b.phone&&c.phone.replace(/\D/g,"").slice(-9)===b.phone.replace(/\D/g,"").slice(-9));const cl=cust?getCustomerClassification(cust):null;return(<div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><IconUser size={12}/>{b.name||t("owner_dash.customer_fallback")}{cl&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:10,background:`${cl.color}22`,color:cl.color,border:`1px solid ${cl.color}44`}}><LabelWithIcon label={cl.label} size={9}/></span>}</div><div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:4}}><NotifIcon icon="📞" size={11}/> {b.phone}</div><div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:4}}><IconScissors size={11}/>{Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div><div style={{fontSize:11,color:"var(--p)",display:"flex",alignItems:"center",gap:4}}><IconCalendar size={11}/>{b.date} {to12h(b.time)} - {b.total||0} ر</div></div>);})()}
             <span style={{fontSize:10,padding:"2px 7px",borderRadius:7,flexShrink:0,background:b.status==="approved"?"#1a3a2a":b.status==="rejected"?"#3a1a1a":"#2a2a1a",color:b.status==="approved"?"#4caf50":b.status==="rejected"?"#e74c3c":"var(--pl)"}}>{b.status==="approved"?t("notif.status_approved"):b.status==="rejected"?t("notif.status_rejected"):t("notif.status_pending")}</span>
           </div>
           {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:8}}><button style={G.accBtn} onClick={()=>onUpdate(salon.id,b.id,"approved")}>{t("notif.approve")}</button><button style={G.rejBtn} onClick={()=>onUpdate(salon.id,b.id,"rejected")}>{t("notif.reject")}</button></div>}
@@ -3986,7 +4090,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           <div key={b.id} style={{display:"flex",gap:8,marginBottom:10,alignItems:"center"}}>
             <div style={{position:"relative",flexShrink:0}} onClick={()=>pickPhoto(b.id)}>
               <div style={{width:44,height:44,borderRadius:"50%",background:b.photo?"transparent":"var(--surface-2)",border:`2px dashed var(--p)`,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
-                {b.photo?<img src={optimizeImageUrl(b.photo,44,44)} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:<span style={{fontSize:18,color:"var(--p)"}}>📷</span>}
+                {b.photo?<img src={optimizeImageUrl(b.photo,44,44)} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>:<NotifIcon icon="📷" size={18}/>}
               </div>
               <div style={{position:"absolute",bottom:-2,right:-2,background:"var(--p)",borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"var(--p-text)",cursor:"pointer"}}>+</div>
             </div>
@@ -4569,7 +4673,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             </div>
           </div>
           {/* الجوال */}
-          <div style={{fontSize:15,color:"var(--p)",fontWeight:800}}>📞 {salon.phone||t("owner_dash.not_available")}</div>
+          <div style={{fontSize:15,color:"var(--p)",fontWeight:800,display:"flex",alignItems:"center",gap:6}}><NotifIcon icon="📞" size={15}/> {salon.phone||t("owner_dash.not_available")}</div>
           {/* الموقع */}
           <div style={{fontSize:14,color:"var(--p)",fontWeight:600,display:"flex",alignItems:"center",gap:5}}><IconPin size={13}/>{salon.gov||salon.region}{salon.village?` · ${salon.village}`:""}</div>
           {/* صف أخير: تاريخ الانضمام + نشط */}
@@ -4937,7 +5041,7 @@ function BookingCalendar({salon,onUpdate}){
                 <div style={{display:"flex",justifyContent:"space-between",gap:6}}>
                   <div style={{flex:1}}>
                     <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><IconUser size={12}/>{b.name||t("owner_dash.customer_fallback")}</div>
-                    <div style={{fontSize:11,color:"var(--text-muted)"}}>📞 {b.phone}</div>
+                    <div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:4}}><NotifIcon icon="📞" size={11}/> {b.phone}</div>
                     <div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:4}}><IconScissors size={11}/>{Array.isArray(b.services)?b.services.join(" + "):b.service||""}{b.barberName?` - ${b.barberName}`:""}</div>
                     <div style={{fontSize:11,color:"var(--p)",display:"flex",alignItems:"center",gap:4}}><IconCalendar size={10}/>{b.date} {to12h(b.time)} - {b.total||0} ر</div>
                   </div>
@@ -5973,7 +6077,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                   :<div style={{width:44,height:44,borderRadius:"50%",background:"var(--surface-2)",border:"2px dashed #2a2a3a",display:"flex",alignItems:"center",justifyContent:"center"}}><IconBarberPole size={18}/></div>
                 }
                 <label style={{position:"absolute",bottom:-2,right:-2,width:18,height:18,borderRadius:"50%",background:"var(--p)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:10}}>
-                  📷
+                  <IconCamera size={11} color="#fff"/>
                   <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
                     const file=e.target.files?.[0];
                     if(!file)return;
@@ -6091,15 +6195,15 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
               <a href={`mailto:${socialLinks.email}`} style={{...inp,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.email}</a>
             </div>}
             {socialLinks.whatsapp&&<div style={{marginBottom:12}}>
-              <label style={lbl}>💬 واتساب</label>
+              <label style={{...lbl,display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="💬" size={13}/> واتساب</label>
               <a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{...inp,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.whatsapp}</a>
             </div>}
             {socialLinks.twitter&&<div style={{marginBottom:12}}>
-              <label style={lbl}>🐦 تويتر / X</label>
+              <label style={{...lbl,display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="🐦" size={13}/> تويتر / X</label>
               <a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{...inp,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.twitter}</a>
             </div>}
             {(socialLinks.telegram||socialLinks.telegramUser)&&<div style={{marginBottom:12}}>
-              <label style={lbl}>✈ تيليغرام</label>
+              <label style={{...lbl,display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="✈" size={13}/> تيليغرام</label>
               <a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{...inp,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.telegramUser||socialLinks.telegram}</a>
             </div>}
             {(socialLinks.customFields||[]).filter(f=>f&&f.label&&(f.value||"").trim()).map((f,i)=>(
@@ -6308,7 +6412,7 @@ function OwnerLangView({setView,setShowSalonDrawer,setOwnerTab}){
       <div style={G.fp}>
         <div style={G.fh}>
           <button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("owner_dash.back")}</button>
-          <h2 style={G.ft}>🌐 {t("salon_drawer.language")}</h2>
+          <h2 style={{...G.ft,display:"flex",alignItems:"center",gap:8}}><NotifIcon icon="🌐" size={18}/> {t("salon_drawer.language")}</h2>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,paddingTop:8}}>
           {LANGS.map(l=>{
@@ -6342,7 +6446,7 @@ function CustLangView({setView,setShowDrawer}){
       <div style={G.fp}>
         <div style={G.fh}>
           <button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>{t("owner_dash.back")}</button>
-          <h2 style={G.ft}>🌐 {t("cust_drawer.language")}</h2>
+          <h2 style={{...G.ft,display:"flex",alignItems:"center",gap:8}}><NotifIcon icon="🌐" size={18}/> {t("cust_drawer.language")}</h2>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,paddingTop:8}}>
           {LANGS.map(l=>{
@@ -7301,7 +7405,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       {/* إعدادات الحساب */}
       {tab==="settings"&&(
         <div style={{background:"var(--surface-1)",borderRadius:13,padding:16,border:"1px solid var(--border-ui)"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:14,paddingBottom:6,borderBottom:"1px solid var(--border-ui)"}}>⚙ إعدادات الحساب</div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:14,paddingBottom:6,borderBottom:"1px solid var(--border-ui)",display:"flex",alignItems:"center",gap:6}}><NotifIcon icon="⚙" size={16}/> إعدادات الحساب</div>
           <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}} onClick={()=>{setTab("settings");setEditMode(true);}}><IconPencil size={13}/>تعديل البيانات</button>
           <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}} onClick={()=>setEditPinStep("select")}><IconLock size={13}/>تغيير رمز PIN</button>
 
@@ -7580,7 +7684,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
                   transition:"all .2s",WebkitTapHighlightColor:"transparent"}}>
                 <div style={{width:44,height:30,borderRadius:8,background:shell,border:`1.5px solid ${card}`,
                   display:"flex",alignItems:"center",justifyContent:"center",marginBottom:4,fontSize:18}}>
-                  {icon}
+                  <NotifIcon icon={icon} size={16}/>
                 </div>
                 <span style={{fontSize:13,fontWeight:700,color:active?"var(--p)":"var(--text-primary)"}}>{label}</span>
                 <span style={{fontSize:10,color:"var(--text-muted)",textAlign:"center"}}>{desc}</span>
@@ -7616,15 +7720,15 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
               <a href={`mailto:${socialLinks.email}`} style={{...inp2,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.email}</a>
             </div>}
             {socialLinks.whatsapp&&<div style={{marginBottom:12}}>
-              <label style={lbl}>💬 واتساب</label>
+              <label style={{...lbl,display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="💬" size={13}/> واتساب</label>
               <a href={`https://wa.me/966${socialLinks.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{...inp2,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.whatsapp}</a>
             </div>}
             {socialLinks.twitter&&<div style={{marginBottom:12}}>
-              <label style={lbl}>🐦 تويتر / X</label>
+              <label style={{...lbl,display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="🐦" size={13}/> تويتر / X</label>
               <a href={`https://twitter.com/${socialLinks.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{...inp2,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.twitter}</a>
             </div>}
             {(socialLinks.telegram||socialLinks.telegramUser)&&<div style={{marginBottom:12}}>
-              <label style={lbl}>✈ تيليغرام</label>
+              <label style={{...lbl,display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="✈" size={13}/> تيليغرام</label>
               <a href={`https://t.me/${(socialLinks.telegramUser||socialLinks.telegram).replace(/^0/,"").replace("@","")}`} target="_blank" rel="noreferrer" style={{...inp2,display:"block",textDecoration:"none",direction:"ltr"}}>{socialLinks.telegramUser||socialLinks.telegram}</a>
             </div>}
             {(socialLinks.customFields||[]).filter(f=>f&&f.label&&(f.value||"").trim()).map((f,i)=>(
