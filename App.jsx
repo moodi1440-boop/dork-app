@@ -271,22 +271,22 @@ const DEFAULT_SOCIAL_LINKS={email:"",twitter:"",whatsapp:"",telegram:"",telegram
 //  TONES  - louder + barbershop themed
 // ==============================================
 const TONES = [
-  { id:"scissors",  label:"مقص ✂"          },
-  { id:"razor",     label:"ماكينة 🪒"       },
-  { id:"bell",      label:"جرس الباب 🔔"    },
-  { id:"cash",      label:"صندوق النقد 💰"  },
-  { id:"welcome",   label:"أهلاً وسهلاً 🎉" },
-  { id:"chime3",    label:"جرس ثلاثي 🎶"   },
-  { id:"alert",     label:"تنبيه عاجل ⚡"   },
-  { id:"classic",   label:"كلاسيك 🎵"       },
-  { id:"barberpole",label:"عمود الحلاق 💈"  },
-  { id:"clippers",  label:"ماكينة كهربائية ⚡"},
-  { id:"towel",     label:"منشفة ساخنة 🧖"  },
-  { id:"mirror",    label:"المرايا ✨"       },
-  { id:"spray",     label:"رشاش الماء 💦"   },
-  { id:"magazine",  label:"مجلة انتظار 📖"  },
-  { id:"fanfare",   label:"فانفاري 🎺"       },
-  { id:"vip",       label:"VIP دخول 👑"      },
+  { id:"scissors",  icon:"✂",  label:"مقص"            },
+  { id:"razor",     icon:"🪒", label:"ماكينة"          },
+  { id:"bell",      icon:"🔔", label:"جرس الباب"       },
+  { id:"cash",      icon:"💰", label:"صندوق النقد"     },
+  { id:"welcome",   icon:"🎉", label:"أهلاً وسهلاً"    },
+  { id:"chime3",    icon:"🎶", label:"جرس ثلاثي"       },
+  { id:"alert",     icon:"⚡", label:"تنبيه عاجل"      },
+  { id:"classic",   icon:"🎵", label:"كلاسيك"          },
+  { id:"barberpole",icon:"💈", label:"عمود الحلاق"     },
+  { id:"clippers",  icon:"⚡", label:"ماكينة كهربائية" },
+  { id:"towel",     icon:"🧖", label:"منشفة ساخنة"     },
+  { id:"mirror",    icon:"✨", label:"المرايا"          },
+  { id:"spray",     icon:"💦", label:"رشاش الماء"      },
+  { id:"magazine",  icon:"📖", label:"مجلة انتظار"     },
+  { id:"fanfare",   icon:"🎺", label:"فانفاري"          },
+  { id:"vip",       icon:"👑", label:"VIP دخول"         },
 ];
 
 const THEMES = {
@@ -1146,6 +1146,77 @@ function IconCircuitNodes({size=16,color="#888"}){
     <path d="M4 6H10V12H18V18H20"/><circle cx="4" cy="6" r="1.8" fill={color} stroke="none"/><circle cx="10" cy="12" r="1.8" fill={color} stroke="none"/><circle cx="18" cy="18" r="1.8" fill={color} stroke="none"/><circle cx="20" cy="18" r="1.8" fill={color} stroke="none"/>
   </svg>);
 }
+function IconArrowLeft({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="19" y1="12" x2="6" y2="12"/><polyline points="12,6 6,12 12,18"/>
+  </svg>);
+}
+function IconArrowRight({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="18" y2="12"/><polyline points="12,6 18,12 12,18"/>
+  </svg>);
+}
+function IconArrowUp({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="19" x2="12" y2="6"/><polyline points="6,12 12,6 18,12"/>
+  </svg>);
+}
+function IconArrowDown({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="18"/><polyline points="6,12 12,18 18,12"/>
+  </svg>);
+}
+function IconArrowReturn({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 17l-5-5 5-5"/><path d="M4 12h10a5 5 0 0 1 0 10h-2"/>
+  </svg>);
+}
+function IconSwapHorizontal({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="6" y1="8" x2="18" y2="8"/><polyline points="15,5 18,8 15,11"/>
+    <line x1="18" y1="16" x2="6" y2="16"/><polyline points="9,13 6,16 9,19"/>
+  </svg>);
+}
+function IconRazor({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5.5" y="3" width="13" height="6" rx="2"/><line x1="7.5" y1="6" x2="16.5" y2="6"/><rect x="10" y="9.5" width="4" height="11" rx="1.4"/>
+  </svg>);
+}
+function IconMusicNote({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="17" r="3" fill={color} stroke="none"/><line x1="11" y1="17" x2="11" y2="5"/><path d="M11 5 C15 6, 16 9, 14 11"/>
+  </svg>);
+}
+function IconMusicNotes({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="6" cy="18" r="2.3" fill={color} stroke="none"/><circle cx="15" cy="16" r="2.3" fill={color} stroke="none"/>
+    <line x1="8.3" y1="18" x2="8.3" y2="6"/><line x1="17.3" y1="16" x2="17.3" y2="5"/><path d="M8.3 6 L17.3 5"/>
+  </svg>);
+}
+function IconTrumpet({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2.5" y="13.2" width="9" height="2.2" rx="1.1"/><circle cx="2.5" cy="14.3" r="1" fill={color} stroke="none"/>
+    <line x1="5" y1="13" x2="5" y2="9.5"/><circle cx="5" cy="8.6" r="1" fill={color} stroke="none"/>
+    <line x1="7.7" y1="13" x2="7.7" y2="9.5"/><circle cx="7.7" cy="8.6" r="1" fill={color} stroke="none"/>
+    <line x1="10.4" y1="13" x2="10.4" y2="9.5"/><circle cx="10.4" cy="8.6" r="1" fill={color} stroke="none"/>
+    <path d="M11.5 13.1 L21 10 L21 17.6 L11.5 15.5 Z"/>
+  </svg>);
+}
+function IconConfetti({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 19l3-10 11 6z"/><circle cx="14" cy="5" r="1" fill={color} stroke="none"/><circle cx="19" cy="9" r="1" fill={color} stroke="none"/><circle cx="10" cy="3.5" r="1" fill={color} stroke="none"/><line x1="16" y1="11" x2="18.5" y2="13"/>
+  </svg>);
+}
+function IconSteam({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round">
+    <path d="M8 21c0-2 2-3 2-5s-2-3-2-5 2-3 2-5"/><path d="M14 21c0-2 2-3 2-5s-2-3-2-5 2-3 2-5"/>
+  </svg>);
+}
+function IconWaterDrops({size=16,color="#3498db"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 4c2.2 3 3.6 5 3.6 7a3.6 3.6 0 1 1-7.2 0c0-2 1.4-4 3.6-7z"/><path d="M16.5 11c1.4 2 2.3 3.2 2.3 4.5a2.3 2.3 0 1 1-4.6 0c0-1.3.9-2.5 2.3-4.5z"/>
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
@@ -1227,6 +1298,20 @@ function NotifIcon({icon,size=20}){
   if(icon==="🪨")return <IconPebble size={size}/>;
   if(icon==="🌅")return <IconReceipt size={size}/>;
   if(icon==="🔌")return <IconCircuitNodes size={size}/>;
+  if(icon==="←")return <IconArrowLeft size={size}/>;
+  if(icon==="→")return <IconArrowRight size={size}/>;
+  if(icon==="↑")return <IconArrowUp size={size}/>;
+  if(icon==="↓")return <IconArrowDown size={size}/>;
+  if(icon==="↩"||icon==="↩️")return <IconArrowReturn size={size}/>;
+  if(icon==="↻")return <IconRefresh size={size}/>;
+  if(icon==="⇄")return <IconSwapHorizontal size={size}/>;
+  if(icon==="🪒")return <IconRazor size={size} color="var(--p)"/>;
+  if(icon==="🎵")return <IconMusicNote size={size} color="var(--p)"/>;
+  if(icon==="🎶")return <IconMusicNotes size={size} color="var(--p)"/>;
+  if(icon==="🎺")return <IconTrumpet size={size} color="var(--p)"/>;
+  if(icon==="🎉")return <IconConfetti size={size} color="var(--p)"/>;
+  if(icon==="🧖")return <IconSteam size={size} color="var(--p)"/>;
+  if(icon==="💦")return <IconWaterDrops size={size}/>;
   return <span style={{fontSize:size}}>{icon}</span>;
 }
 function LabelWithIcon({label,size=11}){
@@ -2376,7 +2461,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <Row icon="🌙" label={t("cust_drawer.lighting")} sub={themeMode==="dark"?t("cust_drawer.dark_mode"):themeMode==="dim"?t("cust_drawer.dim_mode"):t("cust_drawer.light_mode")} itemId="custSettingsDark" onClick={()=>{setActiveDrawerItem("custSettingsDark");onClose();setView("custSettingsDark");}}/>
         <Row icon="🔤" label={t("cust_drawer.font_size")} sub={{sm:t("cust_drawer.font_sm"),md:t("cust_drawer.font_md"),lg:t("cust_drawer.font_lg")}[settings?.fontSize||"md"]} itemId="custSettingsFont" onClick={()=>{setActiveDrawerItem("custSettingsFont");onClose();setView("custSettingsFont");}}/>
         <Row icon="🖼" label={t("cust_drawer.background")} sub={t("settings.bgs."+(settings?.bg||"none"))} itemId="custSettingsBg" onClick={()=>{setActiveDrawerItem("custSettingsBg");onClose();setView("custSettingsBg");}}/>
-        <Row icon="🔔" label={t("cust_drawer.tone")} sub={TONES.find(tn=>tn.id===settings?.defaultTone)?.label||"—"} itemId="custSettingsTone" onClick={()=>{setActiveDrawerItem("custSettingsTone");onClose();setView("custSettingsTone");}}/>
+        <Row icon="🔔" label={t("cust_drawer.tone")} sub={(()=>{const tn=TONES.find(tn=>tn.id===settings?.defaultTone);return tn?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><NotifIcon icon={tn.icon} size={11}/>{tn.label}</span>:"—";})()} itemId="custSettingsTone" onClick={()=>{setActiveDrawerItem("custSettingsTone");onClose();setView("custSettingsTone");}}/>
         <Row icon="🌐" label={t("cust_drawer.language")} itemId="custLang" onClick={()=>{setActiveDrawerItem("custLang");onClose();setView("custLang");}}/>
         {/* مزيد */}
         <div style={{height:8}}/>
@@ -2436,7 +2521,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
               <LabelWithIcon label="⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف" size={11}/>
             </div>
             <div style={{display:"flex",gap:10}}>
-              <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowDel(false)}>↩️ {t("cust_drawer.cancel")}</button>
+              <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={()=>setShowDel(false)}><NotifIcon icon="↩️" size={13}/> {t("cust_drawer.cancel")}</button>
               <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={async()=>{try{await sb("customers","DELETE",null,`?id=eq.${customer.id}`);setCustomerSession(null);setView("entry");onClose();}catch(e){toast$(""+e.message,"err");}setShowDel(false);}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><IconTrash size={14} color="#fff"/>{t("cust_drawer.delete_confirm")}</span></button>
             </div>
           </div>
@@ -2767,7 +2852,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   return(
     <div style={G.page}>
       {/* Pull to refresh */}
-      {(_ptY>8||pullRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${pullRefreshing?10:Math.max(_ptY-16,0)}px)`,zIndex:100,transition:pullRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"var(--p-text)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{pullRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}>↻</span>:_ptY>=_PT?"↑":"↓"}</div>}
+      {(_ptY>8||pullRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${pullRefreshing?10:Math.max(_ptY-16,0)}px)`,zIndex:100,transition:pullRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"var(--p-text)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{pullRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}><NotifIcon icon="↻" size={17}/></span>:<NotifIcon icon={_ptY>=_PT?"↑":"↓"} size={17}/>}</div>}
 
       {/* Region Select - قائمة متدرجة */}
       {showRegionSelect&&(()=>{
@@ -2884,7 +2969,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
                <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><IconPin size={36}/></div>
                <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>أضف موقعك لمشاهدة العروض القريبة</div>
                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:16}}>نعرض لك العروض من الأقرب إليك تلقائياً</div>
-               <button onClick={()=>setView("custSettings")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"var(--p)",color:"var(--p-text)",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>← الإعدادات</button>
+               <button onClick={()=>setView("custSettings")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"var(--p)",color:"var(--p-text)",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:5}}><NotifIcon icon="←" size={13}/> الإعدادات</button>
              </div>
             :sortedSalons.length===0
               ?<div style={G.empty}>{promoMode?"لا توجد عروض نشطة الآن":urgentMode?t("home.no_salons_open"):t("home.no_salons")}</div>
@@ -2935,7 +3020,7 @@ function SalonReviewsView({salon,reviews,setView}){
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>setView("home")}>← {t("salon_reviews.back")}</button>
+          <button style={G.bb} onClick={()=>setView("home")}><NotifIcon icon="←" size={12}/> {t("salon_reviews.back")}</button>
           <h2 style={{...G.ft,flex:1}}>{t("salon_reviews.title")}</h2>
         </div>
         <div style={{background:"rgba(var(--gold-rgb),.07)",border:"1px solid rgba(var(--gold-rgb),.18)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
@@ -3870,7 +3955,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
                 style={{width:"100%",padding:"8px 10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",marginBottom:10,direction:"rtl"}}/>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                 <button onClick={()=>{setShowCashForm(false);setCashAmount("");setCashNote("");setCashDate(getTodayDateInRiyadh());setCashBarber("");}}
-                  style={{padding:"10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>← رجوع</button>
+                  style={{padding:"10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><NotifIcon icon="←" size={13}/> رجوع</button>
                 <button onClick={addCashEntry}
                   style={{padding:"10px",borderRadius:9,border:"none",background:"var(--grad)",color:"var(--p-text,#000)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><IconCheck size={12} color="var(--p-text,#000)"/>موافق</button>
               </div>
@@ -4411,7 +4496,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
       <div style={G.fc}>
         <SL>{t("register.tone_section")}</SL>
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:5}}>
-          {TONES.map(tn=><div key={tn.id} style={{...G.chip,...(form.tone===tn.id?G.chipOn:{})}} onClick={()=>{setForm(p=>({...p,tone:tn.id}));playTone(tn.id,0.8);}}>{tn.label}</div>)}
+          {TONES.map(tn=><div key={tn.id} style={{...G.chip,...(form.tone===tn.id?G.chipOn:{}),display:"flex",alignItems:"center",gap:5}} onClick={()=>{setForm(p=>({...p,tone:tn.id}));playTone(tn.id,0.8);}}><NotifIcon icon={tn.icon} size={13}/>{tn.label}</div>)}
         </div>
         <div style={{fontSize:11,color:"var(--text-muted)"}}>{t("register.tone_hint")}</div>
       </div>
@@ -4476,7 +4561,7 @@ function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
     <div style={{minHeight:"100vh",fontFamily:"'Cairo',sans-serif",direction:dir,paddingBottom:40}}>
       <div style={{position:"sticky",top:64,zIndex:50,background:"var(--bg-input)",borderBottom:"1px solid rgba(var(--gold-rgb),.15)",padding:"12px 16px 10px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-          <button onClick={()=>setView("home")} style={{background:"transparent",border:"none",color:gold,fontSize:20,cursor:"pointer",padding:"0 4px",lineHeight:1}}>←</button>
+          <button onClick={()=>setView("home")} style={{background:"transparent",border:"none",color:gold,fontSize:20,cursor:"pointer",padding:"0 4px",lineHeight:1,display:"flex",alignItems:"center"}}><IconArrowLeft size={18} color={gold}/></button>
           <DorkLogoSvg size={26}/>
           <div>
             <div style={{fontSize:15,fontWeight:900,color:"var(--text-primary)"}}>{t("all_reviews.title")}</div>
@@ -4587,7 +4672,7 @@ function NotifsView({setView}){
   return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
       <div style={G.fh}>
-        <button style={G.bb} onClick={()=>setView("home")}>← {t("notifs_view.back")}</button>
+        <button style={G.bb} onClick={()=>setView("home")}><NotifIcon icon="←" size={12}/> {t("notifs_view.back")}</button>
         <h2 style={{...G.ft,flex:1}}>{t("notifs_view.title")}</h2>
         {notifs.length>0&&<button style={{...G.pageBtn,fontSize:11,padding:"5px 10px"}} onClick={markAll}>{t("notifs_view.mark_all")}</button>}
         {notifs.length>0&&<button style={{...G.delBtn,fontSize:11,padding:"5px 10px"}} onClick={clearAll}>{t("notifs_view.clear")}</button>}
@@ -4619,7 +4704,7 @@ function CompareSalonsView({salons,setView,setSelSalon}){
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
   if(!salons||salons.length<2)return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← {t("compare.back")}</button><h2 style={G.ft}>{t("compare.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}><NotifIcon icon="←" size={12}/> {t("compare.back")}</button><h2 style={G.ft}>{t("compare.title")}</h2></div>
       <div style={G.empty}>{t("compare.empty")}</div>
     </div></div>
   );
@@ -4636,7 +4721,7 @@ function CompareSalonsView({salons,setView,setSelSalon}){
 
   return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← {t("compare.back")}</button><h2 style={G.ft}>{t("compare.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}><NotifIcon icon="←" size={12}/> {t("compare.back")}</button><h2 style={G.ft}>{t("compare.title")}</h2></div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
         <div/>
@@ -4727,7 +4812,7 @@ function NearMapView({salons,setView,setSelSalon}){
 
   return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>← {t("near_map.back")}</button><h2 style={G.ft}>{t("near_map.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}><NotifIcon icon="←" size={12}/> {t("near_map.back")}</button><h2 style={G.ft}>{t("near_map.title")}</h2></div>
       {!userLoc?(
         <div style={{textAlign:"center",padding:"40px 20px"}}>
           <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><IconPin size={50}/></div>
@@ -4926,7 +5011,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         .pending-pulse{animation:pulse 2s infinite;}
       `}</style>
       <div style={G.fp}>
-      {(_oPtY>8||_oPtRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${_oPtRefreshing?10:Math.max(_oPtY-16,0)}px)`,zIndex:100,transition:_oPtRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"var(--p-text)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{_oPtRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}>↻</span>:_oPtY>=_OPT?"↑":"↓"}</div>}
+      {(_oPtY>8||_oPtRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${_oPtRefreshing?10:Math.max(_oPtY-16,0)}px)`,zIndex:100,transition:_oPtRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"var(--p-text)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{_oPtRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}><NotifIcon icon="↻" size={17}/></span>:<NotifIcon icon={_oPtY>=_OPT?"↑":"↓"} size={17}/>}</div>}
 
       {/* بانر إشعارات الإدارة */}
       {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
@@ -5108,7 +5193,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       )}
       {ownerTab!==null&&(
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>setShowSalonDrawer(true)}>← {t("owner_dash.back")}</button>
+          <button style={G.bb} onClick={()=>setShowSalonDrawer(true)}><NotifIcon icon="←" size={12}/> {t("owner_dash.back")}</button>
           <h2 style={{...G.ft,...(ownerTab==="calendar"||ownerTab==="messages"||ownerTab==="reviews"||ownerTab==="stats"?{}:{display:"flex",alignItems:"center",gap:6})}}>{ownerTab==="calendar"?t("salon_drawer.bookings"):ownerTab==="messages"?t("salon_drawer.messages"):ownerTab==="reviews"?t("salon_drawer.reviews"):ownerTab==="stats"?t("salon_drawer.stats"):<><IconFire size={16}/>إرسال عرض</>}</h2>
         </div>
       )}
@@ -5634,7 +5719,7 @@ function PromoPanel({salon,customers,toast$}){
                     <button onClick={()=>deletePromo(pr.id)} style={{flex:1,background:"rgba(231,76,60,.1)",border:"1px solid rgba(231,76,60,.4)",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>🗑 حذف</button>
                   )}
                   {(pr.status==="expired"||pr.status==="cancelled")&&(<>
-                    <button onClick={()=>renewPromo(pr)} style={{flex:2,background:"var(--pa12)",border:"1px solid rgba(var(--pr),.3)",color:"var(--p)",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>تجديد العرض ↩</button>
+                    <button onClick={()=>renewPromo(pr)} style={{flex:2,background:"var(--pa12)",border:"1px solid rgba(var(--pr),.3)",color:"var(--p)",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>تجديد العرض <NotifIcon icon="↩" size={11}/></button>
                     <button onClick={()=>deletePromo(pr.id)} style={{flex:1,background:"transparent",border:"1px solid rgba(231,76,60,.35)",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>🗑</button>
                   </>)}
                 </div>
@@ -5724,7 +5809,7 @@ function PromoPanel({salon,customers,toast$}){
                     <div style={{fontSize:30,fontWeight:900,color:"rgba(212,160,23,.55)",lineHeight:1}}>{totalCustomers}</div>
                   </button>
                 </div>
-                <div style={{fontSize:18,color:"rgba(212,160,23,.4)",fontWeight:300}}>⇄</div>
+                <div style={{display:"flex",alignItems:"center"}}><IconSwapHorizontal size={18} color="rgba(212,160,23,.4)"/></div>
                 <div style={{flex:1,textAlign:"center"}}>
                   <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>عدد المستهدف</div>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
@@ -5915,8 +6000,8 @@ function PromoPanel({salon,customers,toast$}){
       {/* ─── أزرار التنقل ─── */}
       <div style={{display:"flex",gap:10,marginTop:20}}>
         {wizStep>1?(
-          <button onClick={goBack} style={{flex:1,padding:"13px 0",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>
-            → رجوع
+          <button onClick={goBack} style={{flex:1,padding:"13px 0",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+            <NotifIcon icon="→" size={13}/> رجوع
           </button>
         ):(
           <button onClick={reset} style={{flex:1,padding:"13px 0",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>
@@ -5924,8 +6009,8 @@ function PromoPanel({salon,customers,toast$}){
           </button>
         )}
         {wizStep<TOTAL_STEPS&&(
-          <button onClick={goNext} disabled={!canNext} style={{flex:2,padding:"13px 0",borderRadius:12,border:"none",background:canNext?"var(--pa15)":"var(--surface-1)",color:canNext?"var(--p)":"var(--text-muted)",cursor:canNext?"pointer":"not-allowed",fontSize:13,fontWeight:800,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s"}}>
-            التالي ←
+          <button onClick={goNext} disabled={!canNext} style={{flex:2,padding:"13px 0",borderRadius:12,border:"none",background:canNext?"var(--pa15)":"var(--surface-1)",color:canNext?"var(--p)":"var(--text-muted)",cursor:canNext?"pointer":"not-allowed",fontSize:13,fontWeight:800,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+            التالي <NotifIcon icon="←" size={13}/>
           </button>
         )}
       </div>
@@ -6594,7 +6679,7 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}>
-        <button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>← {t("owner_dash.back")}</button>
+        <button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}><NotifIcon icon="←" size={12}/> {t("owner_dash.back")}</button>
         <h2 style={{...G.ft,display:"flex",alignItems:"center",gap:6}}><IconPencil size={16}/>{t("cust_drawer.edit_data")}</h2>
       </div>
       {!pinStep&&(<>
@@ -7765,7 +7850,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:10,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700,display:"flex",justifyContent:"center"}}>
               <LabelWithIcon label="⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف" size={11}/></div>
             <div style={{display:"flex",gap:10}}>
-              <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowDeleteConfirm(false)}>↩️ إلغاء</button>
+              <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={()=>setShowDeleteConfirm(false)}><NotifIcon icon="↩️" size={13}/> إلغاء</button>
               <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={confirmDeleteAccount}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><IconTrash size={14} color="#fff"/>حذف نهائياً</span></button>
             </div>
           </div>
@@ -7872,7 +7957,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
   return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{if(backFn){backFn();}else{setView("home");setShowDrawer&&setShowDrawer(true);}}}>← {t("settings.back")}</button><h2 style={G.ft}>{onlySec?({social:t("settings.title_social"),faq:t("settings.title_faq"),theme:t("settings.title_theme")}[onlySec]||t("settings.title")):t("settings.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{if(backFn){backFn();}else{setView("home");setShowDrawer&&setShowDrawer(true);}}}><NotifIcon icon="←" size={12}/> {t("settings.back")}</button><h2 style={G.ft}>{onlySec?({social:t("settings.title_social"),faq:t("settings.title_faq"),theme:t("settings.title_theme")}[onlySec]||t("settings.title")):t("settings.title")}</h2></div>
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
         {SECS.map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
