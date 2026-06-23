@@ -1005,6 +1005,12 @@ function IconFileExport({size=16,color="#c9952c"}){
     <path d="M6 2.5h9l4 4V21a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z"/><path d="M12 11v6m-2.5-2.5L12 17l2.5-2.5"/>
   </svg>);
 }
+function IconDiscountSeal({size=16,color="var(--p)"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22.30 12.00 C22.30 12.72 20.25 13.29 20.02 14.15 C19.79 15.01 21.28 16.53 20.92 17.15 C20.56 17.77 18.50 17.24 17.87 17.87 C17.24 18.50 17.77 20.56 17.15 20.92 C16.53 21.28 15.01 19.79 14.15 20.02 C13.29 20.25 12.72 22.30 12.00 22.30 C11.28 22.30 10.71 20.25 9.85 20.02 C8.99 19.79 7.47 21.28 6.85 20.92 C6.23 20.56 6.76 18.50 6.13 17.87 C5.50 17.24 3.44 17.77 3.08 17.15 C2.72 16.53 4.21 15.01 3.98 14.15 C3.75 13.29 1.70 12.72 1.70 12.00 C1.70 11.28 3.75 10.71 3.98 9.85 C4.21 8.99 2.72 7.47 3.08 6.85 C3.44 6.23 5.50 6.76 6.13 6.13 C6.76 5.50 6.23 3.44 6.85 3.08 C7.47 2.72 8.99 4.21 9.85 3.98 C10.71 3.75 11.28 1.70 12.00 1.70 C12.72 1.70 13.29 3.75 14.15 3.98 C15.01 4.21 16.53 2.72 17.15 3.08 C17.77 3.44 17.24 5.50 17.87 6.13 C18.50 6.76 20.56 6.23 20.92 6.85 C21.28 7.47 19.79 8.99 20.02 9.85 C20.25 10.71 22.30 11.28 22.30 12.00 Z"/>
+    <circle cx="9.3" cy="9.3" r="1.3" fill={color} stroke="none"/><circle cx="14.7" cy="14.7" r="1.3" fill={color} stroke="none"/><line x1="15.5" y1="8.5" x2="8.5" y2="15.5"/>
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
@@ -1056,6 +1062,7 @@ function NotifIcon({icon,size=20}){
   if(icon==="📄")return <IconFileExport size={size}/>;
   if(icon==="✗")return <IconClose size={size} color="var(--gold)"/>;
   if(icon==="🔒")return <IconLock size={size} color="var(--text-muted)"/>;
+  if(icon==="🎟")return <IconDiscountSeal size={size}/>;
   return <span style={{fontSize:size}}>{icon}</span>;
 }
 function LabelWithIcon({label,size=11}){
@@ -5714,7 +5721,7 @@ function PromoPanel({salon,customers,toast$}){
 
           {/* كود الخصم */}
           <div style={{background:"var(--surface-1)",border:`1px solid ${codeApplied?"#27ae60":"var(--border-ui)"}`,borderRadius:12,padding:"12px 14px",marginBottom:14}}>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>🎟 كود الخصم</div>
+            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8,display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="🎟" size={13}/> كود الخصم</div>
             <div style={{display:"flex",gap:8}}>
               <input value={codeInput} onChange={e=>{setCodeInput(e.target.value.toUpperCase());setCodeApplied(false);setCodeError("");}} placeholder="أدخل الكود" maxLength={20} disabled={codeApplied} style={{flex:1,padding:"10px 12px",borderRadius:9,border:`1.5px solid ${codeApplied?"#27ae60":codeError?"#e74c3c":"var(--border-ui)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"ltr",textAlign:"center",boxSizing:"border-box",letterSpacing:2}}/>
               <button onClick={codeApplied?()=>{setCodeApplied(false);setCodeInput("");setDiscountCode("");setCodeError("");setAppliedCodeRow(null);}:applyCode} disabled={checkingCode} style={{padding:"10px 16px",borderRadius:9,border:"none",background:codeApplied?"rgba(39,174,96,.15)":"var(--pa15)",color:codeApplied?"#27ae60":"var(--p)",cursor:checkingCode?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,flexShrink:0,WebkitAppearance:"none",appearance:"none"}}>
@@ -5727,8 +5734,8 @@ function PromoPanel({salon,customers,toast$}){
 
           {/* زر الإرسال */}
           {!codeApplied&&(
-            <div style={{background:"rgba(231,76,60,.08)",border:"1px solid rgba(231,76,60,.25)",borderRadius:10,padding:"10px 14px",marginBottom:10,fontSize:11,color:"#e74c3c",textAlign:"center",fontWeight:600}}>
-              🎟 أدخل كود الخصم لتفعيل الإرسال
+            <div style={{background:"rgba(231,76,60,.08)",border:"1px solid rgba(231,76,60,.25)",borderRadius:10,padding:"10px 14px",marginBottom:10,fontSize:11,color:"#e74c3c",textAlign:"center",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              <NotifIcon icon="🎟" size={13}/> أدخل كود الخصم لتفعيل الإرسال
             </div>
           )}
           <button onClick={submitPromo} disabled={saving||!codeApplied} style={{width:"100%",background:saving||!codeApplied?"var(--surface-1)":totalPrice===0?"linear-gradient(135deg,#27ae60,#2ecc71)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving||!codeApplied?"var(--text-muted)":"#fff",border:codeApplied?"none":"1.5px solid var(--border-ui)",borderRadius:14,padding:"16px",fontSize:15,fontWeight:800,cursor:saving||!codeApplied?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:8,transition:"all .2s"}}>
