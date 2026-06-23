@@ -7785,7 +7785,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
             return(
               <button key={t.id} onClick={()=>applyTheme(t.id)}
                 style={{padding:"14px 6px",borderRadius:12,border:`2px solid ${active?t.color:"var(--border-ui)"}`,background:active?t.color+"22":"var(--surface-2)",color:"var(--text-primary)",cursor:"pointer",fontFamily:"inherit",fontWeight:active?700:400,display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)"}}>
-                <span style={{fontSize:22}}>{t.emoji}</span>
+                <span style={{fontSize:22,display:"flex"}}><NotifIcon icon={t.emoji} size={22}/></span>
                 <div style={{width:24,height:24,borderRadius:"50%",background:t.color,boxShadow:active?`0 0 0 3px ${t.color}55`:"none"}}/>
                 <span style={{fontSize:11,color:active?t.color:"var(--text-muted)"}}>{t.label}</span>
               </button>
