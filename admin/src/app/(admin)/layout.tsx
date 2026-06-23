@@ -2,6 +2,7 @@
 import Sidebar from "@/components/Sidebar";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { EmojiIcon } from "@/components/Icons";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -58,8 +59,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             fontSize: 17, zIndex: 100, pointerEvents: "none",
             boxShadow: "0 2px 10px rgba(0,0,0,.4)",
           }}>
-            <span style={refreshing ? { animation: "spin .7s linear infinite", display: "inline-block" } : {}}>
-              {refreshing ? "↻" : ptY >= PT ? "↑" : "↓"}
+            <span style={refreshing ? { animation: "spin .7s linear infinite", display: "inline-block" } : { display: "inline-block" }}>
+              <EmojiIcon icon={refreshing ? "↻" : ptY >= PT ? "↑" : "↓"} size={17} />
             </span>
           </div>
         )}
