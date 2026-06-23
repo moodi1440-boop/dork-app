@@ -16,7 +16,7 @@ export default function PasswordPage() {
       </div>
 
       <div className="bg-card border border-border rounded-2xl p-6">
-        <h2 className="text-base font-bold text-white mb-5">🔑 تغيير كلمة المرور</h2>
+        <h2 className="text-base font-bold text-white mb-5"><EmojiIcon icon="🔑" size={18}/> تغيير كلمة المرور</h2>
         <div className="space-y-4">
           {([
             ["كلمة المرور الحالية", "old"],

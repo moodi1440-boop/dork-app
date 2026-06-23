@@ -122,7 +122,7 @@ export default function NotificationsPage() {
         <div className="flex gap-2">
           <button onClick={() => setSendForm(!sendForm)}
             className="px-4 py-2 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
-            ➕ إرسال إشعار
+            <EmojiIcon icon="➕" size={16}/> إرسال إشعار
           </button>
           {unread > 0 && (
             <button onClick={markAllRead}

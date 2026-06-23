@@ -294,6 +294,66 @@ export function IconReceipt({ size = 16, color = "#f0a020" }: IconProps) {
     <path d="M6 2h12v18l-2-1-2 1-2-1-2 1-2-1-2 1V2Z" /><line x1="9" y1="7" x2="15" y2="7" /><line x1="9" y1="11" x2="15" y2="11" /><line x1="9" y1="15" x2="13" y2="15" />
   </svg>);
 }
+export function IconPlus({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
+    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+  </svg>);
+}
+export function IconKey({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="12" r="4.3" /><line x1="11.8" y1="12" x2="21" y2="12" /><line x1="17" y1="12" x2="17" y2="15" /><line x1="20" y1="12" x2="20" y2="15" />
+  </svg>);
+}
+export function IconMonitor({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="12" rx="2" /><line x1="12" y1="16" x2="12" y2="19.5" /><line x1="7.5" y1="20" x2="16.5" y2="20" />
+  </svg>);
+}
+export function IconDice({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinejoin="round">
+    <rect x="3.5" y="3.5" width="17" height="17" rx="3.5" />
+    <circle cx="8" cy="8" r="1.3" fill={color} stroke="none" /><circle cx="16" cy="8" r="1.3" fill={color} stroke="none" />
+    <circle cx="12" cy="12" r="1.3" fill={color} stroke="none" />
+    <circle cx="8" cy="16" r="1.3" fill={color} stroke="none" /><circle cx="16" cy="16" r="1.3" fill={color} stroke="none" />
+  </svg>);
+}
+export function IconRazor({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5.5" y="3" width="13" height="6" rx="2" /><line x1="7.5" y1="6" x2="16.5" y2="6" /><rect x="10" y="9.5" width="4" height="11" rx="1.4" />
+  </svg>);
+}
+export function IconMusicNote({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="17" r="3" fill={color} stroke="none" /><line x1="11" y1="17" x2="11" y2="5" /><path d="M11 5 C15 6, 16 9, 14 11" />
+  </svg>);
+}
+export function IconWindChime({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round">
+    <circle cx="12" cy="3.3" r="1" /><line x1="6" y1="6" x2="18" y2="6" />
+    <line x1="7.5" y1="6" x2="7.5" y2="13" /><line x1="12" y1="6" x2="12" y2="17" /><line x1="16.5" y1="6" x2="16.5" y2="10.5" />
+    <circle cx="7.5" cy="14.3" r="1.3" fill={color} stroke="none" /><circle cx="12" cy="18.3" r="1.3" fill={color} stroke="none" /><circle cx="16.5" cy="11.8" r="1.3" fill={color} stroke="none" />
+  </svg>);
+}
+export function IconPostHorn({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 4.5 A8 8 0 1 1 5.5 11.5" /><circle cx="15" cy="4.5" r="1.1" fill={color} stroke="none" /><path d="M5.5 11.5 L1.8 9.8 L3 16 Z" />
+  </svg>);
+}
+export function IconTrumpet({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2.5" y="13.2" width="9" height="2.2" rx="1.1" /><circle cx="2.5" cy="14.3" r="1" fill={color} stroke="none" />
+    <line x1="5" y1="13" x2="5" y2="9.5" /><circle cx="5" cy="8.6" r="1" fill={color} stroke="none" />
+    <line x1="7.7" y1="13" x2="7.7" y2="9.5" /><circle cx="7.7" cy="8.6" r="1" fill={color} stroke="none" />
+    <line x1="10.4" y1="13" x2="10.4" y2="9.5" /><circle cx="10.4" cy="8.6" r="1" fill={color} stroke="none" />
+    <path d="M11.5 13.1 L21 10 L21 17.6 L11.5 15.5 Z" />
+  </svg>);
+}
+export function IconRobot({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5" y="9" width="14" height="11" rx="2.5" /><line x1="12" y1="9" x2="12" y2="5" /><circle cx="12" cy="4" r="1.3" fill={color} stroke="none" />
+    <circle cx="9" cy="14" r="1.4" fill={color} stroke="none" /><circle cx="15" cy="14" r="1.4" fill={color} stroke="none" /><line x1="9" y1="18" x2="15" y2="18" />
+  </svg>);
+}
 
 // خريطة الإيموجي ← المكوّن، نقطة ارتكاز واحدة (مطابقة لمبدأ NotifIcon بـApp.jsx الرئيسي)
 export function EmojiIcon({ icon, size = 16 }: { icon: string; size?: number }) {
@@ -358,6 +418,16 @@ export function EmojiIcon({ icon, size = 16 }: { icon: string; size?: number }) 
     case "⚙": case "⚙️": return <IconGear size={size} bg="#8e8e93" color="#fff" />;
     case "⚖": case "⚖️": return <IconScale size={size} />;
     case "🧾": return <IconReceipt size={size} />;
+    case "➕": return <IconPlus size={size} />;
+    case "🔑": return <IconKey size={size} />;
+    case "🖥": case "🖥️": return <IconMonitor size={size} />;
+    case "🎲": return <IconDice size={size} />;
+    case "🪒": return <IconRazor size={size} />;
+    case "🎵": return <IconMusicNote size={size} />;
+    case "🎐": return <IconWindChime size={size} />;
+    case "📯": return <IconPostHorn size={size} />;
+    case "🎺": return <IconTrumpet size={size} />;
+    case "🤖": return <IconRobot size={size} />;
     default: return <span style={{ fontSize: size }}>{icon}</span>;
   }
 }

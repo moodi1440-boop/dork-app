@@ -20,11 +20,11 @@ interface Salon {
 
 const DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 const TONE_OPTIONS: Array<{ id: string; icon?: string; label: string }> = [
-  { id: "scissors",   icon: "✂️", label: "مقص" },  { id: "razor",    label: "🪒 موس" },
-  { id: "bell",       icon: "🔔", label: "جرس" },  { id: "cash",     label: "💵 كاشير" },
-  { id: "welcome",    label: "🎵 ترحيب" },{ id: "chime3",   label: "🎐 رنين" },
-  { id: "alert",      icon: "⚠️", label: "تنبيه" },{ id: "classic",  label: "📯 كلاسيكي" },
-  { id: "barberpole", icon: "💈", label: "حلاقة" },{ id: "fanfare",  label: "🎺 احتفال" },
+  { id: "scissors",   icon: "✂️", label: "مقص" },  { id: "razor",    icon: "🪒", label: "موس" },
+  { id: "bell",       icon: "🔔", label: "جرس" },  { id: "cash",     icon: "💵", label: "كاشير" },
+  { id: "welcome",    icon: "🎵", label: "ترحيب" },{ id: "chime3",  icon: "🎐", label: "رنين" },
+  { id: "alert",      icon: "⚠️", label: "تنبيه" },{ id: "classic", icon: "📯", label: "كلاسيكي" },
+  { id: "barberpole", icon: "💈", label: "حلاقة" },{ id: "fanfare", icon: "🎺", label: "احتفال" },
   { id: "vip",        icon: "👑", label: "VIP" },
 ];
 const DEFAULT_SOCIAL = { enabled: false, email: "", whatsapp: "", twitter: "", telegramUser: "" };
@@ -332,7 +332,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                 </div>
               ))}
               <div className="bg-card border border-border rounded-lg p-3 space-y-2">
-                <label className="block text-xs text-gray-400 font-semibold">🔑 تعيين/تغيير الرقم السري (PIN) لدخول المالك</label>
+                <label className="block text-xs text-gray-400 font-semibold"><EmojiIcon icon="🔑" size={14}/> تعيين/تغيير الرقم السري (PIN) لدخول المالك</label>
                 <div className="flex gap-2">
                   <input type="text" inputMode="numeric" maxLength={6} value={newPin}
                     onChange={(e) => { setNewPin(e.target.value.replace(/\D/g, "").slice(0, 6)); setPinErr(""); }}
@@ -459,7 +459,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                   className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
                 <button onClick={() => { if (newSvc.trim()) { upd("services", [...f.services, newSvc.trim()]); setNewSvc(""); }}}
                   className="px-4 py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-sm font-bold hover:bg-gold/20 transition-colors">
-                  ➕
+                  <EmojiIcon icon="➕" size={16}/>
                 </button>
               </div>
             </div>
@@ -480,7 +480,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                   className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
                 <button onClick={() => { if (newBarber.trim()) { upd("barbers", [...f.barbers, { name: newBarber.trim() }]); setNewBarber(""); }}}
                   className="px-4 py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-sm font-bold hover:bg-gold/20 transition-colors">
-                  ➕
+                  <EmojiIcon icon="➕" size={16}/>
                 </button>
               </div>
             </div>
@@ -646,7 +646,7 @@ export default function SalonsPage() {
           </button>
           <button onClick={() => setShowAdd(true)}
             className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
-            ➕ إضافة صالون
+            <EmojiIcon icon="➕" size={16}/> إضافة صالون
           </button>
         </div>
       </div>
@@ -667,7 +667,7 @@ export default function SalonsPage() {
 
       <div className="mb-4 flex items-center justify-between gap-3 bg-card border border-border rounded-2xl p-4">
         <div>
-          <div className="text-sm font-bold text-white">🤖 القبول التلقائي للصوالين الجديدة</div>
+          <div className="text-sm font-bold text-white"><EmojiIcon icon="🤖" size={16}/> القبول التلقائي للصوالين الجديدة</div>
           <div className="text-xs text-gray-400 mt-0.5">عند التفعيل، تُقبل الصوالين الجديدة تلقائياً دون مراجعة الإدارة</div>
         </div>
         <button onClick={toggleAutoApprove}
