@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { sb } from "@/lib/supabase-browser";
+import { EmojiIcon } from "@/components/Icons";
 
 const NAV = [
   { href: "/",              label: "لوحة التحكم",      icon: "📊" },
@@ -135,7 +136,7 @@ export default function Sidebar() {
           return (
             <Link key={item.href} href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all relative ${active ? "bg-gold/10 text-gold border border-gold/20" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}>
-              <span className="text-base">{item.icon}</span>
+              <span className="text-base"><EmojiIcon icon={item.icon} size={16} /></span>
               <span className="flex-1">{item.label}</span>
               {badge > 0 && (
                 <span className={`text-xs font-black px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${active ? "bg-gold text-black" : "bg-gold/20 text-gold"}`}>

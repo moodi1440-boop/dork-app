@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
+import { EmojiIcon } from "@/components/Icons";
 
 interface SalonList { id: string; name: string; unread: number; totalMsgs: number; lastMsg: { text: string; from_admin: boolean; created_at: string } | null; }
 interface Message { id: number; salon_id: number; from_admin: boolean; text: string; created_at: string; read_at: string | null; }
@@ -78,7 +79,7 @@ export default function MessagesPage() {
       <div className="p-6 lg:p-8 max-w-4xl mx-auto h-full flex flex-col">
         <div className="flex items-center gap-3 mb-5">
           <button onClick={() => setSelId(null)} className="w-8 h-8 rounded-lg bg-card border border-border text-gray-400 hover:text-white flex items-center justify-center text-lg transition-colors">‹</button>
-          <h2 className="text-white font-bold">💬 {selSalon?.name}</h2>
+          <h2 className="text-white font-bold"><EmojiIcon icon="💬" size={18}/> {selSalon?.name}</h2>
           <button onClick={() => loadChat(selId)} className="mr-auto text-xs text-gray-500 hover:text-gray-300 transition-colors">تحديث ↺</button>
         </div>
 
@@ -134,7 +135,7 @@ export default function MessagesPage() {
             salons.map((s) => (
               <button key={s.id} onClick={() => setSelId(s.id)}
                 className="w-full flex items-center gap-4 px-5 py-4 border-b border-border/50 hover:bg-white/[0.02] transition-colors text-right">
-                <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center text-lg flex-shrink-0">✂</div>
+                <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center text-lg flex-shrink-0"><EmojiIcon icon="✂" size={18}/></div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-white text-sm">{s.name}</span>

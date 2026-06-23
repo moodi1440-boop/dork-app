@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { EmojiIcon } from "@/components/Icons";
 
 interface Stats {
   totalBookings: number; pendingBookings: number;
@@ -40,7 +41,7 @@ function StatCard({ icon, label, value, sub, color = "gold", alert = false }: {
   return (
     <div className={`bg-card border ${s.border} rounded-2xl p-5 hover:bg-card-hover transition-colors`}>
       <div className="flex items-start justify-between mb-4">
-        <div className={`w-10 h-10 rounded-xl ${s.iconBg} flex items-center justify-center text-xl`}>{icon}</div>
+        <div className={`w-10 h-10 rounded-xl ${s.iconBg} flex items-center justify-center text-xl`}><EmojiIcon icon={icon} size={20}/></div>
         {alert && <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-bold">تحتاج تدخل</span>}
       </div>
       <div className={`text-3xl font-black ${s.val} mb-1`}>{value}</div>
@@ -131,14 +132,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Monthly bar chart */}
         <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="text-base font-bold text-white mb-0.5">📈 الحجوزات الشهرية</h2>
+          <h2 className="text-base font-bold text-white mb-0.5"><EmojiIcon icon="📈" size={18}/> الحجوزات الشهرية</h2>
           <p className="text-gray-500 text-xs mb-5">آخر 6 أشهر</p>
           <MonthlyChart data={stats.monthlyData} />
         </div>
 
         {/* Booking distribution progress bars */}
         <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="text-base font-bold text-white mb-0.5">📊 توزيع الحجوزات</h2>
+          <h2 className="text-base font-bold text-white mb-0.5"><EmojiIcon icon="📊" size={18}/> توزيع الحجوزات</h2>
           <p className="text-gray-500 text-xs mb-5">حسب الحالة</p>
           <div className="space-y-4">
             {[

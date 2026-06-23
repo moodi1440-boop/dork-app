@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useAdminTheme, type AdminTheme } from "@/components/ThemeProvider";
+import { EmojiIcon } from "@/components/Icons";
 
-const ADMIN_MODES: { id: AdminTheme; label: string; bg: string }[] = [
-  { id: "dark",  label: "🌙 داكن",        bg: "#0d0d1a" },
-  { id: "dim",   label: "⬛ رمادي داكن",  bg: "#1e1e24" },
-  { id: "light", label: "☀️ فاتح",         bg: "#f0f0f0" },
-  { id: "lgray", label: "🔘 رمادي فاتح",  bg: "#9e9b98" },
+const ADMIN_MODES: { id: AdminTheme; icon: string; label: string; bg: string }[] = [
+  { id: "dark",  icon: "🌙", label: "داكن",        bg: "#0d0d1a" },
+  { id: "dim",   icon: "⬛", label: "رمادي داكن",  bg: "#1e1e24" },
+  { id: "light", icon: "☀️", label: "فاتح",         bg: "#f0f0f0" },
+  { id: "lgray", icon: "🔘", label: "رمادي فاتح",  bg: "#9e9b98" },
 ];
 
 const ACCENT_THEMES = [
@@ -68,7 +69,7 @@ export default function AppearancePage() {
               className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${adminTheme === m.id ? "border-gold/50 bg-gold/10 text-white" : "border-border text-gray-400 hover:border-gold/20"}`}>
               <span className="w-5 h-5 rounded-full flex-shrink-0"
                 style={{ background: m.bg, boxShadow: adminTheme === m.id ? "0 0 0 2px rgb(var(--adm-accent))" : "0 0 0 1px rgb(var(--adm-border))" }} />
-              <span className="text-sm font-semibold">{m.label}</span>
+              <span className="text-sm font-semibold"><EmojiIcon icon={m.icon} size={14}/> {m.label}</span>
             </button>
           ))}
         </div>
@@ -76,7 +77,7 @@ export default function AppearancePage() {
 
       {/* لون الثيم */}
       <div className="bg-card border border-border rounded-2xl p-6 mb-5">
-        <h2 className="text-base font-bold text-white mb-1">🎨 لون الثيم</h2>
+        <h2 className="text-base font-bold text-white mb-1"><EmojiIcon icon="🎨" size={18}/> لون الثيم</h2>
         <p className="text-xs text-gray-500 mb-4">يُطبّق على أزرار وعناصر لوحة التحكم</p>
         <div className="flex flex-wrap gap-2">
           {ACCENT_THEMES.map((t) => (
@@ -92,7 +93,7 @@ export default function AppearancePage() {
 
       {/* حجم الخط */}
       <div className="bg-card border border-border rounded-2xl p-6 mb-5">
-        <h2 className="text-base font-bold text-white mb-1">🔤 حجم الخط</h2>
+        <h2 className="text-base font-bold text-white mb-1"><EmojiIcon icon="🔤" size={18}/> حجم الخط</h2>
         <p className="text-xs text-gray-500 mb-4">حجم النص في لوحة التحكم</p>
         <div className="flex gap-3">
           {FONT_SIZES.map((f) => (
@@ -107,7 +108,7 @@ export default function AppearancePage() {
 
       <button onClick={save}
         className={`w-full py-3 rounded-xl font-bold text-sm border transition-all ${saved ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-gold/10 border-gold/30 text-gold hover:bg-gold/20"}`}>
-        {saved ? "✅ تم الحفظ" : "💾 حفظ إعدادات الإدارة"}
+        {saved ? <><EmojiIcon icon="✅" size={16}/> تم الحفظ</> : <><EmojiIcon icon="💾" size={16}/> حفظ إعدادات الإدارة</>}
       </button>
     </div>
   );

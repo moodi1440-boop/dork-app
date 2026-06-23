@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
 import { exportCSV } from "@/lib/csv";
+import { EmojiIcon } from "@/components/Icons";
 
 type Booking = { id: string; salon_id: string; salonName: string; name: string; phone: string; barber_name: string; date: string; time: string; total: number; status: string; attendance: string | null; };
 
@@ -64,7 +65,7 @@ export default function BookingsPage() {
           ["العميل", "الجوال", "الصالون", "التاريخ", "الوقت", "الإجمالي", "الحالة"],
           bookings.map((b) => [b.name, b.phone, b.salonName, b.date, b.time, b.total, b.status])
         )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
-          📊 تصدير CSV
+          <EmojiIcon icon="📊" size={16}/> تصدير CSV
         </button>
       </div>
       <div className="flex flex-wrap gap-3 mb-6">
@@ -74,7 +75,7 @@ export default function BookingsPage() {
           className="bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold [color-scheme:dark]" />
         {dateFilter && (
           <button onClick={() => setDateFilter("")} className="px-3 py-2 rounded-xl text-xs border border-border text-gray-400 hover:text-white hover:border-gold/20 transition-all">
-            ✕ إلغاء الفلتر
+            <EmojiIcon icon="✕" size={16}/> إلغاء الفلتر
           </button>
         )}
         <div className="flex gap-2 flex-wrap">
@@ -91,7 +92,7 @@ export default function BookingsPage() {
           <button
             onClick={() => { if (confirm(`تأكيد جميع الحجوزات المعلقة (${bookings.length}) دفعة واحدة؟`)) bookings.forEach((b) => updateStatus(b, "approved")); }}
             className="w-full py-3 bg-green-500/10 border border-green-500/30 text-green-400 rounded-2xl font-bold text-sm hover:bg-green-500/20 transition-colors">
-            ✅ تأكيد الكل ({bookings.length} حجوزات)
+            <EmojiIcon icon="✅" size={16}/> تأكيد الكل ({bookings.length} حجوزات)
           </button>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { EmojiIcon } from "@/components/Icons";
 
 export default function OwnerLoginPage() {
   const router = useRouter();
@@ -60,7 +61,7 @@ export default function OwnerLoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gold/10 border border-gold/30 flex items-center justify-center text-3xl mx-auto mb-4 shadow-[0_0_24px_rgba(212,160,23,0.15)]">
-            💈
+            <EmojiIcon icon="💈" size={32}/>
           </div>
           <h1 className="text-2xl font-black text-white">لوحة مالك الصالون</h1>
           <p className="text-gray-500 text-sm mt-1">سجّل دخولك لإدارة صالونك</p>
