@@ -1059,6 +1059,83 @@ function IconDiamond({size=16,color="var(--p)"}){
     <path d="M7 9l5-6 5 6-5 12z"/><path d="M7 9h10M9.5 9l2.5 12M14.5 9l-2.5 12"/>
   </svg>);
 }
+function IconLeaf({size=16,color="#10b981"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3c5 0 8 4 8 8 0 6-4 10-8 10S4 17 4 11c0-4 3-8 8-8z"/><path d="M12 21V5"/>
+  </svg>);
+}
+function IconGemCut({size=16,color="#3b82f6"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 9L9 4H15L19 9L12 21Z"/><path d="M5 9H19M9 4L12 9L15 4"/>
+  </svg>);
+}
+function IconVaseHandles({size=16,color="#8b5a2b"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 3H14V6C17 7 18 10 18 13C18 17 15 20 12 20C9 20 6 17 6 13C6 10 7 7 10 6Z"/><path d="M6 9C4 9 3 11 3 13C3 15 4 16 6 16"/><path d="M18 9C20 9 21 11 21 13C21 15 20 16 18 16"/>
+  </svg>);
+}
+function IconBlossom({size=16,color="#ec4899"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6">
+    <circle cx="12" cy="6.8" r="3.1"/><circle cx="7.06" cy="10.39" r="3.1"/><circle cx="8.94" cy="16.21" r="3.1"/><circle cx="15.06" cy="16.21" r="3.1"/><circle cx="16.94" cy="10.39" r="3.1"/><circle cx="12" cy="12" r="2" fill={color} stroke="none"/>
+  </svg>);
+}
+function IconCoral({size=16,color="#f97316"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 21V14M12 14L8 9M12 14L16 9M8 9L6 5M8 9L10 5M16 9L14 5M16 9L18 5"/>
+    <circle cx="6" cy="5" r="1.3" fill={color} stroke="none"/><circle cx="10" cy="5" r="1.3" fill={color} stroke="none"/><circle cx="14" cy="5" r="1.3" fill={color} stroke="none"/><circle cx="18" cy="5" r="1.3" fill={color} stroke="none"/>
+  </svg>);
+}
+function IconWineGlass({size=16,color="#9f1239"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="none">
+    <path d="M7 3H17C17 7 15 10 12 10C9 10 7 7 7 3Z" fill={color}/>
+    <path d="M12 10V19M8 21H16" stroke={color} strokeWidth="1.7" strokeLinecap="round" fill="none"/>
+  </svg>);
+}
+function IconTree({size=16,color="#15803d"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinejoin="round">
+    <path d="M12 3L7 10H17Z"/><path d="M12 7L5 16H19Z"/><rect x="10.5" y="16" width="3" height="5" fill={color} stroke="none"/>
+  </svg>);
+}
+function IconCrystalBall({size=16,color="#8b5cf6"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="11" r="7"/><path d="M9 18h6l1 3H8z"/>
+    <circle cx="10" cy="9" r="0.9" fill={color} stroke="none"/><circle cx="14" cy="12.5" r="0.9" fill={color} stroke="none"/>
+  </svg>);
+}
+function IconStarRadiant({size=16,color="#d4a017"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="1.4" strokeLinecap="round">
+    <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.4l-5.9 3.2 1.3-6.6-4.9-4.6 6.6-.8z"/>
+    <path d="M12 0.3V2M12 22V23.7M0.3 12H2M22 12H23.7" strokeWidth="1.3"/>
+  </svg>);
+}
+function IconCalendarGrid({size=16,color="#c9952c"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="3" x2="8" y2="6.5"/><line x1="16" y1="3" x2="16" y2="6.5"/>
+    <circle cx="8" cy="13" r="1" fill={color} stroke="none"/><circle cx="12" cy="13" r="1" fill={color} stroke="none"/><circle cx="16" cy="13" r="1" fill={color} stroke="none"/><circle cx="8" cy="17" r="1" fill={color} stroke="none"/><circle cx="12" cy="17" r="1" fill={color} stroke="none"/>
+  </svg>);
+}
+function IconMedal({size=16,color="#d4a017"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinejoin="round">
+    <path d="M9 9L6 1L10 3Z" fill={color}/><path d="M15 9L18 1L14 3Z" fill={color}/>
+    <circle cx="12" cy="14" r="6" fill={color}/>
+    <path d="M12 11.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z" fill="#fff" stroke="none"/>
+  </svg>);
+}
+function IconCoinArrow({size=16,color="#c9952c"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 13l3 3 3-3"/>
+  </svg>);
+}
+function IconOverlapCircles({size=16,color="var(--p)"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7">
+    <circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/>
+  </svg>);
+}
+function IconPebble({size=16,color="#aaa"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+    <ellipse cx="12" cy="12" rx="9" ry="6.5"/><path d="M5 10c2 1 4-1 6 0s4 2 6 0"/><path d="M6 14c2 .5 4-.5 6 0"/>
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
@@ -1122,12 +1199,28 @@ function NotifIcon({icon,size=20}){
   if(icon==="🔎")return <IconSearch size={size} color="var(--p)"/>;
   if(icon==="✉"||icon==="✉️")return <IconMail size={size} color="var(--p)"/>;
   if(icon==="❤"||icon==="❤️")return <IconHeart size={size} filled color="#e74c3c"/>;
+  if(icon==="🌿")return <IconLeaf size={size} color="#10b981"/>;
+  if(icon==="🍃")return <IconLeaf size={size} color="#65a30d"/>;
+  if(icon==="💎")return <IconGemCut size={size}/>;
+  if(icon==="🏺")return <IconVaseHandles size={size}/>;
+  if(icon==="🌸")return <IconBlossom size={size} color="#ec4899"/>;
+  if(icon==="🌺")return <IconBlossom size={size} color="#d946ef"/>;
+  if(icon==="🪸")return <IconCoral size={size}/>;
+  if(icon==="🍷")return <IconWineGlass size={size}/>;
+  if(icon==="🌲")return <IconTree size={size}/>;
+  if(icon==="🔴")return <IconRadioFilled size={size} color="#ef4444"/>;
+  if(icon==="🩵")return <IconRadioFilled size={size} color="#0d9488"/>;
+  if(icon==="🔮")return <IconCrystalBall size={size}/>;
+  if(icon==="🗓"||icon==="🗓️")return <IconCalendarGrid size={size}/>;
+  if(icon==="🪙")return <IconCoinArrow size={size}/>;
+  if(icon==="✌"||icon==="✌️")return <IconOverlapCircles size={size}/>;
+  if(icon==="🪨")return <IconPebble size={size}/>;
   return <span style={{fontSize:size}}>{icon}</span>;
 }
 function LabelWithIcon({label,size=11}){
-  const m=label.match(/^(✅|❌|⚠️?|⚡|💡|📈|🚀)\s*(.*)$/);
+  const m=label.match(/^(✅|❌|⚠️?|⚡|💡|📈|🚀|🌟)\s*(.*)$/);
   if(!m)return <>{label}</>;
-  const ic=m[1]==="✅"?<IconSuccess size={size}/>:m[1]==="❌"?<IconError size={size}/>:m[1]==="⚡"?<IconLightning size={size}/>:m[1]==="💡"?<IconBulb size={size}/>:m[1]==="📈"?<IconTrendUp size={size}/>:m[1]==="🚀"?<IconRocket size={size}/>:<IconWarning size={size}/>;
+  const ic=m[1]==="✅"?<IconSuccess size={size}/>:m[1]==="❌"?<IconError size={size}/>:m[1]==="⚡"?<IconLightning size={size}/>:m[1]==="💡"?<IconBulb size={size}/>:m[1]==="📈"?<IconTrendUp size={size}/>:m[1]==="🚀"?<IconRocket size={size}/>:m[1]==="🌟"?<IconStarRadiant size={size}/>:<IconWarning size={size}/>;
   return <span style={{display:"inline-flex",alignItems:"center",gap:4}}>{ic}{m[2]}</span>;
 }
 
@@ -3597,12 +3690,12 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
               })();
               const palette=[["#3498db","#3498db33"],["#9b59b6","#9b59b633"],["#1abc9c","#1abc9c33"],["#e67e22","#e67e2233"],["#e91e63","#e91e6333"],["#00bcd4","#00bcd433"]];
               const[col,colBg]=palette[idx%palette.length];
-              const medals=["🥇","🥈","🥉"];
+              const medalColors=["#d4a017","#9e9e9e","#cd7f32"];
               const maxCnt=Math.max(...salon.barbers.map(b=>{const s=getBarberStats(b.id);return barberPeriod==="day"?s.dayCount:barberPeriod==="month"?s.monthCount:s.yearCount;}),1);
               return(
                 <div key={barber.id} style={{borderRadius:12,background:colBg,border:`1.5px solid ${col}44`,padding:"10px 12px",overflow:"hidden"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                    <span style={{fontSize:16,flexShrink:0}}>{medals[idx]||"💈"}</span>
+                    <span style={{fontSize:16,flexShrink:0,display:"flex"}}>{idx<3?<IconMedal size={16} color={medalColors[idx]}/>:<NotifIcon icon="💈" size={16}/>}</span>
                     <span style={{fontSize:13,fontWeight:700,color:col,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{barber.name||barber.barber_name||"حلاق"}</span>
                     <div style={{width:42,height:5,background:"rgba(255,255,255,.15)",borderRadius:3,flexShrink:0,overflow:"hidden"}}>
                       <div style={{height:"100%",width:`${(cnt/maxCnt)*100}%`,background:col,borderRadius:3}}/>
@@ -3685,10 +3778,10 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {topSvcs.map((s,i)=>{
               const val=servicesView==="requests"?svcCount[s]:svcRev[s];
-              const medals=["🥇","🥈","🥉","4️⃣"];
+              const medalColors2=["#d4a017","#9e9e9e","#cd7f32"];
               return(
                 <div key={s} style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{fontSize:14,flexShrink:0}}>{medals[i]}</div>
+                  <div style={{fontSize:14,flexShrink:0,display:"flex"}}>{i<3?<IconMedal size={14} color={medalColors2[i]}/>:<span style={{fontSize:14}}>4️⃣</span>}</div>
                   <div style={{fontSize:12,color:"var(--text-primary)",flex:1,fontWeight:600}}>{s}</div>
                   <div style={{width:60,height:6,background:"rgba(var(--pr),.15)",borderRadius:3,overflow:"hidden"}}>
                     <div style={{height:"100%",width:`${(val/maxSvc)*100}%`,background:"var(--p)",borderRadius:3}}/>
@@ -3704,7 +3797,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
       {/* ── توقع الأسبوع القادم ── */}
       <div style={{background:"rgba(var(--pr),.06)",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(var(--pr),.2)",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
-          <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:2}}>🔮 توقع الأسبوع القادم</div>
+          <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:2,display:"flex",alignItems:"center",gap:4}}><NotifIcon icon="🔮" size={11}/> توقع الأسبوع القادم</div>
           <div style={{fontSize:18,fontWeight:900,color:"var(--p)"}}>{forecastNext} حجز</div>
         </div>
         <div style={{textAlign:"left"}}>
@@ -5506,7 +5599,7 @@ function PromoPanel({salon,customers,toast$}){
               <div key={pr.id} style={{background:isPending?"rgba(231,76,60,.05)":"var(--surface-1)",border:`1.5px solid ${isPending?"rgba(231,76,60,.3)":urgent?"#e67e22":pkgColor(pr.package)}44`,borderRadius:12,padding:"12px 14px",transition:"border .3s"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                   <div>
-                    <div style={{fontSize:13,fontWeight:800,color:isPending?"#e74c3c":pkgColor(pr.package)}}>{pkgInfo?.label} {pkgInfo?.medal}</div>
+                    <div style={{fontSize:13,fontWeight:800,color:isPending?"#e74c3c":pkgColor(pr.package),display:"flex",alignItems:"center",gap:6}}>{pkgInfo?.label} {pkgInfo&&<IconMedal size={13} color={pkgInfo.color}/>}</div>
                     <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2}}>
                       {pr.package==="gold"?`${pr.customer_count||"--"} عميل`:pr.duration_days===0?<LabelWithIcon label="⚠️ 5 دقائق" size={10}/>:`${pr.duration_days||1} يوم`}
                       {" · "}<span style={{color:pr.price===0?"#27ae60":"var(--text-muted)"}}>{pr.price===0?"مجاني":`${pr.price} ريال`}</span>
@@ -5554,11 +5647,11 @@ function PromoPanel({salon,customers,toast$}){
             return(
               <button key={p.id} onClick={()=>{setPkg(p.id);if(p.id!=="gold")setDurationDays(7);}} style={{background:sel?p.bg:"var(--surface-1)",border:`2px solid ${sel?p.color:p.border}`,borderRadius:16,padding:"14px",textAlign:"right",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s",boxShadow:sel?`0 4px 16px ${p.color}22`:"none"}}>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:44,height:44,borderRadius:12,background:p.bg,border:`1.5px solid ${p.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{p.icon}</div>
+                  <div style={{width:44,height:44,borderRadius:12,background:p.bg,border:`1.5px solid ${p.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}><NotifIcon icon={p.icon} size={22}/></div>
                   <div style={{flex:1}}>
                     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                       <span style={{fontSize:15,fontWeight:800,color:sel?p.color:"var(--text-primary)"}}>{p.label}</span>
-                      <span>{p.medal}</span>
+                      <span style={{display:"flex"}}><IconMedal size={15} color={p.color}/></span>
                     </div>
                     <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.5,marginBottom:5}}>{p.service}</div>
                   </div>
@@ -5748,7 +5841,7 @@ function PromoPanel({salon,customers,toast$}){
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <span style={{fontSize:12,color:"var(--text-muted)"}}>الباقة</span>
-                <span style={{fontSize:13,fontWeight:800,color:selectedPkg.color}}>{selectedPkg.label} {selectedPkg.medal}</span>
+                <span style={{fontSize:13,fontWeight:800,color:selectedPkg.color,display:"flex",alignItems:"center",gap:6}}>{selectedPkg.label} <IconMedal size={13} color={selectedPkg.color}/></span>
               </div>
               {pkg==="gold"?(
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
