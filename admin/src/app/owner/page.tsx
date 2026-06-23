@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { EmojiIcon } from "@/components/Icons";
 
 interface Salon {
   id: string | number; name: string; address?: string; welcome_msg?: string;
@@ -337,7 +338,7 @@ function SettingsTab({ salon, onSaved }: { salon: Salon; onSaved: (s: Salon) => 
       <p className="text-gray-600 text-xs">تعديل الخدمات والأسعار والحلاقين متاح حاليًا من تطبيق الصالون فقط.</p>
       <button onClick={save} disabled={saving}
         className="w-full py-3 bg-gold/10 border border-gold/30 text-gold rounded-xl font-bold text-sm hover:bg-gold/20 transition-colors disabled:opacity-50">
-        {saving ? "جاري الحفظ..." : saved ? "✅ تم الحفظ" : "حفظ التغييرات"}
+        {saving ? "جاري الحفظ..." : saved ? <><EmojiIcon icon="✅" size={16}/> تم الحفظ</> : "حفظ التغييرات"}
       </button>
     </div>
   );
@@ -373,7 +374,7 @@ export default function OwnerDashboardPage() {
           <p className="text-gray-500 text-xs mt-0.5">لوحة مالك الصالون</p>
         </div>
         <button onClick={logout} className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-400 hover:text-red-400 hover:bg-red-400/5 transition-all">
-          🚪 تسجيل خروج
+          <EmojiIcon icon="🚪" size={16}/> تسجيل خروج
         </button>
       </div>
 
@@ -381,7 +382,7 @@ export default function OwnerDashboardPage() {
         {TABS.map((t) => (
           <button key={t.value} onClick={() => setTab(t.value)}
             className={`px-4 py-2.5 rounded-xl text-sm font-bold border transition-all ${tab === t.value ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-400 hover:border-gold/20"}`}>
-            {t.icon} {t.label}
+            <EmojiIcon icon={t.icon} size={16}/> {t.label}
           </button>
         ))}
       </div>

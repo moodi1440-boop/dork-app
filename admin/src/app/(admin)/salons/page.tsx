@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
 import { exportCSV } from "@/lib/csv";
+import { EmojiIcon } from "@/components/Icons";
 
 interface Salon {
   id: string; name: string; owner: string; owner_phone: string;
@@ -18,13 +19,13 @@ interface Salon {
 }
 
 const DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-const TONE_OPTIONS = [
-  { id: "scissors",   label: "✂️ مقص" },  { id: "razor",    label: "🪒 موس" },
-  { id: "bell",       label: "🔔 جرس" },  { id: "cash",     label: "💵 كاشير" },
+const TONE_OPTIONS: Array<{ id: string; icon?: string; label: string }> = [
+  { id: "scissors",   icon: "✂️", label: "مقص" },  { id: "razor",    label: "🪒 موس" },
+  { id: "bell",       icon: "🔔", label: "جرس" },  { id: "cash",     label: "💵 كاشير" },
   { id: "welcome",    label: "🎵 ترحيب" },{ id: "chime3",   label: "🎐 رنين" },
-  { id: "alert",      label: "⚠️ تنبيه" },{ id: "classic",  label: "📯 كلاسيكي" },
-  { id: "barberpole", label: "💈 حلاقة" },{ id: "fanfare",  label: "🎺 احتفال" },
-  { id: "vip",        label: "👑 VIP" },
+  { id: "alert",      icon: "⚠️", label: "تنبيه" },{ id: "classic",  label: "📯 كلاسيكي" },
+  { id: "barberpole", icon: "💈", label: "حلاقة" },{ id: "fanfare",  label: "🎺 احتفال" },
+  { id: "vip",        icon: "👑", label: "VIP" },
 ];
 const DEFAULT_SOCIAL = { enabled: false, email: "", whatsapp: "", twitter: "", telegramUser: "" };
 
@@ -58,8 +59,8 @@ function AddSalonModal({ onClose, onAdded }: { onClose: () => void; onAdded: () 
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-navy border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="text-white font-bold">✂ إضافة صالون جديد</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
+          <h2 className="text-white font-bold"><EmojiIcon icon="✂" size={18}/> إضافة صالون جديد</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none"><EmojiIcon icon="✕" size={16}/></button>
         </div>
         <div className="p-5 space-y-4">
           {[
@@ -73,10 +74,10 @@ function AddSalonModal({ onClose, onAdded }: { onClose: () => void; onAdded: () 
                 className={inpCls} />
             </div>
           ))}
-          {err && <div className="text-red-400 text-sm">❌ {err}</div>}
+          {err && <div className="text-red-400 text-sm"><EmojiIcon icon="❌" size={16}/> {err}</div>}
           <button onClick={submit} disabled={saving}
             className="w-full py-3 bg-gold/10 border border-gold/30 text-gold rounded-xl font-bold text-sm hover:bg-gold/20 transition-colors disabled:opacity-50">
-            {saving ? "جاري الإضافة..." : "✅ إضافة الصالون"}
+            {saving ? "جاري الإضافة..." : <><EmojiIcon icon="✅" size={16}/> إضافة الصالون</>}
           </button>
         </div>
       </div>
@@ -129,8 +130,8 @@ function DocumentsModal({ salon, onClose }: { salon: Salon; onClose: () => void 
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-navy border border-border rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="text-white font-bold text-sm">📄 مستندات: {salon.name}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
+          <h2 className="text-white font-bold text-sm"><EmojiIcon icon="📄" size={18}/> مستندات: {salon.name}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-lg leading-none"><EmojiIcon icon="✕" size={16}/></button>
         </div>
         <div className="p-5 space-y-4">
           <div className="flex gap-2 flex-wrap">
@@ -154,8 +155,8 @@ function DocumentsModal({ salon, onClose }: { salon: Salon; onClose: () => void 
                   <a href={d.doc_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 text-xs underline break-all">{d.doc_url}</a>
                   {d.status === "pending" && (
                     <div className="flex gap-1.5 mt-2">
-                      <button onClick={() => review(d, "verified")} className="px-2.5 py-1 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20">✅ توثيق</button>
-                      <button onClick={() => review(d, "rejected")} className="px-2.5 py-1 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">❌ رفض</button>
+                      <button onClick={() => review(d, "verified")} className="px-2.5 py-1 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20"><EmojiIcon icon="✅" size={16}/> توثيق</button>
+                      <button onClick={() => review(d, "rejected")} className="px-2.5 py-1 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20"><EmojiIcon icon="❌" size={16}/> رفض</button>
                     </div>
                   )}
                 </div>
@@ -205,12 +206,12 @@ function QuickMessageModal({ salon, onClose }: { salon: Salon; onClose: () => vo
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-navy border border-border rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="text-white font-bold text-sm">✉ رسالة إلى: {salon.name}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
+          <h2 className="text-white font-bold text-sm"><EmojiIcon icon="✉" size={18}/> رسالة إلى: {salon.name}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-lg leading-none"><EmojiIcon icon="✕" size={16}/></button>
         </div>
         <div className="p-5 space-y-4">
           {sent ? (
-            <div className="text-center py-4 text-green-400 font-bold">✅ تم إرسال الرسالة</div>
+            <div className="text-center py-4 text-green-400 font-bold"><EmojiIcon icon="✅" size={16}/> تم إرسال الرسالة</div>
           ) : (
             <>
               <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} placeholder="اكتب رسالتك للصالون..."
@@ -218,7 +219,7 @@ function QuickMessageModal({ salon, onClose }: { salon: Salon; onClose: () => vo
               <div className="flex gap-3">
                 <button onClick={send} disabled={sending || !text.trim()}
                   className="flex-1 bg-gold/10 border border-gold/30 text-gold py-2.5 rounded-xl font-bold text-sm hover:bg-gold/20 transition-colors disabled:opacity-40">
-                  {sending ? "جاري الإرسال..." : "📤 إرسال"}
+                  {sending ? "جاري الإرسال..." : <><EmojiIcon icon="📤" size={16}/> إرسال</>}
                 </button>
                 <button onClick={onClose} className="px-5 py-2.5 border border-border text-gray-400 rounded-xl text-sm hover:text-white transition-colors">إلغاء</button>
               </div>
@@ -306,8 +307,8 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-navy border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-navy">
-          <h2 className="text-white font-bold">✏ تعديل: {salon.name}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
+          <h2 className="text-white font-bold"><EmojiIcon icon="✏" size={18}/> تعديل: {salon.name}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none"><EmojiIcon icon="✕" size={16}/></button>
         </div>
 
         <div className="p-5">
@@ -339,25 +340,25 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                     className="flex-1 bg-navy border border-border rounded-lg px-3 py-2 text-sm text-white text-center tracking-widest focus:outline-none focus:border-gold" />
                   <button onClick={setPin} disabled={saving || !newPin}
                     className="px-4 py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-xs font-bold hover:bg-gold/20 transition-colors disabled:opacity-50">
-                    {pinSaved ? "✅ تم" : "حفظ"}
+                    {pinSaved ? <><EmojiIcon icon="✅" size={16}/> تم</> : "حفظ"}
                   </button>
                 </div>
-                {pinErr && <div className="text-red-400 text-xs">❌ {pinErr}</div>}
+                {pinErr && <div className="text-red-400 text-xs"><EmojiIcon icon="❌" size={16}/> {pinErr}</div>}
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1 font-semibold">التقييم ⭐</label>
+                <label className="block text-xs text-gray-400 mb-1 font-semibold">التقييم <EmojiIcon icon="⭐" size={16}/></label>
                 <input type="number" min="1" max="5" step="0.1" value={f.rating}
                   onChange={(e) => upd("rating", Number(e.target.value))}
                   className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gold" />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1 font-semibold">💬 رسالة الترحيب</label>
+                <label className="block text-xs text-gray-400 mb-1 font-semibold"><EmojiIcon icon="💬" size={16}/> رسالة الترحيب</label>
                 <input value={f.welcome_msg} onChange={(e) => upd("welcome_msg", e.target.value)}
                   placeholder="مثال: أهلاً بك 👋"
                   className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gold" />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-2 font-semibold">📅 أيام الإغلاق</label>
+                <label className="block text-xs text-gray-400 mb-2 font-semibold"><EmojiIcon icon="📅" size={16}/> أيام الإغلاق</label>
                 <div className="flex flex-wrap gap-2">
                   {DAYS.map((d, i) => {
                     const closed = f.closed_days.includes(i);
@@ -393,12 +394,12 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-2 font-semibold">🔔 نغمة التنبيه</label>
+                <label className="block text-xs text-gray-400 mb-2 font-semibold"><EmojiIcon icon="🔔" size={16}/> نغمة التنبيه</label>
                 <div className="flex flex-wrap gap-2">
                   {TONE_OPTIONS.map((t) => (
                     <button key={t.id} onClick={() => upd("tone", t.id)}
                       className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${f.tone === t.id ? "bg-gold/10 border-gold/30 text-gold" : "border-border text-gray-500 hover:border-gray-500"}`}>
-                      {t.label}
+                      {t.icon ? <><EmojiIcon icon={t.icon} size={14}/> {t.label}</> : t.label}
                     </button>
                   ))}
                 </div>
@@ -449,7 +450,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                     className="w-24 bg-navy border border-border rounded px-2 py-1 text-xs text-gold text-center focus:outline-none" />
                   <span className="text-xs text-gray-500">ر.س</span>
                   <button onClick={() => { const ns = f.services.filter((_, j) => j !== i); const np = { ...f.prices }; delete np[svc]; upd("services", ns); upd("prices", np); }}
-                    className="text-red-400 hover:text-red-300 text-sm font-bold">✕</button>
+                    className="text-red-400 hover:text-red-300 text-sm font-bold"><EmojiIcon icon="✕" size={16}/></button>
                 </div>
               ))}
               <div className="flex gap-2">
@@ -468,9 +469,9 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
             <div className="space-y-3">
               {f.barbers.map((b: { name: string }, i: number) => (
                 <div key={i} className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">
-                  <span className="flex-1 text-sm text-white">💈 {b.name}</span>
+                  <span className="flex-1 text-sm text-white"><EmojiIcon icon="💈" size={16}/> {b.name}</span>
                   <button onClick={() => upd("barbers", f.barbers.filter((_: unknown, j: number) => j !== i))}
-                    className="text-red-400 hover:text-red-300 text-sm font-bold">✕</button>
+                    className="text-red-400 hover:text-red-300 text-sm font-bold"><EmojiIcon icon="✕" size={16}/></button>
                 </div>
               ))}
               <div className="flex gap-2">
@@ -498,13 +499,13 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
                 </div>
               </label>
               {[
-                { key: "email",       label: "📧 البريد الإلكتروني", placeholder: "info@salon.com" },
-                { key: "whatsapp",    label: "💬 واتساب",             placeholder: "966501234567" },
-                { key: "twitter",     label: "🐦 تويتر / X",          placeholder: "@salon" },
-                { key: "telegramUser",label: "📱 تيليجرام",           placeholder: "@salon" },
-              ].map(({ key, label, placeholder }) => (
+                { key: "email",       icon: "📧", label: "البريد الإلكتروني", placeholder: "info@salon.com" },
+                { key: "whatsapp",    icon: "💬", label: "واتساب",             placeholder: "966501234567" },
+                { key: "twitter",     icon: "🐦", label: "تويتر / X",          placeholder: "@salon" },
+                { key: "telegramUser",icon: "📱", label: "تيليجرام",           placeholder: "@salon" },
+              ].map(({ key, icon, label, placeholder }) => (
                 <div key={key}>
-                  <label className="block text-xs text-gray-400 mb-1 font-semibold">{label}</label>
+                  <label className="block text-xs text-gray-400 mb-1 font-semibold"><EmojiIcon icon={icon} size={14}/> {label}</label>
                   <input value={(f.social as Record<string, unknown>)[key] as string ?? ""}
                     onChange={(e) => upd("social", { ...f.social, [key]: e.target.value })}
                     placeholder={placeholder}
@@ -517,7 +518,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
           <div className="flex gap-3 mt-6 pt-4 border-t border-border">
             <button onClick={save} disabled={saving}
               className="flex-1 bg-gold/10 border border-gold/30 text-gold py-2.5 rounded-xl font-bold text-sm hover:bg-gold/20 transition-colors disabled:opacity-50">
-              {saving ? "جاري الحفظ..." : "💾 حفظ التعديلات"}
+              {saving ? "جاري الحفظ..." : <><EmojiIcon icon="💾" size={16}/> حفظ التعديلات</>}
             </button>
             <button onClick={onClose} className="px-5 py-2.5 border border-border text-gray-400 rounded-xl text-sm hover:text-white transition-colors">
               إلغاء
@@ -641,7 +642,7 @@ export default function SalonsPage() {
             ["الاسم", "المالك", "الجوال", "المنطقة", "التقييم", "الحالة", "الرصيد"],
             salons.map((s) => [s.name, s.owner, s.phone, s.region ?? "", s.rating ?? 0, s.status, s.total_paid ?? 0])
           )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
-            📊 تصدير CSV
+            <EmojiIcon icon="📊" size={16}/> تصدير CSV
           </button>
           <button onClick={() => setShowAdd(true)}
             className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
@@ -671,7 +672,7 @@ export default function SalonsPage() {
         </div>
         <button onClick={toggleAutoApprove}
           className={`px-4 py-2 rounded-xl text-sm font-bold border transition-colors ${autoApprove ? "bg-green-500/10 text-green-400 border-green-500/30" : "bg-card text-gray-400 border-border"}`}>
-          {autoApprove ? "✅ مفعّل" : "⭘ متوقف"}
+          {autoApprove ? <><EmojiIcon icon="✅" size={16}/> مفعّل</> : <><EmojiIcon icon="⭘" size={16}/> متوقف</>}
         </button>
       </div>
 
@@ -680,7 +681,7 @@ export default function SalonsPage() {
           <button
             onClick={() => { if (confirm(`قبول جميع الصالونات المعلقة (${sorted.length}) دفعة واحدة؟`)) sorted.forEach((s) => updateStatus(s.id, "approved")); }}
             className="w-full py-3 bg-green-500/10 border border-green-500/30 text-green-400 rounded-2xl font-bold text-sm hover:bg-green-500/20 transition-colors">
-            ✅ قبول الكل ({sorted.length} صالونات)
+            <EmojiIcon icon="✅" size={16}/> قبول الكل ({sorted.length} صالونات)
           </button>
         </div>
       )}
@@ -704,26 +705,26 @@ export default function SalonsPage() {
               <div key={s.id} className={`bg-card border-2 rounded-2xl p-5 transition-all ${isBanned ? "border-red-800" : isWeek ? "border-yellow-400/50" : isPinned ? "border-purple-500/40" : isFrozen ? "border-red-500/40" : s.status === "approved" ? "border-green-500/30" : s.status === "rejected" ? "border-red-600/40" : s.status === "suspended" ? "border-orange-500/30" : "border-border"}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-white">{i + 1}. ✂ {s.name}</span>
+                    <span className="font-bold text-white">{i + 1}. <EmojiIcon icon="✂" size={16}/> {s.name}</span>
                     <StatusBadge status={s.status} />
-                    {isWeek && <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 font-bold">🏅 الأسبوع</span>}
-                    {isPinned && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold">📌 مثبّت</span>}
-                    {isFrozen && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-bold">🔒 مجمّد</span>}
-                    {isBanned && <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/30 text-red-400 border border-red-800/30 font-bold">🚫 محظور</span>}
+                    {isWeek && <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 font-bold"><EmojiIcon icon="🏅" size={16}/> الأسبوع</span>}
+                    {isPinned && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold"><EmojiIcon icon="📌" size={16}/> مثبّت</span>}
+                    {isFrozen && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-bold"><EmojiIcon icon="🔒" size={16}/> مجمّد</span>}
+                    {isBanned && <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/30 text-red-400 border border-red-800/30 font-bold"><EmojiIcon icon="🚫" size={16}/> محظور</span>}
                   </div>
-                  {s.rating ? <span className="text-gold font-bold text-sm">★ {s.rating}</span> : null}
+                  {s.rating ? <span className="text-gold font-bold text-sm"><EmojiIcon icon="★" size={16}/> {s.rating}</span> : null}
                 </div>
 
                 <div className="text-sm text-gray-400 space-y-0.5 mb-3">
-                  <div>👤 {s.owner} · 📞 {s.phone}</div>
-                  {s.owner_phone && s.owner_phone !== s.phone && <div>📱 {s.owner_phone}</div>}
-                  {(s.gov || s.region) && <div>📍 {[s.gov, s.region].filter(Boolean).join(" - ")}</div>}
+                  <div><EmojiIcon icon="👤" size={16}/> {s.owner} · <EmojiIcon icon="📞" size={16}/> {s.phone}</div>
+                  {s.owner_phone && s.owner_phone !== s.phone && <div><EmojiIcon icon="📱" size={16}/> {s.owner_phone}</div>}
+                  {(s.gov || s.region) && <div><EmojiIcon icon="📍" size={16}/> {[s.gov, s.region].filter(Boolean).join(" - ")}</div>}
                   {s.status === "pending" && (
-                    <div>🕐 {s.shift_enabled ? `${s.shift1_start}-${s.shift1_end} | ${s.shift2_start}-${s.shift2_end}` : `${s.work_start || "09:00"} - ${s.work_end || "22:00"}`}</div>
+                    <div><EmojiIcon icon="🕐" size={16}/> {s.shift_enabled ? `${s.shift1_start}-${s.shift1_end} | ${s.shift2_start}-${s.shift2_end}` : `${s.work_start || "09:00"} - ${s.work_end || "22:00"}`}</div>
                   )}
                   {balance !== 0 && (
                     <div className={`font-semibold ${balance > 0 ? "text-red-400" : "text-green-400"}`}>
-                      💰 {balance > 0 ? `متبقي ${balance.toLocaleString("ar-SA")} ر.س` : "✅ الرصيد مسدد"}
+                      <EmojiIcon icon="💰" size={16}/> {balance > 0 ? `متبقي ${balance.toLocaleString("ar-SA")} ر.س` : <><EmojiIcon icon="✅" size={16}/> الرصيد مسدد</>}
                     </div>
                   )}
                 </div>
@@ -740,7 +741,7 @@ export default function SalonsPage() {
                   {s.status !== "approved" && (
                     <button onClick={() => updateStatus(s.id, "approved")}
                       className="px-3 py-1.5 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors font-semibold">
-                      ✅ موافقة
+                      <EmojiIcon icon="✅" size={16}/> موافقة
                     </button>
                   )}
                   {s.status === "pending" && (
@@ -749,7 +750,7 @@ export default function SalonsPage() {
                       if (reason !== null) updateStatus(s.id, "rejected");
                     }}
                       className="px-3 py-1.5 rounded-lg text-xs bg-red-600/10 text-red-500 border border-red-600/20 hover:bg-red-600/20 transition-colors font-semibold">
-                      ❌ رفض
+                      <EmojiIcon icon="❌" size={16}/> رفض
                     </button>
                   )}
                   {s.status === "approved" && (
@@ -761,40 +762,40 @@ export default function SalonsPage() {
                   {(s.status === "suspended" || s.status === "rejected") && (
                     <button onClick={() => updateStatus(s.id, "pending")}
                       className="px-3 py-1.5 rounded-lg text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors font-semibold">
-                      🔄 إعادة مراجعة
+                      <EmojiIcon icon="🔄" size={16}/> إعادة مراجعة
                     </button>
                   )}
                   <button onClick={() => setEditing(s)}
                     className="px-3 py-1.5 rounded-lg text-xs bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors font-semibold">
-                    ✏ تعديل
+                    <EmojiIcon icon="✏" size={16}/> تعديل
                   </button>
                   <button onClick={() => setMessaging(s)}
                     className="px-3 py-1.5 rounded-lg text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors font-semibold">
-                    ✉ مراسلة
+                    <EmojiIcon icon="✉" size={16}/> مراسلة
                   </button>
                   <button onClick={() => setDocumenting(s)}
                     className="px-3 py-1.5 rounded-lg text-xs bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors font-semibold">
-                    📄 مستندات
+                    <EmojiIcon icon="📄" size={16}/> مستندات
                   </button>
                   <button onClick={() => toggleFreeze(s)}
                     className={`px-3 py-1.5 rounded-lg text-xs border font-semibold transition-colors ${isFrozen ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20" : "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"}`}>
-                    {isFrozen ? "🔓 رفع التجميد" : "🔒 تجميد"}
+                    {isFrozen ? <><EmojiIcon icon="🔓" size={16}/> رفع التجميد</> : <><EmojiIcon icon="🔒" size={16}/> تجميد</>}
                   </button>
                   <button onClick={() => toggleBan(s)}
                     className={`px-3 py-1.5 rounded-lg text-xs border font-semibold transition-colors ${isBanned ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-red-900/20 text-red-400 border-red-800/30 hover:bg-red-900/30"}`}>
-                    {isBanned ? "✅ رفع الحظر" : "🚫 حظر"}
+                    {isBanned ? <><EmojiIcon icon="✅" size={16}/> رفع الحظر</> : <><EmojiIcon icon="🚫" size={16}/> حظر</>}
                   </button>
                   <button onClick={() => togglePin(s.id)}
                     className={`px-3 py-1.5 rounded-lg text-xs border font-semibold transition-colors ${isPinned ? "bg-purple-500/15 text-purple-400 border-purple-500/30" : "border-border text-gray-500 hover:border-purple-500/30"}`}>
-                    📌 {isPinned ? "إلغاء التثبيت" : "تثبيت"}
+                    <EmojiIcon icon="📌" size={16}/> {isPinned ? "إلغاء التثبيت" : "تثبيت"}
                   </button>
                   <button onClick={() => toggleWeek(s.id)}
                     className={`px-3 py-1.5 rounded-lg text-xs border font-semibold transition-colors ${isWeek ? "bg-yellow-400/15 text-yellow-400 border-yellow-400/30" : "border-border text-gray-500 hover:border-yellow-400/30"}`}>
-                    🏅 {isWeek ? "إلغاء الأسبوع" : "صالون الأسبوع"}
+                    <EmojiIcon icon="🏅" size={16}/> {isWeek ? "إلغاء الأسبوع" : "صالون الأسبوع"}
                   </button>
                   <button onClick={() => deleteSalon(s.id)}
                     className="px-3 py-1.5 rounded-lg text-xs bg-red-900/20 text-red-400 border border-red-800/30 hover:bg-red-900/30 transition-colors font-semibold">
-                    🗑 حذف
+                    <EmojiIcon icon="🗑" size={16}/> حذف
                   </button>
                 </div>
               </div>

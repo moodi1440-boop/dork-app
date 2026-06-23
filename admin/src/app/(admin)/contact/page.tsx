@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { loadSocialAction, saveSocialAction } from "./actions";
+import { EmojiIcon } from "@/components/Icons";
 
 interface SocialLinks {
   [key: string]: unknown;
@@ -67,14 +68,14 @@ export default function ContactPage() {
 
         <div className="space-y-4">
           {[
-            { key: "email",        label: "📧 البريد الإلكتروني", placeholder: "contact@example.com" },
-            { key: "twitter",      label: "🐦 تويتر / X",         placeholder: "@username" },
-            { key: "whatsapp",     label: "💬 واتساب",             placeholder: "966501234567" },
-            { key: "telegram",     label: "📱 تيليجرام (رابط)",    placeholder: "https://t.me/channel" },
-            { key: "telegramUser", label: "📱 تيليجرام (يوزر)",    placeholder: "@username" },
-          ].map(({ key, label, placeholder }) => (
+            { key: "email",        icon: "📧", label: "البريد الإلكتروني", placeholder: "contact@example.com" },
+            { key: "twitter",      icon: "🐦", label: "تويتر / X",         placeholder: "@username" },
+            { key: "whatsapp",     icon: "💬", label: "واتساب",             placeholder: "966501234567" },
+            { key: "telegram",     icon: "📱", label: "تيليجرام (رابط)",    placeholder: "https://t.me/channel" },
+            { key: "telegramUser", icon: "📱", label: "تيليجرام (يوزر)",    placeholder: "@username" },
+          ].map(({ key, icon, label, placeholder }) => (
             <div key={key}>
-              <label className="block text-xs text-gray-400 mb-1.5 font-semibold">{label}</label>
+              <label className="block text-xs text-gray-400 mb-1.5 font-semibold"><EmojiIcon icon={icon} size={14}/> {label}</label>
               <input value={(social as Record<string, unknown>)[key] as string ?? ""}
                 onChange={(e) => setSocial((p) => ({ ...p, [key]: e.target.value }))}
                 placeholder={placeholder} className={inpCls} />
@@ -96,7 +97,7 @@ export default function ContactPage() {
                   placeholder="الرابط أو القيمة"
                   className="flex-1 bg-navy border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
                 <button onClick={() => setSocial((p) => ({ ...p, customFields: p.customFields.filter((_, j) => j !== i) }))}
-                  className="text-red-400 hover:text-red-300 text-sm font-bold px-2">✕</button>
+                  className="text-red-400 hover:text-red-300 text-sm font-bold px-2"><EmojiIcon icon="✕" size={16}/></button>
               </div>
             ))}
           </div>
@@ -112,11 +113,11 @@ export default function ContactPage() {
         </div>
       </div>
 
-      {saveError && <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center">❌ {saveError}</div>}
+      {saveError && <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center"><EmojiIcon icon="❌" size={16}/> {saveError}</div>}
       <div className="mt-4">
         <button onClick={save} disabled={saving}
           className={`w-full py-3 rounded-xl font-bold text-sm border transition-all ${saved ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-gold/10 border-gold/30 text-gold hover:bg-gold/20"} disabled:opacity-50`}>
-          {saving ? "جاري الحفظ..." : saved ? "✅ تم الحفظ" : "💾 حفظ"}
+          {saving ? "جاري الحفظ..." : saved ? <><EmojiIcon icon="✅" size={16}/> تم الحفظ</> : <><EmojiIcon icon="💾" size={16}/> حفظ</>}
         </button>
       </div>
     </div>

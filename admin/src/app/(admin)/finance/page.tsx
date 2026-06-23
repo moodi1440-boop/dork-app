@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { exportCSV } from "@/lib/csv";
+import { EmojiIcon } from "@/components/Icons";
 
 interface SalonFinance {
   id: number; name: string; owner: string; phone: string;
@@ -57,7 +58,7 @@ export default function FinancePage() {
           ["الصالون", "المالك", "الجوال", "عدد الحجوزات", "المستحق", "المدفوع", "الرصيد"],
           salons.map((s) => [s.name, s.owner, s.phone, s.bookingCount, s.earned, s.paid, s.balance])
         )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
-          📊 تصدير CSV
+          <EmojiIcon icon="📊" size={16}/> تصدير CSV
         </button>
       </div>
 

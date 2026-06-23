@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { exportCSV } from "@/lib/csv";
+import { EmojiIcon } from "@/components/Icons";
 
 interface SalonRow {
   id: number; name: string; owner: string; phone: string;
@@ -39,9 +40,9 @@ export default function ComparePage() {
   const borderColors: Record<number, string> = {
     0: "border-yellow-400", 1: "border-gray-400", 2: "border-amber-600",
   };
-  const statusLabel: Record<string, string> = {
-    approved: "✅ نشط", pending: "⏳ قيد المراجعة",
-    frozen: "🔒 مجمّد", banned: "🚫 محظور",
+  const statusLabel: Record<string, { icon: string; text: string }> = {
+    approved: { icon: "✅", text: "نشط" }, pending: { icon: "⏳", text: "قيد المراجعة" },
+    frozen: { icon: "🔒", text: "مجمّد" }, banned: { icon: "🚫", text: "محظور" },
   };
 
   return (
@@ -57,7 +58,7 @@ export default function ComparePage() {
           ["الترتيب", "الصالون", "المالك", "الهاتف", "التقييم", "الحالة"],
           sorted.map((s, i) => [i + 1, s.name, s.owner, s.phone, s.rating, s.status])
         )} className="flex-1 py-2.5 rounded-xl text-sm font-bold border bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors">
-          📊 تصدير CSV
+          <EmojiIcon icon="📊" size={16}/> تصدير CSV
         </button>
       </div>
 
@@ -72,15 +73,15 @@ export default function ComparePage() {
                 className={`bg-card border border-border rounded-2xl p-5 border-r-4 ${borderColors[i] ?? "border-border"}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{medals[i] ?? `#${i + 1}`}</span>
+                    <span className="text-lg">{medals[i] ? <EmojiIcon icon={medals[i]} size={16}/> : `#${i + 1}`}</span>
                     <span className="font-bold text-white text-sm">{s.name}</span>
                   </div>
-                  <span className="text-gold font-black text-sm">⭐ {s.rating.toFixed(1)}</span>
+                  <span className="text-gold font-black text-sm"><EmojiIcon icon="⭐" size={16}/> {s.rating.toFixed(1)}</span>
                 </div>
                 <div className="flex flex-wrap gap-x-5 gap-y-1 mb-3 text-xs text-gray-400">
-                  <span>👤 {s.owner}</span>
-                  <span>📞 {s.phone}</span>
-                  <span>{statusLabel[s.status] ?? s.status}</span>
+                  <span><EmojiIcon icon="👤" size={16}/> {s.owner}</span>
+                  <span><EmojiIcon icon="📞" size={16}/> {s.phone}</span>
+                  <span>{statusLabel[s.status] ? <><EmojiIcon icon={statusLabel[s.status].icon} size={14}/> {statusLabel[s.status].text}</> : s.status}</span>
                 </div>
                 <div className="h-2 bg-navy rounded-full overflow-hidden">
                   <div

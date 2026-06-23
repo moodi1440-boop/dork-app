@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
+import { EmojiIcon } from "@/components/Icons";
 
 interface Notification {
   id: number; target_type: string; target_id: number | null;
@@ -140,7 +141,7 @@ export default function NotificationsPage() {
 
       {sendForm && (
         <div className="bg-card border border-border rounded-2xl p-5 mb-6">
-          <h2 className="text-white font-bold mb-4">📤 إرسال إشعار جديد</h2>
+          <h2 className="text-white font-bold mb-4"><EmojiIcon icon="📤" size={18}/> إرسال إشعار جديد</h2>
           <div className="space-y-3">
             <div className="flex gap-3">
               <div className="flex-1">
@@ -179,7 +180,7 @@ export default function NotificationsPage() {
             </div>
             <button onClick={sendNotif} disabled={sending || !form.title.trim()}
               className="w-full py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors disabled:opacity-40">
-              {sending ? "جاري الإرسال..." : "📤 إرسال"}
+              {sending ? "جاري الإرسال..." : <><EmojiIcon icon="📤" size={16}/> إرسال</>}
             </button>
           </div>
         </div>
@@ -216,7 +217,7 @@ export default function NotificationsPage() {
                   body: JSON.stringify({ id: n.id }),
                 });
               }} className="flex-shrink-0 text-gray-500 hover:text-red-400 transition-colors" title="حذف">
-                ✕
+                <EmojiIcon icon="✕" size={16}/>
               </button>
             </div>
           ))}

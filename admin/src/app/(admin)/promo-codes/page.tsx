@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
+import { EmojiIcon } from "@/components/Icons";
 
 interface PromoCode {
   id: string;
@@ -166,7 +167,7 @@ export default function PromoCodesPage() {
     <div className="p-6 lg:p-8 max-w-3xl mx-auto" dir="rtl">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-black text-white">🎟 أكواد الخصم</h1>
+        <h1 className="text-2xl font-black text-white"><EmojiIcon icon="🎟" size={18}/> أكواد الخصم</h1>
         <p className="text-gray-400 text-sm mt-1">
           {appCount} كود تطبيق متاح · {waCount} كود واتساب متاح
         </p>
@@ -183,12 +184,12 @@ export default function PromoCodesPage() {
                   : "bg-green-500/15 border-green-500/40 text-green-400"
                 : "bg-transparent border-border text-gray-500 hover:text-white"
             }`}>
-            {t === "app" ? "📱 أكواد التطبيق" : "💬 أكواد WhatsApp"}
+            {t === "app" ? <><EmojiIcon icon="📱" size={16}/> أكواد التطبيق</> : <><EmojiIcon icon="💬" size={16}/> أكواد WhatsApp</>}
           </button>
         ))}
         <button onClick={() => setShowForm(v => !v)}
           className="mr-auto px-4 py-2 rounded-xl text-sm font-bold bg-gold/10 border border-gold/30 text-gold hover:bg-gold/20 transition-colors">
-          {showForm ? "✕ إغلاق" : `+ إنشاء كود ${tab === "app" ? "تطبيق" : "واتساب"}`}
+          {showForm ? <><EmojiIcon icon="✕" size={16}/> إغلاق</> : `+ إنشاء كود ${tab === "app" ? "تطبيق" : "واتساب"}`}
         </button>
       </div>
 
@@ -212,7 +213,7 @@ export default function PromoCodesPage() {
       {showForm && (
         <div className="bg-card border border-border rounded-2xl p-5 mb-5">
           <h2 className="text-white font-bold mb-4 text-sm">
-            {tab === "app" ? "📱 كود تطبيق جديد" : "💬 كود WhatsApp جديد"}
+            {tab === "app" ? <><EmojiIcon icon="📱" size={16}/> كود تطبيق جديد</> : <><EmojiIcon icon="💬" size={16}/> كود WhatsApp جديد</>}
           </h2>
           <div className="space-y-3">
             {/* عدد الأكواد */}
@@ -313,8 +314,8 @@ export default function PromoCodesPage() {
               {saving
                 ? "⏳ جاري الحفظ..."
                 : parseInt(fCount) > 1
-                  ? `✅ إنشاء ${fCount} أكواد`
-                  : "✅ إنشاء الكود"}
+                  ? <><EmojiIcon icon="✅" size={16}/> إنشاء {fCount} أكواد</>
+                  : <><EmojiIcon icon="✅" size={16}/> إنشاء الكود</>}
             </button>
           </div>
         </div>
@@ -343,14 +344,14 @@ export default function PromoCodesPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-mono text-base font-black tracking-widest text-white">{c.code}</span>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.cls}`}>
-                        {cfg.dot} {cfg.label}
+                        <EmojiIcon icon={cfg.dot} size={10}/> {cfg.label}
                       </span>
                     </div>
 
                     {/* السطر الثاني: الملاحظات */}
                     <div className="flex items-center gap-3 flex-wrap mb-1">
-                      {c.note && <span className="text-xs text-gray-400">📋 {c.note}</span>}
-                      {c.wa_credits && <span className="text-xs text-green-400">📲 {c.wa_credits} عميل WA</span>}
+                      {c.note && <span className="text-xs text-gray-400"><EmojiIcon icon="📋" size={16}/> {c.note}</span>}
+                      {c.wa_credits && <span className="text-xs text-green-400"><EmojiIcon icon="📲" size={16}/> {c.wa_credits} عميل WA</span>}
                       {c.recipient_phone && (
                         <span className="text-xs text-gray-500 font-mono">{c.recipient_phone}</span>
                       )}
@@ -382,18 +383,18 @@ export default function PromoCodesPage() {
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => copyCode(c.code)}
                         className="text-xs px-2.5 py-1.5 rounded-lg border border-blue-500/20 text-blue-400 hover:bg-blue-500/10 transition-colors">
-                        {copied === c.code ? "✓" : "نسخ"}
+                        {copied === c.code ? <EmojiIcon icon="✓" size={16}/> : "نسخ"}
                       </button>
                       <button onClick={() => sendWa(c)}
                         className="text-xs px-2.5 py-1.5 rounded-lg border border-green-500/20 text-green-400 hover:bg-green-500/10 transition-colors">
-                        📲
+                        <EmojiIcon icon="📲" size={16}/>
                       </button>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {st === "expired" && c.duration_days && (
                         <button onClick={() => renew(c)}
                           className="text-xs px-2.5 py-1.5 rounded-lg border border-blue-500/20 text-blue-300 hover:bg-blue-500/10 transition-colors">
-                          🔄 تجديد
+                          <EmojiIcon icon="🔄" size={16}/> تجديد
                         </button>
                       )}
                       <button onClick={() => toggle(c.id, c.active)}
@@ -406,7 +407,7 @@ export default function PromoCodesPage() {
                       </button>
                       <button onClick={() => del(c.id)}
                         className="text-xs px-2.5 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors">
-                        🗑
+                        <EmojiIcon icon="🗑" size={16}/>
                       </button>
                     </div>
                   </div>

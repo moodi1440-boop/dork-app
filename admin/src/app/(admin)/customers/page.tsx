@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
 import { exportCSV } from "@/lib/csv";
+import { EmojiIcon } from "@/components/Icons";
 
 interface Customer { id: string; name: string; phone: string; email: string; loyalty_points: number; loyalty_frozen: boolean; admin_notes?: string; blocked?: boolean; favs?: unknown[]; }
 type Booking = { id: string; date: string; time: string; services: string[]; total: number; status: string; salonName?: string; };
@@ -31,8 +32,8 @@ function AddCustomerModal({ onClose, onAdded }: { onClose: () => void; onAdded: 
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-navy border border-border rounded-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="text-white font-bold">👤 إضافة عميل جديد</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
+          <h2 className="text-white font-bold"><EmojiIcon icon="👤" size={18}/> إضافة عميل جديد</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none"><EmojiIcon icon="✕" size={16}/></button>
         </div>
         <div className="p-5 space-y-4">
           {[["الاسم *", "name"], ["الجوال *", "phone"], ["كلمة المرور (اختياري)", "password"]].map(([lbl, k]) => (
@@ -45,10 +46,10 @@ function AddCustomerModal({ onClose, onAdded }: { onClose: () => void; onAdded: 
                 className={inpCls} />
             </div>
           ))}
-          {err && <div className="text-red-400 text-sm">❌ {err}</div>}
+          {err && <div className="text-red-400 text-sm"><EmojiIcon icon="❌" size={16}/> {err}</div>}
           <button onClick={submit} disabled={saving}
             className="w-full py-3 bg-gold/10 border border-gold/30 text-gold rounded-xl font-bold text-sm hover:bg-gold/20 transition-colors disabled:opacity-50">
-            {saving ? "جاري الإضافة..." : "✅ إضافة العميل"}
+            {saving ? "جاري الإضافة..." : <><EmojiIcon icon="✅" size={16}/> إضافة العميل</>}
           </button>
         </div>
       </div>
@@ -111,17 +112,17 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-navy border border-border rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-navy">
-          <h2 className="text-white font-bold">👤 {customer.name}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl">✕</button>
+          <h2 className="text-white font-bold"><EmojiIcon icon="👤" size={18}/> {customer.name}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl"><EmojiIcon icon="✕" size={16}/></button>
         </div>
         <div className="p-5 space-y-5">
           <div className="bg-card border border-border rounded-xl p-4 space-y-2">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-gray-400 font-semibold">معلومات الحساب</div>
-              {customer.blocked && <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/30 text-red-400 border border-red-800/30 font-bold">🚫 محظور</span>}
+              {customer.blocked && <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/30 text-red-400 border border-red-800/30 font-bold"><EmojiIcon icon="🚫" size={16}/> محظور</span>}
             </div>
-            <div className="text-sm text-white">📞 {customer.phone}</div>
-            {customer.email && <div className="text-sm text-gray-400">📧 {customer.email}</div>}
+            <div className="text-sm text-white"><EmojiIcon icon="📞" size={16}/> {customer.phone}</div>
+            {customer.email && <div className="text-sm text-gray-400"><EmojiIcon icon="📧" size={16}/> {customer.email}</div>}
           </div>
 
           {/* إحصاءات العميل */}
@@ -157,22 +158,22 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
             )}
           </div>
           <div className="bg-card border border-border rounded-xl p-4">
-            <div className="text-xs text-gray-400 font-semibold mb-3">📝 ملاحظات داخلية (لا يراها العميل)</div>
+            <div className="text-xs text-gray-400 font-semibold mb-3"><EmojiIcon icon="📝" size={16}/> ملاحظات داخلية (لا يراها العميل)</div>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3}
               placeholder="أضف ملاحظات خاصة عن هذا العميل..."
               className="w-full bg-navy border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold resize-none mb-3" />
             <button onClick={saveNotes} disabled={saving}
               className="w-full py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-sm font-bold hover:bg-gold/20 transition-colors disabled:opacity-50">
-              {notesSaved ? "✅ تم الحفظ" : saving ? "جاري الحفظ..." : "💾 حفظ الملاحظات"}
+              {notesSaved ? <><EmojiIcon icon="✅" size={16}/> تم الحفظ</> : saving ? "جاري الحفظ..." : <><EmojiIcon icon="💾" size={16}/> حفظ الملاحظات</>}
             </button>
           </div>
           <button onClick={() => patch({ blocked: !customer.blocked })} disabled={saving}
             className={`w-full py-2.5 rounded-xl text-sm font-semibold border transition-colors ${customer.blocked ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20" : "bg-red-900/20 text-red-400 border-red-800/30 hover:bg-red-900/30"}`}>
-            {customer.blocked ? "✅ رفع الحظر عن العميل" : "🚫 حظر العميل"}
+            {customer.blocked ? <><EmojiIcon icon="✅" size={16}/> رفع الحظر عن العميل</> : <><EmojiIcon icon="🚫" size={16}/> حظر العميل</>}
           </button>
           <button onClick={async () => { if (!confirm("حذف العميل نهائياً؟")) return; await fetch(`/api/customers/${customerId}`, { method: "DELETE" }); onClose(); }}
             className="w-full py-2.5 bg-red-900/20 border border-red-800/30 text-red-400 rounded-xl text-sm font-semibold hover:bg-red-900/30 transition-colors">
-            🗑 حذف العميل نهائياً
+            <EmojiIcon icon="🗑" size={16}/> حذف العميل نهائياً
           </button>
         </div>
       </div>
@@ -214,7 +215,7 @@ export default function CustomersPage() {
             ["الاسم", "الجوال", "البريد", "نقاط الولاء", "الحالة"],
             customers.map((c) => [c.name, c.phone, c.email ?? "", c.loyalty_points ?? 0, c.blocked ? "محظور" : c.loyalty_frozen ? "مجمّد" : "نشط"])
           )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
-            📊 تصدير CSV
+            <EmojiIcon icon="📊" size={16}/> تصدير CSV
           </button>
           <button onClick={() => setShowAdd(true)}
             className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">

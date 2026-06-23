@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { EmojiIcon } from "@/components/Icons";
 
 export default function LoginPage() {
   const [useAccount, setUseAccount] = useState(false);
@@ -34,7 +35,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-card border border-gold/30 mb-4 shadow-[0_0_30px_rgba(212,160,23,0.2)]">
-            <span className="text-3xl">✂</span>
+            <EmojiIcon icon="✂" size={32}/>
           </div>
           <h1 className="text-3xl font-black gold-text tracking-widest">DORK</h1>
           <p className="text-gray-400 text-sm mt-1">لوحة الإدارة</p>

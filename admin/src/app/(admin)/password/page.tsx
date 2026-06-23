@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { EmojiIcon } from "@/components/Icons";
 
 export default function PasswordPage() {
   const [pwForm, setPwForm] = useState({ old: "", n1: "", n2: "", err: "" });
@@ -29,7 +30,7 @@ export default function PasswordPage() {
                 className={inpCls} />
             </div>
           ))}
-          {pwForm.err && <div className="text-red-400 text-sm font-semibold">❌ {pwForm.err}</div>}
+          {pwForm.err && <div className="text-red-400 text-sm font-semibold"><EmojiIcon icon="❌" size={16}/> {pwForm.err}</div>}
           <button
             onClick={async () => {
               const res = await fetch("/api/auth/password", {
@@ -44,9 +45,9 @@ export default function PasswordPage() {
               setTimeout(() => setPwSaved(false), 3000);
             }}
             className={`w-full py-3 rounded-xl font-bold text-sm border transition-all ${pwSaved ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-gold/10 border-gold/30 text-gold hover:bg-gold/20"}`}>
-            {pwSaved ? "✅ تم تغيير كلمة المرور" : "💾 حفظ كلمة المرور الجديدة"}
+            {pwSaved ? <><EmojiIcon icon="✅" size={16}/> تم تغيير كلمة المرور</> : <><EmojiIcon icon="💾" size={16}/> حفظ كلمة المرور الجديدة</>}
           </button>
-          <p className="text-xs text-gray-600">⚠ يتطلب تسجيل الدخول من جديد بعد التغيير</p>
+          <p className="text-xs text-gray-600"><EmojiIcon icon="⚠" size={16}/> يتطلب تسجيل الدخول من جديد بعد التغيير</p>
         </div>
       </div>
     </div>
