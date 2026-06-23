@@ -80,7 +80,7 @@ export default function MessagesPage() {
         <div className="flex items-center gap-3 mb-5">
           <button onClick={() => setSelId(null)} className="w-8 h-8 rounded-lg bg-card border border-border text-gray-400 hover:text-white flex items-center justify-center text-lg transition-colors">‹</button>
           <h2 className="text-white font-bold"><EmojiIcon icon="💬" size={18}/> {selSalon?.name}</h2>
-          <button onClick={() => loadChat(selId)} className="mr-auto text-xs text-gray-500 hover:text-gray-300 transition-colors">تحديث ↺</button>
+          <button onClick={() => loadChat(selId)} className="mr-auto text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">تحديث <EmojiIcon icon="↺" size={12}/></button>
         </div>
 
         <div className="flex-1 bg-card border border-border rounded-2xl overflow-hidden flex flex-col" style={{ minHeight: 400 }}>

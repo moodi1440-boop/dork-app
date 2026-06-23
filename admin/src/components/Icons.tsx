@@ -354,6 +354,16 @@ export function IconRobot({ size = 16, color = "currentColor" }: IconProps) {
     <circle cx="9" cy="14" r="1.4" fill={color} stroke="none" /><circle cx="15" cy="14" r="1.4" fill={color} stroke="none" /><line x1="9" y1="18" x2="15" y2="18" />
   </svg>);
 }
+export function IconArrowUp({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="19" x2="12" y2="6" /><polyline points="6,12 12,6 18,12" />
+  </svg>);
+}
+export function IconArrowDown({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="18" /><polyline points="6,12 12,18 18,12" />
+  </svg>);
+}
 
 // خريطة الإيموجي ← المكوّن، نقطة ارتكاز واحدة (مطابقة لمبدأ NotifIcon بـApp.jsx الرئيسي)
 export function EmojiIcon({ icon, size = 16 }: { icon: string; size?: number }) {
@@ -428,6 +438,9 @@ export function EmojiIcon({ icon, size = 16 }: { icon: string; size?: number }) 
     case "📯": return <IconPostHorn size={size} />;
     case "🎺": return <IconTrumpet size={size} />;
     case "🤖": return <IconRobot size={size} />;
+    case "↑": return <IconArrowUp size={size} />;
+    case "↓": return <IconArrowDown size={size} />;
+    case "↻": case "↺": return <IconRefresh size={size} />;
     default: return <span style={{ fontSize: size }}>{icon}</span>;
   }
 }
