@@ -1011,6 +1011,54 @@ function IconDiscountSeal({size=16,color="var(--p)"}){
     <circle cx="9.3" cy="9.3" r="1.3" fill={color} stroke="none"/><circle cx="14.7" cy="14.7" r="1.3" fill={color} stroke="none"/><line x1="15.5" y1="8.5" x2="8.5" y2="15.5"/>
   </svg>);
 }
+function IconStarOutline({size=16,color="var(--gold)"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinejoin="round">
+    <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.4l-5.9 3.2 1.3-6.6-4.9-4.6 6.6-.8z"/>
+  </svg>);
+}
+function IconScale({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="3" x2="12" y2="20"/><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="7" x2="5" y2="11"/><line x1="19" y1="7" x2="19" y2="11"/>
+    <circle cx="5" cy="13" r="2"/><circle cx="19" cy="13" r="2"/><line x1="8" y1="20" x2="16" y2="20"/>
+  </svg>);
+}
+function IconNone({size=16,color="var(--text-muted)"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round">
+    <rect x="4" y="4" width="16" height="16" rx="3"/><line x1="6" y1="18" x2="18" y2="6"/>
+  </svg>);
+}
+function IconSun({size=16,color="#f0a020"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round">
+    <circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/>
+    <line x1="5.5" y1="5.5" x2="3.8" y2="3.8"/><line x1="18.5" y1="5.5" x2="20.2" y2="3.8"/><line x1="5.5" y1="18.5" x2="3.8" y2="20.2"/><line x1="18.5" y1="18.5" x2="20.2" y2="20.2"/>
+  </svg>);
+}
+function IconSparkle({size=16,color="var(--p)"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke="none">
+    <path d="M12 3c.5 3 1.5 5 4 6.5-2.5 1.5-3.5 3.5-4 6.5-.5-3-1.5-5-4-6.5 2.5-1.5 3.5-3.5 4-6.5z"/><circle cx="19" cy="5" r="1"/><circle cx="5" cy="19" r="1"/>
+  </svg>);
+}
+function IconGridLines({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7">
+    <line x1="8" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="16" y2="21"/><line x1="3" y1="8" x2="21" y2="8"/><line x1="3" y1="16" x2="21" y2="16"/>
+  </svg>);
+}
+function IconWaves({size=16,color="#3498db"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round">
+    <path d="M2 9c1.5-2.2 3.5-2.2 5 0s3.5 2.2 5 0 3.5-2.2 5 0 3.5 2.2 5 0"/><path d="M2 15c1.5-2.2 3.5-2.2 5 0s3.5 2.2 5 0 3.5-2.2 5 0 3.5 2.2 5 0"/>
+  </svg>);
+}
+function IconCrown({size=16,color="#d4a017"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinejoin="round">
+    <path d="M3 18 5 9 9 14 12 7 15 14 19 9 21 18 Z"/><rect x="3" y="18" width="18" height="2.5" rx="1" fill={color} stroke="none"/>
+    <circle cx="5" cy="9" r="1" fill={color} stroke="none"/><circle cx="12" cy="7" r="1" fill={color} stroke="none"/><circle cx="19" cy="9" r="1" fill={color} stroke="none"/>
+  </svg>);
+}
+function IconDiamond({size=16,color="var(--p)"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinejoin="round">
+    <path d="M7 9l5-6 5 6-5 12z"/><path d="M7 9h10M9.5 9l2.5 12M14.5 9l-2.5 12"/>
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
@@ -1063,6 +1111,17 @@ function NotifIcon({icon,size=20}){
   if(icon==="✗")return <IconClose size={size} color="var(--gold)"/>;
   if(icon==="🔒")return <IconLock size={size} color="var(--text-muted)"/>;
   if(icon==="🎟")return <IconDiscountSeal size={size}/>;
+  if(icon==="☆")return <IconStarOutline size={size}/>;
+  if(icon==="⬛")return <IconNone size={size}/>;
+  if(icon==="☀"||icon==="☀️")return <IconSun size={size}/>;
+  if(icon==="✨")return <IconSparkle size={size}/>;
+  if(icon==="🔲")return <IconGridLines size={size}/>;
+  if(icon==="🌊")return <IconWaves size={size}/>;
+  if(icon==="👑")return <IconCrown size={size}/>;
+  if(icon==="✦")return <IconDiamond size={size}/>;
+  if(icon==="🔎")return <IconSearch size={size} color="var(--p)"/>;
+  if(icon==="✉"||icon==="✉️")return <IconMail size={size} color="var(--p)"/>;
+  if(icon==="❤"||icon==="❤️")return <IconHeart size={size} filled color="#e74c3c"/>;
   return <span style={{fontSize:size}}>{icon}</span>;
 }
 function LabelWithIcon({label,size=11}){
@@ -2687,7 +2746,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           ["priceLow","🪙",t("home.sort_price_low")],
         ].map(([k,ic,l])=>(
           <button key={k} style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:sortBy===k?"var(--pa3)":"var(--surface-2)",border:`1.5px solid ${sortBy===k?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s",flexDirection:"column",gap:2}} onClick={()=>{if(sortBy===k){setSortBy("");}else{setShowSearch(false);setShowRegionSelect(false);if(k==="nearest"&&!userLoc){if(savedLoc){setUserLoc(savedLoc);setSortBy(k);return;}detectUserLoc();return;}setSortBy(k);}}} title={l} aria-label={l}>
-            <span>{ic}</span>
+            <span style={{display:"flex"}}><NotifIcon icon={ic} size={18}/></span>
             <span style={{fontSize:9,color:"var(--text-muted)"}}>{l}</span>
           </button>
         ))}
@@ -2697,7 +2756,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       {showSearch&&(
       <div style={{padding:"10px 14px",background:"rgba(0,0,0,.4)",borderBottom:"1px solid rgba(var(--gold-rgb),.1)",animation:"slideDown 0.2s ease-out"}}>
         <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,.05)",borderRadius:9,border:"1px solid var(--border-ui)",padding:"8px 12px",gap:6,cursor:"text"}}>
-          <span style={{fontSize:12,color:"var(--p)",flexShrink:0}}>🔎</span>
+          <span style={{fontSize:12,color:"var(--p)",flexShrink:0,display:"flex"}}><IconSearch size={12} color="var(--p)"/></span>
           <input autoFocus style={{flex:1,background:"transparent",border:"none",color:"var(--text-primary)",fontSize:12,outline:"none",fontFamily:"'Cairo',sans-serif",direction:"rtl",WebkitAppearance:"none",appearance:"none"}} placeholder={t("home.search_ph")} value={search} onChange={e=>setSearch(e.target.value)} onBlur={()=>{if(!search)setShowSearch(false);}}/>
           {search&&<button style={{background:"transparent",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:0,WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center"}} onClick={()=>setSearch("")} aria-label="مسح البحث"><IconClose size={12}/></button>}
         </div>
@@ -2916,7 +2975,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           <IconHeart size={16} filled={fav}/>
         </button>
         <button onClick={onCompare} title="مقارنة" style={{background:"transparent",border:"1.5px solid #3a3a4a",color:"var(--text-muted)",borderRadius:10,padding:"8px 10px",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flex:"0 0 36px"}}>
-          ⚖
+          <IconScale size={16}/>
         </button>
         <button onClick={onBook} style={{background:"var(--pa12)",color:"var(--p)",border:"1.5px solid rgba(var(--pr),.4)",borderRadius:10,padding:"12px 16px",fontSize:12,fontWeight:700,cursor:"pointer",flex:1,fontFamily:"'Cairo',sans-serif"}}>
           {t("salon_card.book_btn")}
@@ -3002,7 +3061,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
                 {salon.social.whatsapp&&<a href={`https://wa.me/966${salon.social.whatsapp.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="واتساب الصالون" aria-label="واتساب الصالون"><NotifIcon icon="💬" size={15}/></a>}
                 {salon.social.twitter&&<a href={`https://twitter.com/${salon.social.twitter.replace("@","")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="تويتر/X الصالون" aria-label="تويتر/X الصالون"><NotifIcon icon="🐦" size={15}/></a>}
                 {salon.social.telegramUser&&<a href={`https://t.me/${salon.social.telegramUser.replace("@","")}`} target="_blank" rel="noreferrer" style={{fontSize:15,textDecoration:"none"}} title="تيليجرام الصالون" aria-label="تيليجرام الصالون"><NotifIcon icon="✈" size={15}/></a>}
-                {salon.social.email&&<a href={`mailto:${salon.social.email}`} style={{fontSize:15,textDecoration:"none"}} title="بريد الصالون" aria-label="بريد الصالون">✉️</a>}
+                {salon.social.email&&<a href={`mailto:${salon.social.email}`} style={{fontSize:15,textDecoration:"none"}} title="بريد الصالون" aria-label="بريد الصالون"><NotifIcon icon="✉️" size={15}/></a>}
               </div>
             )}
             {salonReviews.length>0&&<>
@@ -3602,12 +3661,12 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div style={{background:"rgba(39,174,96,.08)",border:"1px solid rgba(39,174,96,.25)",borderRadius:10,padding:"10px",textAlign:"center"}}>
             <div style={{fontSize:22,fontWeight:900,color:"#27ae60"}}>{newCusts.length}</div>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3}}>🟢 جدد (آخر 30 يوم)</div>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}><IconRadioFilled size={8} color="#27ae60"/> جدد (آخر 30 يوم)</div>
             <div style={{fontSize:11,fontWeight:700,color:"#27ae60"}}>{salonCusts.length>0?Math.round((newCusts.length/salonCusts.length)*100):0}%</div>
           </div>
           <div style={{background:"rgba(52,152,219,.08)",border:"1px solid rgba(52,152,219,.25)",borderRadius:10,padding:"10px",textAlign:"center"}}>
             <div style={{fontSize:22,fontWeight:900,color:"#3498db"}}>{returningCusts.length}</div>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3}}>🔵 عائدون</div>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}><IconRadioFilled size={8} color="#3498db"/> عائدون</div>
             <div style={{fontSize:11,fontWeight:700,color:"#3498db"}}>{salonCusts.length>0?Math.round((returningCusts.length/salonCusts.length)*100):0}%</div>
           </div>
         </div>
@@ -7766,7 +7825,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
                 persistUiToSupabase&&persistUiToSupabase({bg:bg.id});
               }}
                 style={{padding:"18px 6px",borderRadius:12,border:`2px solid ${active?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transform:active?"scale(1.04)":"scale(1)",minHeight:80,background:active?"var(--pa12)":"var(--surface-2)"}}>
-                <span style={{fontSize:26}}>{bg.emoji}</span>
+                <span style={{fontSize:26,display:"flex"}}><NotifIcon icon={bg.emoji} size={26}/></span>
                 <span style={{fontSize:11,color:active?"var(--p)":"#aaa",fontWeight:active?700:400}}>{t("settings.bgs."+bg.id)}</span>
                 {active&&<span style={{fontSize:9,color:"var(--p)"}}>{t("settings.active")}</span>}
               </button>
