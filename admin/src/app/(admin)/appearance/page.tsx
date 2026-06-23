@@ -61,7 +61,7 @@ export default function AppearancePage() {
 
       {/* الوضع — يُطبّق فوراً */}
       <div className="bg-card border border-border rounded-2xl p-6 mb-5">
-        <h2 className="text-base font-bold text-white mb-1">🖥️ وضع العرض</h2>
+        <h2 className="text-base font-bold text-white mb-1"><EmojiIcon icon="🖥️" size={18}/> وضع العرض</h2>
         <p className="text-xs text-gray-500 mb-4">يُطبّق فوراً على لوحة التحكم</p>
         <div className="grid grid-cols-2 gap-3">
           {ADMIN_MODES.map((m) => (

@@ -219,7 +219,7 @@ export default function CustomersPage() {
           </button>
           <button onClick={() => setShowAdd(true)}
             className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
-            ➕ إضافة عميل
+            <EmojiIcon icon="➕" size={16}/> إضافة عميل
           </button>
         </div>
       </div>

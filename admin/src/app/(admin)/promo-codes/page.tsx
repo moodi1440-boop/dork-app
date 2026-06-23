@@ -239,7 +239,7 @@ export default function PromoCodesPage() {
                   maxLength={20} placeholder="الكود" />
                 <button onClick={() => setFCode(tab === "app" ? genApp() : genWa())}
                   className="px-4 py-2.5 border border-border text-gray-400 rounded-xl text-sm hover:text-white hover:border-gold/40 transition-colors">
-                  🎲
+                  <EmojiIcon icon="🎲" size={16}/>
                 </button>
               </div>
             )}

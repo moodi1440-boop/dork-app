@@ -184,7 +184,7 @@ function WaitingTab() {
           className="flex-1 min-w-40 bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
         <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="الجوال (اختياري)"
           className="flex-1 min-w-40 bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
-        <button onClick={add} className="px-5 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">➕ إضافة</button>
+        <button onClick={add} className="px-5 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors"><EmojiIcon icon="➕" size={16}/> إضافة</button>
       </div>
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {loading ? <div className="text-center py-16 text-gold animate-pulse">جاري التحميل...</div>

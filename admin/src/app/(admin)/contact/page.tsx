@@ -108,7 +108,7 @@ export default function ContactPage() {
               className="flex-1 bg-navy border border-border rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gold" />
             <button
               onClick={() => { if (newField.label) { setSocial((p) => ({ ...p, customFields: [...p.customFields, newField] })); setNewField({ label: "", value: "" }); }}}
-              className="px-3 py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-xs font-bold hover:bg-gold/20 transition-colors">➕</button>
+              className="px-3 py-2 bg-gold/10 border border-gold/30 text-gold rounded-lg text-xs font-bold hover:bg-gold/20 transition-colors"><EmojiIcon icon="➕" size={14}/></button>
           </div>
         </div>
       </div>
