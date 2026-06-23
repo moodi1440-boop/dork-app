@@ -1136,6 +1136,16 @@ function IconPebble({size=16,color="#aaa"}){
     <ellipse cx="12" cy="12" rx="9" ry="6.5"/><path d="M5 10c2 1 4-1 6 0s4 2 6 0"/><path d="M6 14c2 .5 4-.5 6 0"/>
   </svg>);
 }
+function IconReceipt({size=16,color="#f0a020"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 2h12v18l-2-1-2 1-2-1-2 1-2-1-2 1V2Z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/>
+  </svg>);
+}
+function IconCircuitNodes({size=16,color="#888"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 6H10V12H18V18H20"/><circle cx="4" cy="6" r="1.8" fill={color} stroke="none"/><circle cx="10" cy="12" r="1.8" fill={color} stroke="none"/><circle cx="18" cy="18" r="1.8" fill={color} stroke="none"/><circle cx="20" cy="18" r="1.8" fill={color} stroke="none"/>
+  </svg>);
+}
 function NotifIcon({icon,size=20}){
   if(icon==="✅")return <IconSuccess size={size}/>;
   if(icon==="❌")return <IconError size={size}/>;
@@ -1215,6 +1225,8 @@ function NotifIcon({icon,size=20}){
   if(icon==="🪙")return <IconCoinArrow size={size}/>;
   if(icon==="✌"||icon==="✌️")return <IconOverlapCircles size={size}/>;
   if(icon==="🪨")return <IconPebble size={size}/>;
+  if(icon==="🌅")return <IconReceipt size={size}/>;
+  if(icon==="🔌")return <IconCircuitNodes size={size}/>;
   return <span style={{fontSize:size}}>{icon}</span>;
 }
 function LabelWithIcon({label,size=11}){
@@ -4962,7 +4974,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       <div className="today-card" style={{background:"rgba(var(--pr),.20)",borderRadius:18,padding:"16px",marginBottom:18,border:"1.5px solid rgba(var(--pr),.60)",boxShadow:"0 4px 20px rgba(var(--pr),.12)"}}>
 
         {/* التاريخ */}
-        <div style={{fontSize:14,fontWeight:800,color:"var(--p)",marginBottom:14}}>🌅 {_dayLabel}</div>
+        <div style={{fontSize:14,fontWeight:800,color:"var(--p)",marginBottom:14,display:"flex",alignItems:"center",gap:6}}><NotifIcon icon="🌅" size={14}/> {_dayLabel}</div>
 
         {/* الإجمالي - الرقم الأهم، بارز فوق التفاصيل */}
         <div style={{background:"rgba(241,196,15,.10)",borderRadius:12,padding:"14px 8px",border:"1.5px solid rgba(241,196,15,.4)",textAlign:"center",marginBottom:8}}>
