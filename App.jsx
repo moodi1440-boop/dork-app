@@ -1171,6 +1171,11 @@ function IconArrowReturn({size=16,color="currentColor"}){
     <path d="M9 17l-5-5 5-5"/><path d="M4 12h10a5 5 0 0 1 0 10h-2"/>
   </svg>);
 }
+function IconChevronLeft({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15,18 9,12 15,6"/>
+  </svg>);
+}
 function IconSwapHorizontal({size=16,color="currentColor"}){
   return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="6" y1="8" x2="18" y2="8"/><polyline points="15,5 18,8 15,11"/>
@@ -1298,6 +1303,7 @@ function NotifIcon({icon,size=20}){
   if(icon==="🪨")return <IconPebble size={size}/>;
   if(icon==="🌅")return <IconReceipt size={size}/>;
   if(icon==="🔌")return <IconCircuitNodes size={size}/>;
+  if(icon==="‹")return <IconChevronLeft size={size} color={color}/>;
   if(icon==="←")return <IconArrowLeft size={size}/>;
   if(icon==="→")return <IconArrowRight size={size}/>;
   if(icon==="↑")return <IconArrowUp size={size}/>;
@@ -2415,7 +2421,10 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
           <span style={{fontSize:15,fontWeight:isActive?700:600,display:"flex",alignItems:"center",gap:6}}><NotifIcon icon={icon} size={15}/>{label}</span>
           {sub&&<span style={{fontSize:11,color:isActive?"var(--p)":"var(--text-muted)"}}>{sub}</span>}
         </div>
-        {chev&&<span style={{color:exp===chev?"var(--p)":"var(--text-muted)",fontSize:14,transform:exp===chev?"rotate(90deg)":"rotate(-90deg)",transition:"transform 0.2s"}}>‹</span>}
+        {chev
+          ?<span style={{display:"flex",transform:exp===chev?"rotate(90deg)":"rotate(-90deg)",transition:"transform 0.2s"}}><IconChevronLeft size={14} color={exp===chev?"var(--p)":"var(--text-muted)"}/></span>
+          :<IconChevronLeft size={14} color="var(--text-muted)"/>
+        }
       </button>
     );
   };
@@ -2573,7 +2582,10 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
     <button onClick={onClick} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"13px 20px",background:active?"rgba(var(--pr),.15)":"transparent",border:"none",borderBottom:"1px solid var(--border-ui)",borderRight:active?`3px solid var(--p)`:"3px solid transparent",cursor:"pointer",fontFamily:"inherit",color:active?"var(--p)":"var(--text-primary)",WebkitAppearance:"none",appearance:"none",textAlign:dir==="rtl"?"right":"left",transition:"all .2s"}}>
       <span style={{flexShrink:0,display:"flex",alignItems:"center"}}><NotifIcon icon={icon} size={16}/></span>
       <span style={{fontSize:14,fontWeight:active?800:500,flex:1}}>{label}</span>
-      {active&&<div style={{width:8,height:8,borderRadius:"50%",background:"var(--p)",flexShrink:0,boxShadow:"0 0 6px var(--p)"}}/>}
+      {active
+        ?<div style={{width:8,height:8,borderRadius:"50%",background:"var(--p)",flexShrink:0,boxShadow:"0 0 6px var(--p)"}}/>
+        :<IconChevronLeft size={14} color="var(--text-muted)"/>
+      }
     </button>
   );
   const SecHead=({label})=>(<div style={{padding:"10px 20px 5px",fontSize:11,color:"var(--p)",fontWeight:700,letterSpacing:.8,background:"var(--shell-bg)",borderBottom:"1px solid var(--border-ui)"}}>{label}</div>);
@@ -3020,7 +3032,7 @@ function SalonReviewsView({salon,reviews,setView}){
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>setView("home")}><NotifIcon icon="←" size={12}/> {t("salon_reviews.back")}</button>
+          <button style={G.bb} onClick={()=>setView("home")}><IconArrowRight size={20}/></button>
           <h2 style={{...G.ft,flex:1}}>{t("salon_reviews.title")}</h2>
         </div>
         <div style={{background:"rgba(var(--gold-rgb),.07)",border:"1px solid rgba(var(--gold-rgb),.18)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
@@ -3235,7 +3247,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
     <div style={G.page}>
       <div style={G.fp}>
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>setView("home")}>{t("salon_page.back")}</button>
+          <button style={G.bb} onClick={()=>setView("home")}><IconArrowRight size={20}/></button>
           <h2 style={{...G.ft,flex:1}}>{salon.name}</h2>
           <button style={{...G.favBtn,...(fav?G.favOn:{}),display:"inline-flex",alignItems:"center",justifyContent:"center"}} onClick={()=>toggleFav(salon.id)}><IconHeart size={20} filled={fav}/></button>
           <ShareBtn salon={salon}/>
@@ -3497,7 +3509,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
     </>
   );
   if(inline)return <div>{inner}</div>;
-  return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>onBack?onBack():setView("home")}>{t("salon_page.back")}</button><h2 style={G.ft}>{t("salon_page.book_tab")}</h2></div>{inner}</div></div>;
+  return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>onBack?onBack():setView("home")}><IconArrowRight size={20}/></button><h2 style={G.ft}>{t("salon_page.book_tab")}</h2></div>{inner}</div></div>;
 }
 
 // ==============================================
@@ -4335,7 +4347,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>step===1?setView("home"):setStep(step-1)}>{t("register.back")}</button><h2 style={G.ft}>{t("register.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>step===1?setView("home"):setStep(step-1)}><IconArrowRight size={20}/></button><h2 style={G.ft}>{t("register.title")}</h2></div>
 
       {/* pending notice */}
       <div style={{background:"var(--pa08)",border:"1px solid var(--pa3)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)"}}>
@@ -4672,7 +4684,7 @@ function NotifsView({setView}){
   return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
       <div style={G.fh}>
-        <button style={G.bb} onClick={()=>setView("home")}><NotifIcon icon="←" size={12}/> {t("notifs_view.back")}</button>
+        <button style={G.bb} onClick={()=>setView("home")}><IconArrowRight size={20}/></button>
         <h2 style={{...G.ft,flex:1}}>{t("notifs_view.title")}</h2>
         {notifs.length>0&&<button style={{...G.pageBtn,fontSize:11,padding:"5px 10px"}} onClick={markAll}>{t("notifs_view.mark_all")}</button>}
         {notifs.length>0&&<button style={{...G.delBtn,fontSize:11,padding:"5px 10px"}} onClick={clearAll}>{t("notifs_view.clear")}</button>}
@@ -4704,7 +4716,7 @@ function CompareSalonsView({salons,setView,setSelSalon}){
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
   if(!salons||salons.length<2)return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}><NotifIcon icon="←" size={12}/> {t("compare.back")}</button><h2 style={G.ft}>{t("compare.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}><IconArrowRight size={20}/></button><h2 style={G.ft}>{t("compare.title")}</h2></div>
       <div style={G.empty}>{t("compare.empty")}</div>
     </div></div>
   );
@@ -4721,7 +4733,7 @@ function CompareSalonsView({salons,setView,setSelSalon}){
 
   return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}><NotifIcon icon="←" size={12}/> {t("compare.back")}</button><h2 style={G.ft}>{t("compare.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}><IconArrowRight size={20}/></button><h2 style={G.ft}>{t("compare.title")}</h2></div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
         <div/>
@@ -4812,7 +4824,7 @@ function NearMapView({salons,setView,setSelSalon}){
 
   return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}><NotifIcon icon="←" size={12}/> {t("near_map.back")}</button><h2 style={G.ft}>{t("near_map.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}><IconArrowRight size={20}/></button><h2 style={G.ft}>{t("near_map.title")}</h2></div>
       {!userLoc?(
         <div style={{textAlign:"center",padding:"40px 20px"}}>
           <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><IconPin size={50}/></div>
@@ -4944,7 +4956,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
     window.addEventListener('touchend',onTE,{passive:true});
     return()=>{window.removeEventListener('touchstart',onTS);window.removeEventListener('touchmove',onTM);window.removeEventListener('touchend',onTE);};
   },[salon?.id,_oPtRefreshing,refreshSalonBookings]);
-  if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}>{t("owner_dash.back")}</button><h2 style={G.ft}>{t("owner_dash.page_title")}</h2></div><div style={G.empty}>{t("owner_dash.not_found")}</div></div></div>;
+  if(!salon)return <div style={G.page}><div style={G.fp}><div style={G.fh}><button style={G.bb} onClick={()=>setView("home")}><IconArrowRight size={20}/></button><h2 style={G.ft}>{t("owner_dash.page_title")}</h2></div><div style={G.empty}>{t("owner_dash.not_found")}</div></div></div>;
 
   const pending=salon.bookings.filter(b=>b.status==="pending").length;
   const statusColor=salon.status==="approved"?"#27ae60":salon.status==="rejected"?"#e74c3c":"var(--pl)";
@@ -5193,7 +5205,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       )}
       {ownerTab!==null&&(
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>setShowSalonDrawer(true)}><NotifIcon icon="←" size={12}/> {t("owner_dash.back")}</button>
+          <button style={G.bb} onClick={()=>setShowSalonDrawer(true)}><IconArrowRight size={20}/></button>
           <h2 style={{...G.ft,...(ownerTab==="calendar"||ownerTab==="messages"||ownerTab==="reviews"||ownerTab==="stats"?{}:{display:"flex",alignItems:"center",gap:6})}}>{ownerTab==="calendar"?t("salon_drawer.bookings"):ownerTab==="messages"?t("salon_drawer.messages"):ownerTab==="reviews"?t("salon_drawer.reviews"):ownerTab==="stats"?t("salon_drawer.stats"):<><IconFire size={16}/>إرسال عرض</>}</h2>
         </div>
       )}
@@ -6001,7 +6013,7 @@ function PromoPanel({salon,customers,toast$}){
       <div style={{display:"flex",gap:10,marginTop:20}}>
         {wizStep>1?(
           <button onClick={goBack} style={{flex:1,padding:"13px 0",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-            <NotifIcon icon="→" size={13}/> رجوع
+            <IconArrowRight size={20}/>
           </button>
         ):(
           <button onClick={reset} style={{flex:1,padding:"13px 0",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}}>
@@ -6293,7 +6305,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
 
   return(
     <div style={onlySec?G.page:undefined}><div style={onlySec?G.fp:undefined}>
-      {onlySec&&<div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("owner_settings.back")}</button><h2 style={G.ft}>{SEC_TITLES[onlySec]||t("owner_settings.settings_title")}</h2></div>}
+      {onlySec&&<div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}><IconArrowRight size={20}/></button><h2 style={G.ft}>{SEC_TITLES[onlySec]||t("owner_settings.settings_title")}</h2></div>}
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:12,overflowX:"auto",paddingBottom:2}}>
         {[{id:"info",icon:"📋",label:t("owner_settings.tab_info")},{id:"services",icon:"✂",label:t("owner_settings.tab_services")},{id:"barbers",icon:"💈",label:t("owner_settings.tab_barbers")},{id:"tone",icon:"🔔",label:t("owner_settings.tab_tone")},{id:"social",icon:"📱",label:t("owner_settings.tab_social")},{id:"pin",icon:"🔐",label:t("owner_settings.tab_pin")}].map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
@@ -6679,7 +6691,7 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fh}>
-        <button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}><NotifIcon icon="←" size={12}/> {t("owner_dash.back")}</button>
+        <button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}><IconArrowRight size={20}/></button>
         <h2 style={{...G.ft,display:"flex",alignItems:"center",gap:6}}><IconPencil size={16}/>{t("cust_drawer.edit_data")}</h2>
       </div>
       {!pinStep&&(<>
@@ -6776,7 +6788,7 @@ function OwnerLangView({setView,setShowSalonDrawer,setOwnerTab}){
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("owner_dash.back")}</button>
+          <button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}><IconArrowRight size={20}/></button>
           <h2 style={{...G.ft,display:"flex",alignItems:"center",gap:8}}><NotifIcon icon="🌐" size={18}/> {t("salon_drawer.language")}</h2>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,paddingTop:8}}>
@@ -6810,7 +6822,7 @@ function CustLangView({setView,setShowDrawer}){
     <div style={{...G.page,direction:dir}}>
       <div style={G.fp}>
         <div style={G.fh}>
-          <button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}>{t("owner_dash.back")}</button>
+          <button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}><IconArrowRight size={20}/></button>
           <h2 style={{...G.ft,display:"flex",alignItems:"center",gap:8}}><NotifIcon icon="🌐" size={18}/> {t("cust_drawer.language")}</h2>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,paddingTop:8}}>
@@ -6862,7 +6874,7 @@ function OwnerFaqView({setView,setShowSalonDrawer,setOwnerTab}){
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}>{t("faq.back")}</button><h2 style={G.ft}>{t("faq.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}><IconArrowRight size={20}/></button><h2 style={G.ft}>{t("faq.title")}</h2></div>
       <div style={box}>
         <div style={hdr}>{t("faq.owner_faq_title")}</div>
         <input value={faqQ} onChange={e=>setFaqQ(e.target.value)} placeholder={t("faq.search_ph")} style={{...inp,marginBottom:12}}/>
@@ -7518,7 +7530,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   return(
     <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer(true);}}>{t("cust_dash.back")}</button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:t("cust_dash.title")}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"var(--text-muted)",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>{t("cust_dash.exit")}</button>}</div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setView("home");setShowDrawer(true);}}><IconArrowRight size={20}/></button><h2 style={{...G.ft,flex:1}}>{sectionMode?sectionTitle:t("cust_dash.title")}</h2>{!sectionMode&&<button style={{...G.delBtn,border:"1.5px solid #888",color:"var(--text-muted)",background:"transparent"}} onClick={()=>{setCustomerSession(null);setView("entry");}}>{t("cust_dash.exit")}</button>}</div>
 
       {/* نافذة طلب الموقع — تظهر مرة واحدة لمن ليس عنده موقع */}
       {!sectionMode&&showLocPrompt&&!customer?.locationLat&&(
@@ -7957,7 +7969,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
   return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{if(backFn){backFn();}else{setView("home");setShowDrawer&&setShowDrawer(true);}}}><NotifIcon icon="←" size={12}/> {t("settings.back")}</button><h2 style={G.ft}>{onlySec?({social:t("settings.title_social"),faq:t("settings.title_faq"),theme:t("settings.title_theme")}[onlySec]||t("settings.title")):t("settings.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{if(backFn){backFn();}else{setView("home");setShowDrawer&&setShowDrawer(true);}}}><IconArrowRight size={20}/></button><h2 style={G.ft}>{onlySec?({social:t("settings.title_social"),faq:t("settings.title_faq"),theme:t("settings.title_theme")}[onlySec]||t("settings.title")):t("settings.title")}</h2></div>
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
         {SECS.map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
