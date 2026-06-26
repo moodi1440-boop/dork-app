@@ -47,17 +47,32 @@ module.exports = async (req, res) => {
       }
       const convs = [...seen.values()];
 
-      // جلب أسماء العملاء من جدول الحجوزات
+      // جلب أسماء العملاء من جدول customers مباشرة
+      const customerIds = [...new Set(convs.map(m => m.customer_id).filter(Boolean))];
+      let custNameMap = {};
+      if (customerIds.length > 0) {
+        const { data: custData } = await sb
+          .from("customers")
+          .select("id,name,phone")
+          .in("id", customerIds);
+        for (const c of (custData || [])) custNameMap[c.id] = c.name || c.phone || null;
+      }
+
+      // جلب أسماء من جدول الحجوزات كاحتياط إضافي
       const bookingIds = convs.map(m => m.booking_id).filter(Boolean);
-      let nameMap = {};
+      let bkNameMap = {};
       if (bookingIds.length > 0) {
         const { data: bkData } = await sb
           .from("bookings")
           .select("id,customer_name")
           .in("id", bookingIds);
-        for (const bk of (bkData || [])) nameMap[bk.id] = bk.customer_name;
+        for (const bk of (bkData || [])) bkNameMap[bk.id] = bk.customer_name;
       }
-      res.status(200).json(convs.map(m => ({ ...m, customer_name: nameMap[m.booking_id] || null })));
+
+      res.status(200).json(convs.map(m => ({
+        ...m,
+        customer_name: custNameMap[m.customer_id] || bkNameMap[m.booking_id] || null,
+      })));
       return;
     }
 
