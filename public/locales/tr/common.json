@@ -1022,6 +1022,23 @@
     "hour_unit": "saat",
     "min_unit": "dk",
     "account_banned": "Bu hesap yasaklandı - destek ile iletişime geçin",
-    "error_prefix": "Hata: "
+    "error_prefix": "Hata: ",
+    "promo_badge": "İndirim",
+    "revenue_label": "Gelir",
+    "tomorrow_bookings": "Yarın: {{count}} rezervasyon",
+    "send_offer": "Teklif Gönder",
+    "wa_min_clients": "Min: {{count}} müşteri (%30)",
+    "wa_cost": "Maliyet: {{amount}} SAR",
+    "choose_service": "Hizmet Seç",
+    "code_applied": "Kod ({{code}})",
+    "customer_prefix": "Müşteri #{{id}}",
+    "booking_prefix": "Rezervasyon #{{id}}",
+    "back_label": "Geri",
+    "contact_salon": "{{salon}} ile İletişim",
+    "service_label": "Hizmet:",
+    "price_label": "Fiyat:",
+    "time_label": "Saat:",
+    "barber_label": "Berber:",
+    "enter_new_pin": "Yeni PIN girin ({{length}} rakam)"
   }
 }

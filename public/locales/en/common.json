@@ -1022,6 +1022,23 @@
     "hour_unit": "hour",
     "min_unit": "min",
     "account_banned": "This account has been banned - contact support",
-    "error_prefix": "Error: "
+    "error_prefix": "Error: ",
+    "promo_badge": "Offer",
+    "revenue_label": "Revenue",
+    "tomorrow_bookings": "Tomorrow: {{count}} bookings",
+    "send_offer": "Send Offer",
+    "wa_min_clients": "Min: {{count}} clients (30%)",
+    "wa_cost": "Cost: {{amount}} SAR",
+    "choose_service": "Choose Service",
+    "code_applied": "Code ({{code}})",
+    "customer_prefix": "Customer #{{id}}",
+    "booking_prefix": "Booking #{{id}}",
+    "back_label": "Back",
+    "contact_salon": "Contact {{salon}}",
+    "service_label": "Service:",
+    "price_label": "Price:",
+    "time_label": "Time:",
+    "barber_label": "Barber:",
+    "enter_new_pin": "Enter new PIN ({{length}} digits)"
   }
 }
