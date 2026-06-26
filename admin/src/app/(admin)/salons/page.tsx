@@ -641,11 +641,20 @@ export default function SalonsPage() {
     const res = await fetch(`/api/bookings?salon_id=${s.id}&limit=1000`);
     const bks = res.ok ? await res.json() : [];
     const rows: string[][] = [
-      ["معلومات الصالون"],
-      ["الاسم", "المالك", "جوال الصالون", "جوال المالك", "المنطقة", "المحافظة", "التقييم", "الحالة", "الاشتراك", "تاريخ الانتهاء", "الرصيد المتبقي"],
-      [s.name, s.owner ?? "", s.phone ?? "", s.owner_phone ?? "", s.region ?? "", s.gov ?? "", String(s.rating ?? ""), s.status, subStatus(s.subscription_end_date), s.subscription_end_date ?? "", String(balance)],
+      ["معلومات الصالون",       ""],
+      ["الاسم",                 s.name],
+      ["المالك",                s.owner ?? ""],
+      ["جوال الصالون",          s.phone ?? ""],
+      ["جوال المالك",           s.owner_phone ?? ""],
+      ["المنطقة",               s.region ?? ""],
+      ["المحافظة",              s.gov ?? ""],
+      ["التقييم",               String(s.rating ?? "")],
+      ["الحالة",                s.status],
+      ["الاشتراك",              subStatus(s.subscription_end_date)],
+      ["تاريخ انتهاء الاشتراك", s.subscription_end_date ?? ""],
+      ["الرصيد المتبقي",        String(balance)],
       [],
-      [`الحجوزات (${bks.length} حجز)`],
+      [`الحجوزات (${bks.length} حجز)`, ""],
       ["التاريخ", "الوقت", "العميل", "الجوال", "الحلاق", "المبلغ", "الحالة", "الحضور"],
       ...bks.map((b: Record<string, unknown>) => [
         String(b.date ?? ""), String(b.time ?? ""), String(b.name ?? ""), String(b.phone ?? ""),

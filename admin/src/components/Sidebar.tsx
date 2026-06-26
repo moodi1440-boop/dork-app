@@ -136,10 +136,12 @@ export default function Sidebar() {
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all relative ${active ? "bg-gold/10 text-gold border border-gold/20" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}>
               <span className="text-base"><EmojiIcon icon={item.icon} size={16} /></span>
               <span className="flex-1">{item.label}</span>
-              {badge > 0 && (
+              {badge > 0 ? (
                 <span className={`text-xs font-black px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${active ? "bg-gold text-black" : "bg-gold/20 text-gold"}`}>
                   {badge > 99 ? "99+" : badge}
                 </span>
+              ) : (
+                <span className="text-gray-600 text-xs">‹</span>
               )}
             </Link>
           );
@@ -151,6 +153,7 @@ export default function Sidebar() {
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all mb-1 ${path.startsWith("/promo-codes") ? "bg-gold/10 text-gold border border-gold/20" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}>
           <span className="text-base">🎟</span>
           <span className="flex-1">أكواد الخصم</span>
+          {!path.startsWith("/promo-codes") && <span className="text-gray-600 text-xs">‹</span>}
         </Link>
         <button onClick={logout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-red-400 hover:bg-red-400/5 transition-all w-full">

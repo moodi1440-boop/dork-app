@@ -120,11 +120,16 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
     if (!customer) return;
     const totalSpent = bookings.reduce((a, b) => a + (b.total || 0), 0);
     const rows: string[][] = [
-      ["معلومات العميل"],
-      ["الاسم", "الجوال", "البريد", "الحالة", "نقاط الولاء", "إجمالي الإنفاق", "عدد الحجوزات"],
-      [customer.name, customer.phone, customer.email ?? "", customer.blocked ? "محظور" : customer.loyalty_frozen ? "مجمّد" : "نشط", String(customer.loyalty_points ?? 0), String(totalSpent), String(bookings.length)],
+      ["معلومات العميل", ""],
+      ["الاسم",          customer.name],
+      ["الجوال",         customer.phone],
+      ["البريد",         customer.email ?? ""],
+      ["الحالة",         customer.blocked ? "محظور" : customer.loyalty_frozen ? "مجمّد" : "نشط"],
+      ["نقاط الولاء",    String(customer.loyalty_points ?? 0)],
+      ["إجمالي الإنفاق", String(totalSpent)],
+      ["عدد الحجوزات",   String(bookings.length)],
       [],
-      [`الحجوزات (${bookings.length} حجز)`],
+      [`الحجوزات (${bookings.length} حجز)`, ""],
       ["التاريخ", "الوقت", "الصالون", "المبلغ", "الحالة"],
       ...bookings.map((b) => [b.date, b.time, b.salonName ?? "", String(b.total), b.status]),
     ];
