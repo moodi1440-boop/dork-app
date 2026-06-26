@@ -1039,6 +1039,13 @@
     "price_label": "Fiyat:",
     "time_label": "Saat:",
     "barber_label": "Berber:",
-    "enter_new_pin": "Yeni PIN girin ({{length}} rakam)"
+    "enter_new_pin": "Yeni PIN girin ({{length}} rakam)",
+    "note_optional": "Not (isteğe bağlı)",
+    "offer_text_ph": "Teklif metninizi buraya yazın...",
+    "enter_code_ph": "Kodu girin",
+    "reply_ph": "Müşteriye yanıt ver...",
+    "message_ph": "Mesaj yaz...",
+    "maps_link_ph": "Veya Google Maps bağlantısını manuel girin",
+    "add_comment_ph": "Yorum ekle (isteğe bağlı)..."
   }
 }

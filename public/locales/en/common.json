@@ -1039,6 +1039,13 @@
     "price_label": "Price:",
     "time_label": "Time:",
     "barber_label": "Barber:",
-    "enter_new_pin": "Enter new PIN ({{length}} digits)"
+    "enter_new_pin": "Enter new PIN ({{length}} digits)",
+    "note_optional": "Note (optional)",
+    "offer_text_ph": "Write your offer text here...",
+    "enter_code_ph": "Enter code",
+    "reply_ph": "Reply to client...",
+    "message_ph": "Write a message...",
+    "maps_link_ph": "Or enter Google Maps link manually",
+    "add_comment_ph": "Add a comment (optional)..."
   }
 }

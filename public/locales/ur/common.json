@@ -1039,6 +1039,13 @@
     "price_label": "قیمت:",
     "time_label": "وقت:",
     "barber_label": "نائی:",
-    "enter_new_pin": "نیا PIN درج کریں ({{length}} ہندسے)"
+    "enter_new_pin": "نیا PIN درج کریں ({{length}} ہندسے)",
+    "note_optional": "نوٹ (اختیاری)",
+    "offer_text_ph": "یہاں اپنا آفر لکھیں...",
+    "enter_code_ph": "کوڈ درج کریں",
+    "reply_ph": "کسٹمر کو جواب دیں...",
+    "message_ph": "پیغام لکھیں...",
+    "maps_link_ph": "یا Google Maps لنک دستی درج کریں",
+    "add_comment_ph": "تبصرہ شامل کریں (اختیاری)..."
   }
 }

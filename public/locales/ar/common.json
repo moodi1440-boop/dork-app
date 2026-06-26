@@ -1039,6 +1039,13 @@
     "price_label": "السعر:",
     "time_label": "الوقت:",
     "barber_label": "الحلاق:",
-    "enter_new_pin": "أدخل PIN الجديد ({{length}} أرقام)"
+    "enter_new_pin": "أدخل PIN الجديد ({{length}} أرقام)",
+    "note_optional": "ملاحظة (اختياري)",
+    "offer_text_ph": "اكتب نص عرضك هنا...",
+    "enter_code_ph": "أدخل الكود",
+    "reply_ph": "ردّ على العميل...",
+    "message_ph": "اكتب رسالة...",
+    "maps_link_ph": "أو أدخل رابط Google Maps يدوياً",
+    "add_comment_ph": "أضف تعليقاً (اختياري)..."
   }
 }
