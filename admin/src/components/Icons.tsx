@@ -378,6 +378,12 @@ export function IconEyeOff({ size = 16, color = "currentColor" }: IconProps) {
   </svg>);
 }
 
+export function IconChevronLeft({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>);
+}
+
 // خريطة الإيموجي ← المكوّن، نقطة ارتكاز واحدة (مطابقة لمبدأ NotifIcon بـApp.jsx الرئيسي)
 export function EmojiIcon({ icon, size = 16 }: { icon: string; size?: number }) {
   switch (icon) {

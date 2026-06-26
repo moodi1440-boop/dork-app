@@ -2933,11 +2933,6 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           {fVillage?fVillage.substring(0,3):fCenter?fCenter.substring(0,3):fGov?fGov.substring(0,3):fRegion?fRegion.substring(0,3):t("home.filter_region")}
         </button>
 
-        {/* السعر */}
-        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:(showPriceFilter||fPriceMin!==""||fPriceMax!=="")?"var(--pa3)":"var(--surface-2)",border:`1.5px solid ${(showPriceFilter||fPriceMin!==""||fPriceMax!=="")?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"var(--text-primary)",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{const o=!showPriceFilter;setShowPriceFilter(o);setShowSearch(false);setShowRegionSelect(false);}} title={t("home.filter_price")} aria-label={t("home.filter_price")}>
-          {(fPriceMin!==""||fPriceMax!=="")?`${fPriceMin||0}-${fPriceMax||"∞"}`:t("home.filter_price")}
-        </button>
-
         {/* احجز سريع */}
         {lastSalon&&customer&&(
           <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:"rgba(255,255,255,.05)",border:"1.5px solid var(--border-ui)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:24,transition:"all 0.2s"}} onClick={()=>{const lastH=customer.history[customer.history.length-1];setQuickBookSeed?.({services:lastH?.services||[],barberId:lastH?.barberId||""});setSelSalon(lastSalon);setView("book");}} title="احجز سريع" aria-label="حجز سريع من آخر حجز">
@@ -2964,6 +2959,11 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
             <span style={{fontSize:9,color:"var(--text-muted)"}}>{l}</span>
           </button>
         ))}
+
+        {/* السعر - آخر الفلاتر */}
+        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:(showPriceFilter||fPriceMin!==""||fPriceMax!=="")?"var(--pa3)":"var(--surface-2)",border:`1.5px solid ${(showPriceFilter||fPriceMin!==""||fPriceMax!=="")?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"var(--text-primary)",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{const o=!showPriceFilter;setShowPriceFilter(o);setShowSearch(false);setShowRegionSelect(false);}} title={t("home.filter_price")} aria-label={t("home.filter_price")}>
+          {(fPriceMin!==""||fPriceMax!=="")?`${fPriceMin||0}-${fPriceMax||"∞"}`:t("home.filter_price")}
+        </button>
       </div>
 
       {/* البحث */}
@@ -7840,10 +7840,10 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             {[...history].reverse().map((h,i)=>{
               const s=salons.find(x=>x.id===h.salonId||x.id===Number(h.salonId));
               // نجيب الحالة الحقيقية من بيانات الصالون بمقارنة مرنة
-              const realBooking=s?.bookings?.find(b=>
-                b.date===h.date && b.time===h.time &&
-                (b.phone===h.phone || b.name===customer.name)
-              ) || s?.bookings?.find(b=>b.date===h.date&&b.time===h.time);
+              const realBooking=
+                (h.bookingId?s?.bookings?.find(b=>Number(b.id)===Number(h.bookingId)):null)||
+                s?.bookings?.find(b=>b.date===h.date&&b.time===h.time&&(b.phone===h.phone||b.name===customer.name))||
+                s?.bookings?.find(b=>b.date===h.date&&b.time===h.time);
               const status=realBooking?.status||h.status||"pending";
               const stColor=status==="approved"?"#27ae60":status==="rejected"?"#e74c3c":status==="cancelled"?"#888":"#f39c12";
               const stLabel=status==="approved"?t("cust_dash.status_approved"):status==="rejected"?t("cust_dash.status_rejected"):status==="cancelled"?t("cust_dash.status_cancelled"):t("cust_dash.status_pending");
@@ -7890,8 +7890,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       {h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>تواصل</button>}
                     </div>
                   </div>
-                  {/* التقييم فقط بعد القبول */}
-                  {status==="approved"&&<InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={async(r,comment)=>{
+                  {/* التقييم فقط بعد انتهاء وقت الحجز */}
+                  {status==="approved"&&(()=>{const _bBarber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));const _svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+((_bBarber?.durations?.[svc])||s?.prices?.__durations?.[svc]||0),0):0;const _dur=realBooking?.slotDuration||h.slotDuration||_svcDur||(s?.slotMin||40);const _start=new Date(`${h.date}T${(h.time||"00:00")}:00`);const _end=new Date(_start.getTime()+_dur*60000);if(new Date()<_end)return null;return<InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={async(r,comment)=>{
                     // تحديث history العميل محلياً (لعرضه في "حجوزاتي")
                     const rev=[...history].reverse();
                     rev[i]={...rev[i],rating:r,comment};
@@ -7914,7 +7914,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       }
                       setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:data.rating}:s));
                     }catch(e){console.error(e);}
-                  }}/>}
+                  }}/>;})()}
                   {openChatBookingId===h.bookingId&&h.bookingId&&<CustomerSalonChat salonId={Number(h.salonId)} customerId={customer.id} bookingId={Number(h.bookingId)} salonName={s?.name||h.salonName} onClose={()=>setOpenChatBookingId(null)}/>}
                 </div>
               );

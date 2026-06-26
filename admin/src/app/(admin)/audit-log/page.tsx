@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 type LogEntry = {
   id: number; created_at: string; actor: string; action: string;
   target_type: string | null; target_id: string | null; details: Record<string, unknown> | null;
+  target_name: string | null; target_phone: string | null;
 };
 
 const ACTION_AR: Record<string, string> = {
@@ -38,6 +39,78 @@ const TARGET_AR: Record<string, string> = {
   "booking":    "حجز",
   "promo":      "كود خصم",
 };
+
+const FIELD_AR: Record<string, string> = {
+  fields:                "الحقول المعدّلة",
+  role:                  "الدور",
+  username:              "اسم المستخدم",
+  months:                "عدد الأشهر",
+  subscription_end_date: "تاريخ انتهاء الاشتراك",
+  status:                "الحالة",
+  reason:                "السبب",
+  text:                  "النص",
+  salon_id:              "الصالون",
+  name:                  "الاسم",
+  phone:                 "الجوال",
+  email:                 "البريد",
+  blocked:               "محظور",
+  loyalty_frozen:        "مجمّد",
+  address:               "العنوان",
+  rating:                "التقييم",
+  owner:                 "المالك",
+  owner_phone:           "جوال المالك",
+  welcome_msg:           "رسالة الترحيب",
+  closed_days:           "أيام الإغلاق",
+  slot_min:              "مدة الحجز (دقيقة)",
+  cancellation_window:   "نافذة الإلغاء",
+  services:              "الخدمات",
+  prices:                "الأسعار",
+  barbers:               "الحلاقون",
+  shift_enabled:         "نظام الورديات",
+  work_start:            "بداية العمل",
+  work_end:              "نهاية العمل",
+  shift1_start:          "بداية الوردية الأولى",
+  shift1_end:            "نهاية الوردية الأولى",
+  shift2_start:          "بداية الوردية الثانية",
+  shift2_end:            "نهاية الوردية الثانية",
+  tone:                  "اللون",
+  social:                "وسائل التواصل",
+  owner_pin_hash:        "رمز PIN",
+  owner_pin_fails:       "محاولات PIN الفاشلة",
+  owner_pin_locked_until:"تجميد PIN حتى",
+  paused:                "موقوف مؤقتاً",
+  frozen:                "مجمّد",
+  banned:                "محظور",
+  location_url:          "رابط الموقع",
+  cancellationWindow:    "نافذة الإلغاء",
+  buffer_min:            "وقت الفاصل",
+};
+
+const VALUE_AR: Record<string, string> = {
+  super_admin: "مدير كامل",
+  editor:      "محرر",
+  viewer:      "مراقب",
+  approved:    "موافق عليه",
+  pending:     "بانتظار المراجعة",
+  rejected:    "مرفوض",
+  suspended:   "موقوف",
+  "true":      "نعم",
+  "false":     "لا",
+};
+
+function translateDetails(details: Record<string, unknown> | null): string {
+  if (!details) return "—";
+  return Object.entries(details).map(([k, v]) => {
+    const key = FIELD_AR[k] ?? k;
+    let val: string;
+    if (Array.isArray(v)) {
+      val = (v as string[]).map((x) => FIELD_AR[x] ?? VALUE_AR[x] ?? x).join("، ");
+    } else {
+      val = VALUE_AR[String(v)] ?? String(v);
+    }
+    return `${key}: ${val}`;
+  }).join(" | ");
+}
 
 export default function AuditLogPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -82,11 +155,20 @@ export default function AuditLogPage() {
                     <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{new Date(log.created_at).toLocaleString("ar-SA")}</td>
                     <td className="px-4 py-3 font-semibold text-white">{log.actor}</td>
                     <td className="px-4 py-3 text-gold">{ACTION_AR[log.action] ?? log.action}</td>
-                    <td className="px-4 py-3 text-gray-300">
-                      {log.target_type ? `${TARGET_AR[log.target_type] ?? log.target_type} #${log.target_id}` : "—"}
+                    <td className="px-4 py-3">
+                      {log.target_type ? (
+                        <div>
+                          <div className="text-white font-semibold text-xs">
+                            {log.target_name ?? `${TARGET_AR[log.target_type] ?? log.target_type} #${log.target_id}`}
+                          </div>
+                          {log.target_phone && (
+                            <div className="text-gray-500 text-xs mt-0.5">{log.target_phone}</div>
+                          )}
+                        </div>
+                      ) : "—"}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">
-                      {log.details ? JSON.stringify(log.details) : "—"}
+                    <td className="px-4 py-3 text-gray-400 text-xs max-w-xs">
+                      {translateDetails(log.details)}
                     </td>
                   </tr>
                 ))}
