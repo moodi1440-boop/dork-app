@@ -1046,6 +1046,10 @@
     "reply_ph": "Reply to client...",
     "message_ph": "Write a message...",
     "maps_link_ph": "Or enter Google Maps link manually",
-    "add_comment_ph": "Add a comment (optional)..."
+    "add_comment_ph": "Add a comment (optional)...",
+    "confirm_cancel_wait": "Cancel waiting list request?",
+    "confirm_edit_booking": "Edit your appointment? The current booking will be cancelled when the new one is confirmed.",
+    "confirm_cancel_booking": "Cancel this booking?",
+    "ics_booking_title": "Booking at {{salon}}"
   }
 }
