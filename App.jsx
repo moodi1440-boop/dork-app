@@ -427,6 +427,11 @@ const NOTIF_TEXTS={
     slot_available:   (time,salon,date)=>({title:`✅ الوقت أصبح متاحاً!`,body:`تفرّغ وقت ${time} في ${salon} بتاريخ ${date}. سارع بالحجز!`}),
     reminder:         (salon,time)    =>({title:`⏰ تذكير موعدك`,         body:`موعدك قريب في ${salon} — الساعة ${time}`}),
     review:           (salon)         =>({title:`⭐ كيف كانت تجربتك؟`,   body:`قيّم ${salon} الآن وساعدنا في التحسين`}),
+    booking_edited:   (name,date,time)=>({title:`🔄 تعديل موعد`,         body:`${name} عدّل موعده إلى ${date} - ${time}`}),
+    waitlist_approved:(date,time,salon)=>({title:`✅ تم قبولك في الموعد`, body:`تم حجزك في ${date} - ${time} في ${salon}. تواصل مع الصالون لتأكيد الخدمة.`}),
+    waitlist_full:    (date,time,salon)=>({title:`❌ عذراً، الوقت امتلأ`,body:`الوقت ${date} - ${time} في ${salon} تم أخذه من شخص آخر.`}),
+    waitlist_failed:  (salon,date,time)=>({title:`❌ عذراً، تعذّر الحجز`,body:`نأسف، لم نتمكن من تأكيد حجزك في ${salon}${date?` (${date} - ${time})`:""}.`}),
+    booking_cancelled:(name,date,time,late)=>({title:`🚫 إلغاء حجز`,     body:`${name} ألغى حجزه في ${date} - ${time}${late?" (إلغاء متأخر)":""}`}),
   },
   en:{
     new_booking_salon:(name,date,time)=>({title:`✂️ New Booking`,              body:`${name} | ${time} | ${date}`}),
@@ -436,6 +441,11 @@ const NOTIF_TEXTS={
     slot_available:   (time,salon,date)=>({title:`✅ Slot Available!`,         body:`${time} slot at ${salon} on ${date} is free. Book now!`}),
     reminder:         (salon,time)    =>({title:`⏰ Appointment Reminder`,      body:`Your appointment at ${salon} is at ${time}`}),
     review:           (salon)         =>({title:`⭐ How was your visit?`,       body:`Rate ${salon} now and help us improve`}),
+    booking_edited:   (name,date,time)=>({title:`🔄 Appointment Modified`,     body:`${name} rescheduled to ${date} - ${time}`}),
+    waitlist_approved:(date,time,salon)=>({title:`✅ Waitlist Approved`,        body:`You're booked on ${date} - ${time} at ${salon}. Contact the salon to confirm.`}),
+    waitlist_full:    (date,time,salon)=>({title:`❌ Time Slot Taken`,          body:`The ${date} - ${time} slot at ${salon} was taken by someone else.`}),
+    waitlist_failed:  (salon,date,time)=>({title:`❌ Booking Failed`,           body:`Sorry, we couldn't confirm your booking at ${salon}${date?` (${date} - ${time})`:""}.`}),
+    booking_cancelled:(name,date,time,late)=>({title:`🚫 Booking Cancelled`,   body:`${name} cancelled their appointment on ${date} - ${time}${late?" (late cancel)":""}`}),
   },
   tr:{
     new_booking_salon:(name,date,time)=>({title:`✂️ Yeni Rezervasyon`,         body:`${name} | ${time} | ${date}`}),
@@ -445,6 +455,11 @@ const NOTIF_TEXTS={
     slot_available:   (time,salon,date)=>({title:`✅ Slot Müsait!`,            body:`${salon}'da ${time} slotu ${date} tarihinde açıldı. Hemen rezerve et!`}),
     reminder:         (salon,time)    =>({title:`⏰ Randevu Hatırlatıcısı`,    body:`${salon}'daki randevunuz saat ${time}'de`}),
     review:           (salon)         =>({title:`⭐ Deneyiminiz nasıldı?`,     body:`${salon}'ı şimdi değerlendirin`}),
+    booking_edited:   (name,date,time)=>({title:`🔄 Randevu Değiştirildi`,    body:`${name} randevusunu ${date} - ${time} olarak değiştirdi`}),
+    waitlist_approved:(date,time,salon)=>({title:`✅ Bekleme Onaylandı`,       body:`${salon}'da ${date} - ${time} için rezervasyonunuz yapıldı.`}),
+    waitlist_full:    (date,time,salon)=>({title:`❌ Zaman Doldu`,             body:`${salon}'da ${date} - ${time} slotu başkası tarafından alındı.`}),
+    waitlist_failed:  (salon,date,time)=>({title:`❌ Rezervasyon Başarısız`,   body:`Üzgünüz, ${salon}'da rezervasyonunuzu${date?` (${date} - ${time})`:""} onaylayamadık.`}),
+    booking_cancelled:(name,date,time,late)=>({title:`🚫 Rezervasyon İptal`,  body:`${name}, ${date} - ${time} randevusunu iptal etti${late?" (geç iptal)":""}`}),
   },
   ur:{
     new_booking_salon:(name,date,time)=>({title:`✂️ نئی بکنگ`,               body:`${name} | ${time} | ${date}`}),
@@ -454,6 +469,11 @@ const NOTIF_TEXTS={
     slot_available:   (time,salon,date)=>({title:`✅ سلاٹ دستیاب!`,          body:`${salon} میں ${time} سلاٹ ${date} کو خالی ہے۔ ابھی بک کریں!`}),
     reminder:         (salon,time)    =>({title:`⏰ ملاقات یاددہانی`,          body:`${salon} میں آپ کی ملاقات ${time} بجے ہے`}),
     review:           (salon)         =>({title:`⭐ آپ کا تجربہ کیسا رہا؟`,  body:`ابھی ${salon} کو ریٹ کریں`}),
+    booking_edited:   (name,date,time)=>({title:`🔄 ملاقات تبدیل`,           body:`${name} نے ملاقات ${date} - ${time} پر منتقل کی`}),
+    waitlist_approved:(date,time,salon)=>({title:`✅ انتظار فہرست منظور`,    body:`${salon} میں ${date} - ${time} کے لیے آپ کی بکنگ ہو گئی۔`}),
+    waitlist_full:    (date,time,salon)=>({title:`❌ وقت بھر گیا`,           body:`${salon} میں ${date} - ${time} سلاٹ کسی اور نے لے لیا۔`}),
+    waitlist_failed:  (salon,date,time)=>({title:`❌ بکنگ ناکام`,            body:`معذرت، ${salon} میں آپ کی بکنگ${date?` (${date} - ${time})`:""} کی تصدیق نہیں ہو سکی۔`}),
+    booking_cancelled:(name,date,time,late)=>({title:`🚫 بکنگ منسوخ`,       body:`${name} نے ${date} - ${time} کی بکنگ منسوخ کی${late?" (دیر سے منسوخی)":""}`}),
   },
 };
 const ntxt=(lang)=>NOTIF_TEXTS[lang]||NOTIF_TEXTS.ar;
@@ -1690,7 +1710,7 @@ export default function App(){
       }catch{
         setOwnerSession(null);
         setView("ownerLogin");
-        toast$("⏳ انتهت صلاحية جلستك، سجّل الدخول من جديد","err");
+        toast$(i18n.t('ui.session_expired'),"err");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1934,10 +1954,10 @@ export default function App(){
       const sidStr=key.split("-")[0];
       const salon=salons.find(x=>String(x.id)===sidStr);
       if(was==="pending"&&now==="approved"){
-        toast$(`تم قبول حجزك في ${salon?.name||""}`);
+        toast$(i18n.t('ui.booking_accepted_at',{salon:salon?.name||""}));
         try{playTone("bell",0.55);}catch{}
       }else if(was==="pending"&&now==="rejected"){
-        toast$(`تم رفض حجزك في ${salon?.name||""}`,"warn");
+        toast$(i18n.t('ui.booking_rejected_at',{salon:salon?.name||""}),"warn");
       }
     }
     bookingStatusSnapRef.current=snap;
@@ -2017,7 +2037,7 @@ export default function App(){
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
   const toggleFav=async(salonId)=>{
-    if(!customerSession){toast$("سجّل دخولك كعميل أولاً","warn");return;}
+    if(!customerSession){toast$(i18n.t('ui.login_first'),"warn");return;}
     const c=getCustomer(); if(!c)return;
     const favs=c.favs||[];
     const newFavs=favs.includes(salonId)?favs.filter(x=>x!==salonId):[...favs,salonId];
@@ -2026,7 +2046,7 @@ export default function App(){
       // تحديث محلي
       setCustomers(p=>p.map(x=>x.id===c.id?{...x,favs:newFavs}:x));
       setCustomerSession(s=>({...s,favs:newFavs}));
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
   const customerFavs=()=>{const c=getCustomer();return c?.favs||[];};
 
@@ -2039,10 +2059,10 @@ export default function App(){
       });
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||"register-salon failed");
-      toast$("تم إرسال طلب تسجيل الصالون - في انتظار موافقة الإدارة");
+      toast$(i18n.t('ui.salon_reg_sent'));
       setView("home");
       await loadData();
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
   const addBooking=async(sid,bk,rescheduleOldId=null)=>{
     try{
@@ -2067,7 +2087,7 @@ export default function App(){
       },"");
       if(isReschedule){
         await sb("bookings","PATCH",{status:"cancelled"},"?id=eq."+rescheduleOldId).catch(()=>{});
-        sb("notifications","POST",{target_type:"all",title:"تعديل موعد",body:`${bk.name} عدّل موعده إلى ${bk.date} - ${to12h(bk.time)}`,icon:"🔄"}).catch(()=>{});
+        {const _be=ntxt(salon?.lang||'ar').booking_edited(bk.name||"",bk.date,to12h(bk.time));sb("notifications","POST",{target_type:"all",title:_be.title,body:_be.body,icon:"🔄"}).catch(()=>{});}
         setRescheduleId(null);
       }
       const newBooking=inserted[0]||{};
@@ -2138,14 +2158,14 @@ export default function App(){
           setCustomers(p=>p.map(x=>x.id===c.id?{...x,history:hist}:x));
         }
       }
-      toast$("🎉 تم إرسال طلب الحجز!");
+      toast$(i18n.t('ui.booking_sent'));
       setView("home");
       await loadData();
     }catch(e){
       if(e.message&&(e.message.includes("23505")||e.message.includes("unique")||e.message.includes("duplicate")||e.message.includes("booking_overlap"))){
-        toast$("هذا الوقت محجوز، يرجى اختيار وقت آخر","err");
+        toast$(i18n.t('ui.time_taken'),"err");
       }else{
-        toast$("خطأ: "+e.message,"err");
+        toast$(i18n.t('ui.error_prefix')+e.message,"err");
       }
       throw e;
     }
@@ -2201,9 +2221,9 @@ export default function App(){
         }}).catch(()=>{});
         sb("notifications","POST",{target_type:"customer",target_id:bk.customer_id,title:_ar.title,body:_ar.body,icon:status==="approved"?"✅":"❌"}).catch(()=>{});
       }
-      toast$(status==="approved"?"تم قبول الحجز":"تم تحديث حالة الحجز");
+      toast$(status==="approved"?i18n.t('ui.booking_accepted_toast'):i18n.t('ui.booking_status_updated'));
       await loadData();
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
 
   const addExtraLoc=(r,g,c,v)=>{
@@ -2457,21 +2477,21 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const avatarColors=["#d4a017","#27ae60","#3b82f6","#8b5cf6","#e74c3c"];
   const avatarColor=avatarColors[(customer.name?.charCodeAt(0)||0)%avatarColors.length];
   const saveLocation=()=>{
-    if(!navigator.geolocation){toast$("المتصفح لا يدعم الموقع","err");return;}
+    if(!navigator.geolocation){toast$(i18n.t('ui.browser_no_geo'),"err");return;}
     navigator.geolocation.getCurrentPosition(async(p)=>{
       const lat=p.coords.latitude,lng=p.coords.longitude;
-      try{await sb("customers","PATCH",{location_lat:lat,location_lng:lng},`?id=eq.${customer.id}`);setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));setCustomerSession({...customer,locationLat:lat,locationLng:lng});toast$("تم حفظ موقعك");}catch{toast$("فشل حفظ الموقع","err");}
-    },()=>toast$("تعذر تحديد موقعك","err"),{enableHighAccuracy:true,timeout:15000});
+      try{await sb("customers","PATCH",{location_lat:lat,location_lng:lng},`?id=eq.${customer.id}`);setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));setCustomerSession({...customer,locationLat:lat,locationLng:lng});toast$(i18n.t('ui.location_saved'));}catch{toast$(i18n.t('ui.location_save_failed'),"err");}
+    },()=>toast$(i18n.t('ui.location_detect_failed'),"err"),{enableHighAccuracy:true,timeout:15000});
   };
   const clearLocation=async()=>{
-    try{await sb("customers","PATCH",{location_lat:null,location_lng:null},`?id=eq.${customer.id}`);setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:null,locationLng:null}:c));setCustomerSession({...customer,locationLat:null,locationLng:null});toast$("تم حذف الموقع");}catch{toast$("فشل حذف الموقع","err");}
+    try{await sb("customers","PATCH",{location_lat:null,location_lng:null},`?id=eq.${customer.id}`);setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:null,locationLng:null}:c));setCustomerSession({...customer,locationLat:null,locationLng:null});toast$(i18n.t('ui.location_deleted'));}catch{toast$(i18n.t('ui.location_delete_failed'),"err");}
   };
   const saveEdit=async()=>{
     if(!editName.trim())return;
     const patch={name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim()};
     const locExtra={};
     if(locMode==="url"&&locUrl.trim()){const m=locUrl.match(/q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);if(m){patch.location_lat=parseFloat(m[1]);patch.location_lng=parseFloat(m[2]);locExtra.locationLat=parseFloat(m[1]);locExtra.locationLng=parseFloat(m[2]);}}
-    try{await sb("customers","PATCH",patch,`?id=eq.${customer.id}`);setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim(),...locExtra}:c));setExp(null);toast$("تم حفظ البيانات");}catch(e){toast$(""+e.message,"err");}
+    try{await sb("customers","PATCH",patch,`?id=eq.${customer.id}`);setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim(),...locExtra}:c));setExp(null);toast$(i18n.t('ui.data_saved'));}catch(e){toast$(""+e.message,"err");}
   };
   const applyTheme=(id)=>{
     const t=THEMES[id]||THEMES.gold;const r=document.documentElement.style;
@@ -2857,10 +2877,10 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   };
 
   const detectUserLoc=()=>{
-    if(!navigator.geolocation){toast$&&toast$("المتصفح لا يدعم تحديد الموقع","warn");return;}
+    if(!navigator.geolocation){toast$&&toast$(i18n.t('ui.browser_no_geo'),"warn");return;}
     navigator.geolocation.getCurrentPosition(
-      p=>{setUserLoc({lat:p.coords.latitude,lng:p.coords.longitude});setSortBy("nearest");toast$&&toast$("تم تحديد موقعك");},
-      err=>{let m="❌ تعذّر تحديد موقعك";if(err.code===1)m="🚫 رُفض إذن الموقع — يمكنك حفظه من إعداداتك";toast$&&toast$(m,"warn");},
+      p=>{setUserLoc({lat:p.coords.latitude,lng:p.coords.longitude});setSortBy("nearest");toast$&&toast$(i18n.t('ui.location_detected'));},
+      err=>{let m=i18n.t('ui.location_detect_failed_icon');if(err.code===1)m=i18n.t('ui.location_denied_hint');toast$&&toast$(m,"warn");},
       {enableHighAccuracy:true,timeout:15000,maximumAge:0}
     );
   };
@@ -3454,7 +3474,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
     if(found)setForm(p=>({...p,time:found}));
     setQuickSearching(false);
     setQuickBookSeed?.(null);
-    if(!found)toast$?.("⏳ كل المواعيد اليوم محجوزة، اختر وقتاً آخر","warn");else setStep(5);
+    if(!found)toast$?.(i18n.t('ui.all_slots_taken'),"warn");else setStep(5);
   },[quickSearching,loadingBookings]);
   const getBarberNextSlot=(b,date)=>{const bSlots=getSlotsForBarber(salon,b);const dSlots=date===todayStr()?bSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):bSlots;const bkDef=salon.slotMin||SLOT_MIN;const bMin2=salon.bufferMin??BUFFER_MIN;const newDur2=totalDuration||bkDef;const todayBks=liveBookings.filter(bk=>bk.date===date&&!["rejected","cancelled"].includes(bk.status)&&(bk.barberId===b.id||bk.barberId==="any"));for(const sl of dSlots){const slM=toM(sl);const busy=todayBks.some(bk=>{const bkM=toM(bk.time||"00:00");const bkDur=getExistingDur(bk);return bkM<slM+newDur2&&slM<bkM+bkDur;});if(!busy)return sl;}return null;};
   const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");setErrors(e);return!Object.keys(e).length;};
@@ -4177,12 +4197,12 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       // تغيير الحالة لـ accepted
       await sb("waiting_list","PATCH",{status:"accepted"},"?id=eq."+w.id);
       // إشعار للمقبول
-      sb("notifications","POST",{target_type:"all",title:"✅ تم قبولك في الموعد",body:`تم حجزك في ${w.slotDate} - ${w.slotTime} في ${salon.name}. تواصل مع الصالون لتأكيد الخدمة.`,icon:"✅"}).catch(()=>{});
+      {const _wa=ntxt(customers.find(c=>c.id===w.customer_id)?.lang||'ar').waitlist_approved(w.slotDate,w.slotTime,salon.name);sb("notifications","POST",{target_type:"all",title:_wa.title,body:_wa.body,icon:"✅"}).catch(()=>{});}
       // رفض المنتظرين للنفس الوقت
       const others=waitingList.filter(x=>x.id!==w.id&&x.slotDate===w.slotDate&&x.slotTime===w.slotTime);
       for(const o of others){
         await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+o.id).catch(()=>{});
-        sb("notifications","POST",{target_type:"all",title:"❌ عذراً، الوقت امتلأ",body:`الوقت ${w.slotDate} - ${w.slotTime} في ${salon.name} تم أخذه من شخص آخر.`,icon:"❌"}).catch(()=>{});
+        {const _wf=ntxt(customers.find(c=>c.id===o.customer_id)?.lang||'ar').waitlist_full(w.slotDate,w.slotTime,salon.name);sb("notifications","POST",{target_type:"all",title:_wf.title,body:_wf.body,icon:"❌"}).catch(()=>{});}
       }
       await loadWaiting();
       if(refreshSalonBookings)refreshSalonBookings(salon.id);
@@ -4198,7 +4218,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   const rejectFromWaiting=async(w)=>{
     try{
       await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+w.id);
-      sb("notifications","POST",{target_type:"all",title:"❌ عذراً، تعذّر الحجز",body:`نأسف، لم نتمكن من تأكيد حجزك في ${salon.name}${w.slotDate?` (${w.slotDate} - ${w.slotTime})`:""}. يمكنك المحاولة مرة أخرى.`,icon:"❌"}).catch(()=>{});
+      {const _wfl=ntxt(customers.find(c=>c.id===w.customer_id)?.lang||'ar').waitlist_failed(salon.name,w.slotDate,w.slotTime);sb("notifications","POST",{target_type:"all",title:_wfl.title,body:_wfl.body,icon:"❌"}).catch(()=>{});}
       await loadWaiting();
     }catch(e){alert("❌ خطأ: "+e.message);}
   };
@@ -5358,7 +5378,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
       setReviews(p=>p.map(r=>r.id===reviewId?{...r,owner_reply:text}:r));
       setReplyDraft(p=>({...p,[reviewId]:""}));
       toast$(t("owner_dash.reply_saved"));
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
     finally{setSaving(null);}
   };
 
@@ -5367,7 +5387,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
       await sb("reviews","PATCH",{owner_reply:null},`?id=eq.${reviewId}`);
       setReviews(p=>p.map(r=>r.id===reviewId?{...r,owner_reply:null}:r));
       toast$(t("owner_dash.reply_deleted"));
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
 
   return(
@@ -5666,10 +5686,10 @@ function PromoPanel({salon,customers,toast$}){
   };
 
   const submitPromo=async()=>{
-    if(!pkg){toast$("اختر الباقة","err");return;}
-    if(!promoText.trim()){toast$("اختر نص العرض أو اكتبه","err");return;}
+    if(!pkg){toast$(i18n.t('ui.select_package_err'),"err");return;}
+    if(!promoText.trim()){toast$(i18n.t('ui.select_offer_text_err'),"err");return;}
     if(myPromos.some(p=>p.status==="active"&&!p._expired&&p.package===pkg)){
-      toast$("لديك عرض نشط من هذه الباقة، ألغِه أولاً","err");return;
+      toast$(i18n.t('ui.active_promo_exists'),"err");return;
     }
     setSaving(true);
     try{
@@ -5692,7 +5712,7 @@ function PromoPanel({salon,customers,toast$}){
           `?id=eq.${appliedCodeRow.id}`
         ).catch(()=>{});
       }
-      toast$("تم إرسال العرض وتفعيله!");
+      toast$(i18n.t('ui.promo_sent'));
       if(pkg==="bronze"){
         supabase.functions.invoke('send-push-notification',{body:{
           target_type:"broadcast",salon_id:salon.id,
@@ -5713,7 +5733,7 @@ function PromoPanel({salon,customers,toast$}){
       const nowRl=new Date();
       setMyPromos((rows||[]).filter(r=>!delIds.has(r.id)).map(r=>({...r,_expired:!!(r.ends_at&&new Date(r.ends_at)<=nowRl)})));
       setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setAppliedCodeRow(null);setTemplateType("discount");setTmplService1("");setTmplService2("");setTmplPercent(20);setTargetCount(null);
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
     finally{setSaving(false);}
   };
 
@@ -5721,8 +5741,8 @@ function PromoPanel({salon,customers,toast$}){
     try{
       await sb("promotions","PATCH",{status:"cancelled"},`?id=eq.${promoId}`);
       setMyPromos(p=>p.map(x=>x.id===promoId?{...x,status:"cancelled"}:x));
-      toast$("تم إلغاء العرض");
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+      toast$(i18n.t('ui.promo_cancelled'));
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
 
   const deletePromo=async(promoId)=>{
@@ -5732,7 +5752,7 @@ function PromoPanel({salon,customers,toast$}){
     ids.add(promoId);
     localStorage.setItem(deletedKey,JSON.stringify([...ids]));
     setMyPromos(p=>p.filter(x=>x.id!==promoId));
-    toast$("تم حذف العرض");
+    toast$(i18n.t('ui.promo_deleted'));
   };
 
   const pkgColor=(p)=>PACKAGES.find(x=>x.id===p)?.color||"var(--text-muted)";
@@ -6245,11 +6265,11 @@ function MessagesPanel({salon,toast$}){
         await loadOwnerChat(selCust.customerId,selCust.bookingId);
       }else{
         setOwnerTxt(msgText);
-        toast$&&toast$("فشل الإرسال — أعد المحاولة","err");
+        toast$&&toast$(i18n.t('ui.send_failed'),"err");
       }
     }catch{
       setOwnerTxt(msgText);
-      toast$&&toast$("خطأ في الاتصال","err");
+      toast$&&toast$(i18n.t('ui.connection_error'),"err");
     }
     setOwnerSending(false);
   };
@@ -6402,7 +6422,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
     }catch(e){
       setMsgs(prev=>prev.filter(m=>m.id!==tempId));
       setTxt(msgText);
-      toast$&&toast$("خطأ في الإرسال — تحقق من الاتصال","err");
+      toast$&&toast$(i18n.t('ui.send_error_check'),"err");
     }
     setSending(false);
   };
@@ -6573,11 +6593,11 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     }
   };
   const detectSalonLocation=()=>{
-    if(!navigator.geolocation){toast$&&toast$("المتصفح لا يدعم تحديد الموقع","err");return;}
+    if(!navigator.geolocation){toast$&&toast$(i18n.t('ui.browser_no_geo'),"err");return;}
     setDetecting(true);
     navigator.geolocation.getCurrentPosition(
-      p=>{const lat=p.coords.latitude.toFixed(6),lng=p.coords.longitude.toFixed(6);upd("locationUrl",`https://maps.google.com/?q=${lat},${lng}`);setDetecting(false);toast$&&toast$("تم تحديد الموقع، اضغط حفظ لتأكيده");},
-      ()=>{setDetecting(false);toast$&&toast$("تعذّر تحديد الموقع","err");},
+      p=>{const lat=p.coords.latitude.toFixed(6),lng=p.coords.longitude.toFixed(6);upd("locationUrl",`https://maps.google.com/?q=${lat},${lng}`);setDetecting(false);toast$&&toast$(i18n.t('ui.location_found_save'));},
+      ()=>{setDetecting(false);toast$&&toast$(i18n.t('ui.detect_failed'),"err");},
       {enableHighAccuracy:true,timeout:15000}
     );
   };
@@ -6611,7 +6631,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       await ownerApi("PATCH",patch);
       setSalons(p=>p.map(s=>s.id===salon.id?{...s,name:f.name,phone:f.phone,address:f.address,locationUrl:f.locationUrl,shiftEnabled:f.shiftEnabled,shift1Start:f.shift1Start,shift1End:f.shift1End,shift2Start:f.shift2Start,shift2End:f.shift2End,workStart:f.workStart,workEnd:f.workEnd,services:f.services,prices:{...f.prices,__durations:f.durations},barbers:compressedBarbers,tone:f.tone}:s));
       toast$&&toast$(t("owner_settings.success"));
-    }catch(e){toast$&&toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$&&toast$(i18n.t('ui.error_prefix')+e.message,"err");}
     setSaving(false);
   };
 
@@ -6619,8 +6639,8 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     try{
       await ownerApi("PATCH",{barbers:f.barbers});
       setSalons(p=>p.map(s=>s.id===salon.id?{...s,barbers:f.barbers}:s));
-      toast$&&toast$("تم حفظ مدد الخدمات");
-    }catch(e){toast$&&toast$("خطأ: "+e.message,"err");}
+      toast$&&toast$(i18n.t('ui.durations_saved'));
+    }catch(e){toast$&&toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
 
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
@@ -6978,24 +6998,24 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
   const[pinErr,setPinErr]=useState("");
   const inp={width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   const saveLocation=()=>{
-    if(!navigator.geolocation){toast$&&toast$("المتصفح لا يدعم تحديد الموقع","err");return;}
+    if(!navigator.geolocation){toast$&&toast$(i18n.t('ui.browser_no_geo'),"err");return;}
     navigator.geolocation.getCurrentPosition(async(p)=>{
       const lat=p.coords.latitude,lng=p.coords.longitude;
       try{
         await sb("customers","PATCH",{location_lat:lat,location_lng:lng},`?id=eq.${customer.id}`);
         setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));
         setCustomerSession(s=>({...s,locationLat:lat,locationLng:lng}));
-        toast$&&toast$("تم حفظ موقعك");
-      }catch{toast$&&toast$("فشل حفظ الموقع","err");}
-    },()=>{toast$&&toast$("🚫 رُفض إذن الموقع","warn");},{enableHighAccuracy:true,timeout:15000});
+        toast$&&toast$(i18n.t('ui.location_saved'));
+      }catch{toast$&&toast$(i18n.t('ui.location_save_failed'),"err");}
+    },()=>{toast$&&toast$(i18n.t('ui.location_denied'),"warn");},{enableHighAccuracy:true,timeout:15000});
   };
   const clearLocation=async()=>{
     try{
       await sb("customers","PATCH",{location_lat:null,location_lng:null},`?id=eq.${customer.id}`);
       setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:null,locationLng:null}:c));
       setCustomerSession(s=>({...s,locationLat:null,locationLng:null}));
-      toast$&&toast$("تم حذف الموقع");
-    }catch{toast$&&toast$("فشل حذف الموقع","err");}
+      toast$&&toast$(i18n.t('ui.location_deleted'));
+    }catch{toast$&&toast$(i18n.t('ui.location_delete_failed'),"err");}
   };
   const save=async()=>{
     if(!name.trim())return;
@@ -7380,16 +7400,16 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 
   // تسجيل دخول بالبصمة
   const loginWithBiometric=async()=>{
-    if(!window.PublicKeyCredential){toast$&&toast$("البصمة غير مدعومة","err");return;}
+    if(!window.PublicKeyCredential){toast$&&toast$(i18n.t('ui.biometric_unsupported'),"err");return;}
     try{
       const savedId=localStorage.getItem("dork_biometric_id");
-      if(!savedId){toast$&&toast$("لم تُسجّل البصمة بعد - سجّل دخول أولاً","err");return;}
+      if(!savedId){toast$&&toast$(i18n.t('ui.biometric_not_registered'),"err");return;}
       const c=customers.find(x=>String(x.id)===savedId);
-      if(!c){toast$&&toast$("لم يُعثر على الحساب","err");return;}
-      if(c.blocked){toast$&&toast$("تم حظر هذا الحساب - تواصل مع الدعم","err");return;}
+      if(!c){toast$&&toast$(i18n.t('ui.account_not_found'),"err");return;}
+      if(c.blocked){toast$&&toast$(i18n.t('ui.account_banned'),"err");return;}
       setCustomerSession(c);setView("home");
-      toast$&&toast$("تم الدخول بالبصمة");
-    }catch(e){toast$&&toast$("فشل التحقق","err");}
+      toast$&&toast$(i18n.t('ui.biometric_success'));
+    }catch(e){toast$&&toast$(i18n.t('ui.verification_failed'),"err");}
   };
 
   const loginWithPhone=async()=>{
@@ -7584,12 +7604,12 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&google_uid=eq.${gUser.googleUid}&limit=1`);
               if(rows.length){
                 const c=toAppCustomer(rows[0]);
-                if(c.blocked){toast$&&toast$("تم حظر هذا الحساب - تواصل مع الدعم","err");return;}
+                if(c.blocked){toast$&&toast$(i18n.t('ui.account_banned'),"err");return;}
                 setCustomerSession(c);setView("home");
                 localStorage.setItem("dork_biometric_id",String(c.id));
               }else{
                 const{data:blEmail}=await supabase.rpc("is_blacklisted",{p_phone:"",p_email:gUser.email}).catch(()=>({data:false}));
-                if(blEmail){toast$&&toast$("لا يمكن إنشاء حساب بهذا البريد","err");return;}
+                if(blEmail){toast$&&toast$(i18n.t('ui.email_not_allowed'),"err");return;}
                 const newRows=await sb("customers","POST",{name:gUser.name,phone:"",email:gUser.email,google_uid:gUser.googleUid,history:[],favs:[]},"");
                 const nc=toAppCustomer(newRows[0]);
                 setCustomerSession(nc);setView("home");
@@ -7775,7 +7795,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   // حفظ موقع العميل
   const saveCustomerLocation=()=>{
-    if(!navigator.geolocation){toast$&&toast$("المتصفح لا يدعم تحديد الموقع","err");return;}
+    if(!navigator.geolocation){toast$&&toast$(i18n.t('ui.browser_no_geo'),"err");return;}
     navigator.geolocation.getCurrentPosition(async(p)=>{
       const lat=p.coords.latitude,lng=p.coords.longitude;
       try{
@@ -7783,9 +7803,9 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));
         setCustomerSession({...customer,locationLat:lat,locationLng:lng});
         setShowLocPrompt(false);
-        toast$&&toast$("تم حفظ موقعك بنجاح");
-      }catch{toast$&&toast$("فشل حفظ الموقع","err");}
-    },()=>{toast$&&toast$("تعذّر تحديد موقعك","err");},{enableHighAccuracy:true,timeout:15000});
+        toast$&&toast$(i18n.t('ui.location_saved'));
+      }catch{toast$&&toast$(i18n.t('ui.location_save_failed'),"err");}
+    },()=>{toast$&&toast$(i18n.t('ui.location_detect_failed'),"err");},{enableHighAccuracy:true,timeout:15000});
   };
 
   // حذف موقع العميل
@@ -7794,8 +7814,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       await sb("customers","PATCH",{location_lat:null,location_lng:null},`?id=eq.${customer.id}`);
       setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:null,locationLng:null}:c));
       setCustomerSession({...customer,locationLat:null,locationLng:null});
-      toast$&&toast$("تم حذف الموقع");
-    }catch{toast$&&toast$("فشل حذف الموقع","err");}
+      toast$&&toast$(i18n.t('ui.location_deleted'));
+    }catch{toast$&&toast$(i18n.t('ui.location_delete_failed'),"err");}
   };
 
   const favSalons=salons.filter(s=>favSet.has(s.id)&&s.status==="approved");
@@ -8015,9 +8035,9 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                             const window_h=s?.cancellationWindow||2;
                             const lateCancel=hoursUntil>=0&&hoursUntil<window_h;
                             await sb("bookings","PATCH",{status:"cancelled",...(lateCancel?{attendance:"no_show"}:{})},"?id=eq."+realBooking.id);
-                            sb("notifications","POST",{target_type:"all",title:"إلغاء حجز",body:`${customer?.name||""} ألغى حجزه في ${h.date} - ${to12h(h.time)}${lateCancel?" (إلغاء متأخر)":""}`,icon:"🚫"}).catch(()=>{});
+                            {const _bc=ntxt(s?.lang||'ar').booking_cancelled(customer?.name||"",h.date,to12h(h.time),lateCancel);sb("notifications","POST",{target_type:"all",title:_bc.title,body:_bc.body,icon:"🚫"}).catch(()=>{});}
                             await loadData({silent:true});
-                          }catch(e){toast$("خطأ في الإلغاء","err");}
+                          }catch(e){toast$(i18n.t('ui.cancel_error'),"err");}
                         }}><IconBlocked size={13}/> إلغاء</button>
                       </>)}
                       {h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>{t('ui.contact')}</button>}
@@ -8161,7 +8181,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr("الأرقام غير متطابقة");}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} />
               {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
               <div style={{display:"flex",gap:8,marginTop:16}}>
-                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$&&toast$("تم تحديث PIN بنجاح");}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$&&toast$(i18n.t('ui.pin_updated'));}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
                   حفظ
                 </button>
                 <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
