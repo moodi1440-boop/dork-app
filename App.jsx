@@ -2933,11 +2933,6 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           {fVillage?fVillage.substring(0,3):fCenter?fCenter.substring(0,3):fGov?fGov.substring(0,3):fRegion?fRegion.substring(0,3):t("home.filter_region")}
         </button>
 
-        {/* السعر */}
-        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:(showPriceFilter||fPriceMin!==""||fPriceMax!=="")?"var(--pa3)":"var(--surface-2)",border:`1.5px solid ${(showPriceFilter||fPriceMin!==""||fPriceMax!=="")?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"var(--text-primary)",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{const o=!showPriceFilter;setShowPriceFilter(o);setShowSearch(false);setShowRegionSelect(false);}} title={t("home.filter_price")} aria-label={t("home.filter_price")}>
-          {(fPriceMin!==""||fPriceMax!=="")?`${fPriceMin||0}-${fPriceMax||"∞"}`:t("home.filter_price")}
-        </button>
-
         {/* احجز سريع */}
         {lastSalon&&customer&&(
           <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:"rgba(255,255,255,.05)",border:"1.5px solid var(--border-ui)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:24,transition:"all 0.2s"}} onClick={()=>{const lastH=customer.history[customer.history.length-1];setQuickBookSeed?.({services:lastH?.services||[],barberId:lastH?.barberId||""});setSelSalon(lastSalon);setView("book");}} title="احجز سريع" aria-label="حجز سريع من آخر حجز">
@@ -2964,6 +2959,11 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
             <span style={{fontSize:9,color:"var(--text-muted)"}}>{l}</span>
           </button>
         ))}
+
+        {/* السعر - آخر الفلاتر */}
+        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:(showPriceFilter||fPriceMin!==""||fPriceMax!=="")?"var(--pa3)":"var(--surface-2)",border:`1.5px solid ${(showPriceFilter||fPriceMin!==""||fPriceMax!=="")?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"var(--text-primary)",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{const o=!showPriceFilter;setShowPriceFilter(o);setShowSearch(false);setShowRegionSelect(false);}} title={t("home.filter_price")} aria-label={t("home.filter_price")}>
+          {(fPriceMin!==""||fPriceMax!=="")?`${fPriceMin||0}-${fPriceMax||"∞"}`:t("home.filter_price")}
+        </button>
       </div>
 
       {/* البحث */}
