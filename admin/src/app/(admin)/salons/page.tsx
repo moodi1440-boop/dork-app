@@ -583,18 +583,11 @@ export default function SalonsPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    sb.from("admin_config").select("key,value")
-      .then(({ data }) => {
-        const rows = data ?? [];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pinnedRow = rows.find((r: any) => r.key === "pinned");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const weekRow   = rows.find((r: any) => r.key === "week_salon");
-        setPinned(Array.isArray(pinnedRow?.value) ? pinnedRow.value : []);
-        setWeekSalon(weekRow?.value ? String(weekRow.value) : "");
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      }, (_e) => { console.error("Error loading settings"); });
-    fetch("/api/settings").then((r) => r.json()).then((d) => setAutoApprove(Boolean(d.auto_approve_salons))).catch(() => {});
+    fetch("/api/settings").then((r) => r.json()).then((d) => {
+      setPinned(Array.isArray(d.pinned) ? d.pinned : []);
+      setWeekSalon(d.week_salon ? String(d.week_salon) : "");
+      setAutoApprove(Boolean(d.auto_approve_salons));
+    }).catch(() => {});
   }, []);
 
   const toggleAutoApprove = async () => {
@@ -606,13 +599,13 @@ export default function SalonsPage() {
   const togglePin = async (id: string) => {
     const np = pinned.includes(id) ? pinned.filter((x) => x !== id) : [...pinned, id];
     setPinned(np);
-    await sb.from("admin_config").upsert({ key: "pinned", value: np }, { onConflict: "key" });
+    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pinned: np }) });
   };
 
   const toggleWeek = async (id: string) => {
     const nw = weekSalon === id ? "" : id;
     setWeekSalon(nw);
-    await sb.from("admin_config").upsert({ key: "week_salon", value: nw || null }, { onConflict: "key" });
+    await fetch("/api/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ week_salon: nw || null }) });
   };
 
   const updateStatus = async (id: string, newStatus: string) => {

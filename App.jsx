@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L89";
+const APP_VERSION = "L92";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -1176,6 +1176,11 @@ function IconChevronLeft({size=16,color="currentColor"}){
     <polyline points="15,18 9,12 15,6"/>
   </svg>);
 }
+function IconChevronRight({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9,18 15,12 9,6"/>
+  </svg>);
+}
 function IconChevronDown({size=16,color="currentColor"}){
   return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="6,9 12,15 18,9"/>
@@ -1321,6 +1326,7 @@ function NotifIcon({icon,size=20}){
   if(icon==="🌅")return <IconReceipt size={size}/>;
   if(icon==="🔌")return <IconCircuitNodes size={size}/>;
   if(icon==="‹")return <IconChevronLeft size={size} color={color}/>;
+  if(icon==="›")return <IconChevronRight size={size} color={color}/>;
   if(icon==="←")return <IconArrowLeft size={size}/>;
   if(icon==="→")return <IconArrowRight size={size}/>;
   if(icon==="↑")return <IconArrowUp size={size}/>;
@@ -6174,6 +6180,11 @@ function MessagesPanel({salon,toast$}){
 
   useEffect(()=>{if(msgTab==="customers")loadConvList();},[msgTab,loadConvList]);
   useEffect(()=>{if(selCust){setCustMsgs([]);loadOwnerChat(selCust.customerId,selCust.bookingId);}},[selCust,loadOwnerChat]);
+  useEffect(()=>{
+    if(!selCust)return;
+    const id=setInterval(()=>loadOwnerChat(selCust.customerId,selCust.bookingId),8000);
+    return()=>clearInterval(id);
+  },[selCust,loadOwnerChat]);
   useEffect(()=>{custBottomRef.current?.scrollIntoView({behavior:"smooth"});},[custMsgs]);
 
   const sendOwnerReply=async()=>{
@@ -6183,8 +6194,16 @@ function MessagesPanel({salon,toast$}){
     setOwnerTxt("");
     try{
       const res=await fetch("/api/owner-chat",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:selCust.customerId,bookingId:selCust.bookingId,text:msgText})});
-      if(res.ok)await loadOwnerChat(selCust.customerId,selCust.bookingId);
-    }catch{toast$&&toast$("خطأ في الإرسال","err");}
+      if(res.ok){
+        await loadOwnerChat(selCust.customerId,selCust.bookingId);
+      }else{
+        setOwnerTxt(msgText);
+        toast$&&toast$("فشل الإرسال — أعد المحاولة","err");
+      }
+    }catch{
+      setOwnerTxt(msgText);
+      toast$&&toast$("خطأ في الاتصال","err");
+    }
     setOwnerSending(false);
   };
 
@@ -6286,17 +6305,30 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
   const[sending,setSending]=useState(false);
   const bottomRef=useRef(null);
 
+  const cKey=`cm_${salonId}_${customerId}_${bookingId}`;
+
   const load=useCallback(async()=>{
     if(!salonId||!customerId||!bookingId)return;
     try{
       const data=await sb("customer_messages","GET",null,
         `?select=id,from_customer,text,created_at,read_at&salon_id=eq.${salonId}&customer_id=eq.${customerId}&booking_id=eq.${bookingId}&order=created_at.asc&limit=50`
       );
-      if(Array.isArray(data))setMsgs(data);
+      if(Array.isArray(data)){
+        setMsgs(data);
+        try{sessionStorage.setItem(`cm_${salonId}_${customerId}_${bookingId}`,JSON.stringify(data));}catch{}
+      }
     }catch{}
   },[salonId,customerId,bookingId]);
 
-  useEffect(()=>{load();},[load]);
+  useEffect(()=>{
+    try{const c=sessionStorage.getItem(cKey);if(c)setMsgs(JSON.parse(c));}catch{}
+    load();
+  },[load]);
+
+  useEffect(()=>{
+    const id=setInterval(()=>load(),8000);
+    return()=>clearInterval(id);
+  },[load]);
 
   useEffect(()=>{
     const ch=supabase.channel(`cm-${salonId}-${customerId}-${bookingId}`)
