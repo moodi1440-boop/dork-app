@@ -1176,6 +1176,11 @@ function IconChevronLeft({size=16,color="currentColor"}){
     <polyline points="15,18 9,12 15,6"/>
   </svg>);
 }
+function IconChevronDown({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6,9 12,15 18,9"/>
+  </svg>);
+}
 function IconSwapHorizontal({size=16,color="currentColor"}){
   return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="6" y1="8" x2="18" y2="8"/><polyline points="15,5 18,8 15,11"/>
@@ -3138,9 +3143,9 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
             </button>
           )}
         </div>
-        <button onClick={onViewReviews} style={{border:"1.5px solid rgba(var(--gold-rgb),.4)",borderRadius:10,padding:"6px 10px",minWidth:"65px",textAlign:"center",flex:"0 0 auto",background:"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-          <div style={{fontSize:16,fontWeight:900,color:"var(--gold)",display:"flex",alignItems:"center",gap:4}}><IconStar size={15}/>{displayRating}</div>
-          <div style={{fontSize:8,color:"var(--text-muted)"}}>({reviewCount})</div>
+        <button onClick={onViewReviews} style={{border:"1.5px solid rgba(var(--gold-rgb),.4)",borderRadius:10,padding:"6px 10px",flex:"0 0 auto",background:"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+          <div style={{fontSize:15,fontWeight:900,color:"var(--gold)",display:"flex",alignItems:"center",gap:5}}><IconStar size={14}/>{displayRating}<span style={{fontSize:10,fontWeight:700,color:"var(--gold)"}}>({reviewCount})</span></div>
+          <IconChevronDown size={11} color="var(--gold)"/>
         </button>
       </div>
 
@@ -3156,7 +3161,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           ⏰ {salon.shiftEnabled?(salon.shift1Start&&salon.shift1End?`${to12h(salon.shift1Start.slice(0,5))}-${to12h(salon.shift1End.slice(0,5))}`:"--:-- - --:--"):(salon.workStart&&salon.workEnd?`${to12h(salon.workStart.slice(0,5))}-${to12h(salon.workEnd.slice(0,5))}`:"--:-- - --:--")}
         </div>
         <div>
-          <NotifIcon icon="👥" size={12}/> {salon.barbers?.length||1} {t("salon_card.barber_unit")} - 20 min
+          <NotifIcon icon="👥" size={12}/> {salon.barbers?.length||1} {t("salon_card.barber_unit")}
         </div>
       </div>
 
