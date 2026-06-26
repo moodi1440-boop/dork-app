@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useTranslation } from 'react-i18next';
-import { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
+import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
 const APP_VERSION = "L92";
@@ -32,10 +32,10 @@ class ErrorBoundary extends React.Component {
     if(this.state.err)return(
       <div style={{minHeight:"100vh",background:"#09112e",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",padding:20,gap:12}}>
         <div style={{display:"flex",justifyContent:"center"}}><IconWarning size={32}/></div>
-        <div style={{color:"#e74c3c",fontSize:14,fontWeight:700}}>خطأ في التطبيق</div>
+        <div style={{color:"#e74c3c",fontSize:14,fontWeight:700}}>{i18n.t('ui.app_error')}</div>
         <div style={{color:"var(--text-muted)",fontSize:11,background:"var(--surface-2)",padding:"12px 16px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr"}}>{String(this.state.err)}</div>
         {this.state.info&&<div style={{color:"#666",fontSize:9,background:"#111",padding:"8px 12px",borderRadius:8,maxWidth:340,wordBreak:"break-all",textAlign:"left",direction:"ltr",maxHeight:120,overflow:"auto"}}>{this.state.info}</div>}
-        <button onClick={()=>window.location.reload()} style={{background:"var(--gold)",color:"var(--p-text)",border:"none",borderRadius:8,padding:"8px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer"}}>إعادة تحميل</button>
+        <button onClick={()=>window.location.reload()} style={{background:"var(--gold)",color:"var(--p-text)",border:"none",borderRadius:8,padding:"8px 20px",fontFamily:"'Cairo',sans-serif",fontWeight:700,cursor:"pointer"}}>{i18n.t('ui.reload')}</button>
       </div>
     );
     return this.props.children;
@@ -417,6 +417,66 @@ async function requestNotifPermission(){
   const p=await Notification.requestPermission();
   return p==="granted";
 }
+
+const NOTIF_TEXTS={
+  ar:{
+    new_booking_salon:(name,date,time)=>({title:`✂️ حجز جديد`,           body:`${name} | ${time} | ${date}`}),
+    booking_received: (salon,date,time)=>({title:`📋 تم استلام حجزك`,    body:`في ${salon} | ${date} | ${time}`}),
+    booking_approved: (salon,date,time)=>({title:`✅ تم قبول حجزك!`,     body:`${salon} | ${date} | ${time}`}),
+    booking_rejected: (salon,date)    =>({title:`❌ تم رفض حجزك`,        body:`${salon} | ${date}`}),
+    slot_available:   (time,salon,date)=>({title:`✅ الوقت أصبح متاحاً!`,body:`تفرّغ وقت ${time} في ${salon} بتاريخ ${date}. سارع بالحجز!`}),
+    reminder:         (salon,time)    =>({title:`⏰ تذكير موعدك`,         body:`موعدك قريب في ${salon} — الساعة ${time}`}),
+    review:           (salon)         =>({title:`⭐ كيف كانت تجربتك؟`,   body:`قيّم ${salon} الآن وساعدنا في التحسين`}),
+    booking_edited:   (name,date,time)=>({title:`🔄 تعديل موعد`,         body:`${name} عدّل موعده إلى ${date} - ${time}`}),
+    waitlist_approved:(date,time,salon)=>({title:`✅ تم قبولك في الموعد`, body:`تم حجزك في ${date} - ${time} في ${salon}. تواصل مع الصالون لتأكيد الخدمة.`}),
+    waitlist_full:    (date,time,salon)=>({title:`❌ عذراً، الوقت امتلأ`,body:`الوقت ${date} - ${time} في ${salon} تم أخذه من شخص آخر.`}),
+    waitlist_failed:  (salon,date,time)=>({title:`❌ عذراً، تعذّر الحجز`,body:`نأسف، لم نتمكن من تأكيد حجزك في ${salon}${date?` (${date} - ${time})`:""}.`}),
+    booking_cancelled:(name,date,time,late)=>({title:`🚫 إلغاء حجز`,     body:`${name} ألغى حجزه في ${date} - ${time}${late?" (إلغاء متأخر)":""}`}),
+  },
+  en:{
+    new_booking_salon:(name,date,time)=>({title:`✂️ New Booking`,              body:`${name} | ${time} | ${date}`}),
+    booking_received: (salon,date,time)=>({title:`📋 Booking Received`,        body:`at ${salon} | ${date} | ${time}`}),
+    booking_approved: (salon,date,time)=>({title:`✅ Booking Approved!`,       body:`${salon} | ${date} | ${time}`}),
+    booking_rejected: (salon,date)    =>({title:`❌ Booking Rejected`,         body:`${salon} | ${date}`}),
+    slot_available:   (time,salon,date)=>({title:`✅ Slot Available!`,         body:`${time} slot at ${salon} on ${date} is free. Book now!`}),
+    reminder:         (salon,time)    =>({title:`⏰ Appointment Reminder`,      body:`Your appointment at ${salon} is at ${time}`}),
+    review:           (salon)         =>({title:`⭐ How was your visit?`,       body:`Rate ${salon} now and help us improve`}),
+    booking_edited:   (name,date,time)=>({title:`🔄 Appointment Modified`,     body:`${name} rescheduled to ${date} - ${time}`}),
+    waitlist_approved:(date,time,salon)=>({title:`✅ Waitlist Approved`,        body:`You're booked on ${date} - ${time} at ${salon}. Contact the salon to confirm.`}),
+    waitlist_full:    (date,time,salon)=>({title:`❌ Time Slot Taken`,          body:`The ${date} - ${time} slot at ${salon} was taken by someone else.`}),
+    waitlist_failed:  (salon,date,time)=>({title:`❌ Booking Failed`,           body:`Sorry, we couldn't confirm your booking at ${salon}${date?` (${date} - ${time})`:""}.`}),
+    booking_cancelled:(name,date,time,late)=>({title:`🚫 Booking Cancelled`,   body:`${name} cancelled their appointment on ${date} - ${time}${late?" (late cancel)":""}`}),
+  },
+  tr:{
+    new_booking_salon:(name,date,time)=>({title:`✂️ Yeni Rezervasyon`,         body:`${name} | ${time} | ${date}`}),
+    booking_received: (salon,date,time)=>({title:`📋 Rezervasyon Alındı`,      body:`${salon} | ${date} | ${time}`}),
+    booking_approved: (salon,date,time)=>({title:`✅ Rezervasyon Onaylandı!`,  body:`${salon} | ${date} | ${time}`}),
+    booking_rejected: (salon,date)    =>({title:`❌ Rezervasyon Reddedildi`,   body:`${salon} | ${date}`}),
+    slot_available:   (time,salon,date)=>({title:`✅ Slot Müsait!`,            body:`${salon}'da ${time} slotu ${date} tarihinde açıldı. Hemen rezerve et!`}),
+    reminder:         (salon,time)    =>({title:`⏰ Randevu Hatırlatıcısı`,    body:`${salon}'daki randevunuz saat ${time}'de`}),
+    review:           (salon)         =>({title:`⭐ Deneyiminiz nasıldı?`,     body:`${salon}'ı şimdi değerlendirin`}),
+    booking_edited:   (name,date,time)=>({title:`🔄 Randevu Değiştirildi`,    body:`${name} randevusunu ${date} - ${time} olarak değiştirdi`}),
+    waitlist_approved:(date,time,salon)=>({title:`✅ Bekleme Onaylandı`,       body:`${salon}'da ${date} - ${time} için rezervasyonunuz yapıldı.`}),
+    waitlist_full:    (date,time,salon)=>({title:`❌ Zaman Doldu`,             body:`${salon}'da ${date} - ${time} slotu başkası tarafından alındı.`}),
+    waitlist_failed:  (salon,date,time)=>({title:`❌ Rezervasyon Başarısız`,   body:`Üzgünüz, ${salon}'da rezervasyonunuzu${date?` (${date} - ${time})`:""} onaylayamadık.`}),
+    booking_cancelled:(name,date,time,late)=>({title:`🚫 Rezervasyon İptal`,  body:`${name}, ${date} - ${time} randevusunu iptal etti${late?" (geç iptal)":""}`}),
+  },
+  ur:{
+    new_booking_salon:(name,date,time)=>({title:`✂️ نئی بکنگ`,               body:`${name} | ${time} | ${date}`}),
+    booking_received: (salon,date,time)=>({title:`📋 بکنگ موصول ہوئی`,       body:`${salon} میں | ${date} | ${time}`}),
+    booking_approved: (salon,date,time)=>({title:`✅ بکنگ منظور!`,            body:`${salon} | ${date} | ${time}`}),
+    booking_rejected: (salon,date)    =>({title:`❌ بکنگ مسترد`,              body:`${salon} | ${date}`}),
+    slot_available:   (time,salon,date)=>({title:`✅ سلاٹ دستیاب!`,          body:`${salon} میں ${time} سلاٹ ${date} کو خالی ہے۔ ابھی بک کریں!`}),
+    reminder:         (salon,time)    =>({title:`⏰ ملاقات یاددہانی`,          body:`${salon} میں آپ کی ملاقات ${time} بجے ہے`}),
+    review:           (salon)         =>({title:`⭐ آپ کا تجربہ کیسا رہا؟`,  body:`ابھی ${salon} کو ریٹ کریں`}),
+    booking_edited:   (name,date,time)=>({title:`🔄 ملاقات تبدیل`,           body:`${name} نے ملاقات ${date} - ${time} پر منتقل کی`}),
+    waitlist_approved:(date,time,salon)=>({title:`✅ انتظار فہرست منظور`,    body:`${salon} میں ${date} - ${time} کے لیے آپ کی بکنگ ہو گئی۔`}),
+    waitlist_full:    (date,time,salon)=>({title:`❌ وقت بھر گیا`,           body:`${salon} میں ${date} - ${time} سلاٹ کسی اور نے لے لیا۔`}),
+    waitlist_failed:  (salon,date,time)=>({title:`❌ بکنگ ناکام`,            body:`معذرت، ${salon} میں آپ کی بکنگ${date?` (${date} - ${time})`:""} کی تصدیق نہیں ہو سکی۔`}),
+    booking_cancelled:(name,date,time,late)=>({title:`🚫 بکنگ منسوخ`,       body:`${name} نے ${date} - ${time} کی بکنگ منسوخ کی${late?" (دیر سے منسوخی)":""}`}),
+  },
+};
+const ntxt=(lang)=>NOTIF_TEXTS[lang]||NOTIF_TEXTS.ar;
 
 function sendNotif(title,body,icon="✂",targetType="all",targetId=null){
   // زيادة عداد الجرس
@@ -1471,6 +1531,13 @@ export default function App(){
   useEffect(()=>{try{if(ownerSession)localStorage.setItem("dork_owner",String(ownerSession));else localStorage.removeItem("dork_owner");}catch{}},[ownerSession]);
   useEffect(()=>{try{if(customerSession)localStorage.setItem("dork_customer",JSON.stringify(customerSession));else localStorage.removeItem("dork_customer");}catch{}},[customerSession]);
 
+  const{i18n:appI18n}=useTranslation();
+  useEffect(()=>{
+    const lng=appI18n.language;
+    if(ownerSession)sb("salons","PATCH",{lang:lng},`?id=eq.${ownerSession}`).catch(()=>{});
+    if(customerSession?.id)sb("customers","PATCH",{lang:lng},`?id=eq.${customerSession.id}`).catch(()=>{});
+  },[appI18n.language]);
+
   const[socialLinks,setSocialLinks]=useState({...DEFAULT_SOCIAL_LINKS});
   const[appSettingsId,setAppSettingsId]=useState(null);
   const appSettingsIdRef=useRef(null);
@@ -1643,7 +1710,7 @@ export default function App(){
       }catch{
         setOwnerSession(null);
         setView("ownerLogin");
-        toast$("⏳ انتهت صلاحية جلستك، سجّل الدخول من جديد","err");
+        toast$(i18n.t('ui.session_expired'),"err");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1655,9 +1722,9 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
       const [salonRows,bookingRows,custRows]=await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at&status=eq.approved&order=created_at.desc&limit=500"),
+        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at,lang&status=eq.approved&order=created_at.desc&limit=500"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&order=created_at.desc&limit=1000").catch(()=>[]),
-        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&limit=500").catch(()=>[]),
+        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked,lang&limit=500").catch(()=>[]),
       ]);
       const reviewRows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
       const promoRows=await sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]);
@@ -1887,10 +1954,10 @@ export default function App(){
       const sidStr=key.split("-")[0];
       const salon=salons.find(x=>String(x.id)===sidStr);
       if(was==="pending"&&now==="approved"){
-        toast$(`تم قبول حجزك في ${salon?.name||""}`);
+        toast$(i18n.t('ui.booking_accepted_at',{salon:salon?.name||""}));
         try{playTone("bell",0.55);}catch{}
       }else if(was==="pending"&&now==="rejected"){
-        toast$(`تم رفض حجزك في ${salon?.name||""}`,"warn");
+        toast$(i18n.t('ui.booking_rejected_at',{salon:salon?.name||""}),"warn");
       }
     }
     bookingStatusSnapRef.current=snap;
@@ -1947,13 +2014,13 @@ export default function App(){
         const key=`${h.salonId}-${h.date}-${h.time}`;
         // تذكير قبل الموعد
         if(minsUntil>0&&minsUntil<=reminderMins&&!reminded.includes(key)){
-          sendNotif("⏰ تذكير موعدك",`موعدك قريب في ${h.salonName||"الصالون"} — الساعة ${to12h(h.time)}`,"⏰","customer",customerSession.id);
+          const _rn=ntxt(appI18n.language).reminder(h.salonName||"",to12h(h.time));sendNotif(_rn.title,_rn.body,"⏰","customer",customerSession.id);
           reminded.push(key);
           localStorage.setItem("dork_auto_reminded",JSON.stringify(reminded.slice(-50)));
         }
         // طلب تقييم بعد الموعد بساعة
         if(minsAfter>=60&&minsAfter<=120&&!reviewed.includes(key)&&h.status==="approved"&&!h.rating){
-          sendNotif("⭐ كيف كانت تجربتك؟",`قيّم ${h.salonName||"الصالون"} الآن وساعدنا في التحسين`,"⭐","customer",customerSession.id);
+          const _rv=ntxt(appI18n.language).review(h.salonName||"");sendNotif(_rv.title,_rv.body,"⭐","customer",customerSession.id);
           reviewed.push(key);
           localStorage.setItem("dork_auto_review",JSON.stringify(reviewed.slice(-50)));
         }
@@ -1970,7 +2037,7 @@ export default function App(){
   // customer helpers
   const getCustomer=()=>customerSession?customers.find(c=>c.id===customerSession.id)||customerSession:null;
   const toggleFav=async(salonId)=>{
-    if(!customerSession){toast$("سجّل دخولك كعميل أولاً","warn");return;}
+    if(!customerSession){toast$(i18n.t('ui.login_first'),"warn");return;}
     const c=getCustomer(); if(!c)return;
     const favs=c.favs||[];
     const newFavs=favs.includes(salonId)?favs.filter(x=>x!==salonId):[...favs,salonId];
@@ -1979,7 +2046,7 @@ export default function App(){
       // تحديث محلي
       setCustomers(p=>p.map(x=>x.id===c.id?{...x,favs:newFavs}:x));
       setCustomerSession(s=>({...s,favs:newFavs}));
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
   const customerFavs=()=>{const c=getCustomer();return c?.favs||[];};
 
@@ -1992,10 +2059,10 @@ export default function App(){
       });
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||"register-salon failed");
-      toast$("تم إرسال طلب تسجيل الصالون - في انتظار موافقة الإدارة");
+      toast$(i18n.t('ui.salon_reg_sent'));
       setView("home");
       await loadData();
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
   const addBooking=async(sid,bk,rescheduleOldId=null)=>{
     try{
@@ -2020,7 +2087,7 @@ export default function App(){
       },"");
       if(isReschedule){
         await sb("bookings","PATCH",{status:"cancelled"},"?id=eq."+rescheduleOldId).catch(()=>{});
-        sb("notifications","POST",{target_type:"all",title:"تعديل موعد",body:`${bk.name} عدّل موعده إلى ${bk.date} - ${to12h(bk.time)}`,icon:"🔄"}).catch(()=>{});
+        {const _be=ntxt(salon?.lang||'ar').booking_edited(bk.name||"",bk.date,to12h(bk.time));sb("notifications","POST",{target_type:"all",title:_be.title,body:_be.body,icon:"🔄"}).catch(()=>{});}
         setRescheduleId(null);
       }
       const newBooking=inserted[0]||{};
@@ -2047,20 +2114,19 @@ export default function App(){
       }
       if(newBooking&&newBooking.id){
         const _d={type:"new_booking",salon_id:String(sid),booking_id:String(newBooking.id)};
-        // notify salon owner
+        // notify salon owner (بلغة الصالون)
+        {const sLang=salons.find(s=>s.id===sid)?.lang||'ar';const _nb=ntxt(sLang).new_booking_salon(bk.name||"عميل",bk.date,to12h(bk.time));
         supabase.functions.invoke('send-push-notification',{body:{
           target_type:"single",user_id:sid,user_type:"salon",
-          title:`✂️ حجز جديد في ${salon?.name||""}`,
-          body:`${bk.name||"عميل"} | ${to12h(bk.time)} | ${bk.date}`,
-          data:_d,
-        }}).catch(()=>{});
-        // notify customer
+          title:_nb.title,body:_nb.body,data:_d,
+        }}).catch(()=>{});}
+        // notify customer (بلغة العميل)
         if(newBooking.customer_id){
+          const cLang=customers.find(c=>c.id===newBooking.customer_id)?.lang||appI18n.language||'ar';
+          const _br=ntxt(cLang).booking_received(salon?.name||"",bk.date,to12h(bk.time));
           supabase.functions.invoke('send-push-notification',{body:{
             target_type:"single",user_id:newBooking.customer_id,user_type:"customer",
-            title:"📋 تم استلام حجزك",
-            body:`في ${salon?.name||""} | ${bk.date} | ${to12h(bk.time)}`,
-            data:_d,
+            title:_br.title,body:_br.body,data:_d,
           }}).catch(()=>{});
         }
       }
@@ -2092,14 +2158,14 @@ export default function App(){
           setCustomers(p=>p.map(x=>x.id===c.id?{...x,history:hist}:x));
         }
       }
-      toast$("🎉 تم إرسال طلب الحجز!");
+      toast$(i18n.t('ui.booking_sent'));
       setView("home");
       await loadData();
     }catch(e){
       if(e.message&&(e.message.includes("23505")||e.message.includes("unique")||e.message.includes("duplicate")||e.message.includes("booking_overlap"))){
-        toast$("هذا الوقت محجوز، يرجى اختيار وقت آخر","err");
+        toast$(i18n.t('ui.time_taken'),"err");
       }else{
-        toast$("خطأ: "+e.message,"err");
+        toast$(i18n.t('ui.error_prefix')+e.message,"err");
       }
       throw e;
     }
@@ -2115,10 +2181,11 @@ export default function App(){
         sb("waiting_list","GET",null,`?select=id,name,phone,customer_id&salon_id=eq.${sid}&slot_date=eq.${bk.date}&slot_time=eq.${bk.time}&status=eq.waiting&limit=10`)
           .then(waiters=>{
             if(!Array.isArray(waiters)||!waiters.length)return;
-            const msg=`تفرّغ وقت ${to12h(bk.time)} في ${salon.name} بتاريخ ${bk.date}. سارع بالحجز!`;
             for(const w of waiters){
-              sb("notifications","POST",{target_type:"all",title:"✅ الوقت أصبح متاحاً!",body:msg,icon:"✅"}).catch(()=>{});
-              if(w.customer_id){supabase.functions.invoke('send-push-notification',{body:{target_type:"single",user_id:w.customer_id,user_type:"customer",title:"✅ الوقت أصبح متاحاً!",body:msg,data:{type:"slot_available",salon_id:String(sid)}}}).catch(()=>{});}
+              const wLang=w.customer_id?customers.find(c=>c.id===w.customer_id)?.lang||'ar':'ar';
+              const _sa=ntxt(wLang).slot_available(to12h(bk.time),salon.name,bk.date);
+              sb("notifications","POST",{target_type:"all",title:_sa.title,body:_sa.body,icon:"✅"}).catch(()=>{});
+              if(w.customer_id){supabase.functions.invoke('send-push-notification',{body:{target_type:"single",user_id:w.customer_id,user_type:"customer",title:_sa.title,body:_sa.body,data:{type:"slot_available",salon_id:String(sid)}}}).catch(()=>{});}
             }
           }).catch(()=>{});
       }
@@ -2145,18 +2212,18 @@ export default function App(){
         }
       }
       if((status==="approved"||status==="rejected")&&bk.customer_id){
-        const notifTitle=status==="approved"?"✅ تم قبول حجزك!":"❌ تم رفض حجزك";
-        const notifBody=status==="approved"?`${salon.name} | ${bk.date} | ${to12h(bk.time)}`:`${salon.name} | ${bk.date}`;
+        const cLang=customers.find(c=>c.id===bk.customer_id)?.lang||'ar';
+        const _ar=status==="approved"?ntxt(cLang).booking_approved(salon.name,bk.date,to12h(bk.time)):ntxt(cLang).booking_rejected(salon.name,bk.date);
         supabase.functions.invoke('send-push-notification',{body:{
           target_type:"single",user_id:bk.customer_id,user_type:"customer",
-          title:notifTitle,body:notifBody,
+          title:_ar.title,body:_ar.body,
           data:{type:status==="approved"?"booking_approved":"booking_rejected",salon_id:String(sid),booking_id:String(bid)},
         }}).catch(()=>{});
-        sb("notifications","POST",{target_type:"customer",target_id:bk.customer_id,title:notifTitle,body:notifBody,icon:status==="approved"?"✅":"❌"}).catch(()=>{});
+        sb("notifications","POST",{target_type:"customer",target_id:bk.customer_id,title:_ar.title,body:_ar.body,icon:status==="approved"?"✅":"❌"}).catch(()=>{});
       }
-      toast$(status==="approved"?"تم قبول الحجز":"تم تحديث حالة الحجز");
+      toast$(status==="approved"?i18n.t('ui.booking_accepted_toast'):i18n.t('ui.booking_status_updated'));
       await loadData();
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
 
   const addExtraLoc=(r,g,c,v)=>{
@@ -2266,7 +2333,7 @@ export default function App(){
       <div id="dork-bg" style={dorkBgStyle}/>
       <style>{CSS}</style>
       {/* بانر خطأ الاتصال - يظهر فقط عند الخطأ */}
-      {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"rgba(231,76,60,.12)",borderBottom:"1px solid rgba(231,76,60,.3)",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconError size={14}/>خطأ في الاتصال بقاعدة البيانات — تحقق من الاتصال</div>}
+      {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"rgba(231,76,60,.12)",borderBottom:"1px solid rgba(231,76,60,.3)",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconError size={14}/>{t('ui.db_error')}</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34",display:"flex",alignItems:"center",gap:8}}>{toast.type==="err"?<IconError size={16}/>:toast.type==="warn"?null:<IconSuccess size={16}/>}<span>{toast.msg}</span></div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
       <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} activeDrawerItem={activeDrawerItem} setActiveDrawerItem={setActiveDrawerItem} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
@@ -2410,21 +2477,21 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const avatarColors=["#d4a017","#27ae60","#3b82f6","#8b5cf6","#e74c3c"];
   const avatarColor=avatarColors[(customer.name?.charCodeAt(0)||0)%avatarColors.length];
   const saveLocation=()=>{
-    if(!navigator.geolocation){toast$("المتصفح لا يدعم الموقع","err");return;}
+    if(!navigator.geolocation){toast$(i18n.t('ui.browser_no_geo'),"err");return;}
     navigator.geolocation.getCurrentPosition(async(p)=>{
       const lat=p.coords.latitude,lng=p.coords.longitude;
-      try{await sb("customers","PATCH",{location_lat:lat,location_lng:lng},`?id=eq.${customer.id}`);setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));setCustomerSession({...customer,locationLat:lat,locationLng:lng});toast$("تم حفظ موقعك");}catch{toast$("فشل حفظ الموقع","err");}
-    },()=>toast$("تعذر تحديد موقعك","err"),{enableHighAccuracy:true,timeout:15000});
+      try{await sb("customers","PATCH",{location_lat:lat,location_lng:lng},`?id=eq.${customer.id}`);setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));setCustomerSession({...customer,locationLat:lat,locationLng:lng});toast$(i18n.t('ui.location_saved'));}catch{toast$(i18n.t('ui.location_save_failed'),"err");}
+    },()=>toast$(i18n.t('ui.location_detect_failed'),"err"),{enableHighAccuracy:true,timeout:15000});
   };
   const clearLocation=async()=>{
-    try{await sb("customers","PATCH",{location_lat:null,location_lng:null},`?id=eq.${customer.id}`);setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:null,locationLng:null}:c));setCustomerSession({...customer,locationLat:null,locationLng:null});toast$("تم حذف الموقع");}catch{toast$("فشل حذف الموقع","err");}
+    try{await sb("customers","PATCH",{location_lat:null,location_lng:null},`?id=eq.${customer.id}`);setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:null,locationLng:null}:c));setCustomerSession({...customer,locationLat:null,locationLng:null});toast$(i18n.t('ui.location_deleted'));}catch{toast$(i18n.t('ui.location_delete_failed'),"err");}
   };
   const saveEdit=async()=>{
     if(!editName.trim())return;
     const patch={name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim()};
     const locExtra={};
     if(locMode==="url"&&locUrl.trim()){const m=locUrl.match(/q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);if(m){patch.location_lat=parseFloat(m[1]);patch.location_lng=parseFloat(m[2]);locExtra.locationLat=parseFloat(m[1]);locExtra.locationLng=parseFloat(m[2]);}}
-    try{await sb("customers","PATCH",patch,`?id=eq.${customer.id}`);setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim(),...locExtra}:c));setExp(null);toast$("تم حفظ البيانات");}catch(e){toast$(""+e.message,"err");}
+    try{await sb("customers","PATCH",patch,`?id=eq.${customer.id}`);setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim(),...locExtra}:c));setExp(null);toast$(i18n.t('ui.data_saved'));}catch(e){toast$(""+e.message,"err");}
   };
   const applyTheme=(id)=>{
     const t=THEMES[id]||THEMES.gold;const r=document.documentElement.style;
@@ -2512,8 +2579,8 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <div style={{padding:"4px 20px 8px",textAlign:"center",fontSize:10,color:"var(--text-muted)",fontFamily:"monospace",wordBreak:"break-all"}}>FCM: {fcmStatus}</div>
         {(fcmStatus.includes("permission-denied")||fcmStatus.includes("permission-blocked")||fcmStatus.includes("permission-error"))&&(
           <div style={{margin:"0 16px 12px"}}>
-            <div style={{padding:"10px 14px",background:"rgba(231,76,60,.12)",border:"1px solid rgba(231,76,60,.3)",borderRadius:"10px 10px 0 0",fontSize:11,color:"#e74c3c",textAlign:"center",lineHeight:1.5}}>الإشعارات محظورة — اضغط الزر لتفعيلها</div>
-            <button onClick={handleEnableNotifications} style={{width:"100%",padding:"13px",background:"var(--grad)",color:"#000",border:"none",borderRadius:"0 0 10px 10px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>تفعيل الإشعارات <IconBell size={14}/></button>
+            <div style={{padding:"10px 14px",background:"rgba(231,76,60,.12)",border:"1px solid rgba(231,76,60,.3)",borderRadius:"10px 10px 0 0",fontSize:11,color:"#e74c3c",textAlign:"center",lineHeight:1.5}}>{t('ui.notif_blocked')}</div>
+            <button onClick={handleEnableNotifications} style={{width:"100%",padding:"13px",background:"var(--grad)",color:"#000",border:"none",borderRadius:"0 0 10px 10px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{t('ui.enable_notifs')} <IconBell size={14}/></button>
             {fcmMsg&&<div style={{marginTop:8,padding:"8px 12px",background:"rgba(243,156,18,.12)",border:"1px solid rgba(243,156,18,.3)",borderRadius:8,fontSize:11,color:"#f39c12",textAlign:"center"}}>{fcmMsg}</div>}
           </div>
         )}
@@ -2734,7 +2801,7 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
           <button onClick={()=>resetHome?resetHome():setView("home")} style={{width:44,height:44,borderRadius:12,background:"var(--surface-1)",border:"1.5px solid rgba(var(--pr),.3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--p)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>        </div>
         {/* RIGHT: شعار */}
         <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-          <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
+          <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>{t('ui.book')}</span>
           <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,var(--pll) 0%,var(--p) 50%,var(--pd) 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
         </div>
       </div>
@@ -2751,7 +2818,7 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         </button>
         <button onClick={()=>setView("ownerDash")} style={{width:44,height:44,borderRadius:12,background:"var(--surface-1)",border:"1.5px solid rgba(var(--pr),.3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--p)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>      </div>
       <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>setView("ownerDash")}>
-        <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
+        <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>{t('ui.book')}</span>
         <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,var(--pll) 0%,var(--p) 50%,var(--pd) 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
       </div>
     </div>
@@ -2763,7 +2830,7 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
         <button style={{...G.roleBtn,...(customerSession?G.roleBtnActive:{})}} onClick={()=>setView(customerSession?"custDash":"custLogin")} aria-label={customerSession?"حسابي":"تسجيل الدخول"}><IconUser size={18}/></button>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",lineHeight:1}} onClick={()=>resetHome&&resetHome()}>
-        <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>احجز</span>
+        <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>{t('ui.book')}</span>
         <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,var(--pll) 0%,var(--p) 50%,var(--pd) 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
       </div>
     </div>
@@ -2810,10 +2877,10 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   };
 
   const detectUserLoc=()=>{
-    if(!navigator.geolocation){toast$&&toast$("المتصفح لا يدعم تحديد الموقع","warn");return;}
+    if(!navigator.geolocation){toast$&&toast$(i18n.t('ui.browser_no_geo'),"warn");return;}
     navigator.geolocation.getCurrentPosition(
-      p=>{setUserLoc({lat:p.coords.latitude,lng:p.coords.longitude});setSortBy("nearest");toast$&&toast$("تم تحديد موقعك");},
-      err=>{let m="❌ تعذّر تحديد موقعك";if(err.code===1)m="🚫 رُفض إذن الموقع — يمكنك حفظه من إعداداتك";toast$&&toast$(m,"warn");},
+      p=>{setUserLoc({lat:p.coords.latitude,lng:p.coords.longitude});setSortBy("nearest");toast$&&toast$(i18n.t('ui.location_detected'));},
+      err=>{let m=i18n.t('ui.location_detect_failed_icon');if(err.code===1)m=i18n.t('ui.location_denied_hint');toast$&&toast$(m,"warn");},
       {enableHighAccuracy:true,timeout:15000,maximumAge:0}
     );
   };
@@ -2898,24 +2965,24 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
           <div style={{background:"rgba(0,0,0,.5)",borderBottom:"1px solid rgba(var(--gold-rgb),.15)",padding:"8px 10px",display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
             <button onClick={()=>{setShowRegionSelect(false);setFRegion("");setFGov("");setFCenter("");setFVillage("");}} aria-label="إلغاء فلتر المنطقة" style={{background:"transparent",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:"2px 4px",flexShrink:0,display:"flex",alignItems:"center"}}><IconClose size={14}/></button>
             <select value={fRegion||""} onChange={e=>{setFRegion(e.target.value);setFGov("");setFCenter("");setFVillage("");}} style={selStyle(!!fRegion)}>
-              <option value="">المنطقة</option>
+              <option value="">{t('ui.region')}</option>
               {allLoc.map(r=><option key={r.region} value={r.region}>{r.region}</option>)}
             </select>
             {fRegion&&govList.length>0&&(
               <select value={fGov||""} onChange={e=>{setFGov(e.target.value);setFCenter("");setFVillage("");}} style={selStyle(!!fGov)}>
-                <option value="">المحافظة</option>
+                <option value="">{t('ui.gov')}</option>
                 {govList.map(g=><option key={g.name||g} value={g.name||g}>{g.name||g}</option>)}
               </select>
             )}
             {fGov&&centerList2.length>0&&(
               <select value={fCenter||""} onChange={e=>{setFCenter(e.target.value);setFVillage("");}} style={selStyle(!!fCenter)}>
-                <option value="">المركز</option>
+                <option value="">{t('ui.center')}</option>
                 {centerList2.map(c=><option key={c} value={c}>{c}</option>)}
               </select>
             )}
             {fCenter&&villages.length>0&&(
               <select value={fVillage||""} onChange={e=>{setFVillage(e.target.value);if(e.target.value)setShowRegionSelect(false);}} style={selStyle(!!fVillage)}>
-                <option value="">الحي</option>
+                <option value="">{t('ui.neighborhood')}</option>
                 {villages.map(v=><option key={v} value={v}>{v}</option>)}
               </select>
             )}
@@ -2941,7 +3008,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         </button>
 
         {/* المنطقة */}
-        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:showRegionSelect?"var(--pa3)":"var(--surface-2)",border:`1.5px solid ${showRegionSelect?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"var(--text-primary)",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{const o=!showRegionSelect;setShowRegionSelect(o);setShowSearch(false);if(o)setSortBy("");}} title="المنطقة" aria-label="تصفية حسب المنطقة">
+        <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:showRegionSelect?"var(--pa3)":"var(--surface-2)",border:`1.5px solid ${showRegionSelect?"var(--p)":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:"var(--text-primary)",transition:"all 0.2s",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{const o=!showRegionSelect;setShowRegionSelect(o);setShowSearch(false);if(o)setSortBy("");}} title={t('ui.region')} aria-label="تصفية حسب المنطقة">
           {fVillage?fVillage.substring(0,3):fCenter?fCenter.substring(0,3):fGov?fGov.substring(0,3):fRegion?fRegion.substring(0,3):t("home.filter_region")}
         </button>
 
@@ -2955,7 +3022,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
         {/* زر العروض */}
         <button style={{minWidth:60,width:60,height:60,borderRadius:"50%",background:promoMode?"rgba(231,76,60,.25)":"var(--surface-2)",border:`1.5px solid ${promoMode?"#e74c3c":"var(--border-ui)"}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18,transition:"all 0.2s",flexDirection:"column",gap:2}} onClick={()=>{setPromoMode(p=>!p);setShowSearch(false);setShowRegionSelect(false);setSortBy("");}} title="العروض" aria-label="عرض العروض النشطة">
           <IconFire size={18}/>
-          <span style={{fontSize:9,color:promoMode?"#e74c3c":"var(--text-muted)"}}>عروض</span>
+          <span style={{fontSize:9,color:promoMode?"#e74c3c":"var(--text-muted)"}}>{t('ui.offers')}</span>
         </button>
 
         {/* الفلاتر الأخرى */}
@@ -2993,18 +3060,18 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
       <div style={{padding:"10px 14px 80px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <span style={{fontSize:15,fontWeight:700,color:"var(--text-primary)",display:"inline-flex",alignItems:"center",gap:5}}>
-            {promoMode?<><IconFire size={14}/>العروض النشطة</>:urgentMode?t("home.open_now"):t("home.available_salons")}
+            {promoMode?<><IconFire size={14}/>{t('ui.active_offers')}</>:urgentMode?t("home.open_now"):t("home.available_salons")}
           </span>
           <span style={G.badge}>{sortedSalons.length}</span>
         </div>
-        {promoMode&&savedLoc&&<div style={{fontSize:11,color:"var(--p)",fontWeight:600,marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconPin size={11}/>مرتبة من الأقرب إليك</div>}
+        {promoMode&&savedLoc&&<div style={{fontSize:11,color:"var(--p)",fontWeight:600,marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconPin size={11}/>{t('ui.sorted_nearest')}</div>}
         {loading&&sortedSalons.length===0
           ?null
           :promoMode&&!savedLoc&&!userLoc
             ?<div style={{textAlign:"center",padding:"40px 20px",background:"var(--surface-1)",borderRadius:16,border:"1px solid var(--border-ui)"}}>
                <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><IconPin size={36}/></div>
-               <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>أضف موقعك لمشاهدة العروض القريبة</div>
-               <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:16}}>نعرض لك العروض من الأقرب إليك تلقائياً</div>
+               <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>{t('ui.add_loc_offers')}</div>
+               <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:16}}>{t('ui.show_offers_near')}</div>
                <button onClick={()=>setView("custSettings")} style={{padding:"10px 24px",borderRadius:10,border:"none",background:"var(--p)",color:"var(--p-text)",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:5}}><NotifIcon icon="←" size={13}/> الإعدادات</button>
              </div>
             :sortedSalons.length===0
@@ -3056,7 +3123,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
             </div>
             {/* قائمة التقييمات */}
             <div style={{overflowY:"auto",flex:1,padding:"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
-              {sRev.length===0?<div style={G.empty}>لا توجد تقييمات بعد</div>:sRev.map((r,i)=>(
+              {sRev.length===0?<div style={G.empty}>{t('ui.no_ratings')}</div>:sRev.map((r,i)=>(
                 <div key={i} style={{background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"11px 13px"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.comment?5:0}}>
                     <span style={{fontSize:12,fontWeight:700,color:"var(--text-primary)",display:"inline-flex",alignItems:"center",gap:4}}><IconUser size={11}/>{r.name}</span>
@@ -3257,7 +3324,7 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
             {/* 🔥 bounce */}
             <div className="promo-fire-anim" style={{display:"flex",justifyContent:"center",marginBottom:10}}><IconFire size={56}/></div>
             {/* اسم الصالون */}
-            <div style={{textAlign:"center",fontSize:12,color:"var(--text-muted)",marginBottom:3}}>عرض خاص من</div>
+            <div style={{textAlign:"center",fontSize:12,color:"var(--text-muted)",marginBottom:3}}>{t('ui.special_from')}</div>
             <div style={{textAlign:"center",fontSize:21,fontWeight:900,color:"var(--p)",marginBottom:14,letterSpacing:.3}}>{salon.name}</div>
             {/* نص العرض */}
             <div style={{background:"rgba(var(--pr),.22)",border:"2px solid rgba(var(--pr),.55)",borderRadius:12,padding:"14px 16px",textAlign:"center",fontSize:15,fontWeight:700,color:"var(--p)",lineHeight:1.9,marginBottom:14,letterSpacing:.2}}>{activePromo.promo_text}</div>
@@ -3281,8 +3348,8 @@ function SalonCard({salon,fav,onFav,onBook,onViewReviews,realRating,reviewCount,
           </div>
           {/* جزء سفلي الأزرار */}
           <div style={{background:"linear-gradient(145deg,var(--surface-2),rgba(var(--pr),.07))",borderRadius:"0 0 22px 22px",padding:"16px 20px 22px",border:"1.5px solid rgba(var(--pr),.4)",borderTop:"none"}}>
-            <button className="promo-book-glow" style={{width:"100%",background:"var(--grad)",color:"#000",padding:"14px",borderRadius:14,fontWeight:900,fontSize:14,cursor:"pointer",fontFamily:"inherit",border:"none",marginBottom:10}} onClick={()=>{setShowPromoPopup(false);onBook();}}>احجز الآن</button>
-            <button style={{width:"100%",background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"11px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setShowPromoPopup(false)}>إغلاق</button>
+            <button className="promo-book-glow" style={{width:"100%",background:"var(--grad)",color:"#000",padding:"14px",borderRadius:14,fontWeight:900,fontSize:14,cursor:"pointer",fontFamily:"inherit",border:"none",marginBottom:10}} onClick={()=>{setShowPromoPopup(false);onBook();}}>{t('ui.book_now')}</button>
+            <button style={{width:"100%",background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"11px",borderRadius:14,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setShowPromoPopup(false)}>{t('ui.close')}</button>
           </div>
         </div>
       </div>
@@ -3332,7 +3399,7 @@ function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatu
               <div style={{fontSize:9,color:"var(--text-muted)",marginTop:2}}>{t("salon_page.reviews_note")}</div>
             </>}
           </div>
-          <button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title="الموقع" aria-label="فتح موقع الصالون في الخريطة">
+          <button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)} title={t('ui.location_label')} aria-label="فتح موقع الصالون في الخريطة">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg>
           </button>
         </div>
@@ -3407,7 +3474,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
     if(found)setForm(p=>({...p,time:found}));
     setQuickSearching(false);
     setQuickBookSeed?.(null);
-    if(!found)toast$?.("⏳ كل المواعيد اليوم محجوزة، اختر وقتاً آخر","warn");else setStep(5);
+    if(!found)toast$?.(i18n.t('ui.all_slots_taken'),"warn");else setStep(5);
   },[quickSearching,loadingBookings]);
   const getBarberNextSlot=(b,date)=>{const bSlots=getSlotsForBarber(salon,b);const dSlots=date===todayStr()?bSlots.filter(sl=>{const[h,m]=sl.split(":").map(Number);const now=new Date();return h*60+m>now.getHours()*60+now.getMinutes();}):bSlots;const bkDef=salon.slotMin||SLOT_MIN;const bMin2=salon.bufferMin??BUFFER_MIN;const newDur2=totalDuration||bkDef;const todayBks=liveBookings.filter(bk=>bk.date===date&&!["rejected","cancelled"].includes(bk.status)&&(bk.barberId===b.id||bk.barberId==="any"));for(const sl of dSlots){const slM=toM(sl);const busy=todayBks.some(bk=>{const bkM=toM(bk.time||"00:00");const bkDur=getExistingDur(bk);return bkM<slM+newDur2&&slM<bkM+bkDur;});if(!busy)return sl;}return null;};
   const v1=()=>{const e={};if(!form.name.trim())e.name=t("book.err_required");if(!form.phone.trim())e.phone=t("book.err_required");setErrors(e);return!Object.keys(e).length;};
@@ -3455,12 +3522,12 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
           <div style={{borderRadius:12,overflow:"hidden",border:`1.5px solid ${errors.services?"#e74c3c":"var(--border-ui)"}`}}>
             {/* رأس الأعمدة */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 66px 66px",padding:"8px 14px",gap:6,background:"var(--surface-2)",borderBottom:"1px solid var(--border-ui)"}}>
-              <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:9,color:"var(--text-muted)",fontWeight:700}}>الخدمة</div>
+              <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:9,color:"var(--text-muted)",fontWeight:700}}>{t('ui.service_col')}</div>
               <div style={{display:"flex",justifyContent:"center",alignItems:"center"}}>
-                <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:12,color:"var(--text-muted)",fontWeight:700,minWidth:46,textAlign:"center"}}>الوقت</div>
+                <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:12,color:"var(--text-muted)",fontWeight:700,minWidth:46,textAlign:"center"}}>{t('ui.time_col')}</div>
               </div>
               <div style={{display:"flex",justifyContent:"center",alignItems:"center"}}>
-                <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:12,color:"var(--text-muted)",fontWeight:700,minWidth:46,textAlign:"center"}}>السعر</div>
+                <div style={{padding:"7px 8px",borderRadius:7,border:"1px solid var(--border-ui)",background:"rgba(255,255,255,.04)",fontSize:12,color:"var(--text-muted)",fontWeight:700,minWidth:46,textAlign:"center"}}>{t('ui.price_col')}</div>
               </div>
             </div>
             {(salon.services||[]).map((svc,idx)=>{
@@ -3521,7 +3588,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
         {salon.closedDays?.length>0&&<div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>{t("book.closed_days_prefix")} {DAYS.filter((_,i)=>salon.closedDays.includes(i)).join(" - ")}</div>}
         <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:7}}>{t("book.time_hint")}{barber?` - ${barber.name}`:""}</div>
         {errors.time&&<div style={G.err}>{errors.time}</div>}
-        {loadingBookings?<div style={{textAlign:"center",padding:"18px 0",color:"var(--text-muted)",fontSize:13}}>⏳ جاري التحقق من المواعيد...</div>:<div style={G.timeGrid}>{slotsVisible.map(sl=>{const st=slotStatus(sl);const full=st!=="free";const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={loadingBookings||(full&&!waiting)} onClick={()=>!full&&setForm(p=>({...p,time:p.time===sl?"":sl,waitSlot:""}))} style={{...G.ts,...(st==="booked"?G.tsF:{}),...(sel&&!full?G.tsS:{})}}><div>{to12h(sl)}</div>{st==="booked"&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}</button>{full&&(waitingSlots.has(sl)?<div style={{fontSize:9,padding:"3px 4px",borderRadius:6,textAlign:"center",color:"var(--text-muted)",opacity:.7}}>⏳ ممتلئ</div>:<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>)}</div>);})}</div>}
+        {loadingBookings?<div style={{textAlign:"center",padding:"18px 0",color:"var(--text-muted)",fontSize:13}}>{t('ui.checking_slots')}</div>:<div style={G.timeGrid}>{slotsVisible.map(sl=>{const st=slotStatus(sl);const full=st!=="free";const sel=form.time===sl;const waiting=form.waitSlot===sl;return(<div key={sl} style={{display:"flex",flexDirection:"column",gap:2}}><button disabled={loadingBookings||(full&&!waiting)} onClick={()=>!full&&setForm(p=>({...p,time:p.time===sl?"":sl,waitSlot:""}))} style={{...G.ts,...(st==="booked"?G.tsF:{}),...(sel&&!full?G.tsS:{})}}><div>{to12h(sl)}</div>{st==="booked"&&<div style={{fontSize:9,marginTop:1,color:"var(--text-muted)"}}>{t("book.booked")}</div>}</button>{full&&(waitingSlots.has(sl)?<div style={{fontSize:9,padding:"3px 4px",borderRadius:6,textAlign:"center",color:"var(--text-muted)",opacity:.7}}>{t('ui.full')}</div>:<button onClick={()=>setForm(p=>({...p,waitSlot:p.waitSlot===sl?"":sl,time:""}))} style={{fontSize:9,padding:"3px 4px",borderRadius:6,border:`1.5px solid ${waiting?"var(--p)":"#f39c1266"}`,background:waiting?"var(--pa12)":"rgba(243,156,18,.06)",color:waiting?"var(--p)":"#f39c12",cursor:"pointer",fontFamily:"inherit",fontWeight:waiting?700:400}}>⏳{waiting?" ✓":""}</button>)}</div>);})}</div>}
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.08)",border:"1px solid #f39c1244",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:11,color:"#f39c12",textAlign:"center"}}>{t("book.wait_msg")} <strong>{to12h(form.waitSlot)}</strong> {t("book.wait_notify")}</div>}
         <div style={{display:"flex",gap:8,marginTop:8}}><BtnBack toStep={3}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(v4())setStep(5);}}>{form.waitSlot?t("book.next_wait"):t("book.next")}</button></div>
       </div>}
@@ -3532,7 +3599,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
         <button style={{...G.mapsBtn,width:"100%",marginTop:10,justifyContent:"center",display:"flex",padding:10}} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}>{t("book.open_map")}</button>
         {form.waitSlot&&<div style={{background:"rgba(243,156,18,.1)",border:"1px solid #f39c1255",borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:11,color:"#f39c12"}}>{t("book.wait_msg")} {to12h(form.waitSlot)} {t("book.wait_notify")}</div>}
         {!form.waitSlot&&customer&&<div style={{margin:"10px 0 4px"}}>
-          <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6,textAlign:"center"}}>⏰ تذكير قبل الموعد بـ</div>
+          <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6,textAlign:"center"}}>{t('ui.reminder_before')}</div>
           <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
             {[{v:30,l:"30 د"},{v:60,l:"ساعة"},{v:120,l:"ساعتين"},{v:0,l:"بدون"}].map(({v,l})=>(
               <button key={v} onClick={()=>setReminderMins(v)}
@@ -3551,17 +3618,17 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
               if(!form.name||!form.phone){alert(t("book.err_name_phone"));setBooking(false);return;}
               try{
                 const existing=await sb("waiting_list","GET",null,`?select=id,phone&salon_id=eq.${salon.id}&slot_date=eq.${form.date}&slot_time=eq.${form.waitSlot}&status=eq.waiting&limit=1`).catch(()=>[]);
-                if(Array.isArray(existing)&&existing.length){alert(existing[0].phone===form.phone?"⏳ أنت بالفعل في قائمة الانتظار لهذا الوقت":"⏳ قائمة الانتظار لهذا الوقت ممتلئة، اختر وقتاً آخر");setBooking(false);return;}
+                if(Array.isArray(existing)&&existing.length){alert(existing[0].phone===form.phone?i18n.t('ui.already_in_waiting'):i18n.t('ui.waiting_full_alert'));setBooking(false);return;}
                 await sb("waiting_list","POST",{salon_id:salon.id,name:form.name,phone:form.phone,slot_date:form.date,slot_time:form.waitSlot,customer_id:null,status:"waiting"});
                 alert(t("book.success_wait"));
                 if(setView)setView("home");
-              }catch(e){alert("❌ حدث خطأ، حاول مرة أخرى");setBooking(false);}
+              }catch(e){alert(i18n.t('ui.err_try_again'));setBooking(false);}
             }else{
               const slM=toM(form.time);
               const newDur=totalDuration||(salon.slotMin||SLOT_MIN);
               const freshBks=await sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=not.in.(rejected,cancelled)&select=id,barber_id,service,time,slot_duration_minutes&limit=100`).catch(()=>[]);
               const conflict=checkConflict(slM,newDur,Array.isArray(freshBks)?freshBks:[],form.barberId);
-              if(conflict>=(form.barberId?1:bc)){alert("❌ مدة الخدمة المختارة تتعارض مع حجز موجود في هذا الوقت، ارجع واختر وقتاً آخر");setBooking(false);return;}
+              if(conflict>=(form.barberId?1:bc)){alert(i18n.t('ui.service_conflict'));setBooking(false);return;}
               try{await addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total,reminderMins,totalDuration},rescheduleId||null);}catch(e){setBooking(false);}
             }
           }}>{booking?"⏳...":form.waitSlot?t("book.confirm_wait_btn"):rescheduleId?t("book.reschedule_btn"):t("book.confirm_btn")}</button>
@@ -3790,12 +3857,12 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
       {salon.barbers&&salon.barbers.length>0&&(
         <div style={{background:"var(--surface-1)",borderRadius:14,padding:"12px",border:"1px solid var(--border-ui)",marginBottom:14}}>
           <div style={{marginBottom:10}}>
-            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:5}}><IconBarberPole size={12}/>أداء الحلاقين</div>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:5}}><IconBarberPole size={12}/>{t('ui.barbers_perf')}</div>
             <div style={{display:"flex",gap:6}}>
               {/* تاب اليوم */}
               <div style={{flex:1,position:"relative"}}>
                 <button onClick={()=>{setBarberPeriod("day");setShowBarberDayPicker(v=>!v);setShowBarberMonthPicker(false);setShowBarberYearPicker(false);}} style={{width:"100%",padding:"5px 6px",borderRadius:9,border:`1.5px solid ${barberPeriod==="day"?"var(--p)":"var(--border-ui)"}`,background:barberPeriod==="day"?"var(--pa12)":"transparent",color:barberPeriod==="day"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"space-between",gap:2}}>
-                  <span>اليوم</span>
+                  <span>{t('ui.today')}</span>
                   {barberDay!==todayDefault&&<span onClick={(e)=>{e.stopPropagation();setBarberDay(todayDefault);}} style={{display:"inline-flex"}}><IconClose size={9} color="#e74c3c"/></span>}
                 </button>
                 {barberPeriod==="day"&&showBarberDayPicker&&(
@@ -3840,7 +3907,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
               </div>
             </div>
           </div>
-          {loadingStats&&<div style={{textAlign:"center",padding:"6px",color:"var(--text-muted)",fontSize:11}}>جاري التحميل...</div>}
+          {loadingStats&&<div style={{textAlign:"center",padding:"6px",color:"var(--text-muted)",fontSize:11}}>{t('ui.loading')}</div>}
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {[...salon.barbers].sort((a,b)=>{
               const sa=getBarberStats(a.id);const sb=getBarberStats(b.id);
@@ -3866,7 +3933,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
                 <div key={barber.id} style={{borderRadius:12,background:colBg,border:`1.5px solid ${col}44`,padding:"10px 12px",overflow:"hidden"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                     <span style={{fontSize:16,flexShrink:0,display:"flex"}}>{idx<3?<IconMedal size={16} color={medalColors[idx]}/>:<NotifIcon icon="💈" size={16}/>}</span>
-                    <span style={{fontSize:13,fontWeight:700,color:col,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{barber.name||barber.barber_name||"حلاق"}</span>
+                    <span style={{fontSize:13,fontWeight:700,color:col,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{barber.name||barber.barber_name||t('ui.barber_unit')}</span>
                     <div style={{width:42,height:5,background:"rgba(255,255,255,.15)",borderRadius:3,flexShrink:0,overflow:"hidden"}}>
                       <div style={{height:"100%",width:`${(cnt/maxCnt)*100}%`,background:col,borderRadius:3}}/>
                     </div>
@@ -3895,25 +3962,25 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
 
       {/* ── أوقات الذروة ── */}
       <div style={{background:"var(--surface-1)",borderRadius:14,padding:"12px",border:"1px solid var(--border-ui)",marginBottom:14}}>
-        <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10}}>⏰ أوقات الذروة</div>
+        <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10}}>{t('ui.peak_times')}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>أكثر الأوقات</div>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>{t('ui.peak_hours_label')}</div>
             {topHours.length>0?topHours.map(({h,c},i)=>(
               <div key={h} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,padding:"4px 8px",borderRadius:7,background:"rgba(var(--pr),.06)"}}>
                 <span style={{fontSize:11,color:"var(--p)",fontWeight:700}}>{i+1}. {formatH(h)}</span>
                 <span style={{fontSize:10,color:"var(--text-muted)"}}>{c} حجز</span>
               </div>
-            )):<div style={{fontSize:11,color:"var(--text-muted)"}}>لا توجد بيانات بعد</div>}
+            )):<div style={{fontSize:11,color:"var(--text-muted)"}}>{t('ui.no_data')}</div>}
           </div>
           <div>
-            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>أكثر الأيام</div>
+            <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:6}}>{t('ui.peak_days_label')}</div>
             {topDays.length>0?topDays.map(({d,c},i)=>(
               <div key={d} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,padding:"4px 8px",borderRadius:7,background:"rgba(var(--pr),.06)"}}>
                 <span style={{fontSize:11,color:"var(--p)",fontWeight:700}}>{i+1}. {dayNames[d]}</span>
                 <span style={{fontSize:10,color:"var(--text-muted)"}}>{c} حجز</span>
               </div>
-            )):<div style={{fontSize:11,color:"var(--text-muted)"}}>لا توجد بيانات بعد</div>}
+            )):<div style={{fontSize:11,color:"var(--text-muted)"}}>{t('ui.no_data')}</div>}
           </div>
         </div>
       </div>
@@ -3939,9 +4006,9 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
       {topSvcs.length>0&&(
         <div style={{background:"var(--surface-1)",borderRadius:14,padding:"12px",border:"1px solid var(--border-ui)",marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",display:"flex",alignItems:"center",gap:5}}><IconScissors size={12} color="var(--p)"/>أفضل الخدمات</div>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",display:"flex",alignItems:"center",gap:5}}><IconScissors size={12} color="var(--p)"/>{t('ui.top_services')}</div>
             <div style={{display:"flex",gap:4}}>
-              <button onClick={()=>setServicesView("requests")} style={{padding:"3px 8px",borderRadius:8,border:`1px solid ${servicesView==="requests"?"var(--p)":"var(--border-ui)"}`,background:servicesView==="requests"?"var(--pa12)":"transparent",color:servicesView==="requests"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>طلباً</button>
+              <button onClick={()=>setServicesView("requests")} style={{padding:"3px 8px",borderRadius:8,border:`1px solid ${servicesView==="requests"?"var(--p)":"var(--border-ui)"}`,background:servicesView==="requests"?"var(--pa12)":"transparent",color:servicesView==="requests"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t('ui.request_unit')}</button>
               <button onClick={()=>setServicesView("revenue")} style={{padding:"3px 8px",borderRadius:8,border:`1px solid ${servicesView==="revenue"?"var(--p)":"var(--border-ui)"}`,background:servicesView==="revenue"?"var(--pa12)":"transparent",color:servicesView==="revenue"?"var(--p)":"var(--text-muted)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>إيراداً</button>
             </div>
           </div>
@@ -3971,7 +4038,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
           <div style={{fontSize:18,fontWeight:900,color:"var(--p)"}}>{forecastNext} حجز</div>
         </div>
         <div style={{textAlign:"left"}}>
-          <div style={{fontSize:10,color:"var(--text-muted)"}}>هذا الأسبوع</div>
+          <div style={{fontSize:10,color:"var(--text-muted)"}}>{t('ui.this_week')}</div>
           <div style={{fontSize:14,fontWeight:700,color:"var(--p)"}}>{thisWeekBks} حجز</div>
         </div>
       </div>
@@ -3980,7 +4047,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
       <div style={{fontSize:12,fontWeight:800,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="💰" size={14}/> الأرباح</div>
       <div style={{background:"rgba(var(--pr),.12)",borderRadius:14,padding:"14px",border:"1.5px solid rgba(var(--pr),.3)",marginBottom:14}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:12}}>
-          {[{l:"اليوم",app:salonDayRevenue,cash:todayCash},{l:"الشهر",app:salonMonthRevenue,cash:monthCash},{l:"السنة",app:salonYearRevenue,cash:yearCash}].map(({l,app,cash})=>(
+          {[{l:t('ui.today'),app:salonDayRevenue,cash:todayCash},{l:"الشهر",app:salonMonthRevenue,cash:monthCash},{l:"السنة",app:salonYearRevenue,cash:yearCash}].map(({l,app,cash})=>(
             <div key={l} style={{background:"rgba(var(--pr),.1)",borderRadius:10,padding:"8px",textAlign:"center",border:"1px solid rgba(var(--pr),.2)"}}>
               <div style={{fontSize:9,color:"var(--text-muted)",marginBottom:3}}>{l}</div>
               <div style={{fontSize:15,fontWeight:900,color:"var(--p)"}}>{app+cash} ر</div>
@@ -3992,18 +4059,18 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
         <div style={{borderTop:"1px solid rgba(var(--pr),.2)",paddingTop:10}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <div style={{fontSize:11,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:5}}><NotifIcon icon="💵" size={12}/> إيراد كاش اليوم</div>
-            <button onClick={()=>setShowCashForm(!showCashForm)} style={{padding:"4px 10px",borderRadius:8,border:"1px solid rgba(var(--pr),.4)",background:"var(--pa08)",color:"var(--p)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>+ أضف</button>
+            <button onClick={()=>setShowCashForm(!showCashForm)} style={{padding:"4px 10px",borderRadius:8,border:"1px solid rgba(var(--pr),.4)",background:"var(--pa08)",color:"var(--p)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t('ui.add')}</button>
           </div>
           {showCashForm&&(
             <div style={{background:"var(--surface-1)",borderRadius:12,padding:12,marginBottom:10,border:"1px solid var(--border-ui)"}}>
               {salon.barbers?.length>0&&(
                 <div style={{marginBottom:10}}>
-                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}><IconBarberPole size={10}/>الحلاق</label>
+                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}><IconBarberPole size={10}/>{t('ui.barber_select')}</label>
                   <div style={{position:"relative"}}>
                     <select value={cashBarber} onChange={e=>setCashBarber(e.target.value)}
                       style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1.5px solid ${cashBarber?"var(--p)":"var(--border-ui)"}`,background:"var(--surface-2)",color:cashBarber?"var(--p)":"var(--text-muted)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl",appearance:"none",WebkitAppearance:"none",cursor:"pointer",boxSizing:"border-box"}}>
-                      <option value="">بدون حلاق</option>
-                      {salon.barbers.map(b=><option key={b.id} value={b.id}>{b.name||"حلاق"}</option>)}
+                      <option value="">{t('ui.no_barber')}</option>
+                      {salon.barbers.map(b=><option key={b.id} value={b.id}>{b.name||t('ui.barber_unit')}</option>)}
                     </select>
                     <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none"}}>▼</span>
                   </div>
@@ -4015,11 +4082,11 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
                   <div style={{position:"relative"}}>
                     <input type="number" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} placeholder="0"
                       style={{width:"100%",padding:"8px 30px 8px 8px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:14,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",direction:"ltr",textAlign:"right",fontWeight:700}}/>
-                    <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none",fontWeight:600}}>ر.س</span>
+                    <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none",fontWeight:600}}>{t('ui.sar_short')}</span>
                   </div>
                 </div>
                 <div>
-                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}><IconCalendar size={10}/>التاريخ</label>
+                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"var(--text-muted)",marginBottom:4,fontWeight:600}}><IconCalendar size={10}/>{t('ui.date_label')}</label>
                   <input type="date" value={cashDate} onChange={e=>setCashDate(e.target.value)}
                     style={{width:"100%",padding:"8px 6px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:11,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",direction:"ltr"}}/>
                 </div>
@@ -4030,7 +4097,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
                 <button onClick={()=>{setShowCashForm(false);setCashAmount("");setCashNote("");setCashDate(getTodayDateInRiyadh());setCashBarber("");}}
                   style={{padding:"10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><NotifIcon icon="←" size={13}/> رجوع</button>
                 <button onClick={addCashEntry}
-                  style={{padding:"10px",borderRadius:9,border:"none",background:"var(--grad)",color:"var(--p-text,#000)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><IconCheck size={12} color="var(--p-text,#000)"/>موافق</button>
+                  style={{padding:"10px",borderRadius:9,border:"none",background:"var(--grad)",color:"var(--p-text,#000)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><IconCheck size={12} color="var(--p-text,#000)"/>{t('ui.ok')}</button>
               </div>
             </div>
           )}
@@ -4038,7 +4105,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
             <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 8px",borderRadius:8,background:"rgba(var(--pr),.06)",marginBottom:4}}>
               <div style={{display:"flex",flexDirection:"column",gap:1}}>
                 {e.barberName&&<span style={{fontSize:10,color:"var(--p)",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><IconBarberPole size={9}/>{e.barberName}</span>}
-                <span style={{fontSize:11,color:"var(--text-muted)"}}>{e.note||"كاش"}</span>
+                <span style={{fontSize:11,color:"var(--text-muted)"}}>{e.note||t('ui.cash')}</span>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <span style={{fontSize:12,fontWeight:700,color:"var(--p)"}}>{e.amount} ر</span>
@@ -4108,7 +4175,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
     try{
       if(slotDate&&slotTime&&phone){
         const existing=await sb("waiting_list","GET",null,`?select=id&salon_id=eq.${salon.id}&slot_date=eq.${slotDate}&slot_time=eq.${slotTime}&phone=eq.${encodeURIComponent(phone)}&status=eq.waiting&limit=1`).catch(()=>[]);
-        if(Array.isArray(existing)&&existing.length){alert("⏳ هذا العميل بالفعل في قائمة الانتظار لهذا الوقت");return;}
+        if(Array.isArray(existing)&&existing.length){alert(i18n.t('ui.customer_in_waiting'));return;}
       }
       await sb("waiting_list","POST",{salon_id:salon.id,name,phone,slot_date:slotDate||null,slot_time:slotTime||null});
       await loadWaiting();
@@ -4121,7 +4188,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   };
 
   const acceptFromWaiting=async(w)=>{
-    if(!w.slotDate||!w.slotTime){alert("لا يوجد وقت محدد لهذا العميل");return;}
+    if(!w.slotDate||!w.slotTime){alert(i18n.t('ui.no_slot_set'));return;}
     try{
       // إنشاء حجز مقبول مباشرة — status pending ثم نحوّله approved لتجاوز أي trigger يمنع الإدراج المباشر
       const inserted=await sb("bookings","POST",{salon_id:String(salon.id),customer_name:w.name,customer_phone:w.phone,date:w.slotDate,time:w.slotTime,status:"pending",service:"[]",barber_id:"any",barber_name:"",total:0});
@@ -4130,20 +4197,20 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       // تغيير الحالة لـ accepted
       await sb("waiting_list","PATCH",{status:"accepted"},"?id=eq."+w.id);
       // إشعار للمقبول
-      sb("notifications","POST",{target_type:"all",title:"✅ تم قبولك في الموعد",body:`تم حجزك في ${w.slotDate} - ${w.slotTime} في ${salon.name}. تواصل مع الصالون لتأكيد الخدمة.`,icon:"✅"}).catch(()=>{});
+      {const _wa=ntxt(customers.find(c=>c.id===w.customer_id)?.lang||'ar').waitlist_approved(w.slotDate,w.slotTime,salon.name);sb("notifications","POST",{target_type:"all",title:_wa.title,body:_wa.body,icon:"✅"}).catch(()=>{});}
       // رفض المنتظرين للنفس الوقت
       const others=waitingList.filter(x=>x.id!==w.id&&x.slotDate===w.slotDate&&x.slotTime===w.slotTime);
       for(const o of others){
         await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+o.id).catch(()=>{});
-        sb("notifications","POST",{target_type:"all",title:"❌ عذراً، الوقت امتلأ",body:`الوقت ${w.slotDate} - ${w.slotTime} في ${salon.name} تم أخذه من شخص آخر.`,icon:"❌"}).catch(()=>{});
+        {const _wf=ntxt(customers.find(c=>c.id===o.customer_id)?.lang||'ar').waitlist_full(w.slotDate,w.slotTime,salon.name);sb("notifications","POST",{target_type:"all",title:_wf.title,body:_wf.body,icon:"❌"}).catch(()=>{});}
       }
       await loadWaiting();
       if(refreshSalonBookings)refreshSalonBookings(salon.id);
     }catch(e){
       if(e.message&&(e.message.includes("booking_overlap")||e.message.includes("prevent_double_booking")||e.message.includes("23505"))){
-        alert("❌ هذا الوقت ما زال محجوزاً فعلياً — يجب إلغاء الحجز الأصلي أولاً قبل قبول هذا العميل من قائمة الانتظار.");
+        alert(i18n.t('ui.slot_still_booked'));
       }else{
-        alert("❌ خطأ: "+e.message);
+        alert(i18n.t('ui.error_icon_prefix')+e.message);
       }
     }
   };
@@ -4151,9 +4218,9 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   const rejectFromWaiting=async(w)=>{
     try{
       await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+w.id);
-      sb("notifications","POST",{target_type:"all",title:"❌ عذراً، تعذّر الحجز",body:`نأسف، لم نتمكن من تأكيد حجزك في ${salon.name}${w.slotDate?` (${w.slotDate} - ${w.slotTime})`:""}. يمكنك المحاولة مرة أخرى.`,icon:"❌"}).catch(()=>{});
+      {const _wfl=ntxt(customers.find(c=>c.id===w.customer_id)?.lang||'ar').waitlist_failed(salon.name,w.slotDate,w.slotTime);sb("notifications","POST",{target_type:"all",title:_wfl.title,body:_wfl.body,icon:"❌"}).catch(()=>{});}
       await loadWaiting();
-    }catch(e){alert("❌ خطأ: "+e.message);}
+    }catch(e){alert(i18n.t('ui.error_icon_prefix')+e.message);}
   };
 
   const removeFromWaiting=async(id)=>{
@@ -4293,7 +4360,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 
   const applyNewLoc=()=>{
     const r=newR.trim()||form.region; const g=newG.trim()||form.gov; const v=newV.trim();
-    if(!r||!g){alert("أدخل المنطقة والمحافظة على الأقل");return;}
+    if(!r||!g){alert(i18n.t('ui.enter_region_gov'));return;}
     addExtraLoc(r,g,"",v);
     setForm(p=>({...p,region:r,gov:g,village:v||p.village}));
     setNewR("");setNewG("");setNewC("");setNewV("");setShowAddLoc(false);
@@ -4301,7 +4368,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 
   const detect=async()=>{
     if(!navigator.geolocation){
-      alert("⚠ المتصفح لا يدعم تحديد الموقع\nاستخدم \"رابط الخريطة\" بدلاً من ذلك");
+      alert(i18n.t('ui.browser_no_geo_alt'));
       return;
     }
     setDetecting(true);
@@ -4310,7 +4377,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
       if(navigator.permissions){
         const perm=await navigator.permissions.query({name:"geolocation"});
         if(perm.state==="denied"){
-          alert("🚫 إذن الموقع مرفوض\n\nلتفعيله:\n- اضغط على رمز القفل/الموقع بجوار الرابط\n- اختر \"السماح\" للموقع\n- أعد المحاولة\n\nأو استخدم \"رابط الخريطة\" يدوياً");
+          alert(i18n.t('ui.location_denied_steps'));
           setDetecting(false);
           return;
         }
@@ -4449,7 +4516,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           <input style={fi()} placeholder={t("register.village_ph")} value={form.village} onChange={e=>setForm(p=>({...p,village:e.target.value}))}/>
         </F>}
         {form.center&&<button style={G.otherBtn} onClick={()=>setShowAddLoc(s=>!s)}>
-          {showAddLoc?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconClose size={12}/>إغلاق</span>:t("register.add_location_btn")}
+          {showAddLoc?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconClose size={12}/>{t('ui.close')}</span>:t("register.add_location_btn")}
         </button>}
         {showAddLoc&&form.center&&<div style={{background:"rgba(42,109,217,.06)",border:"1px solid #2a6dd9",borderRadius:10,padding:12,marginTop:4}}>
           <div style={{fontSize:12,color:"#6aadff",marginBottom:8,fontWeight:700}}>{t("register.add_location_title")}</div>
@@ -4460,13 +4527,13 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
             <input style={{...fi(),flex:1}} placeholder={t("register.add_location_ph")} value={newC} onChange={e=>setNewC(e.target.value)}/>
             <button style={{background:"var(--grad)",color:"#000",border:"none",borderRadius:9,padding:"0 14px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",flexShrink:0}} onClick={async()=>{
               const val=newC.trim();
-              if(!val){alert("أدخل اسم الحي أو القرية");return;}
+              if(!val){alert(i18n.t('ui.enter_neighborhood'));return;}
               // منع إضافة اسم منطقة أو محافظة أو مركز موجود
               const allRegions=allLoc.map(r=>r.region);
               const allGovs=allLoc.flatMap(r=>r.govs.map(g=>g.name||g));
               const allCenters=allLoc.flatMap(r=>r.govs.flatMap(g=>g.centers||[]));
               if(allRegions.includes(val)||allGovs.includes(val)||allCenters.includes(val)){
-                alert("⚠ هذا الاسم موجود بالفعل كمنطقة أو محافظة أو مركز!\nأدخل اسم الحي أو القرية فقط.");
+                alert(i18n.t('ui.name_duplicate_warning'));
                 return;
               }
               try{
@@ -4475,7 +4542,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
               addExtraLoc(form.region,form.gov,form.center,val);
               setForm(p=>({...p,village:val}));
               setNewC("");setShowAddLoc(false);
-              alert("✅ تم إضافة الحي/القرية بنجاح!");
+              alert(i18n.t('ui.neighborhood_added'));
             }}>{t("register.add_confirm")}</button>
           </div>
         </div>}
@@ -5138,19 +5205,19 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
         {/* الإجمالي - الرقم الأهم، بارز فوق التفاصيل */}
         <div style={{background:"rgba(241,196,15,.10)",borderRadius:12,padding:"14px 8px",border:"1.5px solid rgba(241,196,15,.4)",textAlign:"center",marginBottom:8}}>
           <div style={{fontSize:32,fontWeight:900,color:"#f1c40f",lineHeight:1}}>{_tdTotal}</div>
-          <div style={{fontSize:11,color:"#f1c40f",marginTop:5,fontWeight:700}}>إجمالي اليوم</div>
+          <div style={{fontSize:11,color:"#f1c40f",marginTop:5,fontWeight:700}}>{t('ui.total_today')}</div>
         </div>
 
         {/* إيرادات التطبيق + الكاش */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
           <div style={{background:"rgba(var(--pr),.12)",borderRadius:12,padding:"9px 8px",border:"1px solid rgba(var(--pr),.3)",textAlign:"center"}}>
             <div style={{fontSize:16,fontWeight:800,color:"var(--p)",lineHeight:1}}>{_tdRevenue}</div>
-            <div style={{fontSize:9,color:"var(--p)",marginTop:4,opacity:.8,fontWeight:700}}>إيرادات التطبيق</div>
+            <div style={{fontSize:9,color:"var(--p)",marginTop:4,opacity:.8,fontWeight:700}}>{t('ui.app_revenue')}</div>
           </div>
           <div style={{background:"rgba(39,174,96,.10)",borderRadius:12,padding:"9px 8px",border:"1px solid rgba(39,174,96,.3)",textAlign:"center",position:"relative"}}>
             <button onClick={()=>setShowDashCash(v=>!v)} style={{position:"absolute",top:4,left:4,background:"rgba(39,174,96,.2)",border:"1px solid rgba(39,174,96,.4)",color:"#27ae60",borderRadius:6,fontSize:10,fontWeight:800,padding:"1px 5px",cursor:"pointer",fontFamily:"inherit",lineHeight:1}}>+</button>
             <div style={{fontSize:16,fontWeight:800,color:"#27ae60",lineHeight:1}}>{_tdCash}</div>
-            <div style={{fontSize:9,color:"#27ae60",marginTop:4,fontWeight:700}}>إيرادات الكاش</div>
+            <div style={{fontSize:9,color:"#27ae60",marginTop:4,fontWeight:700}}>{t('ui.cash_revenue')}</div>
           </div>
         </div>
 
@@ -5160,20 +5227,20 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             <div style={{flex:"0 0 90px",position:"relative"}}>
               <input type="number" value={dashCashAmt} onChange={e=>setDashCashAmt(e.target.value)} placeholder="0" onKeyDown={e=>e.key==="Enter"&&addDashCash()}
                 style={{width:"100%",padding:"9px 28px 9px 8px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-primary)",fontSize:14,fontFamily:"'Cairo',sans-serif",outline:"none",boxSizing:"border-box",direction:"ltr",textAlign:"right",fontWeight:700}}/>
-              <span style={{position:"absolute",left:7,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none",fontWeight:600}}>ر.س</span>
+              <span style={{position:"absolute",left:7,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none",fontWeight:600}}>{t('ui.sar_short')}</span>
             </div>
             {salon.barbers?.length>0&&(
               <div style={{flex:1,position:"relative"}}>
                 <select value={dashCashBarber} onChange={e=>setDashCashBarber(e.target.value)}
                   style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1.5px solid ${dashCashBarber?"var(--p)":"var(--border-ui)"}`,background:"var(--surface-2)",color:dashCashBarber?"var(--p)":"var(--text-muted)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl",appearance:"none",WebkitAppearance:"none",cursor:"pointer",boxSizing:"border-box"}}>
-                  <option value="">بدون حلاق</option>
-                  {salon.barbers.map(b=><option key={b.id} value={b.id}>{b.name||"حلاق"}</option>)}
+                  <option value="">{t('ui.no_barber')}</option>
+                  {salon.barbers.map(b=><option key={b.id} value={b.id}>{b.name||t('ui.barber_unit')}</option>)}
                 </select>
                 <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",fontSize:10,color:"var(--text-muted)",pointerEvents:"none"}}>▼</span>
               </div>
             )}
             <button onClick={addDashCash}
-              style={{flex:"0 0 auto",padding:"9px 14px",borderRadius:9,border:"none",background:"var(--grad)",color:"var(--p-text,#000)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}><IconCheck size={12} color="var(--p-text,#000)"/>حفظ</button>
+              style={{flex:"0 0 auto",padding:"9px 14px",borderRadius:9,border:"none",background:"var(--grad)",color:"var(--p-text,#000)",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}><IconCheck size={12} color="var(--p-text,#000)"/>{t('ui.save')}</button>
             <button onClick={()=>{setShowDashCash(false);setDashCashBarber("");setDashCashAmt("");}}
               style={{flex:"0 0 auto",padding:"9px 10px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}><IconClose size={14}/></button>
           </div>
@@ -5206,7 +5273,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18,alignItems:"start"}}>
         <div style={{background:`rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.08)`,border:`1px solid rgba(${_occ>=80?"231,76,60":_occ>=50?"var(--pr)":"39,174,96"},.25)`,borderRadius:12,padding:"10px 12px",display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:14,fontWeight:900,color:_occ>=80?"#e74c3c":_occ>=50?"var(--p)":"#27ae60"}}>{_occ}%</span>
-          <span style={{flex:1,fontSize:11,color:"var(--text-muted)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>نسبة حجز اليوم</span>
+          <span style={{flex:1,fontSize:11,color:"var(--text-muted)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t('ui.today_occupancy')}</span>
           <div style={{width:40,height:7,background:"rgba(var(--pr),.12)",borderRadius:10,overflow:"hidden"}}>
             <div className="occ-bar" style={{height:"100%",width:`${_occ}%`,background:_occ>=80?"linear-gradient(90deg,#c0392b,#e74c3c)":_occ>=50?"linear-gradient(90deg,var(--pd),var(--pl))":"linear-gradient(90deg,#1e8449,#27ae60)",borderRadius:10,transformOrigin:"right center"}}/>
           </div>
@@ -5222,7 +5289,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       {showTomorrow&&(
         <div style={{border:"1px solid var(--border-ui)",borderRadius:12,marginBottom:18,overflow:"hidden",padding:_tmrBks.length?"6px 0":"12px 14px"}}>
           {_tmrBks.length===0?
-            <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center"}}>لا توجد حجوزات غداً حتى الآن</div>
+            <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center"}}>{t('ui.no_tomorrow')}</div>
           :_tmrBks.sort((a,b)=>(a.time||"").localeCompare(b.time||"")).map((b,i)=>(
             <div key={b.id||i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",borderBottom:i<_tmrBks.length-1?"1px solid var(--border-ui)":"none"}}>
               <span style={{fontSize:11,fontWeight:800,color:"var(--p)",minWidth:48}}>{to12h(b.time)}</span>
@@ -5311,7 +5378,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
       setReviews(p=>p.map(r=>r.id===reviewId?{...r,owner_reply:text}:r));
       setReplyDraft(p=>({...p,[reviewId]:""}));
       toast$(t("owner_dash.reply_saved"));
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
     finally{setSaving(null);}
   };
 
@@ -5320,7 +5387,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
       await sb("reviews","PATCH",{owner_reply:null},`?id=eq.${reviewId}`);
       setReviews(p=>p.map(r=>r.id===reviewId?{...r,owner_reply:null}:r));
       toast$(t("owner_dash.reply_deleted"));
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
 
   return(
@@ -5592,19 +5659,19 @@ function PromoPanel({salon,customers,toast$}){
   const[checkingCode,setCheckingCode]=useState(false);
   const applyCode=async()=>{
     const c=codeInput.trim().toUpperCase();
-    if(!c){setCodeError("أدخل الكود أولاً");return;}
+    if(!c){setCodeError(i18n.t('ui.code_enter_first'));return;}
     setCheckingCode(true);
     try{
       const rows=await sb("promo_codes","GET",null,`?code=eq.${c}&active=eq.true&select=id,code,active,code_type,wa_credits,duration_days,expires_at,max_uses,used_count&limit=1`);
-      if(!rows||rows.length===0){setCodeError("الكود غير صحيح أو منتهي");setCodeApplied(false);return;}
+      if(!rows||rows.length===0){setCodeError(i18n.t('ui.code_invalid_expired'));setCodeApplied(false);return;}
       const row=rows[0];
       // تحقق من انتهاء الصلاحية
-      if(row.expires_at&&new Date(row.expires_at)<new Date()){setCodeError("انتهت صلاحية هذا الكود");setCodeApplied(false);return;}
+      if(row.expires_at&&new Date(row.expires_at)<new Date()){setCodeError(i18n.t('ui.code_expired'));setCodeApplied(false);return;}
       // تحقق من عدد الاستخدامات
-      if(row.max_uses!==null&&row.used_count>=row.max_uses){setCodeError("تم استخدام هذا الكود بالكامل");setCodeApplied(false);return;}
+      if(row.max_uses!==null&&row.used_count>=row.max_uses){setCodeError(i18n.t('ui.code_fully_used'));setCodeApplied(false);return;}
       // تحقق من نوع الكود مع الباقة
-      if(row.code_type==="whatsapp"&&pkg!=="gold"){setCodeError("هذا الكود لباقة WhatsApp فقط");setCodeApplied(false);return;}
-      if(row.code_type==="app"&&pkg==="gold"){setCodeError("هذا الكود لباقات التطبيق فقط (برونز أو فضي)");setCodeApplied(false);return;}
+      if(row.code_type==="whatsapp"&&pkg!=="gold"){setCodeError(i18n.t('ui.code_wa_only'));setCodeApplied(false);return;}
+      if(row.code_type==="app"&&pkg==="gold"){setCodeError(i18n.t('ui.code_app_only'));setCodeApplied(false);return;}
       // بدء العداد: إذا الكود له مدة ولم يُفعَّل بعد، سجّل تاريخ انتهاء الصلاحية الآن
       if(row.duration_days&&!row.expires_at){
         const exp=new Date(Date.now()+row.duration_days*86400000).toISOString();
@@ -5614,15 +5681,15 @@ function PromoPanel({salon,customers,toast$}){
       if(row.code_type==="whatsapp"&&row.wa_credits){setWaCredits(row.wa_credits);}
       setAppliedCodeRow(row);
       setCodeApplied(true);setDiscountCode(c);setCodeError("");
-    }catch{setCodeError("تعذر التحقق من الكود، حاول مرة أخرى");}
+    }catch{setCodeError(i18n.t('ui.code_verify_failed'));}
     finally{setCheckingCode(false);}
   };
 
   const submitPromo=async()=>{
-    if(!pkg){toast$("اختر الباقة","err");return;}
-    if(!promoText.trim()){toast$("اختر نص العرض أو اكتبه","err");return;}
+    if(!pkg){toast$(i18n.t('ui.select_package_err'),"err");return;}
+    if(!promoText.trim()){toast$(i18n.t('ui.select_offer_text_err'),"err");return;}
     if(myPromos.some(p=>p.status==="active"&&!p._expired&&p.package===pkg)){
-      toast$("لديك عرض نشط من هذه الباقة، ألغِه أولاً","err");return;
+      toast$(i18n.t('ui.active_promo_exists'),"err");return;
     }
     setSaving(true);
     try{
@@ -5645,7 +5712,7 @@ function PromoPanel({salon,customers,toast$}){
           `?id=eq.${appliedCodeRow.id}`
         ).catch(()=>{});
       }
-      toast$("تم إرسال العرض وتفعيله!");
+      toast$(i18n.t('ui.promo_sent'));
       if(pkg==="bronze"){
         supabase.functions.invoke('send-push-notification',{body:{
           target_type:"broadcast",salon_id:salon.id,
@@ -5666,7 +5733,7 @@ function PromoPanel({salon,customers,toast$}){
       const nowRl=new Date();
       setMyPromos((rows||[]).filter(r=>!delIds.has(r.id)).map(r=>({...r,_expired:!!(r.ends_at&&new Date(r.ends_at)<=nowRl)})));
       setPkg(null);setSelectedTemplate("");setCustomText("");setCodeInput("");setCodeApplied(false);setDiscountCode("");setAppliedCodeRow(null);setTemplateType("discount");setTmplService1("");setTmplService2("");setTmplPercent(20);setTargetCount(null);
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
     finally{setSaving(false);}
   };
 
@@ -5674,8 +5741,8 @@ function PromoPanel({salon,customers,toast$}){
     try{
       await sb("promotions","PATCH",{status:"cancelled"},`?id=eq.${promoId}`);
       setMyPromos(p=>p.map(x=>x.id===promoId?{...x,status:"cancelled"}:x));
-      toast$("تم إلغاء العرض");
-    }catch(e){toast$("خطأ: "+e.message,"err");}
+      toast$(i18n.t('ui.promo_cancelled'));
+    }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
 
   const deletePromo=async(promoId)=>{
@@ -5685,7 +5752,7 @@ function PromoPanel({salon,customers,toast$}){
     ids.add(promoId);
     localStorage.setItem(deletedKey,JSON.stringify([...ids]));
     setMyPromos(p=>p.filter(x=>x.id!==promoId));
-    toast$("تم حذف العرض");
+    toast$(i18n.t('ui.promo_deleted'));
   };
 
   const pkgColor=(p)=>PACKAGES.find(x=>x.id===p)?.color||"var(--text-muted)";
@@ -5694,7 +5761,7 @@ function PromoPanel({salon,customers,toast$}){
 
   const[wizStep,setWizStep]=useState(1);
   const TOTAL_STEPS=4;
-  const stepLabels=["الباقة",pkg==="gold"?"العملاء":"المدة","النص","التأكيد"];
+  const stepLabels=[t('ui.package'),pkg==="gold"?"العملاء":t('ui.duration'),"النص","التأكيد"];
 
   const canNext=wizStep===1?!!pkg:wizStep===2?true:wizStep===3?!!promoText.trim():false;
 
@@ -5748,7 +5815,7 @@ function PromoPanel({salon,customers,toast$}){
       {!loadingPromos&&myPromos.length>0&&(
         <div style={{marginBottom:20}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-            <div style={{fontSize:13,fontWeight:800,color:"var(--p)"}}>عروضي</div>
+            <div style={{fontSize:13,fontWeight:800,color:"var(--p)"}}>{t('ui.my_offers')}</div>
             <div style={{display:"flex",gap:6}}>
               {myPromos.filter(p=>p.status==="active"&&!p._expired).length>0&&(
                 <span style={{fontSize:10,background:"rgba(39,174,96,.15)",color:"#27ae60",padding:"2px 9px",borderRadius:10,fontWeight:700}}>{myPromos.filter(p=>p.status==="active"&&!p._expired).length} نشط</span>
@@ -5778,7 +5845,7 @@ function PromoPanel({salon,customers,toast$}){
                   </div>
                   <span style={{fontSize:10,fontWeight:700,color:isExpired?"#95a5a6":statusColor(pr.status),background:isExpired?"rgba(149,165,166,.15)":`${statusColor(pr.status)}18`,padding:"3px 9px",borderRadius:20}}>{isExpired?"منتهي":<LabelWithIcon label={statusLabel(pr.status)} size={10}/>}</span>
                 </div>
-                {isPending&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:8,lineHeight:1.5}}>هذا العرض لم يكتمل — يمكنك حذفه والمحاولة مجدداً</div>}
+                {isPending&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:8,lineHeight:1.5}}>{t('ui.incomplete_promo')}</div>}
                 <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.6,padding:"8px 10px",background:"rgba(255,255,255,.03)",borderRadius:8,marginBottom:8}}>{pr.promo_text}</div>
                 {!isPending&&pr.ends_at&&(
                   <div style={{fontSize:10,color:urgent?"#e67e22":"var(--text-muted)",marginBottom:8,fontWeight:urgent?700:400,display:"flex",alignItems:"center",gap:4}}>
@@ -5787,13 +5854,13 @@ function PromoPanel({salon,customers,toast$}){
                 )}
                 <div style={{display:"flex",gap:6}}>
                   {pr.status==="active"&&!isExpired&&(
-                    <button onClick={()=>cancelPromo(pr.id)} style={{flex:1,background:"transparent",border:"1px solid #e74c3c44",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>إلغاء العرض</button>
+                    <button onClick={()=>cancelPromo(pr.id)} style={{flex:1,background:"transparent",border:"1px solid #e74c3c44",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{t('ui.cancel_promo')}</button>
                   )}
                   {isPending&&(
-                    <button onClick={()=>deletePromo(pr.id)} style={{flex:1,background:"rgba(231,76,60,.1)",border:"1px solid rgba(231,76,60,.4)",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>🗑 حذف</button>
+                    <button onClick={()=>deletePromo(pr.id)} style={{flex:1,background:"rgba(231,76,60,.1)",border:"1px solid rgba(231,76,60,.4)",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>{t('ui.delete_btn')}</button>
                   )}
                   {(pr.status==="expired"||pr.status==="cancelled")&&(<>
-                    <button onClick={()=>renewPromo(pr)} style={{flex:2,background:"var(--pa12)",border:"1px solid rgba(var(--pr),.3)",color:"var(--p)",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>تجديد العرض <NotifIcon icon="↩" size={11}/></button>
+                    <button onClick={()=>renewPromo(pr)} style={{flex:2,background:"var(--pa12)",border:"1px solid rgba(var(--pr),.3)",color:"var(--p)",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>{t('ui.renew_promo')} <NotifIcon icon="↩" size={11}/></button>
                     <button onClick={()=>deletePromo(pr.id)} style={{flex:1,background:"transparent",border:"1px solid rgba(231,76,60,.35)",color:"#e74c3c",borderRadius:8,padding:"6px 0",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>🗑</button>
                   </>)}
                 </div>
@@ -5806,7 +5873,7 @@ function PromoPanel({salon,customers,toast$}){
       )}
 
       {/* ─── Wizard ─── */}
-      <div style={{fontSize:13,fontWeight:800,color:"var(--p)",marginBottom:14,paddingBottom:10,borderBottom:"1px solid var(--border-ui)"}}>إنشاء عرض جديد</div>
+      <div style={{fontSize:13,fontWeight:800,color:"var(--p)",marginBottom:14,paddingBottom:10,borderBottom:"1px solid var(--border-ui)"}}>{t('ui.new_promo')}</div>
 
       <Progress/>
 
@@ -5840,7 +5907,7 @@ function PromoPanel({salon,customers,toast$}){
       {wizStep===2&&(
         pkg!=="gold"?(
           <div>
-            <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12,textAlign:"center"}}>اختر مدة بث العرض</div>
+            <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12,textAlign:"center"}}>{t('ui.select_duration')}</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {DURATIONS.map(d=>{
                 const sel=durationDays===d.days;
@@ -5857,7 +5924,7 @@ function PromoPanel({salon,customers,toast$}){
         ):(
           <div>
             {/* فئات الاستهداف */}
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8,textAlign:"center"}}>اختر الفئة المستهدفة</div>
+            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8,textAlign:"center"}}>{t('ui.select_target')}</div>
             <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
               {CUSTOMER_GROUPS.map(g=>{
                 const sel=customerGroup===g.key;
@@ -5878,14 +5945,14 @@ function PromoPanel({salon,customers,toast$}){
             <div style={{background:"rgba(212,160,23,.06)",border:"1.5px solid rgba(212,160,23,.3)",borderRadius:14,padding:"14px"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
                 <div style={{flex:1,textAlign:"center"}}>
-                  <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>إجمالي عملائك</div>
+                  <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{t('ui.total_customers')}</div>
                   <button onClick={()=>setTargetCount(totalCustomers)} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>
                     <div style={{fontSize:30,fontWeight:900,color:"rgba(212,160,23,.55)",lineHeight:1}}>{totalCustomers}</div>
                   </button>
                 </div>
                 <div style={{display:"flex",alignItems:"center"}}><IconSwapHorizontal size={18} color="rgba(212,160,23,.4)"/></div>
                 <div style={{flex:1,textAlign:"center"}}>
-                  <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>عدد المستهدف</div>
+                  <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{t('ui.target_count')}</div>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
                     <button onClick={()=>setTargetCount(t=>Math.max(minCount,(t??effectiveTarget)-1))} style={{width:30,height:30,borderRadius:"50%",border:"2px solid rgba(212,160,23,.5)",background:"rgba(212,160,23,.1)",color:"#d4a017",fontSize:18,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit"}}>−</button>
                     <div style={{fontSize:28,fontWeight:900,color:"#d4a017",minWidth:40,textAlign:"center"}}>{effectiveTarget}</div>
@@ -5906,8 +5973,8 @@ function PromoPanel({salon,customers,toast$}){
       {wizStep===3&&(
         <div>
           <div style={{display:"flex",gap:6,marginBottom:14,background:"var(--surface-1)",borderRadius:10,padding:4,border:"1px solid var(--border-ui)"}}>
-            <button onClick={()=>setUseTemplate(true)} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:useTemplate?"var(--pa15)":"transparent",color:useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>قالب جاهز</button>
-            <button onClick={()=>setUseTemplate(false)} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:!useTemplate?"var(--pa15)":"transparent",color:!useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>نص مخصص</button>
+            <button onClick={()=>setUseTemplate(true)} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:useTemplate?"var(--pa15)":"transparent",color:useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t('ui.ready_template')}</button>
+            <button onClick={()=>setUseTemplate(false)} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:!useTemplate?"var(--pa15)":"transparent",color:!useTemplate?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t('ui.custom_text')}</button>
           </div>
           {useTemplate?(
             <div>
@@ -5938,7 +6005,7 @@ function PromoPanel({salon,customers,toast$}){
               <div style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
                 {(templateType==="discount"||templateType==="second")&&(
                   <div style={{marginBottom:10}}>
-                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>نسبة الخصم %</div>
+                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>{t('ui.discount_pct')}</div>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
                       <button onClick={()=>setTmplPercent(p=>Math.max(1,p-5))} style={{width:34,height:34,borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:"var(--text-muted)",cursor:"pointer",fontSize:16,fontFamily:"inherit"}}>−</button>
                       <div style={{flex:1,textAlign:"center",fontSize:22,fontWeight:900,color:"var(--p)"}}>{tmplPercent}%</div>
@@ -5948,7 +6015,7 @@ function PromoPanel({salon,customers,toast$}){
                 )}
                 {(templateType==="discount"||templateType==="free"||templateType==="double")&&(
                   <div style={{marginBottom:templateType==="double"?10:0}}>
-                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>{templateType==="double"?"الخدمة الأولى":"الخدمة"}</div>
+                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>{templateType==="double"?"الخدمة الأولى":t('ui.service_col')}</div>
                     <select value={tmplService1} onChange={e=>setTmplService1(e.target.value)} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:tmplService1?"var(--text-primary)":"var(--text-muted)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl"}}>
                       <option value="">اختر الخدمة</option>
                       {(salon.services||[]).map(s=><option key={s} value={s}>{s}</option>)}
@@ -5957,7 +6024,7 @@ function PromoPanel({salon,customers,toast$}){
                 )}
                 {templateType==="double"&&(
                   <div>
-                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>الخدمة الثانية</div>
+                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>{t('ui.second_service')}</div>
                     <select value={tmplService2} onChange={e=>setTmplService2(e.target.value)} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:tmplService2?"var(--text-primary)":"var(--text-muted)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl"}}>
                       <option value="">اختر الخدمة</option>
                       {(salon.services||[]).map(s=><option key={s} value={s}>{s}</option>)}
@@ -5968,7 +6035,7 @@ function PromoPanel({salon,customers,toast$}){
               {/* معاينة */}
               {smartTemplate&&(
                 <div style={{background:"rgba(var(--gold-rgb),.06)",border:"1px dashed rgba(var(--gold-rgb),.35)",borderRadius:10,padding:"10px 14px"}}>
-                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>معاينة النص:</div>
+                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>{t('ui.preview_text')}</div>
                   <div style={{fontSize:13,color:"var(--text-primary)",lineHeight:1.7}}>{smartTemplate}</div>
                 </div>
               )}
@@ -5980,7 +6047,7 @@ function PromoPanel({salon,customers,toast$}){
               </div>
               {(salon.services||[]).length>0&&(
                 <div style={{marginBottom:10}}>
-                  <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>أضف خدمة (اختياري)</div>
+                  <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:5}}>{t('ui.add_service_opt')}</div>
                   <select value={tmplService1} onChange={e=>{setTmplService1(e.target.value);if(e.target.value)setCustomText(t=>t?t+" "+e.target.value:e.target.value);}} style={{width:"100%",padding:"9px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--surface-2)",color:tmplService1?"var(--text-primary)":"var(--text-muted)",fontSize:12,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"rtl"}}>
                     <option value="">--</option>
                     {(salon.services||[]).map(s=><option key={s} value={s}>{s}</option>)}
@@ -5990,7 +6057,7 @@ function PromoPanel({salon,customers,toast$}){
               <textarea value={customText} onChange={e=>setCustomText(e.target.value)} placeholder="اكتب نص عرضك هنا..." rows={4} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--border-ui)",background:"var(--surface-1)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",direction:"rtl",boxSizing:"border-box",marginBottom:6}}/>
               {customText&&(
                 <div style={{background:"rgba(var(--gold-rgb),.06)",border:"1px dashed rgba(var(--gold-rgb),.35)",borderRadius:10,padding:"10px 14px"}}>
-                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>معاينة:</div>
+                  <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>{t('ui.preview')}</div>
                   <div style={{fontSize:13,color:"var(--text-primary)",lineHeight:1.7}}>
                     {customText.split(/(\d+%?)/).map((part,i)=>
                       /^\d+%?$/.test(part)?<span key={i} style={{color:"var(--p)",fontWeight:800}}>{part}</span>:<span key={i}>{part}</span>
@@ -6008,25 +6075,25 @@ function PromoPanel({salon,customers,toast$}){
         <div>
           {/* ملخص */}
           <div style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.1),rgba(var(--gold-rgb),.04))",border:"1.5px solid rgba(var(--gold-rgb),.3)",borderRadius:16,padding:16,marginBottom:14}}>
-            <div style={{fontSize:12,fontWeight:800,color:"var(--p)",marginBottom:12}}>ملخص الطلب</div>
+            <div style={{fontSize:12,fontWeight:800,color:"var(--p)",marginBottom:12}}>{t('ui.order_summary')}</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:12,color:"var(--text-muted)"}}>الباقة</span>
+                <span style={{fontSize:12,color:"var(--text-muted)"}}>{t('ui.package')}</span>
                 <span style={{fontSize:13,fontWeight:800,color:selectedPkg.color,display:"flex",alignItems:"center",gap:6}}>{selectedPkg.label} <IconMedal size={13} color={selectedPkg.color}/></span>
               </div>
               {pkg==="gold"?(
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontSize:12,color:"var(--text-muted)"}}>الحساب</span>
+                  <span style={{fontSize:12,color:"var(--text-muted)"}}>{t('ui.account')}</span>
                   <span style={{fontSize:12,fontWeight:700}}>{effectiveCustomerCount} عميل × {WHATSAPP_RATE} ر = <span style={{color:"var(--gold)"}}>{basePrice} ر</span></span>
                 </div>
               ):(
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontSize:12,color:"var(--text-muted)"}}>المدة</span>
+                  <span style={{fontSize:12,color:"var(--text-muted)"}}>{t('ui.duration')}</span>
                   <span style={{fontSize:12,fontWeight:700}}>{DURATIONS.find(d=>d.days===durationDays)?.label}</span>
                 </div>
               )}
               <div style={{background:"var(--surface-1)",borderRadius:10,padding:"10px 12px",border:"1px solid var(--border-ui)"}}>
-                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>نص العرض</div>
+                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>{t('ui.offer_text')}</div>
                 <div style={{fontSize:12,color:"var(--text-primary)",lineHeight:1.6}}>{promoText}</div>
               </div>
               {codeApplied&&(
@@ -6037,8 +6104,8 @@ function PromoPanel({salon,customers,toast$}){
               )}
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid rgba(var(--gold-rgb),.2)",marginTop:12}}>
-              <span style={{fontSize:14,fontWeight:700}}>الإجمالي</span>
-              <span style={{fontSize:26,fontWeight:900,color:totalPrice===0?"#27ae60":"var(--gold)"}}>{totalPrice} <span style={{fontSize:13}}>ريال</span></span>
+              <span style={{fontSize:14,fontWeight:700}}>{t('ui.total')}</span>
+              <span style={{fontSize:26,fontWeight:900,color:totalPrice===0?"#27ae60":"var(--gold)"}}>{totalPrice} <span style={{fontSize:13}}>{t('ui.sar')}</span></span>
             </div>
           </div>
 
@@ -6048,11 +6115,11 @@ function PromoPanel({salon,customers,toast$}){
             <div style={{display:"flex",gap:8}}>
               <input value={codeInput} onChange={e=>{setCodeInput(e.target.value.toUpperCase());setCodeApplied(false);setCodeError("");}} placeholder="أدخل الكود" maxLength={20} disabled={codeApplied} style={{flex:1,padding:"10px 12px",borderRadius:9,border:`1.5px solid ${codeApplied?"#27ae60":codeError?"#e74c3c":"var(--border-ui)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"'Cairo',sans-serif",outline:"none",direction:"ltr",textAlign:"center",boxSizing:"border-box",letterSpacing:2}}/>
               <button onClick={codeApplied?()=>{setCodeApplied(false);setCodeInput("");setDiscountCode("");setCodeError("");setAppliedCodeRow(null);}:applyCode} disabled={checkingCode} style={{padding:"10px 16px",borderRadius:9,border:"none",background:codeApplied?"rgba(39,174,96,.15)":"var(--pa15)",color:codeApplied?"#27ae60":"var(--p)",cursor:checkingCode?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700,flexShrink:0,WebkitAppearance:"none",appearance:"none"}}>
-                {checkingCode?"...":codeApplied?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconSuccess size={12}/>مفعّل</span>:"تطبيق"}
+                {checkingCode?"...":codeApplied?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconSuccess size={12}/>{t('ui.active_status')}</span>:"تطبيق"}
               </button>
             </div>
             {codeError&&<div style={{fontSize:11,color:"#e74c3c",marginTop:4}}>{codeError}</div>}
-            {codeApplied&&<div style={{fontSize:11,color:"#27ae60",marginTop:4,display:"flex",alignItems:"center",gap:4}}><IconSuccess size={12}/>العرض مجاني!</div>}
+            {codeApplied&&<div style={{fontSize:11,color:"#27ae60",marginTop:4,display:"flex",alignItems:"center",gap:4}}><IconSuccess size={12}/>{t('ui.free_promo')}</div>}
           </div>
 
           {/* زر الإرسال */}
@@ -6062,11 +6129,11 @@ function PromoPanel({salon,customers,toast$}){
             </div>
           )}
           <button onClick={submitPromo} disabled={saving||!codeApplied} style={{width:"100%",background:saving||!codeApplied?"var(--surface-1)":totalPrice===0?"linear-gradient(135deg,#27ae60,#2ecc71)":"linear-gradient(135deg,#c0392b,#e74c3c)",color:saving||!codeApplied?"var(--text-muted)":"#fff",border:codeApplied?"none":"1.5px solid var(--border-ui)",borderRadius:14,padding:"16px",fontSize:15,fontWeight:800,cursor:saving||!codeApplied?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:8,transition:"all .2s"}}>
-            {saving?"⏳ جاري الإرسال...":codeApplied?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><IconRocket size={15} color="#fff"/> إرسال العرض</span>:"أدخل كود الخصم أولاً"}
+            {saving?t('ui.sending_offer'):codeApplied?<span style={{display:"inline-flex",alignItems:"center",gap:6}}><IconRocket size={15} color="#fff"/> إرسال العرض</span>:"أدخل كود الخصم أولاً"}
           </button>
           <button disabled style={{width:"100%",background:"var(--surface-1)",color:"var(--text-muted)",border:"1.5px solid var(--border-ui)",borderRadius:14,padding:"13px",fontSize:13,fontWeight:700,cursor:"not-allowed",fontFamily:"inherit",marginBottom:4,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:.6}}>
             <span style={{display:"inline-flex",alignItems:"center",gap:5}}><NotifIcon icon="💳" size={14}/> ادفع وأرسل</span>
-            <span style={{fontSize:10,background:"rgba(255,255,255,.08)",padding:"2px 8px",borderRadius:8,display:"inline-flex",alignItems:"center",gap:4}}>قريباً <NotifIcon icon="🔒" size={10}/></span>
+            <span style={{fontSize:10,background:"rgba(255,255,255,.08)",padding:"2px 8px",borderRadius:8,display:"inline-flex",alignItems:"center",gap:4}}>{t('ui.coming_soon')} <NotifIcon icon="🔒" size={10}/></span>
           </button>
         </div>
       )}
@@ -6198,11 +6265,11 @@ function MessagesPanel({salon,toast$}){
         await loadOwnerChat(selCust.customerId,selCust.bookingId);
       }else{
         setOwnerTxt(msgText);
-        toast$&&toast$("فشل الإرسال — أعد المحاولة","err");
+        toast$&&toast$(i18n.t('ui.send_failed'),"err");
       }
     }catch{
       setOwnerTxt(msgText);
-      toast$&&toast$("خطأ في الاتصال","err");
+      toast$&&toast$(i18n.t('ui.connection_error'),"err");
     }
     setOwnerSending(false);
   };
@@ -6243,8 +6310,8 @@ function MessagesPanel({salon,toast$}){
       {msgTab==="customers"&&<>
         {!selCust?(
           <div style={{flex:1,overflowY:"auto"}}>
-            {loadingConv&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:20}}>جاري التحميل...</div>}
-            {!loadingConv&&convList.length===0&&<div style={G.empty}>لا توجد رسائل من العملاء</div>}
+            {loadingConv&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:20}}>{t('ui.loading')}</div>}
+            {!loadingConv&&convList.length===0&&<div style={G.empty}>{t('ui.no_cust_messages')}</div>}
             {convList.map((c,i)=>(
               <div key={i} onClick={()=>setSelCust({customerId:c.customer_id,bookingId:c.booking_id,customerName:c.customer_name||`عميل #${c.customer_id}`})}
                 style={{padding:"10px 12px",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}
@@ -6267,7 +6334,7 @@ function MessagesPanel({salon,toast$}){
               <div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)"}}>{selCust.customerName}</div>
             </div>
             <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
-              {custMsgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:20}}>لا توجد رسائل</div>}
+              {custMsgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:20}}>{t('ui.no_messages')}</div>}
               {custMsgs.map(m=>(
                 <div key={m.id} style={{display:"flex",justifyContent:m.from_customer?"flex-start":"flex-end"}}>
                   <div style={{maxWidth:"80%",padding:"7px 11px",borderRadius:m.from_customer?"12px 12px 12px 2px":"12px 12px 2px 12px",
@@ -6355,7 +6422,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
     }catch(e){
       setMsgs(prev=>prev.filter(m=>m.id!==tempId));
       setTxt(msgText);
-      toast$&&toast$("خطأ في الإرسال — تحقق من الاتصال","err");
+      toast$&&toast$(i18n.t('ui.send_error_check'),"err");
     }
     setSending(false);
   };
@@ -6367,7 +6434,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
         <button style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:0}} onClick={onClose}><IconClose size={14}/></button>
       </div>
       <div style={{height:220,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
-        {msgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:40}}>لا توجد رسائل بعد</div>}
+        {msgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:40}}>{t('ui.no_messages_yet')}</div>}
         {msgs.map(m=>(
           <div key={m.id} style={{display:"flex",justifyContent:m.from_customer?"flex-end":"flex-start"}}>
             <div style={{maxWidth:"80%",padding:"7px 11px",borderRadius:m.from_customer?"12px 12px 2px 12px":"12px 12px 12px 2px",
@@ -6526,11 +6593,11 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     }
   };
   const detectSalonLocation=()=>{
-    if(!navigator.geolocation){toast$&&toast$("المتصفح لا يدعم تحديد الموقع","err");return;}
+    if(!navigator.geolocation){toast$&&toast$(i18n.t('ui.browser_no_geo'),"err");return;}
     setDetecting(true);
     navigator.geolocation.getCurrentPosition(
-      p=>{const lat=p.coords.latitude.toFixed(6),lng=p.coords.longitude.toFixed(6);upd("locationUrl",`https://maps.google.com/?q=${lat},${lng}`);setDetecting(false);toast$&&toast$("تم تحديد الموقع، اضغط حفظ لتأكيده");},
-      ()=>{setDetecting(false);toast$&&toast$("تعذّر تحديد الموقع","err");},
+      p=>{const lat=p.coords.latitude.toFixed(6),lng=p.coords.longitude.toFixed(6);upd("locationUrl",`https://maps.google.com/?q=${lat},${lng}`);setDetecting(false);toast$&&toast$(i18n.t('ui.location_found_save'));},
+      ()=>{setDetecting(false);toast$&&toast$(i18n.t('ui.detect_failed'),"err");},
       {enableHighAccuracy:true,timeout:15000}
     );
   };
@@ -6564,7 +6631,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       await ownerApi("PATCH",patch);
       setSalons(p=>p.map(s=>s.id===salon.id?{...s,name:f.name,phone:f.phone,address:f.address,locationUrl:f.locationUrl,shiftEnabled:f.shiftEnabled,shift1Start:f.shift1Start,shift1End:f.shift1End,shift2Start:f.shift2Start,shift2End:f.shift2End,workStart:f.workStart,workEnd:f.workEnd,services:f.services,prices:{...f.prices,__durations:f.durations},barbers:compressedBarbers,tone:f.tone}:s));
       toast$&&toast$(t("owner_settings.success"));
-    }catch(e){toast$&&toast$("خطأ: "+e.message,"err");}
+    }catch(e){toast$&&toast$(i18n.t('ui.error_prefix')+e.message,"err");}
     setSaving(false);
   };
 
@@ -6572,8 +6639,8 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     try{
       await ownerApi("PATCH",{barbers:f.barbers});
       setSalons(p=>p.map(s=>s.id===salon.id?{...s,barbers:f.barbers}:s));
-      toast$&&toast$("تم حفظ مدد الخدمات");
-    }catch(e){toast$&&toast$("خطأ: "+e.message,"err");}
+      toast$&&toast$(i18n.t('ui.durations_saved'));
+    }catch(e){toast$&&toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
 
   const inp={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
@@ -6606,16 +6673,16 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconPin size={12}/>{t("owner_settings.map_url")}</div>
           {f.locationUrl?(
             <>
-              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconSuccess size={11}/>موقع محفوظ — يظهر للعملاء على الخريطة</div>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconSuccess size={11}/>{t('ui.loc_saved_map')}</div>
               <div style={{display:"flex",gap:8,marginBottom:8}}>
-                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",opacity:detecting?0.6:1,display:"flex",alignItems:"center",justifyContent:"center",gap:5}} disabled={detecting} onClick={detectSalonLocation}>{detecting?"⏳ جاري التحديد...":<><IconRefresh size={11}/>تحديث الموقع</>}</button>
-                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={()=>upd("locationUrl","")}>🗑 حذف الموقع</button>
+                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",opacity:detecting?0.6:1,display:"flex",alignItems:"center",justifyContent:"center",gap:5}} disabled={detecting} onClick={detectSalonLocation}>{detecting?"⏳ جاري التحديد...":<><IconRefresh size={11}/>{t('ui.update_location')}</>}</button>
+                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={()=>upd("locationUrl","")}>{t('ui.delete_location')}</button>
               </div>
             </>
           ):(
             <>
-              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>لا يوجد موقع محفوظ</div>
-              <button style={{width:"100%",padding:"10px",borderRadius:8,background:"transparent",border:"1.5px dashed rgba(var(--pr),.4)",color:"var(--p)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",marginBottom:8,opacity:detecting?0.6:1,display:"flex",alignItems:"center",justifyContent:"center",gap:5}} disabled={detecting} onClick={detectSalonLocation}>{detecting?"⏳ جاري التحديد...":<><IconPin size={12}/>تحديد موقعي الحالي</>}</button>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>{t('ui.no_location')}</div>
+              <button style={{width:"100%",padding:"10px",borderRadius:8,background:"transparent",border:"1.5px dashed rgba(var(--pr),.4)",color:"var(--p)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",marginBottom:8,opacity:detecting?0.6:1,display:"flex",alignItems:"center",justifyContent:"center",gap:5}} disabled={detecting} onClick={detectSalonLocation}>{detecting?"⏳ جاري التحديد...":<><IconPin size={12}/>{t('ui.detect_location')}</>}</button>
             </>
           )}
           <input style={{...inp,fontSize:11}} placeholder="أو أدخل رابط Google Maps يدوياً" value={f.locationUrl} onChange={e=>upd("locationUrl",e.target.value)}/>
@@ -6627,16 +6694,16 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         <div style={{...hdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <span>{t("owner_settings.services_title")}</span>
           {f.services.length>0&&<button onClick={()=>setSortSvcMode(p=>!p)} style={{fontSize:11,padding:"3px 10px",borderRadius:7,border:`1.5px solid ${sortSvcMode?"var(--p)":"var(--border-ui)"}`,background:sortSvcMode?"var(--pa12)":"transparent",color:sortSvcMode?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>
-            {sortSvcMode?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconSuccess size={11}/>انتهى</span>:<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconPencil size={11}/>تعديل</span>}
+            {sortSvcMode?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconSuccess size={11}/>{t('ui.done')}</span>:<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconPencil size={11}/>{t('ui.edit')}</span>}
           </button>}
         </div>
         {f.services.length>0&&<>
           {!sortSvcMode&&(
             <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--border-ui)",marginBottom:10}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 90px 80px",padding:"6px 10px",background:"var(--surface-2)",borderBottom:"1px solid var(--border-ui)"}}>
-                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700}}>الخدمة</span>
-                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>الوقت</span>
-                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>السعر</span>
+                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700}}>{t('ui.service_col')}</span>
+                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>{t('ui.time_col')}</span>
+                <span style={{fontSize:12,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>{t('ui.price_col')}</span>
               </div>
               {f.services.map((svc,i)=>(
                 <div key={svc} style={{display:"grid",gridTemplateColumns:"1fr 90px 80px",gap:6,alignItems:"center",padding:"8px 10px",background:"var(--bg-input)",borderBottom:i<f.services.length-1?"1px solid var(--border-ui)":"none"}}>
@@ -6716,7 +6783,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         <div style={{...hdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <span>{t("owner_settings.barbers_title")}</span>
           {f.barbers.length>0&&<button onClick={()=>setSortMode(p=>!p)} style={{fontSize:11,padding:"3px 10px",borderRadius:7,border:`1.5px solid ${sortMode?"var(--p)":"var(--border-ui)"}`,background:sortMode?"var(--pa12)":"transparent",color:sortMode?"var(--p)":"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>
-            {sortMode?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconSuccess size={11}/>انتهى</span>:<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconPencil size={11}/>تعديل</span>}
+            {sortMode?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconSuccess size={11}/>{t('ui.done')}</span>:<span style={{display:"inline-flex",alignItems:"center",gap:4}}><IconPencil size={11}/>{t('ui.edit')}</span>}
           </button>}
         </div>
         {f.barbers.length===0&&<div style={G.empty}>{t("owner_settings.barbers_empty")}</div>}
@@ -6765,7 +6832,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
               </button>
               {sortMode&&<button style={G.xBtn} onClick={()=>setF(p=>({...p,barbers:p.barbers.filter((_,j)=>j!==i)}))}><IconTrash size={14}/></button>}
             </div>
-            {!sortMode&&b.active===false&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:6,textAlign:"center",fontWeight:600}}>مغلق / مسافر</div>}
+            {!sortMode&&b.active===false&&<div style={{fontSize:10,color:"#e74c3c",marginBottom:6,textAlign:"center",fontWeight:600}}>{t('ui.closed_traveling')}</div>}
             {!sortMode&&b.active!==false&&<>
             {f.services.length>0&&(
               <div style={{marginBottom:10}}>
@@ -6777,9 +6844,9 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                 {expandedBarberDur===i&&<div style={{marginTop:6,background:"var(--bg-input)",borderRadius:9,border:"1px solid var(--border-ui)",overflow:"hidden"}}>
                   {/* رأس */}
                   <div style={{display:"grid",gridTemplateColumns:"1fr 70px 70px",gap:6,padding:"6px 10px",borderBottom:"1px solid var(--border-ui)"}}>
-                    <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700}}>الخدمة</span>
-                    <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>الافتراضي</span>
-                    <span style={{fontSize:10,color:"var(--p)",fontWeight:700,textAlign:"center"}}>وقت الحلاق</span>
+                    <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700}}>{t('ui.service_col')}</span>
+                    <span style={{fontSize:10,color:"var(--text-muted)",fontWeight:700,textAlign:"center"}}>{t('ui.default_col')}</span>
+                    <span style={{fontSize:10,color:"var(--p)",fontWeight:700,textAlign:"center"}}>{t('ui.barber_time')}</span>
                   </div>
                   {f.services.map(svc=>{
                     const defaultDur=f.durations[svc]||"—";
@@ -6792,7 +6859,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                           <input type="number" min="1" max="480" placeholder={String(defaultDur)}
                             style={{flex:1,width:0,padding:"4px 4px",borderRadius:6,border:`1.5px solid ${barberDur?"var(--p)":"var(--border-ui)"}`,background:"var(--surface-1)",color:"var(--p)",fontSize:11,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
                             value={barberDur||""} onChange={e=>{const v=+e.target.value||undefined;setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,durations:{...(x.durations||{}),[svc]:v}}:x)}));}}/>
-                          <span style={{fontSize:9,color:"var(--text-muted)"}}>د</span>
+                          <span style={{fontSize:9,color:"var(--text-muted)"}}>{t('ui.min_short')}</span>
                         </div>
                       </div>
                     );
@@ -6931,24 +6998,24 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
   const[pinErr,setPinErr]=useState("");
   const inp={width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   const saveLocation=()=>{
-    if(!navigator.geolocation){toast$&&toast$("المتصفح لا يدعم تحديد الموقع","err");return;}
+    if(!navigator.geolocation){toast$&&toast$(i18n.t('ui.browser_no_geo'),"err");return;}
     navigator.geolocation.getCurrentPosition(async(p)=>{
       const lat=p.coords.latitude,lng=p.coords.longitude;
       try{
         await sb("customers","PATCH",{location_lat:lat,location_lng:lng},`?id=eq.${customer.id}`);
         setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));
         setCustomerSession(s=>({...s,locationLat:lat,locationLng:lng}));
-        toast$&&toast$("تم حفظ موقعك");
-      }catch{toast$&&toast$("فشل حفظ الموقع","err");}
-    },()=>{toast$&&toast$("🚫 رُفض إذن الموقع","warn");},{enableHighAccuracy:true,timeout:15000});
+        toast$&&toast$(i18n.t('ui.location_saved'));
+      }catch{toast$&&toast$(i18n.t('ui.location_save_failed'),"err");}
+    },()=>{toast$&&toast$(i18n.t('ui.location_denied'),"warn");},{enableHighAccuracy:true,timeout:15000});
   };
   const clearLocation=async()=>{
     try{
       await sb("customers","PATCH",{location_lat:null,location_lng:null},`?id=eq.${customer.id}`);
       setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:null,locationLng:null}:c));
       setCustomerSession(s=>({...s,locationLat:null,locationLng:null}));
-      toast$&&toast$("تم حذف الموقع");
-    }catch{toast$&&toast$("فشل حذف الموقع","err");}
+      toast$&&toast$(i18n.t('ui.location_deleted'));
+    }catch{toast$&&toast$(i18n.t('ui.location_delete_failed'),"err");}
   };
   const save=async()=>{
     if(!name.trim())return;
@@ -6987,19 +7054,19 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
         </div>
         {/* موقعي المحفوظ */}
         <div style={{background:"rgba(var(--pr),.06)",borderRadius:12,padding:14,border:"1px solid rgba(var(--pr),.2)",marginBottom:16}}>
-          <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconPin size={12}/>موقعي المحفوظ</div>
+          <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconPin size={12}/>{t('ui.my_location')}</div>
           {customer?.locationLat&&customer?.locationLng?(
             <>
-              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10,display:"flex",alignItems:"center",gap:4}}><IconSuccess size={11}/>موقع محفوظ — تظهر الصالونات الأقرب إليك تلقائياً</div>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10,display:"flex",alignItems:"center",gap:4}}><IconSuccess size={11}/>{t('ui.loc_saved_offers')}</div>
               <div style={{display:"flex",gap:8}}>
-                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={saveLocation}><IconRefresh size={11}/>تحديث الموقع</button>
-                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={clearLocation}>🗑 حذف الموقع</button>
+                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={saveLocation}><IconRefresh size={11}/>{t('ui.update_location')}</button>
+                <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={clearLocation}>{t('ui.delete_location')}</button>
               </div>
             </>
           ):(
             <>
-              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10}}>لا يوجد موقع محفوظ — احفظ موقعك لترى الصالونات الأقرب تلقائياً</div>
-              <button style={{width:"100%",padding:"10px",borderRadius:8,background:"transparent",border:"1.5px dashed rgba(var(--pr),.4)",color:"var(--p)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={saveLocation}><IconPin size={12}/>حفظ موقعي الحالي</button>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10}}>{t('ui.no_location_long')}</div>
+              <button style={{width:"100%",padding:"10px",borderRadius:8,background:"transparent",border:"1.5px dashed rgba(var(--pr),.4)",color:"var(--p)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={saveLocation}><IconPin size={12}/>{t('ui.save_location')}</button>
             </>
           )}
         </div>
@@ -7333,16 +7400,16 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 
   // تسجيل دخول بالبصمة
   const loginWithBiometric=async()=>{
-    if(!window.PublicKeyCredential){toast$&&toast$("البصمة غير مدعومة","err");return;}
+    if(!window.PublicKeyCredential){toast$&&toast$(i18n.t('ui.biometric_unsupported'),"err");return;}
     try{
       const savedId=localStorage.getItem("dork_biometric_id");
-      if(!savedId){toast$&&toast$("لم تُسجّل البصمة بعد - سجّل دخول أولاً","err");return;}
+      if(!savedId){toast$&&toast$(i18n.t('ui.biometric_not_registered'),"err");return;}
       const c=customers.find(x=>String(x.id)===savedId);
-      if(!c){toast$&&toast$("لم يُعثر على الحساب","err");return;}
-      if(c.blocked){toast$&&toast$("تم حظر هذا الحساب - تواصل مع الدعم","err");return;}
+      if(!c){toast$&&toast$(i18n.t('ui.account_not_found'),"err");return;}
+      if(c.blocked){toast$&&toast$(i18n.t('ui.account_banned'),"err");return;}
       setCustomerSession(c);setView("home");
-      toast$&&toast$("تم الدخول بالبصمة");
-    }catch(e){toast$&&toast$("فشل التحقق","err");}
+      toast$&&toast$(i18n.t('ui.biometric_success'));
+    }catch(e){toast$&&toast$(i18n.t('ui.verification_failed'),"err");}
   };
 
   const loginWithPhone=async()=>{
@@ -7351,16 +7418,16 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(!rows.length){setErr(t("cust_login.err_not_found"));return;}
       const c=toAppCustomer(rows[0]);
-      if(c.blocked){setErr("تم حظر هذا الحساب - تواصل مع الدعم");return;}
+      if(c.blocked){setErr(i18n.t('ui.account_banned'));return;}
       setCustomerSession(c);setView("home");
       localStorage.setItem("dork_biometric_id",String(c.id));
-    }catch(e){setErr("خطأ: "+e.message);}
+    }catch(e){setErr(i18n.t('ui.error_prefix')+e.message);}
   };
 
   const loginWithPin=async()=>{
     const c=customers.find(cust=>{const savedPin=localStorage.getItem(`dork_customer_pin_${cust.id}`);return savedPin&&savedPin===pin;});
     if(!c){setPinErr(t("cust_login.err_pin_wrong"));setPin("");return;}
-    if(c.blocked){setPinErr("تم حظر هذا الحساب - تواصل مع الدعم");setPin("");return;}
+    if(c.blocked){setPinErr(i18n.t('ui.account_banned'));setPin("");return;}
     setCustomerSession(c);setView("home");
     localStorage.setItem("dork_biometric_id",String(c.id));
   };
@@ -7413,16 +7480,16 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(isRateLimit){
         setOtpSent(true);
         setResendTimer(120);
-        setErr("يرجى الانتظار دقيقتين قبل المحاولة مجدداً");
+        setErr(i18n.t('ui.wait_two_mins'));
       }else{
         setOtpSent(false);
         setOtpTimer(0);
         if(error.message.includes("invalid")||error.message.includes("format")){
-          setErr("البريد الإلكتروني غير صحيح");
+          setErr(i18n.t('ui.email_invalid'));
         }else if(error.message.includes("disabled")||error.message.includes("not enabled")){
-          setErr("المصادقة غير مفعّلة - تواصل مع الدعم");
+          setErr(i18n.t('ui.auth_disabled'));
         }else{
-          setErr("خطأ: "+error.message.substring(0,40));
+          setErr(i18n.t('ui.error_prefix')+error.message.substring(0,40));
         }
       }
       return;
@@ -7434,7 +7501,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setOtpTimer(0);
     setOtpExpired(false);
     setResendTimer(60);
-    setErr("خطأ في الاتصال - تحقق من الإنترنت");
+    setErr(i18n.t('ui.connection_internet'));
   }finally{
     setSending(false);
   }
@@ -7458,24 +7525,24 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         if(msg.includes("invalid")||msg.includes("wrong")||msg.includes("incorrect")||msg.includes("not found")){
           setAttempts(prev=>prev+1);
           setOtpCode("");
-          setErr("الكود غير صحيح - تحقق من الكود المرسل لبريدك");
+          setErr(i18n.t('ui.code_wrong_check'));
         }else if((msg.includes("timeout")||msg.includes("expired")||msg.includes("used"))&&otpTimer<=0){
           setOtpExpired(true);
           setOtpTimer(0);
-          setErr("انتهت صلاحية الكود - اضغط على إعادة الإرسال");
+          setErr(i18n.t('ui.code_expired_resend'));
         }else if(msg.includes("blocked")||msg.includes("denied")){
-          setErr("البريد محظور - حاول بريد آخر");
+          setErr(i18n.t('ui.email_banned'));
         }else{
           setAttempts(prev=>prev+1);
           setOtpCode("");
-          setErr("الكود غير صحيح - حاول مجدداً");
+          setErr(i18n.t('ui.code_wrong_retry'));
         }
         return;
       }
       const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(exists.length){setErr(t("cust_login.err_exists"));return;}
       const{data:isBlacklisted}=await supabase.rpc("is_blacklisted",{p_phone:phone.trim(),p_email:email.trim()}).catch(()=>({data:false}));
-      if(isBlacklisted){setErr("لا يمكن إنشاء حساب بهذه البيانات");return;}
+      if(isBlacklisted){setErr(i18n.t('ui.account_blacklisted'));return;}
       const authUid=data?.user?.id||null;
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[],auth_uid:authUid},"");
       const nc=toAppCustomer(rows[0]);
@@ -7483,7 +7550,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       localStorage.setItem("dork_biometric_id",String(nc.id));
       setOtpSent(false);setOtpCode("");setOtpTimer(0);setOtpExpired(false);
       toast$&&toast$(t("cust_login.success_reg"),"success");
-    }catch(e){setErr("خطأ في العملية - حاول مجدداً: "+e.message.substring(0,50));
+    }catch(e){setErr(i18n.t('ui.op_error_retry')+e.message.substring(0,50));
     }finally{setVerifying(false);}
   };
 
@@ -7537,18 +7604,18 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&google_uid=eq.${gUser.googleUid}&limit=1`);
               if(rows.length){
                 const c=toAppCustomer(rows[0]);
-                if(c.blocked){toast$&&toast$("تم حظر هذا الحساب - تواصل مع الدعم","err");return;}
+                if(c.blocked){toast$&&toast$(i18n.t('ui.account_banned'),"err");return;}
                 setCustomerSession(c);setView("home");
                 localStorage.setItem("dork_biometric_id",String(c.id));
               }else{
                 const{data:blEmail}=await supabase.rpc("is_blacklisted",{p_phone:"",p_email:gUser.email}).catch(()=>({data:false}));
-                if(blEmail){toast$&&toast$("لا يمكن إنشاء حساب بهذا البريد","err");return;}
+                if(blEmail){toast$&&toast$(i18n.t('ui.email_not_allowed'),"err");return;}
                 const newRows=await sb("customers","POST",{name:gUser.name,phone:"",email:gUser.email,google_uid:gUser.googleUid,history:[],favs:[]},"");
                 const nc=toAppCustomer(newRows[0]);
                 setCustomerSession(nc);setView("home");
                 localStorage.setItem("dork_biometric_id",String(nc.id));
               }
-            }catch(e){setErr(e.message==="تم إغلاق نافذة Google"?"تم إغلاق النافذة":"خطأ: "+e.message);}
+            }catch(e){setErr(e.message===i18n.t('ui.google_window_closed')?i18n.t('ui.window_closed'):i18n.t('ui.error_prefix')+e.message);}
           }}>
             <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
             {t("cust_login.google_btn")}
@@ -7647,12 +7714,12 @@ function AttendanceView({customer,salons}){
           <div style={{background:classification.bg,borderRadius:12,padding:"12px 16px",
             border:`1.5px solid ${classification.color}`,
             display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span style={{fontSize:13,color:"var(--text-muted)"}}>تصنيفك الإجمالي</span>
+            <span style={{fontSize:13,color:"var(--text-muted)"}}>{t('ui.total_score')}</span>
             <span style={{fontSize:14,fontWeight:800,color:classification.color}}><LabelWithIcon label={classification.label} size={13}/></span>
           </div>
           <div style={{background:"var(--surface-1)",borderRadius:12,padding:"12px 16px",border:"1px solid var(--border-ui)"}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-              <span style={{fontSize:12,color:"var(--text-muted)"}}>نسبة الحضور</span>
+              <span style={{fontSize:12,color:"var(--text-muted)"}}>{t('ui.attendance_rate')}</span>
               <span style={{fontSize:13,fontWeight:700,color:"var(--gold)"}}>{attendRate}%</span>
             </div>
             <div style={{height:8,background:"var(--surface-2)",borderRadius:999,overflow:"hidden"}}>
@@ -7666,9 +7733,9 @@ function AttendanceView({customer,salons}){
         </div>
       )}
       {loading
-        ?<div style={{textAlign:"center",color:"var(--text-muted)",padding:24}}>جاري التحميل...</div>
+        ?<div style={{textAlign:"center",color:"var(--text-muted)",padding:24}}>{t('ui.loading')}</div>
         :displayed.length===0
-          ?<div style={{textAlign:"center",color:"var(--text-muted)",padding:24}}>لا توجد سجلات</div>
+          ?<div style={{textAlign:"center",color:"var(--text-muted)",padding:24}}>{t('ui.no_records')}</div>
           :<div style={{display:"flex",flexDirection:"column",gap:8}}>
             {displayed.map((r,i)=>{
               const st=getStatus(r);
@@ -7728,7 +7795,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
   // حفظ موقع العميل
   const saveCustomerLocation=()=>{
-    if(!navigator.geolocation){toast$&&toast$("المتصفح لا يدعم تحديد الموقع","err");return;}
+    if(!navigator.geolocation){toast$&&toast$(i18n.t('ui.browser_no_geo'),"err");return;}
     navigator.geolocation.getCurrentPosition(async(p)=>{
       const lat=p.coords.latitude,lng=p.coords.longitude;
       try{
@@ -7736,9 +7803,9 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));
         setCustomerSession({...customer,locationLat:lat,locationLng:lng});
         setShowLocPrompt(false);
-        toast$&&toast$("تم حفظ موقعك بنجاح");
-      }catch{toast$&&toast$("فشل حفظ الموقع","err");}
-    },()=>{toast$&&toast$("تعذّر تحديد موقعك","err");},{enableHighAccuracy:true,timeout:15000});
+        toast$&&toast$(i18n.t('ui.location_saved'));
+      }catch{toast$&&toast$(i18n.t('ui.location_save_failed'),"err");}
+    },()=>{toast$&&toast$(i18n.t('ui.location_detect_failed'),"err");},{enableHighAccuracy:true,timeout:15000});
   };
 
   // حذف موقع العميل
@@ -7747,8 +7814,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       await sb("customers","PATCH",{location_lat:null,location_lng:null},`?id=eq.${customer.id}`);
       setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:null,locationLng:null}:c));
       setCustomerSession({...customer,locationLat:null,locationLng:null});
-      toast$&&toast$("تم حذف الموقع");
-    }catch{toast$&&toast$("فشل حذف الموقع","err");}
+      toast$&&toast$(i18n.t('ui.location_deleted'));
+    }catch{toast$&&toast$(i18n.t('ui.location_delete_failed'),"err");}
   };
 
   const favSalons=salons.filter(s=>favSet.has(s.id)&&s.status==="approved");
@@ -7770,7 +7837,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       await sb("customers","PATCH",{name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim()},`?id=eq.${customer.id}`);
       setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim()}:c));
       setEditMode(false);
-    }catch(e){alert("خطأ: "+e.message);}
+    }catch(e){alert(i18n.t('ui.error_prefix')+e.message);}
   };
 
   const confirmDeleteAccount=async()=>{
@@ -7780,7 +7847,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       if(!res.ok)throw new Error(d.error||"فشل حذف الحساب");
       await supabase.auth.signOut().catch(()=>{});
       setCustomerSession(null);setView("entry");
-    }catch(e){alert("خطأ: "+e.message);}
+    }catch(e){alert(i18n.t('ui.error_prefix')+e.message);}
     setShowDeleteConfirm(false);
   };
 
@@ -7793,14 +7860,15 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
     dt.setMinutes(dt.getMinutes()-reminderMins);
     const now=new Date();
     const diff=dt-now;
-    if(diff<=0){alert("الموعد قريب جداً أو مضى!");return;}
+    if(diff<=0){alert(i18n.t('ui.appt_too_close'));return;}
     setTimeout(()=>{
       if(Notification.permission==="granted"){
-        new Notification("تذكير موعدك في دورك ✂",{body:`موعدك في ${h.salonName||"الصالون"} الساعة ${to12h(h.time)}`,icon:"/favicon.ico"});
-      }else{alert(`تذكير: موعدك في ${h.salonName||"الصالون"} الساعة ${to12h(h.time)}`);}
+        new Notification(i18n.t('ui.reminder_notif_title'),{body:i18n.t('ui.reminder_notif_body',{salon:h.salonName||"",time:to12h(h.time)}),icon:"/favicon.ico"});
+      }else{alert(i18n.t('ui.reminder_alert_body',{salon:h.salonName||"",time:to12h(h.time)}));}
     },diff);
     Notification.requestPermission();
-    alert(`✅ سيتم تذكيرك قبل ${reminderMins>=60?reminderMins/60+" ساعة":reminderMins+" دقيقة"} من موعدك!`);
+    const timeStr=reminderMins>=60?`${reminderMins/60} ${i18n.t('ui.hour_unit')}`:`${reminderMins} ${i18n.t('ui.min_unit')}`;
+    alert(i18n.t('ui.reminder_set_for',{time:timeStr}));
   };
 
   const inp2={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
@@ -7847,7 +7915,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <div style={{marginBottom:12}}><label style={{display:"block",fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{t("cust_dash.email_label")}</label><input style={inp2} type="email" value={editEmail} onChange={e=>setEditEmail(e.target.value)}/></div>
           {/* الموقع */}
           <div style={{marginBottom:12}}>
-            <label style={{display:"block",fontSize:11,color:"var(--text-muted)",marginBottom:4}}>الموقع</label>
+            <label style={{display:"block",fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{t('ui.location_label')}</label>
             {customer?.locationLat&&customer?.locationLng?(
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",borderRadius:9,border:"1.5px solid rgba(var(--pr),.4)",background:"rgba(var(--pr),.06)"}}>
                 <span style={{fontSize:11,color:"var(--p)"}}>{t("cust_dash.loc_saved")}</span>
@@ -7959,7 +8027,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                         downloadICS(buildICS({title,date:h.date,time:h.time,durationMins:dur,location:s?.address||"",description:desc}),`booking-${h.date}.ics`);
                       }}>{t("cust_dash.add_calendar")}</button>}
                       {(status==="pending"||status==="approved")&&realBooking?.id&&(<>
-                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>{if(window.confirm("هل تريد تعديل موعدك؟ سيُلغى الحجز الحالي عند تأكيد الجديد.")){setRescheduleId(realBooking.id);setSelSalon(s);setView("book");}}}><IconPencil size={10}/>تعديل</button>
+                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>{if(window.confirm("هل تريد تعديل موعدك؟ سيُلغى الحجز الحالي عند تأكيد الجديد.")){setRescheduleId(realBooking.id);setSelSalon(s);setView("book");}}}><IconPencil size={10}/>{t('ui.edit')}</button>
                         <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={async()=>{
                           if(!window.confirm("هل تريد إلغاء هذا الحجز؟"))return;
                           try{
@@ -7968,12 +8036,12 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                             const window_h=s?.cancellationWindow||2;
                             const lateCancel=hoursUntil>=0&&hoursUntil<window_h;
                             await sb("bookings","PATCH",{status:"cancelled",...(lateCancel?{attendance:"no_show"}:{})},"?id=eq."+realBooking.id);
-                            sb("notifications","POST",{target_type:"all",title:"إلغاء حجز",body:`${customer?.name||""} ألغى حجزه في ${h.date} - ${to12h(h.time)}${lateCancel?" (إلغاء متأخر)":""}`,icon:"🚫"}).catch(()=>{});
+                            {const _bc=ntxt(s?.lang||'ar').booking_cancelled(customer?.name||"",h.date,to12h(h.time),lateCancel);sb("notifications","POST",{target_type:"all",title:_bc.title,body:_bc.body,icon:"🚫"}).catch(()=>{});}
                             await loadData({silent:true});
-                          }catch(e){toast$("خطأ في الإلغاء","err");}
+                          }catch(e){toast$(i18n.t('ui.cancel_error'),"err");}
                         }}><IconBlocked size={13}/> إلغاء</button>
                       </>)}
-                      {h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>تواصل</button>}
+                      {h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>{t('ui.contact')}</button>}
                     </div>
                   </div>
                   {/* التقييم فقط بعد انتهاء وقت الحجز */}
@@ -8014,9 +8082,9 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         const clearAll=()=>{setCustNotifs([]);localStorage.setItem("dork_notifs","[]");localStorage.setItem("dork_notif_count","0");};
         return(
           <div>
-            {notifs.length>0&&<button style={{...G.pageBtn,width:"100%",marginBottom:10,color:"#e74c3c",border:"1px solid #e74c3c"}} onClick={clearAll}>🗑 مسح الكل</button>}
+            {notifs.length>0&&<button style={{...G.pageBtn,width:"100%",marginBottom:10,color:"#e74c3c",border:"1px solid #e74c3c"}} onClick={clearAll}>{t('ui.clear_all')}</button>}
             {notifs.length===0
-              ?<div style={{...G.empty,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconBell size={14} dot={false}/>لا توجد إشعارات</div>
+              ?<div style={{...G.empty,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconBell size={14} dot={false}/>{t('ui.no_notifs')}</div>
               :<div style={{display:"flex",flexDirection:"column",gap:8}}>
                 {notifs.map(n=>(
                   <div key={n.id} style={{...G.bItem,borderRight:`3px solid ${n.read?"var(--border-ui)":"var(--p)"}`}}>
@@ -8039,7 +8107,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       {/* التذكيرات */}
       {tab==="remind"&&(
         <div style={{background:"var(--surface-1)",borderRadius:10,padding:"14px 14px",border:"1px solid var(--border-ui)"}}>
-          <div style={{fontSize:13,color:"var(--p)",fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",gap:5}}><IconBell size={13}/>وقت التذكير بالمواعيد</div>
+          <div style={{fontSize:13,color:"var(--p)",fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",gap:5}}><IconBell size={13}/>{t('ui.reminder_time')}</div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
             {[{v:30,l:"30 د"},{v:60,l:"ساعة"},{v:120,l:"ساعتين"},{v:1440,l:"يوم"}].map(({v,l})=>(
               <button key={v} onClick={()=>setReminderMins(v)}
@@ -8049,7 +8117,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             ))}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:12,color:"var(--text-muted)",flexShrink:0}}>أو أدخل دقائق:</span>
+            <span style={{fontSize:12,color:"var(--text-muted)",flexShrink:0}}>{t('ui.or_enter_mins')}</span>
             <input type="number" min="1" max="10080"
               style={{width:90,padding:"8px 12px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--p)",fontSize:14,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
               value={reminderMins} onChange={e=>setReminderMins(Math.max(1,+e.target.value))}/>
@@ -8064,30 +8132,30 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       {tab==="settings"&&(
         <div style={{background:"var(--surface-1)",borderRadius:13,padding:16,border:"1px solid var(--border-ui)"}}>
           <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:14,paddingBottom:6,borderBottom:"1px solid var(--border-ui)",display:"flex",alignItems:"center",gap:6}}><NotifIcon icon="⚙" size={16}/> إعدادات الحساب</div>
-          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}} onClick={()=>{setTab("settings");setEditMode(true);}}><IconPencil size={13}/>تعديل البيانات</button>
-          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}} onClick={()=>setEditPinStep("select")}><IconLock size={13}/>تغيير رمز PIN</button>
+          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}} onClick={()=>{setTab("settings");setEditMode(true);}}><IconPencil size={13}/>{t('ui.edit_data')}</button>
+          <button style={{...G.sub,background:"transparent",border:"1.5px solid var(--p)",color:"var(--p)",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}} onClick={()=>setEditPinStep("select")}><IconLock size={13}/>{t('ui.change_pin')}</button>
 
           {/* قسم الموقع */}
           <div style={{background:"rgba(var(--gold-rgb),.06)",borderRadius:10,padding:12,border:"1px solid rgba(var(--gold-rgb),.2)",marginBottom:10}}>
-            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconPin size={12}/>موقعي المحفوظ</div>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconPin size={12}/>{t('ui.my_location')}</div>
             {customer?.locationLat&&customer?.locationLng?(
               <>
-                <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10,display:"flex",alignItems:"center",gap:4}}><IconSuccess size={11}/>موقع محفوظ — تظهر الصالونات الأقرب إليك تلقائياً</div>
+                <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10,display:"flex",alignItems:"center",gap:4}}><IconSuccess size={11}/>{t('ui.loc_saved_offers')}</div>
                 <div style={{display:"flex",gap:8}}>
-                  <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={saveCustomerLocation}><IconRefresh size={11}/>تحديث الموقع</button>
-                  <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={clearCustomerLocation}>🗑 حذف الموقع</button>
+                  <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={saveCustomerLocation}><IconRefresh size={11}/>{t('ui.update_location')}</button>
+                  <button style={{flex:1,padding:"9px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"inherit"}} onClick={clearCustomerLocation}>{t('ui.delete_location')}</button>
                 </div>
               </>
             ):(
               <>
-                <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10}}>لا يوجد موقع محفوظ — احفظ موقعك لترى الصالونات الأقرب تلقائياً</div>
-                <button style={{...G.sub,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={saveCustomerLocation}><IconPin size={12}/>حفظ موقعي الحالي</button>
+                <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10}}>{t('ui.no_location_long')}</div>
+                <button style={{...G.sub,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={saveCustomerLocation}><IconPin size={12}/>{t('ui.save_location')}</button>
               </>
             )}
           </div>
 
-          <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13}} onClick={deleteAccount}>🗑 حذف الحساب نهائياً</button>
-          <div style={{fontSize:10,color:"var(--text-muted)",marginTop:8,textAlign:"center"}}>تحذير: حذف الحساب لا يمكن التراجع عنه</div>
+          <button style={{...G.delBtn,width:"100%",padding:12,fontSize:13}} onClick={deleteAccount}>{t('ui.delete_account_btn')}</button>
+          <div style={{fontSize:10,color:"var(--text-muted)",marginTop:8,textAlign:"center"}}>{t('ui.delete_warning')}</div>
         </div>
       )}
 
@@ -8096,8 +8164,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
           <div style={{background:"var(--surface-1)",borderRadius:20,padding:24,maxWidth:350,width:"100%",border:"1.5px solid var(--pa25)"}}>
             {editPinStep==="select"?<>
-              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconLock size={15}/>تغيير رمز PIN</div>
-              <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center",marginBottom:20}}>اختر عدد الأرقام</div>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconLock size={15}/>{t('ui.change_pin')}</div>
+              <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center",marginBottom:20}}>{t('ui.select_pin_digits')}</div>
               <div style={{display:"flex",gap:12,marginBottom:16}}>
                 <button onClick={()=>{setEditPinLength(4);setEditPinStep("enter");}} style={{flex:1,padding:16,borderRadius:12,border:"2px solid var(--p)",background:editPinLength===4?"rgba(var(--gold-rgb),.3)":"transparent",color:"var(--p)",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                   4 أرقام
@@ -8110,11 +8178,11 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أدخل PIN الجديد ({editPinLength} أرقام)</div>
               <input type="password" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editTempPin.length===editPinLength)setEditPinStep("confirm");}} />
             </>:editPinStep==="confirm"?<>
-              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>أعد إدخال PIN للتأكيد</div>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t('ui.confirm_pin')}</div>
               <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr("الأرقام غير متطابقة");}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} />
               {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
               <div style={{display:"flex",gap:8,marginTop:16}}>
-                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$&&toast$("تم تحديث PIN بنجاح");}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$&&toast$(i18n.t('ui.pin_updated'));}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
                   حفظ
                 </button>
                 <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
@@ -8132,11 +8200,11 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
           <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid var(--gold)",borderBottom:"none",boxShadow:"0 -8px 32px rgba(var(--gold-rgb),.15)"}} onClick={e=>e.stopPropagation()}>
             <div style={{textAlign:"center",marginBottom:20}}>
               <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><IconWarning size={36}/></div>
-              <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:6}}>حذف الحساب نهائياً</div>
-              <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.6}}>هل أنت متأكد من رغبتك في حذف حسابك؟</div>
+              <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:6}}>{t('ui.delete_account')}</div>
+              <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.6}}>{t('ui.delete_confirm_msg')}</div>
             </div>
             <div style={{background:"rgba(var(--gold-rgb),.08)",border:"1px solid rgba(var(--gold-rgb),.2)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"#ddd",lineHeight:1.8}}>
-              <div style={{marginBottom:6,fontWeight:700,color:"var(--gold)"}}>سيتم حذف:</div>
+              <div style={{marginBottom:6,fontWeight:700,color:"var(--gold)"}}>{t('ui.will_delete')}</div>
               <div style={{display:"flex",alignItems:"center",gap:6}}><NotifIcon icon="✗" size={11}/> حسابك بشكل نهائي</div>
               <div style={{display:"flex",alignItems:"center",gap:6}}><NotifIcon icon="✗" size={11}/> جميع معلوماتك الشخصية</div>
             </div>
@@ -8144,7 +8212,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <LabelWithIcon label="⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف" size={11}/></div>
             <div style={{display:"flex",gap:10}}>
               <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={()=>setShowDeleteConfirm(false)}><NotifIcon icon="↩️" size={13}/> إلغاء</button>
-              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={confirmDeleteAccount}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><IconTrash size={14} color="#fff"/>حذف نهائياً</span></button>
+              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={confirmDeleteAccount}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><IconTrash size={14} color="#fff"/>{t('ui.delete_final')}</span></button>
             </div>
           </div>
         </div>
@@ -8172,7 +8240,7 @@ function InlineStarRating({rated,comment,onRate}){
   );
   return(
     <div style={{marginTop:8,borderTop:"1px solid #1e1e2e",paddingTop:8}}>
-      <div style={{fontSize:11,color:"#666",marginBottom:5}}>قيّم تجربتك في هذا الصالون:</div>
+      <div style={{fontSize:11,color:"#666",marginBottom:5}}>{t('ui.rate_experience')}</div>
       <div style={{display:"flex",alignItems:"center",gap:3,marginBottom:8}}>
         {[1,2,3,4,5].map(n=>(
           <span key={n}
@@ -8432,7 +8500,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
       </div>}
 
       <div style={{background:"linear-gradient(135deg,var(--pa08),var(--pa05))",borderRadius:13,padding:14,border:"1px solid var(--pa25)",marginTop:4,textAlign:"center"}}>
-        <div style={{fontSize:22,fontWeight:900,color:"var(--p)",letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>دورك <IconScissors size={20} color="var(--p)"/></div>
+        <div style={{fontSize:22,fontWeight:900,color:"var(--p)",letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{t('ui.your_turn')} <IconScissors size={20} color="var(--p)"/></div>
         <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>{t("settings.version")}</div>
       </div>
     </div></div>
