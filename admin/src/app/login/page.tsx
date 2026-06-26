@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { EmojiIcon } from "@/components/Icons";
+import { EmojiIcon, IconEye, IconEyeOff } from "@/components/Icons";
 
 export default function LoginPage() {
   const [useAccount, setUseAccount] = useState(false);
   const [username, setUsername] = useState("");
   const [pwd, setPwd] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -61,14 +62,24 @@ export default function LoginPage() {
 
           <div className="mb-3">
             <label className="block text-sm text-gray-400 mb-2">كلمة المرور</label>
-            <input
-              type="password"
-              value={pwd}
-              onChange={(e) => setPwd(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-navy border border-border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-gold transition-colors"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPwd ? "text" : "password"}
+                value={pwd}
+                onChange={(e) => setPwd(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-navy border border-border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-gold transition-colors pr-11"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd((v) => !v)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gold transition-colors"
+                tabIndex={-1}
+              >
+                {showPwd ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button type="button" onClick={() => setUseAccount((v) => !v)} className="text-xs text-gray-500 hover:text-gold mb-5 block">
