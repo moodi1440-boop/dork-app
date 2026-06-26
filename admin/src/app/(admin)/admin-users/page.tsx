@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { IconEye, IconEyeOff } from "@/components/Icons";
 
 type AdminUser = { id: number; username: string; role: string; is_active: boolean; created_at: string };
 type Me = { username: string; role: string };
@@ -16,6 +17,7 @@ function AddUserForm({ onAdded }: { onAdded: () => void }) {
   const [role, setRole] = useState("editor");
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const submit = async () => {
     setErr("");
@@ -38,8 +40,14 @@ function AddUserForm({ onAdded }: { onAdded: () => void }) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="اسم المستخدم"
           className="bg-navy border border-border rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
-        <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="كلمة المرور (8+ أحرف)"
-          className="bg-navy border border-border rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
+        <div className="relative">
+          <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPassword ? "text" : "password"} placeholder="كلمة المرور (8+ أحرف)"
+            className="w-full bg-navy border border-border rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold pl-9" />
+          <button type="button" onClick={() => setShowPassword((v) => !v)} tabIndex={-1}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gold transition-colors">
+            {showPassword ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+          </button>
+        </div>
         <select value={role} onChange={(e) => setRole(e.target.value)}
           className="bg-navy border border-border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-gold">
           {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}

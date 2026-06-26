@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
-import { EmojiIcon } from "@/components/Icons";
+import { EmojiIcon, IconEye, IconEyeOff } from "@/components/Icons";
 
 export default function PasswordPage() {
   const [pwForm, setPwForm] = useState({ old: "", n1: "", n2: "", err: "" });
   const [pwSaved, setPwSaved] = useState(false);
+  const [showPw, setShowPw] = useState({ old: false, n1: false, n2: false });
 
   const inpCls = "w-full bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold";
 
@@ -25,9 +26,16 @@ export default function PasswordPage() {
           ] as [string, "old" | "n1" | "n2"][]).map(([label, key]) => (
             <div key={key}>
               <label className="block text-xs text-gray-400 mb-1.5 font-semibold">{label}</label>
-              <input type="password" value={pwForm[key]}
-                onChange={(e) => setPwForm((p) => ({ ...p, [key]: e.target.value, err: "" }))}
-                className={inpCls} />
+              <div className="relative">
+                <input type={showPw[key] ? "text" : "password"} value={pwForm[key]}
+                  onChange={(e) => setPwForm((p) => ({ ...p, [key]: e.target.value, err: "" }))}
+                  className={`${inpCls} pl-10`} />
+                <button type="button" tabIndex={-1}
+                  onClick={() => setShowPw((p) => ({ ...p, [key]: !p[key] }))}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gold transition-colors">
+                  {showPw[key] ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+                </button>
+              </div>
             </div>
           ))}
           {pwForm.err && <div className="text-red-400 text-sm font-semibold"><EmojiIcon icon="❌" size={16}/> {pwForm.err}</div>}

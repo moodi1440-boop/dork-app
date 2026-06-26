@@ -1182,6 +1182,18 @@ function IconSwapHorizontal({size=16,color="currentColor"}){
     <line x1="18" y1="16" x2="6" y2="16"/><polyline points="9,13 6,16 9,19"/>
   </svg>);
 }
+function IconEye({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+  </svg>);
+}
+function IconEyeOff({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>);
+}
 function IconRazor({size=16,color="currentColor"}){
   return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <rect x="5.5" y="3" width="13" height="6" rx="2"/><line x1="7.5" y1="6" x2="16.5" y2="6"/><rect x="10" y="9.5" width="4" height="11" rx="1.4"/>
@@ -4894,6 +4906,7 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
   const{t}=useTranslation();
   const[phone,setPhone]=useState("");
   const[pin,setPin]=useState("");
+  const[showPin,setShowPin]=useState(false);
   const[err,setErr]=useState("");
   const[loading,setLoading]=useState(false);
   const login=async()=>{
@@ -4920,7 +4933,7 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
       <div style={G.fc}>
         <SL>{t("owner_login.phone_hint")}</SL>
         <F label={t("owner_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
-        <F label={t("owner_login.pin_label")} error={err}><input style={fi(err)} type="password" inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setErr("");}}/></F>
+        <F label={t("owner_login.pin_label")} error={err}><div style={{position:"relative"}}><input style={{...fi(err),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setErr("");}}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
         <button style={{...G.sub,opacity:loading?0.7:1}} disabled={loading} onClick={login}>{t("owner_login.login_btn")}</button>
       </div>
       <div style={{margin:"0 0 16px",background:"rgba(var(--pr),.06)",border:"1.5px dashed rgba(var(--pr),.4)",borderRadius:13,padding:"18px 16px",textAlign:"center"}}>
@@ -7043,7 +7056,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[phone,setPhone]=useState(""); const[name,setName]=useState("");
   const[email,setEmail]=useState(""); const[pass,setPass]=useState("");
   const[err,setErr]=useState("");
-  const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState("");
+  const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState(""); const[showPin,setShowPin]=useState(false);
  const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
   const[otpTimer,setOtpTimer]=useState(0);
@@ -7235,7 +7248,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             <button style={G.sub} onClick={loginWithPhone}>{t("cust_login.login_btn")}</button>
           </>:<>
             <SL>{t("cust_login.pin_title")}</SL>
-            <F label={t("cust_login.pin_label")} error={pinErr}><input style={fi(pinErr)} type="password" inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}} maxLength={6}/></F>
+            <F label={t("cust_login.pin_label")} error={pinErr}><div style={{position:"relative"}}><input style={{...fi(pinErr),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
             <button style={G.sub} onClick={loginWithPin}>{t("cust_login.login_btn")}</button>
           </>}
           <div style={{textAlign:"center",margin:"12px 0",color:"var(--text-muted)",fontSize:12}}>{t("cust_login.or")}</div>

@@ -8,6 +8,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [pwd, setPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
+  const [showUsername, setShowUsername] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -49,14 +50,24 @@ export default function LoginPage() {
           {useAccount && (
             <div className="mb-5">
               <label className="block text-sm text-gray-400 mb-2">اسم المستخدم</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="اسم المستخدم"
-                className="w-full bg-navy border border-border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-gold transition-colors"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showUsername ? "text" : "password"}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="اسم المستخدم"
+                  className="w-full bg-navy border border-border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-gold transition-colors pl-11"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowUsername((v) => !v)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gold transition-colors"
+                  tabIndex={-1}
+                >
+                  {showUsername ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                </button>
+              </div>
             </div>
           )}
 
