@@ -5582,6 +5582,7 @@ function BookingCalendar({salon,onUpdate}){
 //  PROMO PANEL - لوحة العروض الترويجية للصالون
 // ==============================================
 function PromoPanel({salon,customers,toast$}){
+  const{t}=useTranslation();
   const PACKAGES=[
     {id:"bronze",label:"برونز",medal:"🥉",color:"#cd7f32",bg:"rgba(205,127,50,.08)",border:"rgba(205,127,50,.4)",
      icon:"🔔",service:"إشعار push يذهب لعملائك فقط الذين فعّلوا الإشعارات في التطبيق",
@@ -6368,6 +6369,7 @@ function MessagesPanel({salon,toast$}){
 // ==============================================
 
 function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast$}){
+  const{t}=useTranslation();
   const[msgs,setMsgs]=useState([]);
   const[txt,setTxt]=useState("");
   const[sending,setSending]=useState(false);
@@ -7654,6 +7656,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   );
 }
 function AttendanceView({customer,salons}){
+  const{t}=useTranslation();
   const[filter,setFilter]=useState("all");
   const[records,setRecords]=useState([]);
   const[loading,setLoading]=useState(true);
@@ -8226,6 +8229,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
 
 function InlineStarRating({rated,comment,onRate}){
+  const{t}=useTranslation();
   const[hover,setHover]=useState(0);
   const[sel,setSel]=useState(0);
   const[txt,setTxt]=useState("");
