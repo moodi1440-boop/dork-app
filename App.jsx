@@ -3,8 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { useTranslation } from 'react-i18next';
 import { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
-// رقم الإصدار — يُحقن تلقائياً من vite عند كل build
-const APP_VERSION = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "dev";
+// رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
+const APP_VERSION = "L89";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -6054,6 +6054,14 @@ function MessagesPanel({salon,toast$}){
   const[txt,setTxt]=useState("");
   const[sending,setSending]=useState(false);
   const bottomRef=useRef(null);
+  const[msgTab,setMsgTab]=useState("admin"); // "admin" | "customers"
+  const[selCust,setSelCust]=useState(null); // {customerId,bookingId,customerName}
+  const[convList,setConvList]=useState([]);
+  const[loadingConv,setLoadingConv]=useState(false);
+  const[custMsgs,setCustMsgs]=useState([]);
+  const[ownerTxt,setOwnerTxt]=useState("");
+  const[ownerSending,setOwnerSending]=useState(false);
+  const custBottomRef=useRef(null);
 
   // تحميل الرسائل من Supabase
   const loadMsgs=useCallback(async()=>{
@@ -6064,19 +6072,15 @@ function MessagesPanel({salon,toast$}){
         setMsgs(converted);
         try{localStorage.setItem(KEY,JSON.stringify(converted));}catch{}
       }
-    }catch{
-      // الرجوع للرسائل المحلية إذا فشل Supabase
-    }
+    }catch{}
   },[salon.id,KEY]);
 
   useEffect(()=>{loadMsgs();},[loadMsgs]);
 
-  // تعليم رسائل الإدارة كمقروءة عند فتح المحادثة
   useEffect(()=>{
     fetch("/api/mark-messages-read",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({salonId:salon.id})}).catch(()=>{});
   },[salon.id]);
 
-  // Realtime subscription للرسائل الجديدة
   useEffect(()=>{
     const channel=supabase.channel(`msgs-${salon.id}`)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`salon_id=eq.${salon.id}`},()=>{loadMsgs();})
@@ -6095,7 +6099,6 @@ function MessagesPanel({salon,toast$}){
       await sb("messages","POST",{salon_id:salon.id,from_admin:false,text:msgText});
       await loadMsgs();
     }catch{
-      // fallback localStorage
       const m={id:Date.now(),from:"owner",text:msgText,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit",hour12:true})};
       const newMsgs=[...msgs,m];
       setMsgs(newMsgs);
@@ -6104,26 +6107,202 @@ function MessagesPanel({salon,toast$}){
     setSending(false);
   };
 
+  // تحميل قائمة محادثات العملاء
+  const loadConvList=useCallback(async()=>{
+    setLoadingConv(true);
+    try{
+      const res=await fetch("/api/owner-chat?list=1",{credentials:"include"});
+      const data=await res.json();
+      if(Array.isArray(data))setConvList(data);
+    }catch{}
+    setLoadingConv(false);
+  },[]);
+
+  // تحميل رسائل محادثة عميل محدد
+  const loadOwnerChat=useCallback(async(cId,bId)=>{
+    try{
+      const res=await fetch(`/api/owner-chat?customerId=${cId}&bookingId=${bId}`,{credentials:"include"});
+      const data=await res.json();
+      if(Array.isArray(data))setCustMsgs(data);
+    }catch{}
+  },[]);
+
+  useEffect(()=>{if(msgTab==="customers")loadConvList();},[msgTab,loadConvList]);
+  useEffect(()=>{if(selCust)loadOwnerChat(selCust.customerId,selCust.bookingId);},[selCust,loadOwnerChat]);
+  useEffect(()=>{custBottomRef.current?.scrollIntoView({behavior:"smooth"});},[custMsgs]);
+
+  const sendOwnerReply=async()=>{
+    if(!ownerTxt.trim()||ownerSending||!selCust)return;
+    setOwnerSending(true);
+    const msgText=ownerTxt.trim();
+    setOwnerTxt("");
+    try{
+      const res=await fetch("/api/owner-chat",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:selCust.customerId,bookingId:selCust.bookingId,text:msgText})});
+      if(res.ok)await loadOwnerChat(selCust.customerId,selCust.bookingId);
+    }catch{toast$&&toast$("خطأ في الإرسال","err");}
+    setOwnerSending(false);
+  };
+
+  const tabBtn=(v,l)=>(
+    <button onClick={()=>setMsgTab(v)} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${msgTab===v?"var(--p)":"var(--border-ui)"}`,background:msgTab===v?"var(--pa08)":"transparent",color:msgTab===v?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit"}}>{l}</button>
+  );
+
   return(
-    <div style={{display:"flex",flexDirection:"column",height:400}}>
-      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
-        {msgs.length===0&&<div style={G.empty}>{t("messages.empty")}</div>}
+    <div style={{display:"flex",flexDirection:"column",height:440}}>
+      {/* تبويبات */}
+      <div style={{display:"flex",gap:6,marginBottom:10}}>{tabBtn("admin","الإدارة")}{tabBtn("customers","العملاء")}</div>
+
+      {/* تبويب الإدارة */}
+      {msgTab==="admin"&&<>
+        <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+          {msgs.length===0&&<div style={G.empty}>{t("messages.empty")}</div>}
+          {msgs.map(m=>(
+            <div key={m.id} style={{display:"flex",justifyContent:m.from==="owner"?"flex-end":"flex-start"}}>
+              <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="owner"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="owner"?"var(--pa25)":"var(--surface-2)",border:`1px solid ${m.from==="owner"?"var(--pa4)":"var(--border-ui)"}`}}>
+                <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{m.from==="owner"?t("messages.from_you"):t("messages.from_admin")}</div>
+                <div style={{fontSize:13,color:"var(--text-primary)"}}>{m.text}</div>
+                <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}{m.from==="owner"&&m.readAt?` · ✓✓ ${t("messages.read")}`:""}</div>
+              </div>
+            </div>
+          ))}
+          <div ref={bottomRef}/>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <input style={{flex:1,padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
+            placeholder={t("messages.placeholder")} value={txt} onChange={e=>setTxt(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&send()}/>
+          <button style={{...G.sub,width:"auto",padding:"0 16px",marginTop:0,opacity:sending?.5:1}} onClick={send} disabled={sending}>{sending?t("messages.sending"):t("messages.send")}</button>
+        </div>
+      </>}
+
+      {/* تبويب العملاء */}
+      {msgTab==="customers"&&<>
+        {!selCust?(
+          <div style={{flex:1,overflowY:"auto"}}>
+            {loadingConv&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:20}}>جاري التحميل...</div>}
+            {!loadingConv&&convList.length===0&&<div style={G.empty}>لا توجد رسائل من العملاء</div>}
+            {convList.map((c,i)=>(
+              <div key={i} onClick={()=>setSelCust({customerId:c.customer_id,bookingId:c.booking_id,customerName:`عميل #${c.customer_id}`})}
+                style={{padding:"10px 12px",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}
+                onMouseEnter={e=>e.currentTarget.style.background="var(--surface-2)"}
+                onMouseLeave={e=>e.currentTarget.style.background=""}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>عميل #{c.customer_id} <span style={{fontSize:11,color:"var(--text-muted)"}}>حجز #{c.booking_id}</span></div>
+                  <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.text}</div>
+                </div>
+                {!c.read_at&&c.from_customer&&<div style={{width:8,height:8,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>}
+              </div>
+            ))}
+          </div>
+        ):(
+          <div style={{flex:1,display:"flex",flexDirection:"column"}}>
+            <button onClick={()=>{setSelCust(null);loadConvList();}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--p)",fontSize:12,textAlign:"right",marginBottom:6,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+              <IconArrowRight size={12}/>رجوع للقائمة
+            </button>
+            <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
+              {custMsgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:20}}>لا توجد رسائل</div>}
+              {custMsgs.map(m=>(
+                <div key={m.id} style={{display:"flex",justifyContent:m.from_customer?"flex-start":"flex-end"}}>
+                  <div style={{maxWidth:"80%",padding:"7px 11px",borderRadius:m.from_customer?"12px 12px 12px 2px":"12px 12px 2px 12px",
+                    background:m.from_customer?"var(--surface-2)":"var(--pa25)",
+                    border:`1px solid ${m.from_customer?"var(--border-ui)":"var(--pa4)"}`}}>
+                    <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:2}}>{m.from_customer?"العميل":"أنت"}</div>
+                    <div style={{fontSize:13,color:"var(--text-primary)"}}>{m.text}</div>
+                    <div style={{fontSize:9,color:"var(--text-muted)",marginTop:2}}>
+                      {new Date(m.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit",hour12:true})}
+                      {!m.from_customer&&m.read_at?" · ✓✓":""}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div ref={custBottomRef}/>
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              <input style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
+                placeholder="ردّ على العميل..." value={ownerTxt} onChange={e=>setOwnerTxt(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&sendOwnerReply()}/>
+              <button style={{...G.sub,width:"auto",padding:"0 14px",marginTop:0,opacity:ownerSending?.5:1}} onClick={sendOwnerReply} disabled={ownerSending}>{ownerSending?"...":"إرسال"}</button>
+            </div>
+          </div>
+        )}
+      </>}
+    </div>
+  );
+}
+
+// ==============================================
+
+function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose}){
+  const[msgs,setMsgs]=useState([]);
+  const[txt,setTxt]=useState("");
+  const[sending,setSending]=useState(false);
+  const bottomRef=useRef(null);
+
+  const load=useCallback(async()=>{
+    if(!salonId||!customerId||!bookingId)return;
+    try{
+      const data=await sb("customer_messages","GET",null,
+        `?select=id,from_customer,text,created_at,read_at&salon_id=eq.${salonId}&customer_id=eq.${customerId}&booking_id=eq.${bookingId}&order=created_at.asc&limit=50`
+      );
+      if(Array.isArray(data))setMsgs(data);
+    }catch{}
+  },[salonId,customerId,bookingId]);
+
+  useEffect(()=>{load();},[load]);
+
+  useEffect(()=>{
+    const ch=supabase.channel(`cm-${salonId}-${customerId}-${bookingId}`)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages',filter:`salon_id=eq.${salonId}`},()=>{load();})
+      .subscribe();
+    return()=>{supabase.removeChannel(ch);};
+  },[salonId,customerId,bookingId,load]);
+
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+
+  const send=async()=>{
+    if(!txt.trim()||sending)return;
+    setSending(true);
+    const msgText=txt.trim();
+    setTxt("");
+    try{
+      await sb("customer_messages","POST",{
+        salon_id:salonId,customer_id:customerId,booking_id:bookingId,
+        from_customer:true,text:msgText
+      });
+      await load();
+    }catch{toast$&&toast$("خطأ في الإرسال","err");}
+    setSending(false);
+  };
+
+  return(
+    <div style={{background:"var(--surface-1)",border:"1px solid var(--border-ui)",borderRadius:12,padding:12,marginTop:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:12,fontWeight:700,color:"var(--p)",display:"flex",alignItems:"center",gap:5}}><IconChat size={13}/>تواصل مع {salonName||"الصالون"}</div>
+        <button style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:0}} onClick={onClose}><IconClose size={14}/></button>
+      </div>
+      <div style={{height:220,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
+        {msgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:40}}>لا توجد رسائل بعد</div>}
         {msgs.map(m=>(
-          <div key={m.id} style={{display:"flex",justifyContent:m.from==="owner"?"flex-end":"flex-start"}}>
-            <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="owner"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="owner"?"var(--pa25)":"var(--surface-2)",border:`1px solid ${m.from==="owner"?"var(--pa4)":"var(--border-ui)"}`}}>
-              <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{m.from==="owner"?t("messages.from_you"):t("messages.from_admin")}</div>
+          <div key={m.id} style={{display:"flex",justifyContent:m.from_customer?"flex-end":"flex-start"}}>
+            <div style={{maxWidth:"80%",padding:"7px 11px",borderRadius:m.from_customer?"12px 12px 2px 12px":"12px 12px 12px 2px",
+              background:m.from_customer?"var(--pa25)":"var(--surface-2)",
+              border:`1px solid ${m.from_customer?"rgba(var(--pr),.3)":"var(--border-ui)"}`}}>
+              <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:2}}>{m.from_customer?"أنت":salonName||"الصالون"}</div>
               <div style={{fontSize:13,color:"var(--text-primary)"}}>{m.text}</div>
-              <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}{m.from==="owner"&&m.readAt?` · ✓✓ ${t("messages.read")}`:""}</div>
+              <div style={{fontSize:9,color:"var(--text-muted)",marginTop:2}}>
+                {new Date(m.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit",hour12:true})}
+                {m.from_customer&&m.read_at?" · ✓✓":""}
+              </div>
             </div>
           </div>
         ))}
         <div ref={bottomRef}/>
       </div>
-      <div style={{display:"flex",gap:8}}>
-        <input style={{flex:1,padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
-          placeholder={t("messages.placeholder")} value={txt} onChange={e=>setTxt(e.target.value)}
+      <div style={{display:"flex",gap:6}}>
+        <input style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
+          placeholder="اكتب رسالة..." value={txt} onChange={e=>setTxt(e.target.value)}
           onKeyDown={e=>e.key==="Enter"&&send()}/>
-        <button style={{...G.sub,width:"auto",padding:"0 16px",marginTop:0,opacity:sending?.5:1}} onClick={send} disabled={sending}>{sending?t("messages.sending"):t("messages.send")}</button>
+        <button style={{...G.sub,width:"auto",padding:"0 14px",marginTop:0,opacity:sending?.5:1}} onClick={send} disabled={sending}>{sending?"...":"إرسال"}</button>
       </div>
     </div>
   );
@@ -7446,6 +7625,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[reminderMins,setReminderMins]=useState(()=>parseInt(localStorage.getItem("dork_reminder")||"60"));
   useEffect(()=>{localStorage.setItem("dork_reminder",String(reminderMins));},[reminderMins]);
   const[myWaiting,setMyWaiting]=useState([]);
+  const[openChatBookingId,setOpenChatBookingId]=useState(null);
   useEffect(()=>{
     if(!customer?.phone)return;
     sb("waiting_list","GET",null,`?phone=eq.${encodeURIComponent(customer.phone)}&select=id,salon_id,slot_date,slot_time,status,created_at&order=created_at.desc&limit=50`)
@@ -7707,6 +7887,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                           }catch(e){toast$("خطأ في الإلغاء","err");}
                         }}><IconBlocked size={13}/> إلغاء</button>
                       </>)}
+                      {h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>تواصل</button>}
                     </div>
                   </div>
                   {/* التقييم فقط بعد انتهاء وقت الحجز */}
@@ -7734,6 +7915,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:data.rating}:s));
                     }catch(e){console.error(e);}
                   }}/>;})()}
+                  {openChatBookingId===h.bookingId&&h.bookingId&&<CustomerSalonChat salonId={Number(h.salonId)} customerId={customer.id} bookingId={Number(h.bookingId)} salonName={s?.name||h.salonName} onClose={()=>setOpenChatBookingId(null)}/>}
                 </div>
               );
             })}
@@ -7785,7 +7967,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             <input type="number" min="1" max="10080"
               style={{width:90,padding:"8px 12px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--p)",fontSize:14,fontFamily:"inherit",outline:"none",textAlign:"center",direction:"ltr"}}
               value={reminderMins} onChange={e=>setReminderMins(Math.max(1,+e.target.value))}/>
-            <span style={{fontSize:12,color:"var(--text-muted)"}}>دقيقة</span>
+            <span style={{fontSize:12,color:"var(--text-muted)"}}>{reminderMins>=1440?"يوم":reminderMins>=60?(reminderMins%60===0?`${reminderMins/60} ساعة`:`${Math.floor(reminderMins/60)} ساعة و${reminderMins%60} دقيقة`):"دقيقة"}</span>
           </div>
         </div>
       )}

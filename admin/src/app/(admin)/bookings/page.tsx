@@ -24,7 +24,7 @@ export default function BookingsPage() {
   const [bookings,    setBookings]    = useState<Booking[]>([]);
   const [status,      setStatus]      = useState("all");
   const [search,      setSearch]      = useState("");
-  const [dateFilter,  setDateFilter]  = useState("");
+  const [dateFilter,  setDateFilter]  = useState(() => new Date().toISOString().split("T")[0]);
   const [loading,     setLoading]     = useState(true);
 
   const load = useCallback(async () => {
@@ -71,13 +71,29 @@ export default function BookingsPage() {
       <div className="flex flex-wrap gap-3 mb-6">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 بحث باسم العميل أو الجوال..."
           className="flex-1 min-w-48 bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
-        <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
-          className="bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold [color-scheme:dark]" />
-        {dateFilter && (
-          <button onClick={() => setDateFilter("")} className="px-3 py-2 rounded-xl text-xs border border-border text-gray-400 hover:text-white hover:border-gold/20 transition-all">
-            <EmojiIcon icon="✕" size={16}/> إلغاء الفلتر
-          </button>
-        )}
+        {(() => {
+          const MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+          const parts = dateFilter ? dateFilter.split("-").map(Number) : [new Date().getFullYear(), new Date().getMonth()+1, new Date().getDate()];
+          const [cy, cm, cd] = parts;
+          const daysInMonth = new Date(cy, cm, 0).getDate();
+          const years = Array.from({length: 3}, (_, i) => new Date().getFullYear() - 1 + i);
+          const update = (y: number, m: number, d: number) => {
+            const max = new Date(y, m, 0).getDate();
+            setDateFilter(`${y}-${String(m).padStart(2,"0")}-${String(Math.min(d,max)).padStart(2,"0")}`);
+          };
+          const selectCls = "bg-card border border-border rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-gold cursor-pointer";
+          return (<>
+            <select value={cd} onChange={(e) => update(cy, cm, Number(e.target.value))} className={selectCls}>
+              {Array.from({length: daysInMonth}, (_, i) => i+1).map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <select value={cm} onChange={(e) => update(cy, Number(e.target.value), cd)} className={selectCls}>
+              {MONTHS.map((name, i) => <option key={i+1} value={i+1}>{name}</option>)}
+            </select>
+            <select value={cy} onChange={(e) => update(Number(e.target.value), cm, cd)} className={selectCls}>
+              {years.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </>);
+        })()}
         <div className="flex gap-2 flex-wrap">
           {STATUSES.map((s) => (
             <button key={s.value} onClick={() => setStatus(s.value)}
