@@ -7709,8 +7709,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       </>)}
                     </div>
                   </div>
-                  {/* التقييم فقط بعد القبول */}
-                  {status==="approved"&&<InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={async(r,comment)=>{
+                  {/* التقييم فقط بعد انتهاء وقت الحجز */}
+                  {status==="approved"&&(()=>{const _bBarber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));const _svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+((_bBarber?.durations?.[svc])||s?.prices?.__durations?.[svc]||0),0):0;const _dur=realBooking?.slotDuration||h.slotDuration||_svcDur||(s?.slotMin||40);const _start=new Date(`${h.date}T${(h.time||"00:00")}:00`);const _end=new Date(_start.getTime()+_dur*60000);if(new Date()<_end)return null;return<InlineStarRating rated={h.rating||0} comment={h.comment||""} onRate={async(r,comment)=>{
                     // تحديث history العميل محلياً (لعرضه في "حجوزاتي")
                     const rev=[...history].reverse();
                     rev[i]={...rev[i],rating:r,comment};
@@ -7733,7 +7733,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       }
                       setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:data.rating}:s));
                     }catch(e){console.error(e);}
-                  }}/>}
+                  }}/>;})()}
                 </div>
               );
             })}

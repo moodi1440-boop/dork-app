@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
     // يجب وجود حجز معتمد فعليًا لهذا العميل بهذا الصالون بهذا التاريخ، لمنع تقييمات مزوّرة.
     const { data: booking } = await sb
       .from("bookings")
-      .select("id,customer_name")
+      .select("id,customer_name,time,slot_duration_minutes")
       .eq("salon_id", salonId)
       .eq("customer_id", customerId)
       .eq("date", bookingDate)
@@ -43,6 +43,17 @@ module.exports = async (req, res) => {
     if (!booking) {
       res.status(403).json({ error: "لا يوجد حجز معتمد يطابق هذا التقييم" });
       return;
+    }
+
+    // لا يُسمح بالتقييم إلا بعد انتهاء وقت الحجز
+    if (booking.time) {
+      const dur = booking.slot_duration_minutes || 40;
+      const bookingStartDT = new Date(`${bookingDate}T${booking.time}:00+03:00`);
+      const bookingEndDT = new Date(bookingStartDT.getTime() + dur * 60000);
+      if (new Date() < bookingEndDT) {
+        res.status(403).json({ error: "لا يمكن التقييم قبل انتهاء وقت الحجز" });
+        return;
+      }
     }
 
     const { data: existing } = await sb

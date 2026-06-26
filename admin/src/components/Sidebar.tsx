@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { sb } from "@/lib/supabase-browser";
-import { EmojiIcon } from "@/components/Icons";
+import { EmojiIcon, IconChevronLeft } from "@/components/Icons";
 
 const NAV = [
   { href: "/",              label: "لوحة التحكم",      icon: "📊" },
@@ -141,7 +141,7 @@ export default function Sidebar() {
                   {badge > 99 ? "99+" : badge}
                 </span>
               ) : (
-                <span className="text-gray-600 text-xs">‹</span>
+                <IconChevronLeft size={14} color="#4b5563"/>
               )}
             </Link>
           );
@@ -153,7 +153,7 @@ export default function Sidebar() {
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all mb-1 ${path.startsWith("/promo-codes") ? "bg-gold/10 text-gold border border-gold/20" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}>
           <span className="text-base">🎟</span>
           <span className="flex-1">أكواد الخصم</span>
-          {!path.startsWith("/promo-codes") && <span className="text-gray-600 text-xs">‹</span>}
+          {!path.startsWith("/promo-codes") && <IconChevronLeft size={14} color="#4b5563"/>}
         </Link>
         <button onClick={logout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-red-400 hover:bg-red-400/5 transition-all w-full">
