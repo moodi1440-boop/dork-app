@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L92";
+const APP_VERSION = "L93";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -2787,6 +2787,7 @@ function EntryView({setView}){
 //  TOP BAR - 3 role buttons on the LEFT
 // ==============================================
 function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustomerSession,darkMode,setDarkMode,resetHome,showDrawer,setShowDrawer,showSalonDrawer,setShowSalonDrawer}){
+  const{t}=useTranslation();
   // للعميل: هيدر مبسط مع زر ≡
   if(customerSession&&!ownerSession){
     return(
@@ -5581,6 +5582,7 @@ function BookingCalendar({salon,onUpdate}){
 //  PROMO PANEL - لوحة العروض الترويجية للصالون
 // ==============================================
 function PromoPanel({salon,customers,toast$}){
+  const{t}=useTranslation();
   const PACKAGES=[
     {id:"bronze",label:"برونز",medal:"🥉",color:"#cd7f32",bg:"rgba(205,127,50,.08)",border:"rgba(205,127,50,.4)",
      icon:"🔔",service:"إشعار push يذهب لعملائك فقط الذين فعّلوا الإشعارات في التطبيق",
@@ -6367,6 +6369,7 @@ function MessagesPanel({salon,toast$}){
 // ==============================================
 
 function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast$}){
+  const{t}=useTranslation();
   const[msgs,setMsgs]=useState([]);
   const[txt,setTxt]=useState("");
   const[sending,setSending]=useState(false);
@@ -7653,6 +7656,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   );
 }
 function AttendanceView({customer,salons}){
+  const{t}=useTranslation();
   const[filter,setFilter]=useState("all");
   const[records,setRecords]=useState([]);
   const[loading,setLoading]=useState(true);
@@ -7980,7 +7984,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                   </div>
                   <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit"}}
                     onClick={async()=>{
-                      if(!window.confirm("هل تريد إلغاء طلب الانتظار؟"))return;
+                      if(!window.confirm(i18n.t('ui.confirm_cancel_wait')))return;
                       await sb("waiting_list","DELETE",null,"?id=eq."+w.id).catch(()=>{});
                       setMyWaiting(p=>p.filter(x=>x.id!==w.id));
                     }}>{t("cust_dash.cancel_wait")}</button>
@@ -8022,14 +8026,14 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                         const bBarber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));
                         const svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+((bBarber?.durations?.[svc])||s?.prices?.__durations?.[svc]||0),0):0;
                         const dur=realBooking?.slotDuration||h.slotDuration||svcDur||(s?.slotMin||40);
-                        const title=`حجز في ${s?.name||h.salonName||"صالون"}`;
-                        const desc=`الخدمة: ${Array.isArray(h.services)?h.services.join(" + "):h.service||""}`;
+                        const title=i18n.t('ui.ics_booking_title',{salon:s?.name||h.salonName||""});
+                        const desc=i18n.t('ui.service_label')+' '+(Array.isArray(h.services)?h.services.join(" + "):h.service||"");
                         downloadICS(buildICS({title,date:h.date,time:h.time,durationMins:dur,location:s?.address||"",description:desc}),`booking-${h.date}.ics`);
                       }}>{t("cust_dash.add_calendar")}</button>}
                       {(status==="pending"||status==="approved")&&realBooking?.id&&(<>
-                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>{if(window.confirm("هل تريد تعديل موعدك؟ سيُلغى الحجز الحالي عند تأكيد الجديد.")){setRescheduleId(realBooking.id);setSelSalon(s);setView("book");}}}><IconPencil size={10}/>{t('ui.edit')}</button>
+                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>{if(window.confirm(i18n.t('ui.confirm_edit_booking'))){setRescheduleId(realBooking.id);setSelSalon(s);setView("book");}}}><IconPencil size={10}/>{t('ui.edit')}</button>
                         <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={async()=>{
-                          if(!window.confirm("هل تريد إلغاء هذا الحجز؟"))return;
+                          if(!window.confirm(i18n.t('ui.confirm_cancel_booking')))return;
                           try{
                             const bookDT=new Date(`${h.date}T${h.time}`);
                             const hoursUntil=(bookDT-new Date())/(1000*60*60);
@@ -8179,7 +8183,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <input type="password" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editTempPin.length===editPinLength)setEditPinStep("confirm");}} />
             </>:editPinStep==="confirm"?<>
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t('ui.confirm_pin')}</div>
-              <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr("الأرقام غير متطابقة");}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} />
+              <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr(i18n.t('cust_drawer.pin_mismatch'));}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} />
               {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
               <div style={{display:"flex",gap:8,marginTop:16}}>
                 <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$&&toast$(i18n.t('ui.pin_updated'));}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
@@ -8225,6 +8229,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
 
 
 function InlineStarRating({rated,comment,onRate}){
+  const{t}=useTranslation();
   const[hover,setHover]=useState(0);
   const[sel,setSel]=useState(0);
   const[txt,setTxt]=useState("");

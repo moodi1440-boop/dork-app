@@ -1046,6 +1046,10 @@
     "reply_ph": "ردّ على العميل...",
     "message_ph": "اكتب رسالة...",
     "maps_link_ph": "أو أدخل رابط Google Maps يدوياً",
-    "add_comment_ph": "أضف تعليقاً (اختياري)..."
+    "add_comment_ph": "أضف تعليقاً (اختياري)...",
+    "confirm_cancel_wait": "هل تريد إلغاء طلب الانتظار؟",
+    "confirm_edit_booking": "هل تريد تعديل موعدك؟ سيُلغى الحجز الحالي عند تأكيد الجديد.",
+    "confirm_cancel_booking": "هل تريد إلغاء هذا الحجز؟",
+    "ics_booking_title": "حجز في {{salon}}"
   }
 }
