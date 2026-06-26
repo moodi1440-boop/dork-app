@@ -3618,17 +3618,17 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
               if(!form.name||!form.phone){alert(t("book.err_name_phone"));setBooking(false);return;}
               try{
                 const existing=await sb("waiting_list","GET",null,`?select=id,phone&salon_id=eq.${salon.id}&slot_date=eq.${form.date}&slot_time=eq.${form.waitSlot}&status=eq.waiting&limit=1`).catch(()=>[]);
-                if(Array.isArray(existing)&&existing.length){alert(existing[0].phone===form.phone?"⏳ أنت بالفعل في قائمة الانتظار لهذا الوقت":"⏳ قائمة الانتظار لهذا الوقت ممتلئة، اختر وقتاً آخر");setBooking(false);return;}
+                if(Array.isArray(existing)&&existing.length){alert(existing[0].phone===form.phone?i18n.t('ui.already_in_waiting'):i18n.t('ui.waiting_full_alert'));setBooking(false);return;}
                 await sb("waiting_list","POST",{salon_id:salon.id,name:form.name,phone:form.phone,slot_date:form.date,slot_time:form.waitSlot,customer_id:null,status:"waiting"});
                 alert(t("book.success_wait"));
                 if(setView)setView("home");
-              }catch(e){alert("❌ حدث خطأ، حاول مرة أخرى");setBooking(false);}
+              }catch(e){alert(i18n.t('ui.err_try_again'));setBooking(false);}
             }else{
               const slM=toM(form.time);
               const newDur=totalDuration||(salon.slotMin||SLOT_MIN);
               const freshBks=await sb("bookings","GET",null,`?salon_id=eq.${salon.id}&date=eq.${form.date}&status=not.in.(rejected,cancelled)&select=id,barber_id,service,time,slot_duration_minutes&limit=100`).catch(()=>[]);
               const conflict=checkConflict(slM,newDur,Array.isArray(freshBks)?freshBks:[],form.barberId);
-              if(conflict>=(form.barberId?1:bc)){alert("❌ مدة الخدمة المختارة تتعارض مع حجز موجود في هذا الوقت، ارجع واختر وقتاً آخر");setBooking(false);return;}
+              if(conflict>=(form.barberId?1:bc)){alert(i18n.t('ui.service_conflict'));setBooking(false);return;}
               try{await addBooking(salon.id,{...form,barberId:form.barberId||"any",barberName:barber?.name||"",total,reminderMins,totalDuration},rescheduleId||null);}catch(e){setBooking(false);}
             }
           }}>{booking?"⏳...":form.waitSlot?t("book.confirm_wait_btn"):rescheduleId?t("book.reschedule_btn"):t("book.confirm_btn")}</button>
@@ -4175,7 +4175,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
     try{
       if(slotDate&&slotTime&&phone){
         const existing=await sb("waiting_list","GET",null,`?select=id&salon_id=eq.${salon.id}&slot_date=eq.${slotDate}&slot_time=eq.${slotTime}&phone=eq.${encodeURIComponent(phone)}&status=eq.waiting&limit=1`).catch(()=>[]);
-        if(Array.isArray(existing)&&existing.length){alert("⏳ هذا العميل بالفعل في قائمة الانتظار لهذا الوقت");return;}
+        if(Array.isArray(existing)&&existing.length){alert(i18n.t('ui.customer_in_waiting'));return;}
       }
       await sb("waiting_list","POST",{salon_id:salon.id,name,phone,slot_date:slotDate||null,slot_time:slotTime||null});
       await loadWaiting();
@@ -4188,7 +4188,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   };
 
   const acceptFromWaiting=async(w)=>{
-    if(!w.slotDate||!w.slotTime){alert("لا يوجد وقت محدد لهذا العميل");return;}
+    if(!w.slotDate||!w.slotTime){alert(i18n.t('ui.no_slot_set'));return;}
     try{
       // إنشاء حجز مقبول مباشرة — status pending ثم نحوّله approved لتجاوز أي trigger يمنع الإدراج المباشر
       const inserted=await sb("bookings","POST",{salon_id:String(salon.id),customer_name:w.name,customer_phone:w.phone,date:w.slotDate,time:w.slotTime,status:"pending",service:"[]",barber_id:"any",barber_name:"",total:0});
@@ -4208,9 +4208,9 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       if(refreshSalonBookings)refreshSalonBookings(salon.id);
     }catch(e){
       if(e.message&&(e.message.includes("booking_overlap")||e.message.includes("prevent_double_booking")||e.message.includes("23505"))){
-        alert("❌ هذا الوقت ما زال محجوزاً فعلياً — يجب إلغاء الحجز الأصلي أولاً قبل قبول هذا العميل من قائمة الانتظار.");
+        alert(i18n.t('ui.slot_still_booked'));
       }else{
-        alert("❌ خطأ: "+e.message);
+        alert(i18n.t('ui.error_icon_prefix')+e.message);
       }
     }
   };
@@ -4220,7 +4220,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+w.id);
       {const _wfl=ntxt(customers.find(c=>c.id===w.customer_id)?.lang||'ar').waitlist_failed(salon.name,w.slotDate,w.slotTime);sb("notifications","POST",{target_type:"all",title:_wfl.title,body:_wfl.body,icon:"❌"}).catch(()=>{});}
       await loadWaiting();
-    }catch(e){alert("❌ خطأ: "+e.message);}
+    }catch(e){alert(i18n.t('ui.error_icon_prefix')+e.message);}
   };
 
   const removeFromWaiting=async(id)=>{
@@ -4360,7 +4360,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 
   const applyNewLoc=()=>{
     const r=newR.trim()||form.region; const g=newG.trim()||form.gov; const v=newV.trim();
-    if(!r||!g){alert("أدخل المنطقة والمحافظة على الأقل");return;}
+    if(!r||!g){alert(i18n.t('ui.enter_region_gov'));return;}
     addExtraLoc(r,g,"",v);
     setForm(p=>({...p,region:r,gov:g,village:v||p.village}));
     setNewR("");setNewG("");setNewC("");setNewV("");setShowAddLoc(false);
@@ -4368,7 +4368,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
 
   const detect=async()=>{
     if(!navigator.geolocation){
-      alert("⚠ المتصفح لا يدعم تحديد الموقع\nاستخدم \"رابط الخريطة\" بدلاً من ذلك");
+      alert(i18n.t('ui.browser_no_geo_alt'));
       return;
     }
     setDetecting(true);
@@ -4377,7 +4377,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
       if(navigator.permissions){
         const perm=await navigator.permissions.query({name:"geolocation"});
         if(perm.state==="denied"){
-          alert("🚫 إذن الموقع مرفوض\n\nلتفعيله:\n- اضغط على رمز القفل/الموقع بجوار الرابط\n- اختر \"السماح\" للموقع\n- أعد المحاولة\n\nأو استخدم \"رابط الخريطة\" يدوياً");
+          alert(i18n.t('ui.location_denied_steps'));
           setDetecting(false);
           return;
         }
@@ -4527,13 +4527,13 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
             <input style={{...fi(),flex:1}} placeholder={t("register.add_location_ph")} value={newC} onChange={e=>setNewC(e.target.value)}/>
             <button style={{background:"var(--grad)",color:"#000",border:"none",borderRadius:9,padding:"0 14px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",flexShrink:0}} onClick={async()=>{
               const val=newC.trim();
-              if(!val){alert("أدخل اسم الحي أو القرية");return;}
+              if(!val){alert(i18n.t('ui.enter_neighborhood'));return;}
               // منع إضافة اسم منطقة أو محافظة أو مركز موجود
               const allRegions=allLoc.map(r=>r.region);
               const allGovs=allLoc.flatMap(r=>r.govs.map(g=>g.name||g));
               const allCenters=allLoc.flatMap(r=>r.govs.flatMap(g=>g.centers||[]));
               if(allRegions.includes(val)||allGovs.includes(val)||allCenters.includes(val)){
-                alert("⚠ هذا الاسم موجود بالفعل كمنطقة أو محافظة أو مركز!\nأدخل اسم الحي أو القرية فقط.");
+                alert(i18n.t('ui.name_duplicate_warning'));
                 return;
               }
               try{
@@ -4542,7 +4542,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
               addExtraLoc(form.region,form.gov,form.center,val);
               setForm(p=>({...p,village:val}));
               setNewC("");setShowAddLoc(false);
-              alert("✅ تم إضافة الحي/القرية بنجاح!");
+              alert(i18n.t('ui.neighborhood_added'));
             }}>{t("register.add_confirm")}</button>
           </div>
         </div>}
@@ -5659,19 +5659,19 @@ function PromoPanel({salon,customers,toast$}){
   const[checkingCode,setCheckingCode]=useState(false);
   const applyCode=async()=>{
     const c=codeInput.trim().toUpperCase();
-    if(!c){setCodeError("أدخل الكود أولاً");return;}
+    if(!c){setCodeError(i18n.t('ui.code_enter_first'));return;}
     setCheckingCode(true);
     try{
       const rows=await sb("promo_codes","GET",null,`?code=eq.${c}&active=eq.true&select=id,code,active,code_type,wa_credits,duration_days,expires_at,max_uses,used_count&limit=1`);
-      if(!rows||rows.length===0){setCodeError("الكود غير صحيح أو منتهي");setCodeApplied(false);return;}
+      if(!rows||rows.length===0){setCodeError(i18n.t('ui.code_invalid_expired'));setCodeApplied(false);return;}
       const row=rows[0];
       // تحقق من انتهاء الصلاحية
-      if(row.expires_at&&new Date(row.expires_at)<new Date()){setCodeError("انتهت صلاحية هذا الكود");setCodeApplied(false);return;}
+      if(row.expires_at&&new Date(row.expires_at)<new Date()){setCodeError(i18n.t('ui.code_expired'));setCodeApplied(false);return;}
       // تحقق من عدد الاستخدامات
-      if(row.max_uses!==null&&row.used_count>=row.max_uses){setCodeError("تم استخدام هذا الكود بالكامل");setCodeApplied(false);return;}
+      if(row.max_uses!==null&&row.used_count>=row.max_uses){setCodeError(i18n.t('ui.code_fully_used'));setCodeApplied(false);return;}
       // تحقق من نوع الكود مع الباقة
-      if(row.code_type==="whatsapp"&&pkg!=="gold"){setCodeError("هذا الكود لباقة WhatsApp فقط");setCodeApplied(false);return;}
-      if(row.code_type==="app"&&pkg==="gold"){setCodeError("هذا الكود لباقات التطبيق فقط (برونز أو فضي)");setCodeApplied(false);return;}
+      if(row.code_type==="whatsapp"&&pkg!=="gold"){setCodeError(i18n.t('ui.code_wa_only'));setCodeApplied(false);return;}
+      if(row.code_type==="app"&&pkg==="gold"){setCodeError(i18n.t('ui.code_app_only'));setCodeApplied(false);return;}
       // بدء العداد: إذا الكود له مدة ولم يُفعَّل بعد، سجّل تاريخ انتهاء الصلاحية الآن
       if(row.duration_days&&!row.expires_at){
         const exp=new Date(Date.now()+row.duration_days*86400000).toISOString();
@@ -5681,7 +5681,7 @@ function PromoPanel({salon,customers,toast$}){
       if(row.code_type==="whatsapp"&&row.wa_credits){setWaCredits(row.wa_credits);}
       setAppliedCodeRow(row);
       setCodeApplied(true);setDiscountCode(c);setCodeError("");
-    }catch{setCodeError("تعذر التحقق من الكود، حاول مرة أخرى");}
+    }catch{setCodeError(i18n.t('ui.code_verify_failed'));}
     finally{setCheckingCode(false);}
   };
 
@@ -7418,16 +7418,16 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(!rows.length){setErr(t("cust_login.err_not_found"));return;}
       const c=toAppCustomer(rows[0]);
-      if(c.blocked){setErr("تم حظر هذا الحساب - تواصل مع الدعم");return;}
+      if(c.blocked){setErr(i18n.t('ui.account_banned'));return;}
       setCustomerSession(c);setView("home");
       localStorage.setItem("dork_biometric_id",String(c.id));
-    }catch(e){setErr("خطأ: "+e.message);}
+    }catch(e){setErr(i18n.t('ui.error_prefix')+e.message);}
   };
 
   const loginWithPin=async()=>{
     const c=customers.find(cust=>{const savedPin=localStorage.getItem(`dork_customer_pin_${cust.id}`);return savedPin&&savedPin===pin;});
     if(!c){setPinErr(t("cust_login.err_pin_wrong"));setPin("");return;}
-    if(c.blocked){setPinErr("تم حظر هذا الحساب - تواصل مع الدعم");setPin("");return;}
+    if(c.blocked){setPinErr(i18n.t('ui.account_banned'));setPin("");return;}
     setCustomerSession(c);setView("home");
     localStorage.setItem("dork_biometric_id",String(c.id));
   };
@@ -7480,16 +7480,16 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(isRateLimit){
         setOtpSent(true);
         setResendTimer(120);
-        setErr("يرجى الانتظار دقيقتين قبل المحاولة مجدداً");
+        setErr(i18n.t('ui.wait_two_mins'));
       }else{
         setOtpSent(false);
         setOtpTimer(0);
         if(error.message.includes("invalid")||error.message.includes("format")){
-          setErr("البريد الإلكتروني غير صحيح");
+          setErr(i18n.t('ui.email_invalid'));
         }else if(error.message.includes("disabled")||error.message.includes("not enabled")){
-          setErr("المصادقة غير مفعّلة - تواصل مع الدعم");
+          setErr(i18n.t('ui.auth_disabled'));
         }else{
-          setErr("خطأ: "+error.message.substring(0,40));
+          setErr(i18n.t('ui.error_prefix')+error.message.substring(0,40));
         }
       }
       return;
@@ -7501,7 +7501,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setOtpTimer(0);
     setOtpExpired(false);
     setResendTimer(60);
-    setErr("خطأ في الاتصال - تحقق من الإنترنت");
+    setErr(i18n.t('ui.connection_internet'));
   }finally{
     setSending(false);
   }
@@ -7525,24 +7525,24 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         if(msg.includes("invalid")||msg.includes("wrong")||msg.includes("incorrect")||msg.includes("not found")){
           setAttempts(prev=>prev+1);
           setOtpCode("");
-          setErr("الكود غير صحيح - تحقق من الكود المرسل لبريدك");
+          setErr(i18n.t('ui.code_wrong_check'));
         }else if((msg.includes("timeout")||msg.includes("expired")||msg.includes("used"))&&otpTimer<=0){
           setOtpExpired(true);
           setOtpTimer(0);
-          setErr("انتهت صلاحية الكود - اضغط على إعادة الإرسال");
+          setErr(i18n.t('ui.code_expired_resend'));
         }else if(msg.includes("blocked")||msg.includes("denied")){
-          setErr("البريد محظور - حاول بريد آخر");
+          setErr(i18n.t('ui.email_banned'));
         }else{
           setAttempts(prev=>prev+1);
           setOtpCode("");
-          setErr("الكود غير صحيح - حاول مجدداً");
+          setErr(i18n.t('ui.code_wrong_retry'));
         }
         return;
       }
       const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(exists.length){setErr(t("cust_login.err_exists"));return;}
       const{data:isBlacklisted}=await supabase.rpc("is_blacklisted",{p_phone:phone.trim(),p_email:email.trim()}).catch(()=>({data:false}));
-      if(isBlacklisted){setErr("لا يمكن إنشاء حساب بهذه البيانات");return;}
+      if(isBlacklisted){setErr(i18n.t('ui.account_blacklisted'));return;}
       const authUid=data?.user?.id||null;
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[],auth_uid:authUid},"");
       const nc=toAppCustomer(rows[0]);
@@ -7550,7 +7550,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       localStorage.setItem("dork_biometric_id",String(nc.id));
       setOtpSent(false);setOtpCode("");setOtpTimer(0);setOtpExpired(false);
       toast$&&toast$(t("cust_login.success_reg"),"success");
-    }catch(e){setErr("خطأ في العملية - حاول مجدداً: "+e.message.substring(0,50));
+    }catch(e){setErr(i18n.t('ui.op_error_retry')+e.message.substring(0,50));
     }finally{setVerifying(false);}
   };
 
@@ -7615,7 +7615,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
                 setCustomerSession(nc);setView("home");
                 localStorage.setItem("dork_biometric_id",String(nc.id));
               }
-            }catch(e){setErr(e.message==="تم إغلاق نافذة Google"?"تم إغلاق النافذة":"خطأ: "+e.message);}
+            }catch(e){setErr(e.message===i18n.t('ui.google_window_closed')?i18n.t('ui.window_closed'):i18n.t('ui.error_prefix')+e.message);}
           }}>
             <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
             {t("cust_login.google_btn")}
@@ -7837,7 +7837,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       await sb("customers","PATCH",{name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim()},`?id=eq.${customer.id}`);
       setCustomers(p=>p.map(c=>c.id===customer.id?{...c,name:editName.trim(),phone:editPhone.trim(),email:editEmail.trim()}:c));
       setEditMode(false);
-    }catch(e){alert("خطأ: "+e.message);}
+    }catch(e){alert(i18n.t('ui.error_prefix')+e.message);}
   };
 
   const confirmDeleteAccount=async()=>{
@@ -7847,7 +7847,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
       if(!res.ok)throw new Error(d.error||"فشل حذف الحساب");
       await supabase.auth.signOut().catch(()=>{});
       setCustomerSession(null);setView("entry");
-    }catch(e){alert("خطأ: "+e.message);}
+    }catch(e){alert(i18n.t('ui.error_prefix')+e.message);}
     setShowDeleteConfirm(false);
   };
 
@@ -7860,14 +7860,15 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
     dt.setMinutes(dt.getMinutes()-reminderMins);
     const now=new Date();
     const diff=dt-now;
-    if(diff<=0){alert("الموعد قريب جداً أو مضى!");return;}
+    if(diff<=0){alert(i18n.t('ui.appt_too_close'));return;}
     setTimeout(()=>{
       if(Notification.permission==="granted"){
-        new Notification("تذكير موعدك في دورك ✂",{body:`موعدك في ${h.salonName||"الصالون"} الساعة ${to12h(h.time)}`,icon:"/favicon.ico"});
-      }else{alert(`تذكير: موعدك في ${h.salonName||"الصالون"} الساعة ${to12h(h.time)}`);}
+        new Notification(i18n.t('ui.reminder_notif_title'),{body:i18n.t('ui.reminder_notif_body',{salon:h.salonName||"",time:to12h(h.time)}),icon:"/favicon.ico"});
+      }else{alert(i18n.t('ui.reminder_alert_body',{salon:h.salonName||"",time:to12h(h.time)}));}
     },diff);
     Notification.requestPermission();
-    alert(`✅ سيتم تذكيرك قبل ${reminderMins>=60?reminderMins/60+" ساعة":reminderMins+" دقيقة"} من موعدك!`);
+    const timeStr=reminderMins>=60?`${reminderMins/60} ${i18n.t('ui.hour_unit')}`:`${reminderMins} ${i18n.t('ui.min_unit')}`;
+    alert(i18n.t('ui.reminder_set_for',{time:timeStr}));
   };
 
   const inp2={width:"100%",padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
