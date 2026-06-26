@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase";
 import { getAdminPassword } from "@/lib/admin-password";
+import { getCurrentAdmin } from "@/lib/admin-actor";
 
 export async function PATCH(req: NextRequest) {
-  const cookieStore = cookies();
-  const session = cookieStore.get("dork_admin")?.value;
-  if (!session) return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+  const { role } = await getCurrentAdmin();
+  if (role !== "super_admin") return NextResponse.json({ error: "غير مصرح — خاص بالمدير الكامل" }, { status: 403 });
 
   const { oldPassword, newPassword, confirmPassword } = await req.json() as Record<string, string>;
 

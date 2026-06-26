@@ -1,11 +1,26 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EmojiIcon, IconEye, IconEyeOff } from "@/components/Icons";
 
 export default function PasswordPage() {
   const [pwForm, setPwForm] = useState({ old: "", n1: "", n2: "", err: "" });
   const [pwSaved, setPwSaved] = useState(false);
   const [showPw, setShowPw] = useState({ old: false, n1: false, n2: false });
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/me").then((r) => r.json()).then((d) => setRole(d.role ?? ""));
+  }, []);
+
+  if (role !== null && role !== "super_admin") {
+    return (
+      <div className="p-6 lg:p-8 max-w-3xl mx-auto">
+        <div className="bg-card border border-border rounded-2xl p-10 text-center text-gray-400">
+          هذه الصفحة متاحة فقط لحساب المدير الكامل (super_admin).
+        </div>
+      </div>
+    );
+  }
 
   const inpCls = "w-full bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gold";
 

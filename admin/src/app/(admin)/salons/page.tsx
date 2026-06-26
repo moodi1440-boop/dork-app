@@ -16,6 +16,16 @@ interface Salon {
   tone: string;
   social: { enabled: boolean; email: string; whatsapp: string; twitter: string; telegramUser: string };
   bookings: Array<{ status: string; total?: number }>;
+  subscription_end_date: string | null;
+  subscription_months: number;
+}
+
+function subStatus(endDate: string | null): "ملتزم" | "ينتهي قريباً" | "متأخر" | "غير محدد" {
+  if (!endDate) return "غير محدد";
+  const diff = Math.ceil((new Date(endDate).getTime() - Date.now()) / 86400000);
+  if (diff > 7) return "ملتزم";
+  if (diff >= 0) return "ينتهي قريباً";
+  return "متأخر";
 }
 
 const DAYS = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
@@ -85,11 +95,19 @@ function AddSalonModal({ onClose, onAdded }: { onClose: () => void; onAdded: () 
   );
 }
 const STATUSES = [
-  { value: "all", label: "الكل" },
-  { value: "pending", label: "تنتظر مراجعة" },
+  { value: "all",      label: "الكل" },
+  { value: "pending",  label: "تنتظر مراجعة" },
   { value: "approved", label: "موافق عليها" },
-  { value: "suspended", label: "موقوفة" },
+  { value: "suspended",label: "موقوفة" },
   { value: "rejected", label: "مرفوضة" },
+];
+
+const SUB_FILTERS = [
+  { value: "all",         label: "كل الاشتراكات" },
+  { value: "ملتزم",      label: "ملتزم" },
+  { value: "ينتهي قريباً", label: "ينتهي قريباً" },
+  { value: "متأخر",      label: "متأخر" },
+  { value: "غير محدد",   label: "غير محدد" },
 ];
 
 type SalonDoc = { id: number; doc_type: string; doc_url: string; status: string; admin_note: string | null; created_at: string };
@@ -533,6 +551,7 @@ function SalonModal({ salon, onClose, onSave }: { salon: Salon; onClose: () => v
 export default function SalonsPage() {
   const [salons,    setSalons]    = useState<Salon[]>([]);
   const [status,    setStatus]    = useState("all");
+  const [subFilter, setSubFilter] = useState("all");
   const [search,    setSearch]    = useState("");
   const [loading,   setLoading]   = useState(true);
   const [editing,   setEditing]   = useState<Salon | null>(null);
@@ -618,11 +637,22 @@ export default function SalonsPage() {
     load();
   };
 
-  const sorted = [...salons].sort((a, b) => {
-    const aw = weekSalon === a.id ? 2 : 0, bw = weekSalon === b.id ? 2 : 0;
-    const ap = pinned.includes(a.id) ? 1 : 0, bp = pinned.includes(b.id) ? 1 : 0;
-    return (bw + bp) - (aw + ap);
-  });
+  const renewSub = async (id: string, months: number) => {
+    const today = new Date();
+    const current = salons.find((s) => s.id === id)?.subscription_end_date;
+    const base = current && new Date(current) > today ? new Date(current) : today;
+    base.setMonth(base.getMonth() + months);
+    await fetch(`/api/salons/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription_end_date: base.toISOString().slice(0, 10), subscription_months: months }) });
+    load();
+  };
+
+  const sorted = [...salons]
+    .filter((s) => subFilter === "all" || subStatus(s.subscription_end_date) === subFilter)
+    .sort((a, b) => {
+      const aw = weekSalon === a.id ? 2 : 0, bw = weekSalon === b.id ? 2 : 0;
+      const ap = pinned.includes(a.id) ? 1 : 0, bp = pinned.includes(b.id) ? 1 : 0;
+      return (bw + bp) - (aw + ap);
+    });
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
@@ -637,13 +667,6 @@ export default function SalonsPage() {
           <p className="text-gray-400 text-sm mt-1">{salons.length} صالون</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => exportCSV(
-            "الصالونات.csv",
-            ["الاسم", "المالك", "الجوال", "المنطقة", "التقييم", "الحالة", "الرصيد"],
-            salons.map((s) => [s.name, s.owner, s.phone, s.region ?? "", s.rating ?? 0, s.status, s.total_paid ?? 0])
-          )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
-            <EmojiIcon icon="📊" size={16}/> تصدير CSV
-          </button>
           <button onClick={() => setShowAdd(true)}
             className="px-4 py-2.5 bg-gold/10 border border-gold/30 text-gold rounded-xl text-sm font-bold hover:bg-gold/20 transition-colors">
             <EmojiIcon icon="➕" size={16}/> إضافة صالون
@@ -651,7 +674,7 @@ export default function SalonsPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap gap-3 mb-3">
         <input value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="🔍 بحث باسم الصالون أو المالك..."
           className="flex-1 min-w-48 bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
@@ -663,6 +686,15 @@ export default function SalonsPage() {
             </button>
           ))}
         </div>
+      </div>
+      <div className="flex gap-2 flex-wrap mb-6">
+        <span className="text-xs text-gray-500 self-center ml-1">الاشتراك:</span>
+        {SUB_FILTERS.map((f) => (
+          <button key={f.value} onClick={() => setSubFilter(f.value)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${subFilter === f.value ? "bg-blue-500/10 border-blue-500/30 text-blue-400" : "border-border text-gray-500 hover:border-blue-500/20"}`}>
+            {f.label}
+          </button>
+        ))}
       </div>
 
       <div className="mb-4 flex items-center justify-between gap-3 bg-card border border-border rounded-2xl p-4">
@@ -700,6 +732,8 @@ export default function SalonsPage() {
             const earned    = (s.bookings ?? []).filter((b) => b.status === "approved").reduce((a, b) => a + (b.total ?? 0), 0);
             const paid      = s.total_paid ?? 0;
             const balance   = earned - paid;
+            const sStatus   = subStatus(s.subscription_end_date);
+            const subColor  = sStatus === "ملتزم" ? "text-green-400" : sStatus === "ينتهي قريباً" ? "text-yellow-400" : sStatus === "متأخر" ? "text-red-400" : "text-gray-500";
 
             return (
               <div key={s.id} className={`bg-card border-2 rounded-2xl p-5 transition-all ${isBanned ? "border-red-800" : isWeek ? "border-yellow-400/50" : isPinned ? "border-purple-500/40" : isFrozen ? "border-red-500/40" : s.status === "approved" ? "border-green-500/30" : s.status === "rejected" ? "border-red-600/40" : s.status === "suspended" ? "border-orange-500/30" : "border-border"}`}>
@@ -727,6 +761,9 @@ export default function SalonsPage() {
                       <EmojiIcon icon="💰" size={16}/> {balance > 0 ? `متبقي ${balance.toLocaleString("ar-SA")} ر.س` : <><EmojiIcon icon="✅" size={16}/> الرصيد مسدد</>}
                     </div>
                   )}
+                  <div className={`text-xs font-semibold ${subColor}`}>
+                    <EmojiIcon icon="📅" size={14}/> اشتراك: {sStatus}{s.subscription_end_date ? ` — حتى ${s.subscription_end_date}` : ""}
+                  </div>
                 </div>
                 {s.status === "pending" && (s.services ?? []).length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-3">
@@ -792,6 +829,17 @@ export default function SalonsPage() {
                   <button onClick={() => toggleWeek(s.id)}
                     className={`px-3 py-1.5 rounded-lg text-xs border font-semibold transition-colors ${isWeek ? "bg-yellow-400/15 text-yellow-400 border-yellow-400/30" : "border-border text-gray-500 hover:border-yellow-400/30"}`}>
                     <EmojiIcon icon="🏅" size={16}/> {isWeek ? "إلغاء الأسبوع" : "صالون الأسبوع"}
+                  </button>
+                  <button onClick={() => { const m = window.prompt(`تجديد اشتراك "${s.name}" — كم شهراً؟`, "1"); if (m && !isNaN(Number(m)) && Number(m) > 0) renewSub(s.id, Number(m)); }}
+                    className="px-3 py-1.5 rounded-lg text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors font-semibold">
+                    <EmojiIcon icon="🔄" size={16}/> تجديد اشتراك
+                  </button>
+                  <button onClick={() => exportCSV(
+                    `${s.name}.csv`,
+                    ["الاسم", "المالك", "جوال الصالون", "جوال المالك", "المنطقة", "التقييم", "الحالة", "الرصيد المتبقي"],
+                    [[s.name, s.owner, s.phone, s.owner_phone ?? "", s.region ?? "", s.rating ?? 0, s.status, balance]]
+                  )} className="px-3 py-1.5 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors font-semibold">
+                    <EmojiIcon icon="📊" size={16}/> CSV
                   </button>
                   <button onClick={() => deleteSalon(s.id)}
                     className="px-3 py-1.5 rounded-lg text-xs bg-red-900/20 text-red-400 border border-red-800/30 hover:bg-red-900/30 transition-colors font-semibold">
