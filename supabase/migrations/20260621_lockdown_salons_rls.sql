@@ -48,7 +48,7 @@ GRANT SELECT (
   shift_enabled, shift1_start, shift1_end, shift2_start, shift2_end,
   work_start, work_end, barbers, tone, rating, status, paused,
   frozen, banned, welcome_msg, closed_days, slot_min,
-  cancellation_window, total_paid, social, created_at
+  cancellation_window, total_paid, social, lang, created_at
 ) ON salons TO anon;
 
 -- =====================================================
