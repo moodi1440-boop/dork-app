@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L93";
+const APP_VERSION = "L94";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -1531,7 +1531,7 @@ export default function App(){
   useEffect(()=>{try{if(ownerSession)localStorage.setItem("dork_owner",String(ownerSession));else localStorage.removeItem("dork_owner");}catch{}},[ownerSession]);
   useEffect(()=>{try{if(customerSession)localStorage.setItem("dork_customer",JSON.stringify(customerSession));else localStorage.removeItem("dork_customer");}catch{}},[customerSession]);
 
-  const{i18n:appI18n}=useTranslation();
+  const{t,i18n:appI18n}=useTranslation();
   useEffect(()=>{
     const lng=appI18n.language;
     if(ownerSession)sb("salons","PATCH",{lang:lng},`?id=eq.${ownerSession}`).catch(()=>{});
