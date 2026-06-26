@@ -1046,6 +1046,10 @@
     "reply_ph": "Müşteriye yanıt ver...",
     "message_ph": "Mesaj yaz...",
     "maps_link_ph": "Veya Google Maps bağlantısını manuel girin",
-    "add_comment_ph": "Yorum ekle (isteğe bağlı)..."
+    "add_comment_ph": "Yorum ekle (isteğe bağlı)...",
+    "confirm_cancel_wait": "Bekleme listesi isteğini iptal etmek istiyor musunuz?",
+    "confirm_edit_booking": "Randevunuzu düzenlemek istiyor musunuz? Yeni onaylandığında mevcut rezervasyon iptal edilecek.",
+    "confirm_cancel_booking": "Bu rezervasyonu iptal etmek istiyor musunuz?",
+    "ics_booking_title": "{{salon}}'da Rezervasyon"
   }
 }
