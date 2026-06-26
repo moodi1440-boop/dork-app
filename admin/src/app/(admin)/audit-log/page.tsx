@@ -6,6 +6,39 @@ type LogEntry = {
   target_type: string | null; target_id: string | null; details: Record<string, unknown> | null;
 };
 
+const ACTION_AR: Record<string, string> = {
+  "admin_user.create":  "إنشاء حساب إداري",
+  "admin_user.update":  "تعديل حساب إداري",
+  "admin_user.delete":  "حذف حساب إداري",
+  "salon.create":       "إضافة صالون",
+  "salon.update":       "تعديل صالون",
+  "salon.delete":       "حذف صالون",
+  "salon.approve":      "الموافقة على صالون",
+  "salon.reject":       "رفض صالون",
+  "salon.suspend":      "تعليق صالون",
+  "customer.update":    "تعديل بيانات عميل",
+  "customer.delete":    "حذف عميل",
+  "booking.create":     "إنشاء حجز",
+  "booking.update":     "تعديل حجز",
+  "booking.cancel":     "إلغاء حجز",
+  "booking.delete":     "حذف حجز",
+  "promo.create":       "إنشاء كود خصم",
+  "promo.update":       "تعديل كود خصم",
+  "promo.delete":       "حذف كود خصم",
+  "password.change":    "تغيير كلمة المرور",
+  "settings.update":    "تعديل الإعدادات",
+  "notification.send":  "إرسال إشعار",
+  "message.send":       "إرسال رسالة",
+};
+
+const TARGET_AR: Record<string, string> = {
+  "admin_user": "حساب إداري",
+  "salon":      "صالون",
+  "customer":   "عميل",
+  "booking":    "حجز",
+  "promo":      "كود خصم",
+};
+
 export default function AuditLogPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [search, setSearch] = useState("");
@@ -48,9 +81,13 @@ export default function AuditLogPage() {
                   <tr key={log.id} className="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
                     <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{new Date(log.created_at).toLocaleString("ar-SA")}</td>
                     <td className="px-4 py-3 font-semibold text-white">{log.actor}</td>
-                    <td className="px-4 py-3 text-gold">{log.action}</td>
-                    <td className="px-4 py-3 text-gray-300">{log.target_type ? `${log.target_type} #${log.target_id}` : "—"}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">{log.details ? JSON.stringify(log.details) : "—"}</td>
+                    <td className="px-4 py-3 text-gold">{ACTION_AR[log.action] ?? log.action}</td>
+                    <td className="px-4 py-3 text-gray-300">
+                      {log.target_type ? `${TARGET_AR[log.target_type] ?? log.target_type} #${log.target_id}` : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">
+                      {log.details ? JSON.stringify(log.details) : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

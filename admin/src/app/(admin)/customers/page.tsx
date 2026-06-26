@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
-import { exportCSV } from "@/lib/csv";
+import { exportCSVRaw } from "@/lib/csv";
 import { EmojiIcon } from "@/components/Icons";
 
 interface Customer { id: string; name: string; phone: string; email: string; loyalty_points: number; loyalty_frozen: boolean; admin_notes?: string; blocked?: boolean; favs?: unknown[]; pin?: string; }
@@ -92,13 +92,6 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
 
   useEffect(() => { load(); }, [load]);
 
-  const patch = async (body: Record<string, unknown>) => {
-    setSaving(true);
-    await fetch(`/api/customers/${customerId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    await load();
-    setSaving(false);
-  };
-
   const saveNotes = async () => {
     setSaving(true);
     await fetch(`/api/customers/${customerId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ admin_notes: notes }) });
@@ -125,14 +118,17 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
 
   const exportCustomerCSV = () => {
     if (!customer) return;
-    exportCSV(
-      `${customer.name}.csv`,
-      ["الاسم", "الجوال", "البريد", "الحالة", "التاريخ", "الوقت", "الصالون", "المبلغ", "الحالة"],
-      [
-        [customer.name, customer.phone, customer.email ?? "", customer.blocked ? "محظور" : customer.loyalty_frozen ? "مجمّد" : "نشط", "", "", "", "", ""],
-        ...bookings.map((b) => ["", "", "", "", b.date, b.time, b.salonName ?? "", b.total, b.status]),
-      ]
-    );
+    const totalSpent = bookings.reduce((a, b) => a + (b.total || 0), 0);
+    const rows: string[][] = [
+      ["معلومات العميل"],
+      ["الاسم", "الجوال", "البريد", "الحالة", "نقاط الولاء", "إجمالي الإنفاق", "عدد الحجوزات"],
+      [customer.name, customer.phone, customer.email ?? "", customer.blocked ? "محظور" : customer.loyalty_frozen ? "مجمّد" : "نشط", String(customer.loyalty_points ?? 0), String(totalSpent), String(bookings.length)],
+      [],
+      [`الحجوزات (${bookings.length} حجز)`],
+      ["التاريخ", "الوقت", "الصالون", "المبلغ", "الحالة"],
+      ...bookings.map((b) => [b.date, b.time, b.salonName ?? "", String(b.total), b.status]),
+    ];
+    exportCSVRaw(`${customer.name}.csv`, rows);
   };
 
   if (loading) return <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center"><div className="text-gold animate-pulse">جاري التحميل...</div></div>;
@@ -236,21 +232,6 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
             </button>
           </div>
 
-          {/* إجراءات */}
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => patch({ blocked: !customer.blocked })} disabled={saving}
-              className={`py-2.5 rounded-xl text-sm font-semibold border transition-colors ${customer.blocked ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20" : "bg-red-900/20 text-red-400 border-red-800/30 hover:bg-red-900/30"}`}>
-              {customer.blocked ? <><EmojiIcon icon="✅" size={14}/> رفع الحظر</> : <><EmojiIcon icon="🚫" size={14}/> حظر</>}
-            </button>
-            <button onClick={() => patch({ loyalty_frozen: !customer.loyalty_frozen })} disabled={saving}
-              className={`py-2.5 rounded-xl text-sm font-semibold border transition-colors ${customer.loyalty_frozen ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20" : "bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20"}`}>
-              {customer.loyalty_frozen ? <><EmojiIcon icon="🔓" size={14}/> رفع التجميد</> : <><EmojiIcon icon="❄" size={14}/> تجميد</>}
-            </button>
-          </div>
-          <button onClick={async () => { if (!confirm("حذف العميل نهائياً؟")) return; await fetch(`/api/customers/${customerId}`, { method: "DELETE" }); onClose(); }}
-            className="w-full py-2.5 bg-red-900/20 border border-red-800/30 text-red-400 rounded-xl text-sm font-semibold hover:bg-red-900/30 transition-colors">
-            <EmojiIcon icon="🗑" size={14}/> حذف العميل نهائياً
-          </button>
         </div>
       </div>
     </div>

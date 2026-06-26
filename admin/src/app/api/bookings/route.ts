@@ -2,18 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
-  const sb     = createAdminClient();
-  const status = req.nextUrl.searchParams.get("status");
-  const date   = req.nextUrl.searchParams.get("date");
-  const search = req.nextUrl.searchParams.get("search")?.toLowerCase() ?? "";
+  const sb       = createAdminClient();
+  const status   = req.nextUrl.searchParams.get("status");
+  const date     = req.nextUrl.searchParams.get("date");
+  const salonId  = req.nextUrl.searchParams.get("salon_id");
+  const search   = req.nextUrl.searchParams.get("search")?.toLowerCase() ?? "";
+  const limit    = parseInt(req.nextUrl.searchParams.get("limit") ?? "200", 10);
 
   let query = sb
     .from("bookings")
-    .select("id,salon_id,customer_name,customer_phone,barber_name,date,time,total,status,attendance")
+    .select("id,salon_id,customer_name,customer_phone,barber_name,services,date,time,total,status,attendance")
     .order("date", { ascending: false }).order("time", { ascending: false })
-    .limit(200);
+    .limit(Math.min(limit, 2000));
   if (status && status !== "all") query = query.eq("status", status);
-  if (date) query = query.eq("date", date);
+  if (date)     query = query.eq("date", date);
+  if (salonId)  query = query.eq("salon_id", salonId);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

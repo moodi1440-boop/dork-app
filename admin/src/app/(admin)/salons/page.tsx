@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
-import { exportCSV } from "@/lib/csv";
+import { exportCSVRaw } from "@/lib/csv";
 import { EmojiIcon } from "@/components/Icons";
 
 interface Salon {
@@ -637,6 +637,24 @@ export default function SalonsPage() {
     load();
   };
 
+  const exportSalonCSV = async (s: Salon, balance: number) => {
+    const res = await fetch(`/api/bookings?salon_id=${s.id}&limit=1000`);
+    const bks = res.ok ? await res.json() : [];
+    const rows: string[][] = [
+      ["معلومات الصالون"],
+      ["الاسم", "المالك", "جوال الصالون", "جوال المالك", "المنطقة", "المحافظة", "التقييم", "الحالة", "الاشتراك", "تاريخ الانتهاء", "الرصيد المتبقي"],
+      [s.name, s.owner ?? "", s.phone ?? "", s.owner_phone ?? "", s.region ?? "", s.gov ?? "", String(s.rating ?? ""), s.status, subStatus(s.subscription_end_date), s.subscription_end_date ?? "", String(balance)],
+      [],
+      [`الحجوزات (${bks.length} حجز)`],
+      ["التاريخ", "الوقت", "العميل", "الجوال", "الحلاق", "المبلغ", "الحالة", "الحضور"],
+      ...bks.map((b: Record<string, unknown>) => [
+        String(b.date ?? ""), String(b.time ?? ""), String(b.name ?? ""), String(b.phone ?? ""),
+        String(b.barber_name ?? ""), String(b.total ?? ""), String(b.status ?? ""), String(b.attendance ?? ""),
+      ]),
+    ];
+    exportCSVRaw(`${s.name}.csv`, rows);
+  };
+
   const renewSub = async (id: string, months: number) => {
     const today = new Date();
     const current = salons.find((s) => s.id === id)?.subscription_end_date;
@@ -834,11 +852,8 @@ export default function SalonsPage() {
                     className="px-3 py-1.5 rounded-lg text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors font-semibold">
                     <EmojiIcon icon="🔄" size={16}/> تجديد اشتراك
                   </button>
-                  <button onClick={() => exportCSV(
-                    `${s.name}.csv`,
-                    ["الاسم", "المالك", "جوال الصالون", "جوال المالك", "المنطقة", "التقييم", "الحالة", "الرصيد المتبقي"],
-                    [[s.name, s.owner, s.phone, s.owner_phone ?? "", s.region ?? "", s.rating ?? 0, s.status, balance]]
-                  )} className="px-3 py-1.5 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors font-semibold">
+                  <button onClick={() => exportSalonCSV(s, balance)}
+                    className="px-3 py-1.5 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors font-semibold">
                     <EmojiIcon icon="📊" size={16}/> CSV
                   </button>
                   <button onClick={() => deleteSalon(s.id)}
