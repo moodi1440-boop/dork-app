@@ -169,6 +169,7 @@ ${r}`,s=async()=>{if(navigator.share)try{await navigator.share({title:e.name,tex
     background:var(--bg-input)!important;color:var(--text-primary)!important;
     border-color:var(--border-ui)!important;}
   button:active{opacity:.82;}
+  @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes promoPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(231,76,60,.5);}60%{transform:scale(1.06);box-shadow:0 0 0 7px rgba(231,76,60,0);}}
   .promo-badge-anim{animation:promoPulse 1.8s ease-in-out infinite;}
   @keyframes fadeInCards{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
