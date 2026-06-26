@@ -1176,6 +1176,11 @@ function IconChevronLeft({size=16,color="currentColor"}){
     <polyline points="15,18 9,12 15,6"/>
   </svg>);
 }
+function IconChevronRight({size=16,color="currentColor"}){
+  return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9,18 15,12 9,6"/>
+  </svg>);
+}
 function IconChevronDown({size=16,color="currentColor"}){
   return(<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="6,9 12,15 18,9"/>
@@ -1321,6 +1326,7 @@ function NotifIcon({icon,size=20}){
   if(icon==="🌅")return <IconReceipt size={size}/>;
   if(icon==="🔌")return <IconCircuitNodes size={size}/>;
   if(icon==="‹")return <IconChevronLeft size={size} color={color}/>;
+  if(icon==="›")return <IconChevronRight size={size} color={color}/>;
   if(icon==="←")return <IconArrowLeft size={size}/>;
   if(icon==="→")return <IconArrowRight size={size}/>;
   if(icon==="↑")return <IconArrowUp size={size}/>;

@@ -384,6 +384,12 @@ export function IconChevronLeft({ size = 16, color = "currentColor" }: IconProps
   </svg>);
 }
 
+export function IconChevronRight({ size = 16, color = "currentColor" }: IconProps) {
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6" />
+  </svg>);
+}
+
 // خريطة الإيموجي ← المكوّن، نقطة ارتكاز واحدة (مطابقة لمبدأ NotifIcon بـApp.jsx الرئيسي)
 export function EmojiIcon({ icon, size = 16 }: { icon: string; size?: number }) {
   switch (icon) {
@@ -457,6 +463,8 @@ export function EmojiIcon({ icon, size = 16 }: { icon: string; size?: number }) 
     case "📯": return <IconPostHorn size={size} />;
     case "🎺": return <IconTrumpet size={size} />;
     case "🤖": return <IconRobot size={size} />;
+    case "‹": return <IconChevronLeft size={size} />;
+    case "›": return <IconChevronRight size={size} />;
     case "↑": return <IconArrowUp size={size} />;
     case "↓": return <IconArrowDown size={size} />;
     case "↻": case "↺": return <IconRefresh size={size} />;
