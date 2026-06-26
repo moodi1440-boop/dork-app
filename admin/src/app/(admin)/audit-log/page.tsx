@@ -41,20 +41,49 @@ const TARGET_AR: Record<string, string> = {
 };
 
 const FIELD_AR: Record<string, string> = {
-  fields:               "الحقول المعدّلة",
-  role:                 "الدور",
-  username:             "اسم المستخدم",
-  months:               "عدد الأشهر",
-  subscription_end_date:"تاريخ انتهاء الاشتراك",
-  status:               "الحالة",
-  reason:               "السبب",
-  text:                 "النص",
-  salon_id:             "الصالون",
-  name:                 "الاسم",
-  phone:                "الجوال",
-  email:                "البريد",
-  blocked:              "محظور",
-  loyalty_frozen:       "مجمّد",
+  fields:                "الحقول المعدّلة",
+  role:                  "الدور",
+  username:              "اسم المستخدم",
+  months:                "عدد الأشهر",
+  subscription_end_date: "تاريخ انتهاء الاشتراك",
+  status:                "الحالة",
+  reason:                "السبب",
+  text:                  "النص",
+  salon_id:              "الصالون",
+  name:                  "الاسم",
+  phone:                 "الجوال",
+  email:                 "البريد",
+  blocked:               "محظور",
+  loyalty_frozen:        "مجمّد",
+  address:               "العنوان",
+  rating:                "التقييم",
+  owner:                 "المالك",
+  owner_phone:           "جوال المالك",
+  welcome_msg:           "رسالة الترحيب",
+  closed_days:           "أيام الإغلاق",
+  slot_min:              "مدة الحجز (دقيقة)",
+  cancellation_window:   "نافذة الإلغاء",
+  services:              "الخدمات",
+  prices:                "الأسعار",
+  barbers:               "الحلاقون",
+  shift_enabled:         "نظام الورديات",
+  work_start:            "بداية العمل",
+  work_end:              "نهاية العمل",
+  shift1_start:          "بداية الوردية الأولى",
+  shift1_end:            "نهاية الوردية الأولى",
+  shift2_start:          "بداية الوردية الثانية",
+  shift2_end:            "نهاية الوردية الثانية",
+  tone:                  "اللون",
+  social:                "وسائل التواصل",
+  owner_pin_hash:        "رمز PIN",
+  owner_pin_fails:       "محاولات PIN الفاشلة",
+  owner_pin_locked_until:"تجميد PIN حتى",
+  paused:                "موقوف مؤقتاً",
+  frozen:                "مجمّد",
+  banned:                "محظور",
+  location_url:          "رابط الموقع",
+  cancellationWindow:    "نافذة الإلغاء",
+  buffer_min:            "وقت الفاصل",
 };
 
 const VALUE_AR: Record<string, string> = {
@@ -133,10 +162,7 @@ export default function AuditLogPage() {
                             {log.target_name ?? `${TARGET_AR[log.target_type] ?? log.target_type} #${log.target_id}`}
                           </div>
                           {log.target_phone && (
-                            <div className="text-gray-500 text-xs mt-0.5" dir="ltr">{log.target_phone}</div>
-                          )}
-                          {!log.target_name && (
-                            <div className="text-gray-600 text-[10px]">{TARGET_AR[log.target_type] ?? log.target_type}</div>
+                            <div className="text-gray-500 text-xs mt-0.5">{log.target_phone}</div>
                           )}
                         </div>
                       ) : "—"}

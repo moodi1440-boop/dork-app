@@ -7660,10 +7660,10 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
             {[...history].reverse().map((h,i)=>{
               const s=salons.find(x=>x.id===h.salonId||x.id===Number(h.salonId));
               // نجيب الحالة الحقيقية من بيانات الصالون بمقارنة مرنة
-              const realBooking=s?.bookings?.find(b=>
-                b.date===h.date && b.time===h.time &&
-                (b.phone===h.phone || b.name===customer.name)
-              ) || s?.bookings?.find(b=>b.date===h.date&&b.time===h.time);
+              const realBooking=
+                (h.bookingId?s?.bookings?.find(b=>Number(b.id)===Number(h.bookingId)):null)||
+                s?.bookings?.find(b=>b.date===h.date&&b.time===h.time&&(b.phone===h.phone||b.name===customer.name))||
+                s?.bookings?.find(b=>b.date===h.date&&b.time===h.time);
               const status=realBooking?.status||h.status||"pending";
               const stColor=status==="approved"?"#27ae60":status==="rejected"?"#e74c3c":status==="cancelled"?"#888":"#f39c12";
               const stLabel=status==="approved"?t("cust_dash.status_approved"):status==="rejected"?t("cust_dash.status_rejected"):status==="cancelled"?t("cust_dash.status_cancelled"):t("cust_dash.status_pending");
