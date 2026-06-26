@@ -418,6 +418,46 @@ async function requestNotifPermission(){
   return p==="granted";
 }
 
+const NOTIF_TEXTS={
+  ar:{
+    new_booking_salon:(name,date,time)=>({title:`✂️ حجز جديد`,           body:`${name} | ${time} | ${date}`}),
+    booking_received: (salon,date,time)=>({title:`📋 تم استلام حجزك`,    body:`في ${salon} | ${date} | ${time}`}),
+    booking_approved: (salon,date,time)=>({title:`✅ تم قبول حجزك!`,     body:`${salon} | ${date} | ${time}`}),
+    booking_rejected: (salon,date)    =>({title:`❌ تم رفض حجزك`,        body:`${salon} | ${date}`}),
+    slot_available:   (time,salon,date)=>({title:`✅ الوقت أصبح متاحاً!`,body:`تفرّغ وقت ${time} في ${salon} بتاريخ ${date}. سارع بالحجز!`}),
+    reminder:         (salon,time)    =>({title:`⏰ تذكير موعدك`,         body:`موعدك قريب في ${salon} — الساعة ${time}`}),
+    review:           (salon)         =>({title:`⭐ كيف كانت تجربتك؟`,   body:`قيّم ${salon} الآن وساعدنا في التحسين`}),
+  },
+  en:{
+    new_booking_salon:(name,date,time)=>({title:`✂️ New Booking`,              body:`${name} | ${time} | ${date}`}),
+    booking_received: (salon,date,time)=>({title:`📋 Booking Received`,        body:`at ${salon} | ${date} | ${time}`}),
+    booking_approved: (salon,date,time)=>({title:`✅ Booking Approved!`,       body:`${salon} | ${date} | ${time}`}),
+    booking_rejected: (salon,date)    =>({title:`❌ Booking Rejected`,         body:`${salon} | ${date}`}),
+    slot_available:   (time,salon,date)=>({title:`✅ Slot Available!`,         body:`${time} slot at ${salon} on ${date} is free. Book now!`}),
+    reminder:         (salon,time)    =>({title:`⏰ Appointment Reminder`,      body:`Your appointment at ${salon} is at ${time}`}),
+    review:           (salon)         =>({title:`⭐ How was your visit?`,       body:`Rate ${salon} now and help us improve`}),
+  },
+  tr:{
+    new_booking_salon:(name,date,time)=>({title:`✂️ Yeni Rezervasyon`,         body:`${name} | ${time} | ${date}`}),
+    booking_received: (salon,date,time)=>({title:`📋 Rezervasyon Alındı`,      body:`${salon} | ${date} | ${time}`}),
+    booking_approved: (salon,date,time)=>({title:`✅ Rezervasyon Onaylandı!`,  body:`${salon} | ${date} | ${time}`}),
+    booking_rejected: (salon,date)    =>({title:`❌ Rezervasyon Reddedildi`,   body:`${salon} | ${date}`}),
+    slot_available:   (time,salon,date)=>({title:`✅ Slot Müsait!`,            body:`${salon}'da ${time} slotu ${date} tarihinde açıldı. Hemen rezerve et!`}),
+    reminder:         (salon,time)    =>({title:`⏰ Randevu Hatırlatıcısı`,    body:`${salon}'daki randevunuz saat ${time}'de`}),
+    review:           (salon)         =>({title:`⭐ Deneyiminiz nasıldı?`,     body:`${salon}'ı şimdi değerlendirin`}),
+  },
+  ur:{
+    new_booking_salon:(name,date,time)=>({title:`✂️ نئی بکنگ`,               body:`${name} | ${time} | ${date}`}),
+    booking_received: (salon,date,time)=>({title:`📋 بکنگ موصول ہوئی`,       body:`${salon} میں | ${date} | ${time}`}),
+    booking_approved: (salon,date,time)=>({title:`✅ بکنگ منظور!`,            body:`${salon} | ${date} | ${time}`}),
+    booking_rejected: (salon,date)    =>({title:`❌ بکنگ مسترد`,              body:`${salon} | ${date}`}),
+    slot_available:   (time,salon,date)=>({title:`✅ سلاٹ دستیاب!`,          body:`${salon} میں ${time} سلاٹ ${date} کو خالی ہے۔ ابھی بک کریں!`}),
+    reminder:         (salon,time)    =>({title:`⏰ ملاقات یاددہانی`,          body:`${salon} میں آپ کی ملاقات ${time} بجے ہے`}),
+    review:           (salon)         =>({title:`⭐ آپ کا تجربہ کیسا رہا؟`,  body:`ابھی ${salon} کو ریٹ کریں`}),
+  },
+};
+const ntxt=(lang)=>NOTIF_TEXTS[lang]||NOTIF_TEXTS.ar;
+
 function sendNotif(title,body,icon="✂",targetType="all",targetId=null){
   // زيادة عداد الجرس
   const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
@@ -1471,6 +1511,13 @@ export default function App(){
   useEffect(()=>{try{if(ownerSession)localStorage.setItem("dork_owner",String(ownerSession));else localStorage.removeItem("dork_owner");}catch{}},[ownerSession]);
   useEffect(()=>{try{if(customerSession)localStorage.setItem("dork_customer",JSON.stringify(customerSession));else localStorage.removeItem("dork_customer");}catch{}},[customerSession]);
 
+  const{i18n:appI18n}=useTranslation();
+  useEffect(()=>{
+    const lng=appI18n.language;
+    if(ownerSession)sb("salons","PATCH",{lang:lng},`?id=eq.${ownerSession}`).catch(()=>{});
+    if(customerSession?.id)sb("customers","PATCH",{lang:lng},`?id=eq.${customerSession.id}`).catch(()=>{});
+  },[appI18n.language]);
+
   const[socialLinks,setSocialLinks]=useState({...DEFAULT_SOCIAL_LINKS});
   const[appSettingsId,setAppSettingsId]=useState(null);
   const appSettingsIdRef=useRef(null);
@@ -1655,9 +1702,9 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
       const [salonRows,bookingRows,custRows]=await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at&status=eq.approved&order=created_at.desc&limit=500"),
+        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at,lang&status=eq.approved&order=created_at.desc&limit=500"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&order=created_at.desc&limit=1000").catch(()=>[]),
-        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&limit=500").catch(()=>[]),
+        sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked,lang&limit=500").catch(()=>[]),
       ]);
       const reviewRows=await sb("reviews","GET",null,"?select=id,salon_id,customer_id,customer_name,rating,comment,owner_reply,booking_date,created_at&order=created_at.desc&limit=20").catch(()=>[]);
       const promoRows=await sb("promotions","GET",null,"?select=id,salon_id,package,promo_text,customer_count,duration_days,price,status,discount_code,starts_at,ends_at,created_at&status=eq.active&order=created_at.desc&limit=200").catch(()=>[]);
@@ -1947,13 +1994,13 @@ export default function App(){
         const key=`${h.salonId}-${h.date}-${h.time}`;
         // تذكير قبل الموعد
         if(minsUntil>0&&minsUntil<=reminderMins&&!reminded.includes(key)){
-          sendNotif("⏰ تذكير موعدك",`موعدك قريب في ${h.salonName||"الصالون"} — الساعة ${to12h(h.time)}`,"⏰","customer",customerSession.id);
+          const _rn=ntxt(appI18n.language).reminder(h.salonName||"",to12h(h.time));sendNotif(_rn.title,_rn.body,"⏰","customer",customerSession.id);
           reminded.push(key);
           localStorage.setItem("dork_auto_reminded",JSON.stringify(reminded.slice(-50)));
         }
         // طلب تقييم بعد الموعد بساعة
         if(minsAfter>=60&&minsAfter<=120&&!reviewed.includes(key)&&h.status==="approved"&&!h.rating){
-          sendNotif("⭐ كيف كانت تجربتك؟",`قيّم ${h.salonName||"الصالون"} الآن وساعدنا في التحسين`,"⭐","customer",customerSession.id);
+          const _rv=ntxt(appI18n.language).review(h.salonName||"");sendNotif(_rv.title,_rv.body,"⭐","customer",customerSession.id);
           reviewed.push(key);
           localStorage.setItem("dork_auto_review",JSON.stringify(reviewed.slice(-50)));
         }
@@ -2047,20 +2094,19 @@ export default function App(){
       }
       if(newBooking&&newBooking.id){
         const _d={type:"new_booking",salon_id:String(sid),booking_id:String(newBooking.id)};
-        // notify salon owner
+        // notify salon owner (بلغة الصالون)
+        {const sLang=salons.find(s=>s.id===sid)?.lang||'ar';const _nb=ntxt(sLang).new_booking_salon(bk.name||"عميل",bk.date,to12h(bk.time));
         supabase.functions.invoke('send-push-notification',{body:{
           target_type:"single",user_id:sid,user_type:"salon",
-          title:`✂️ حجز جديد في ${salon?.name||""}`,
-          body:`${bk.name||"عميل"} | ${to12h(bk.time)} | ${bk.date}`,
-          data:_d,
-        }}).catch(()=>{});
-        // notify customer
+          title:_nb.title,body:_nb.body,data:_d,
+        }}).catch(()=>{});}
+        // notify customer (بلغة العميل)
         if(newBooking.customer_id){
+          const cLang=customers.find(c=>c.id===newBooking.customer_id)?.lang||appI18n.language||'ar';
+          const _br=ntxt(cLang).booking_received(salon?.name||"",bk.date,to12h(bk.time));
           supabase.functions.invoke('send-push-notification',{body:{
             target_type:"single",user_id:newBooking.customer_id,user_type:"customer",
-            title:"📋 تم استلام حجزك",
-            body:`في ${salon?.name||""} | ${bk.date} | ${to12h(bk.time)}`,
-            data:_d,
+            title:_br.title,body:_br.body,data:_d,
           }}).catch(()=>{});
         }
       }
@@ -2115,10 +2161,11 @@ export default function App(){
         sb("waiting_list","GET",null,`?select=id,name,phone,customer_id&salon_id=eq.${sid}&slot_date=eq.${bk.date}&slot_time=eq.${bk.time}&status=eq.waiting&limit=10`)
           .then(waiters=>{
             if(!Array.isArray(waiters)||!waiters.length)return;
-            const msg=`تفرّغ وقت ${to12h(bk.time)} في ${salon.name} بتاريخ ${bk.date}. سارع بالحجز!`;
             for(const w of waiters){
-              sb("notifications","POST",{target_type:"all",title:"✅ الوقت أصبح متاحاً!",body:msg,icon:"✅"}).catch(()=>{});
-              if(w.customer_id){supabase.functions.invoke('send-push-notification',{body:{target_type:"single",user_id:w.customer_id,user_type:"customer",title:"✅ الوقت أصبح متاحاً!",body:msg,data:{type:"slot_available",salon_id:String(sid)}}}).catch(()=>{});}
+              const wLang=w.customer_id?customers.find(c=>c.id===w.customer_id)?.lang||'ar':'ar';
+              const _sa=ntxt(wLang).slot_available(to12h(bk.time),salon.name,bk.date);
+              sb("notifications","POST",{target_type:"all",title:_sa.title,body:_sa.body,icon:"✅"}).catch(()=>{});
+              if(w.customer_id){supabase.functions.invoke('send-push-notification',{body:{target_type:"single",user_id:w.customer_id,user_type:"customer",title:_sa.title,body:_sa.body,data:{type:"slot_available",salon_id:String(sid)}}}).catch(()=>{});}
             }
           }).catch(()=>{});
       }
@@ -2145,14 +2192,14 @@ export default function App(){
         }
       }
       if((status==="approved"||status==="rejected")&&bk.customer_id){
-        const notifTitle=status==="approved"?"✅ تم قبول حجزك!":"❌ تم رفض حجزك";
-        const notifBody=status==="approved"?`${salon.name} | ${bk.date} | ${to12h(bk.time)}`:`${salon.name} | ${bk.date}`;
+        const cLang=customers.find(c=>c.id===bk.customer_id)?.lang||'ar';
+        const _ar=status==="approved"?ntxt(cLang).booking_approved(salon.name,bk.date,to12h(bk.time)):ntxt(cLang).booking_rejected(salon.name,bk.date);
         supabase.functions.invoke('send-push-notification',{body:{
           target_type:"single",user_id:bk.customer_id,user_type:"customer",
-          title:notifTitle,body:notifBody,
+          title:_ar.title,body:_ar.body,
           data:{type:status==="approved"?"booking_approved":"booking_rejected",salon_id:String(sid),booking_id:String(bid)},
         }}).catch(()=>{});
-        sb("notifications","POST",{target_type:"customer",target_id:bk.customer_id,title:notifTitle,body:notifBody,icon:status==="approved"?"✅":"❌"}).catch(()=>{});
+        sb("notifications","POST",{target_type:"customer",target_id:bk.customer_id,title:_ar.title,body:_ar.body,icon:status==="approved"?"✅":"❌"}).catch(()=>{});
       }
       toast$(status==="approved"?"تم قبول الحجز":"تم تحديث حالة الحجز");
       await loadData();
