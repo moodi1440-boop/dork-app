@@ -45,38 +45,54 @@ module.exports = async (req, res) => {
         const key = `${msg.customer_id}-${msg.booking_id}`;
         if (!seen.has(key)) seen.set(key, msg);
       }
-      res.status(200).json([...seen.values()]);
+      const convs = [...seen.values()];
+
+      // جلب أسماء العملاء من جدول الحجوزات
+      const bookingIds = convs.map(m => m.booking_id).filter(Boolean);
+      let nameMap = {};
+      if (bookingIds.length > 0) {
+        const { data: bkData } = await sb
+          .from("bookings")
+          .select("id,customer_name")
+          .in("id", bookingIds);
+        for (const bk of (bkData || [])) nameMap[bk.id] = bk.customer_name;
+      }
+      res.status(200).json(convs.map(m => ({ ...m, customer_name: nameMap[m.booking_id] || null })));
       return;
     }
 
-    // رسائل محادثة محددة — salon_id + customer_id + booking_id
+    // رسائل محادثة محددة — salon_id + customer_id (+ booking_id اختياري)
     const cId = Number(customerId);
-    const bId = Number(bookingId);
-    if (!cId || !bId) {
-      res.status(400).json({ error: "customerId و bookingId مطلوبان" });
+    const bId = Number(bookingId) || null;
+    if (!cId) {
+      res.status(400).json({ error: "customerId مطلوب" });
       return;
     }
 
-    const { data, error } = await sb
+    let query = sb
       .from("customer_messages")
       .select("id,salon_id,customer_id,booking_id,from_customer,text,created_at,read_at")
       .eq("salon_id", Number(salonId))
       .eq("customer_id", cId)
-      .eq("booking_id", bId)
       .order("created_at", { ascending: true })
       .limit(50);
+
+    if (bId) query = query.eq("booking_id", bId);
+
+    const { data, error } = await query;
 
     if (error) { res.status(500).json({ error: error.message }); return; }
 
     // تعليم رسائل العميل كمقروءة
-    await sb
+    let markQuery = sb
       .from("customer_messages")
       .update({ read_at: new Date().toISOString() })
       .eq("salon_id", Number(salonId))
       .eq("customer_id", cId)
-      .eq("booking_id", bId)
       .eq("from_customer", true)
       .is("read_at", null);
+    if (bId) markQuery = markQuery.eq("booking_id", bId);
+    await markQuery;
 
     res.status(200).json(data || []);
     return;

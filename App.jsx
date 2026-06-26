@@ -2774,6 +2774,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
   const[showSearch,setShowSearch]=useState(false);
   const[showRegionSelect,setShowRegionSelect]=useState(false);
   const[showPriceFilter,setShowPriceFilter]=useState(false);
+  const[reviewsSheet,setReviewsSheet]=useState(null);
   useEffect(()=>{
     if(homeResetKey===undefined)return;
     setUrgentMode(false);setPromoMode(false);setShowSearch(false);setShowRegionSelect(false);setShowPriceFilter(false);
@@ -3020,13 +3021,50 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
                     onCompare={()=>toggleCompare(s)}
                     activePromo={activePromo}
                     distKm={distKm}
-                    onViewReviews={()=>{setSelSalon(s);setView("salonReviews");}}
+                    onViewReviews={()=>setReviewsSheet(s)}
                     onBook={()=>{setSelSalon(s);setView("book");}}/>
                 );})}
               </div>
         }
       </div>
 
+    {/* ── Bottom Sheet التقييمات ── */}
+    {reviewsSheet&&(()=>{
+      const id=Number(reviewsSheet.id);
+      const sRev=(reviews||[]).filter(r=>Number(r.salon_id)===id).map(r=>({name:r.customer_name||"عميل",rating:r.rating,comment:r.comment||"",date:r.booking_date||r.created_at?.split("T")[0]||""})).sort((a,b)=>b.date.localeCompare(a.date));
+      const avg=sRev.length?Math.round(sRev.reduce((s,r)=>s+r.rating,0)/sRev.length*10)/10:0;
+      return(
+        <>
+          <div onClick={()=>setReviewsSheet(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:900}}/>
+          <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:901,background:"var(--surface-1)",borderRadius:"20px 20px 0 0",padding:"0 0 env(safe-area-inset-bottom)",maxHeight:"80vh",display:"flex",flexDirection:"column",animation:"slideUpSheet .3s ease-out"}}>
+            <style>{`@keyframes slideUpSheet{from{transform:translateY(100%);}to{transform:translateY(0);}}`}</style>
+            {/* Handle */}
+            <div style={{display:"flex",justifyContent:"center",padding:"12px 0 8px"}}><div style={{width:36,height:4,borderRadius:2,background:"var(--border-ui)"}}/></div>
+            {/* Header */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 16px 12px",borderBottom:"1px solid var(--border-ui)"}}>
+              <div>
+                <div style={{fontSize:14,fontWeight:800,color:"var(--text-primary)",marginBottom:4}}>{reviewsSheet.name}</div>
+                {sRev.length>0&&<div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:22,fontWeight:900,color:"var(--gold)"}}>{avg}</span><div><div style={{display:"flex",gap:2}}>{[1,2,3,4,5].map(n=><IconStar key={n} size={13} color={n<=Math.round(avg)?"var(--gold)":"rgba(var(--gold-rgb),.2)"}/>)}</div><div style={{fontSize:10,color:"var(--text-muted)"}}>{sRev.length} تقييم</div></div></div>}
+              </div>
+              <button onClick={()=>setReviewsSheet(null)} style={{background:"var(--surface-2)",border:"none",borderRadius:"50%",width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"var(--text-muted)",fontSize:16}}>✕</button>
+            </div>
+            {/* قائمة التقييمات */}
+            <div style={{overflowY:"auto",flex:1,padding:"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
+              {sRev.length===0?<div style={G.empty}>لا توجد تقييمات بعد</div>:sRev.map((r,i)=>(
+                <div key={i} style={{background:"var(--surface-2)",border:"1px solid var(--border-ui)",borderRadius:12,padding:"11px 13px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.comment?5:0}}>
+                    <span style={{fontSize:12,fontWeight:700,color:"var(--text-primary)",display:"inline-flex",alignItems:"center",gap:4}}><IconUser size={11}/>{r.name}</span>
+                    <div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><IconStar key={n} size={12} color={n<=r.rating?"var(--gold)":"rgba(var(--gold-rgb),.18)"}/>)}</div>
+                  </div>
+                  {r.comment&&<div style={{fontSize:12,color:"var(--text-muted)",fontStyle:"italic",lineHeight:1.5,marginBottom:3}}>«{r.comment}»</div>}
+                  {r.date&&<div style={{fontSize:9,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:3}}><IconCalendar size={9}/>{r.date}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      );
+    })()}
     </div>
   );
 }
@@ -6126,14 +6164,16 @@ function MessagesPanel({salon,toast$}){
   // تحميل رسائل محادثة عميل محدد
   const loadOwnerChat=useCallback(async(cId,bId)=>{
     try{
-      const res=await fetch(`/api/owner-chat?customerId=${cId}&bookingId=${bId}`,{credentials:"include"});
+      const url=bId?`/api/owner-chat?customerId=${cId}&bookingId=${bId}`:`/api/owner-chat?customerId=${cId}`;
+      const res=await fetch(url,{credentials:"include"});
       const data=await res.json();
       if(Array.isArray(data))setCustMsgs(data);
-    }catch{}
+      else setCustMsgs([]);
+    }catch{setCustMsgs([]);}
   },[]);
 
   useEffect(()=>{if(msgTab==="customers")loadConvList();},[msgTab,loadConvList]);
-  useEffect(()=>{if(selCust)loadOwnerChat(selCust.customerId,selCust.bookingId);},[selCust,loadOwnerChat]);
+  useEffect(()=>{if(selCust){setCustMsgs([]);loadOwnerChat(selCust.customerId,selCust.bookingId);}},[selCust,loadOwnerChat]);
   useEffect(()=>{custBottomRef.current?.scrollIntoView({behavior:"smooth"});},[custMsgs]);
 
   const sendOwnerReply=async()=>{
@@ -6187,12 +6227,12 @@ function MessagesPanel({salon,toast$}){
             {loadingConv&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:20}}>جاري التحميل...</div>}
             {!loadingConv&&convList.length===0&&<div style={G.empty}>لا توجد رسائل من العملاء</div>}
             {convList.map((c,i)=>(
-              <div key={i} onClick={()=>setSelCust({customerId:c.customer_id,bookingId:c.booking_id,customerName:`عميل #${c.customer_id}`})}
+              <div key={i} onClick={()=>setSelCust({customerId:c.customer_id,bookingId:c.booking_id,customerName:c.customer_name||`عميل #${c.customer_id}`})}
                 style={{padding:"10px 12px",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}
                 onMouseEnter={e=>e.currentTarget.style.background="var(--surface-2)"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <div>
-                  <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>عميل #{c.customer_id} <span style={{fontSize:11,color:"var(--text-muted)"}}>حجز #{c.booking_id}</span></div>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{c.customer_name||`عميل #${c.customer_id}`} {c.booking_id&&<span style={{fontSize:11,color:"var(--text-muted)",fontWeight:400}}>· حجز #{c.booking_id}</span>}</div>
                   <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.text}</div>
                 </div>
                 {!c.read_at&&c.from_customer&&<div style={{width:8,height:8,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>}
@@ -6201,9 +6241,12 @@ function MessagesPanel({salon,toast$}){
           </div>
         ):(
           <div style={{flex:1,display:"flex",flexDirection:"column"}}>
-            <button onClick={()=>{setSelCust(null);loadConvList();}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--p)",fontSize:12,textAlign:"right",marginBottom:6,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
-              <IconArrowRight size={12}/>رجوع للقائمة
-            </button>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <button onClick={()=>{setSelCust(null);loadConvList();}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--p)",fontSize:12,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+                <IconArrowRight size={12}/>رجوع
+              </button>
+              <div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)"}}>{selCust.customerName}</div>
+            </div>
             <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
               {custMsgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:20}}>لا توجد رسائل</div>}
               {custMsgs.map(m=>(
@@ -6237,7 +6280,7 @@ function MessagesPanel({salon,toast$}){
 
 // ==============================================
 
-function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose}){
+function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast$}){
   const[msgs,setMsgs]=useState([]);
   const[txt,setTxt]=useState("");
   const[sending,setSending]=useState(false);
@@ -6269,13 +6312,19 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose}){
     setSending(true);
     const msgText=txt.trim();
     setTxt("");
+    const tempId=`tmp-${Date.now()}`;
+    setMsgs(prev=>[...prev,{id:tempId,from_customer:true,text:msgText,created_at:new Date().toISOString(),read_at:null}]);
     try{
       await sb("customer_messages","POST",{
-        salon_id:salonId,customer_id:customerId,booking_id:bookingId,
+        salon_id:Number(salonId),customer_id:Number(customerId),booking_id:Number(bookingId),
         from_customer:true,text:msgText
       });
       await load();
-    }catch{toast$&&toast$("خطأ في الإرسال","err");}
+    }catch(e){
+      setMsgs(prev=>prev.filter(m=>m.id!==tempId));
+      setTxt(msgText);
+      toast$&&toast$("خطأ في الإرسال — تحقق من الاتصال","err");
+    }
     setSending(false);
   };
 
@@ -7920,7 +7969,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:data.rating}:s));
                     }catch(e){console.error(e);}
                   }}/>;})()}
-                  {openChatBookingId===h.bookingId&&h.bookingId&&<CustomerSalonChat salonId={Number(h.salonId)} customerId={customer.id} bookingId={Number(h.bookingId)} salonName={s?.name||h.salonName} onClose={()=>setOpenChatBookingId(null)}/>}
+                  {openChatBookingId===h.bookingId&&h.bookingId&&<CustomerSalonChat salonId={Number(h.salonId)} customerId={customer.id} bookingId={Number(h.bookingId)} salonName={s?.name||h.salonName} onClose={()=>setOpenChatBookingId(null)} toast$={toast$}/>}
                 </div>
               );
             })}
