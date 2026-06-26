@@ -2787,6 +2787,7 @@ function EntryView({setView}){
 //  TOP BAR - 3 role buttons on the LEFT
 // ==============================================
 function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustomerSession,darkMode,setDarkMode,resetHome,showDrawer,setShowDrawer,showSalonDrawer,setShowSalonDrawer}){
+  const{t}=useTranslation();
   // للعميل: هيدر مبسط مع زر ≡
   if(customerSession&&!ownerSession){
     return(
