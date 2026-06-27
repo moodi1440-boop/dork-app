@@ -117,10 +117,10 @@ module.exports = async (req, res) => {
   if (req.method === "POST") {
     const body = await readJson(req);
     const customerId = Number(body.customerId);
-    const bookingId  = Number(body.bookingId);
+    const bookingId  = body.bookingId != null ? Number(body.bookingId) : null;
     const text       = typeof body.text === "string" ? body.text.trim().slice(0, 1000) : "";
 
-    if (!customerId || !bookingId || !text) {
+    if (!customerId || !text) {
       res.status(400).json({ error: "بيانات ناقصة" });
       return;
     }

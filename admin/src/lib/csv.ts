@@ -3,11 +3,14 @@ export function exportCSV(filename: string, headers: string[], rows: (string | n
     const s = String(v ?? "");
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const csv = "sep=,\n" + [headers, ...rows].map((r) => r.map(escape).join(",")).join("\n");
+  const csv = [headers, ...rows].map((r) => r.map(escape).join(",")).join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8,﻿" + encodeURIComponent(csv);
+  a.href = url;
   a.download = filename;
   a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function exportCSVRaw(filename: string, rows: string[][]) {
@@ -15,9 +18,12 @@ export function exportCSVRaw(filename: string, rows: string[][]) {
     const s = String(v ?? "");
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const csv = "sep=,\n" + rows.map((r) => r.map(escape).join(",")).join("\n");
+  const csv = rows.map((r) => r.map(escape).join(",")).join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8,﻿" + encodeURIComponent(csv);
+  a.href = url;
   a.download = filename;
   a.click();
+  URL.revokeObjectURL(url);
 }

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L95";
+const APP_VERSION = "L96";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -6251,7 +6251,7 @@ function MessagesPanel({salon,toast$}){
   useEffect(()=>{if(selCust){setCustMsgs([]);loadOwnerChat(selCust.customerId,selCust.bookingId);}},[selCust,loadOwnerChat]);
   useEffect(()=>{
     if(!selCust)return;
-    const id=setInterval(()=>loadOwnerChat(selCust.customerId,selCust.bookingId),8000);
+    const id=setInterval(()=>loadOwnerChat(selCust.customerId,selCust.bookingId),3000);
     return()=>clearInterval(id);
   },[selCust,loadOwnerChat]);
   useEffect(()=>{custBottomRef.current?.scrollIntoView({behavior:"smooth"});},[custMsgs]);
@@ -6396,7 +6396,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
   },[load]);
 
   useEffect(()=>{
-    const id=setInterval(()=>load(),8000);
+    const id=setInterval(()=>load(),3000);
     return()=>clearInterval(id);
   },[load]);
 
@@ -7782,7 +7782,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[reminderMins,setReminderMins]=useState(()=>parseInt(localStorage.getItem("dork_reminder")||"60"));
   useEffect(()=>{localStorage.setItem("dork_reminder",String(reminderMins));},[reminderMins]);
   const[myWaiting,setMyWaiting]=useState([]);
-  const[openChatBookingId,setOpenChatBookingId]=useState(null);
+  const[openChatBookingId,setOpenChatBookingId]=useState(()=>{try{const v=sessionStorage.getItem("dork_chat_bid");return v?JSON.parse(v):null;}catch{return null;}});
+  useEffect(()=>{if(openChatBookingId!=null)sessionStorage.setItem("dork_chat_bid",JSON.stringify(openChatBookingId));else sessionStorage.removeItem("dork_chat_bid");},[openChatBookingId]);
   useEffect(()=>{
     if(!customer?.phone)return;
     sb("waiting_list","GET",null,`?phone=eq.${encodeURIComponent(customer.phone)}&select=id,salon_id,slot_date,slot_time,status,created_at&order=created_at.desc&limit=50`)
