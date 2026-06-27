@@ -43,6 +43,44 @@ class ErrorBoundary extends React.Component {
 }
 
 // ==============================================
+//  CHAT CONTEXT — يحتفظ بالرسائل في الذاكرة عند التنقل بين الأقسام
+// ==============================================
+const ChatCtx = React.createContext(null);
+
+export function ChatProvider({ children }) {
+  const [chats, setChats] = React.useState({});
+
+  const setMessages = React.useCallback((key, msgs) => {
+    setChats(prev => ({ ...prev, [key]: msgs }));
+  }, []);
+
+  const addMessage = React.useCallback((key, msg) => {
+    setChats(prev => {
+      const existing = prev[key] || [];
+      if (existing.some(m => m.id === msg.id)) return prev;
+      return { ...prev, [key]: [...existing, msg] };
+    });
+  }, []);
+
+  const value = React.useMemo(
+    () => ({ chats, setMessages, addMessage }),
+    [chats, setMessages, addMessage]
+  );
+
+  return <ChatCtx.Provider value={value}>{children}</ChatCtx.Provider>;
+}
+
+function useChat(key) {
+  const ctx = React.useContext(ChatCtx);
+  const msgs = ctx?.chats[key] || [];
+  const sm = ctx?.setMessages;
+  const am = ctx?.addMessage;
+  const setMsgs = React.useCallback((m) => sm?.(key, m), [sm, key]);
+  const addMsg  = React.useCallback((m) => am?.(key, m), [am, key]);
+  return { msgs, setMsgs, addMsg };
+}
+
+// ==============================================
 //  SUPABASE CLIENT
 // ==============================================
 const SUPABASE_URL    = "https://ywrlhvzfefvyogfxfdhl.supabase.co";
@@ -6382,12 +6420,11 @@ function MessagesPanel({salon,toast$}){
 
 function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast$}){
   const{t}=useTranslation();
-  const[msgs,setMsgs]=useState([]);
+  const cKey=`cm_${salonId}-${customerId}-${bookingId}`;
+  const{msgs,setMsgs,addMsg}=useChat(cKey);
   const[txt,setTxt]=useState("");
   const[sending,setSending]=useState(false);
   const bottomRef=useRef(null);
-
-  const cKey=`cm_${salonId}_${customerId}_${bookingId}`;
 
   const load=useCallback(async()=>{
     if(!salonId||!customerId||!bookingId)return;
@@ -6395,17 +6432,11 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
       const data=await sb("customer_messages","GET",null,
         `?select=id,from_customer,text,created_at,read_at&salon_id=eq.${salonId}&customer_id=eq.${customerId}&booking_id=eq.${bookingId}&order=created_at.asc&limit=50`
       );
-      if(Array.isArray(data)){
-        setMsgs(data);
-        try{sessionStorage.setItem(`cm_${salonId}_${customerId}_${bookingId}`,JSON.stringify(data));}catch{}
-      }
+      if(Array.isArray(data)){setMsgs(data);}
     }catch{}
-  },[salonId,customerId,bookingId]);
+  },[salonId,customerId,bookingId,setMsgs]);
 
-  useEffect(()=>{
-    try{const c=sessionStorage.getItem(cKey);if(c)setMsgs(JSON.parse(c));}catch{}
-    load();
-  },[load]);
+  useEffect(()=>{load();},[load]);
 
   useEffect(()=>{
     const id=setInterval(()=>load(),3000);
@@ -6414,10 +6445,14 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
 
   useEffect(()=>{
     const ch=supabase.channel(`cm-${salonId}-${customerId}-${bookingId}`)
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages',filter:`salon_id=eq.${salonId}`},()=>{load();})
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages',filter:`salon_id=eq.${salonId}`},(payload)=>{
+        if(payload.new&&Number(payload.new.customer_id)===Number(customerId)&&Number(payload.new.booking_id)===Number(bookingId)){
+          addMsg(payload.new);
+        }else{load();}
+      })
       .subscribe();
     return()=>{supabase.removeChannel(ch);};
-  },[salonId,customerId,bookingId,load]);
+  },[salonId,customerId,bookingId,load,addMsg]);
 
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
 
@@ -6427,7 +6462,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
     const msgText=txt.trim();
     setTxt("");
     const tempId=`tmp-${Date.now()}`;
-    setMsgs(prev=>[...prev,{id:tempId,from_customer:true,text:msgText,created_at:new Date().toISOString(),read_at:null}]);
+    addMsg({id:tempId,from_customer:true,text:msgText,created_at:new Date().toISOString(),read_at:null});
     try{
       await sb("customer_messages","POST",{
         salon_id:Number(salonId),customer_id:Number(customerId),booking_id:Number(bookingId),
@@ -6435,8 +6470,8 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
       });
       await load();
     }catch(e){
-      setMsgs(prev=>prev.filter(m=>m.id!==tempId));
       setTxt(msgText);
+      await load();
       toast$&&toast$(i18n.t('ui.send_error_check'),"err");
     }
     setSending(false);
