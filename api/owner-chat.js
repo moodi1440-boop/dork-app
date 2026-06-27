@@ -120,8 +120,8 @@ module.exports = async (req, res) => {
     const bookingId  = body.bookingId != null ? Number(body.bookingId) : null;
     const text       = typeof body.text === "string" ? body.text.trim().slice(0, 1000) : "";
 
-    if (!customerId || !text) {
-      res.status(400).json({ error: "بيانات ناقصة" });
+    if (!customerId || isNaN(customerId) || !text) {
+      res.status(400).json({ error: `بيانات ناقصة — customerId=${customerId} textLen=${text.length}` });
       return;
     }
 
@@ -137,7 +137,11 @@ module.exports = async (req, res) => {
       .select("id,salon_id,customer_id,booking_id,from_customer,text,created_at,read_at")
       .single();
 
-    if (error) { res.status(500).json({ error: error.message }); return; }
+    if (error) {
+      console.error("[owner-chat POST] supabase error:", error.code, error.message, { salonId, customerId, bookingId });
+      res.status(500).json({ error: error.message, code: error.code });
+      return;
+    }
     res.status(200).json(data);
     return;
   }

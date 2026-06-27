@@ -6254,6 +6254,16 @@ function MessagesPanel({salon,toast$}){
     const id=setInterval(()=>loadOwnerChat(selCust.customerId,selCust.bookingId),3000);
     return()=>clearInterval(id);
   },[selCust,loadOwnerChat]);
+  // Realtime: الصالون يستقبل رسائل العميل فورياً بدون انتظار الـ polling
+  useEffect(()=>{
+    if(!selCust||!salon?.id)return;
+    const ch=supabase.channel(`owner-cm-${salon.id}-${selCust.customerId}-${selCust.bookingId}`)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages',filter:`salon_id=eq.${salon.id}`},()=>{
+        loadOwnerChat(selCust.customerId,selCust.bookingId);
+      })
+      .subscribe();
+    return()=>{supabase.removeChannel(ch);};
+  },[selCust,salon?.id,loadOwnerChat]);
   useEffect(()=>{custBottomRef.current?.scrollIntoView({behavior:"smooth"});},[custMsgs]);
 
   const sendOwnerReply=async()=>{
@@ -6267,7 +6277,9 @@ function MessagesPanel({salon,toast$}){
         await loadOwnerChat(selCust.customerId,selCust.bookingId);
       }else{
         setOwnerTxt(msgText);
-        toast$&&toast$(i18n.t('ui.send_failed'),"err");
+        let errMsg=i18n.t('ui.send_failed');
+        try{const j=await res.json();if(j?.error)errMsg=j.error;}catch{}
+        toast$&&toast$(errMsg,"err");
       }
     }catch{
       setOwnerTxt(msgText);
