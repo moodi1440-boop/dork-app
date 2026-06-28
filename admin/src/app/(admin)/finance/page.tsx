@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { exportCSV } from "@/lib/csv";
+import { exportCSV, exportPDF } from "@/lib/csv";
 import { EmojiIcon } from "@/components/Icons";
 
 interface SalonFinance {
@@ -53,13 +53,22 @@ export default function FinancePage() {
           <h1 className="text-2xl font-black text-white">العمولات</h1>
           <p className="text-gray-400 text-sm mt-1">المستحقات والمدفوعات لكل صالون</p>
         </div>
-        <button onClick={() => exportCSV(
-          "العمولات.csv",
-          ["الصالون", "المالك", "الجوال", "عدد الحجوزات", "المستحق", "المدفوع", "الرصيد"],
-          salons.map((s) => [s.name, s.owner, s.phone, s.bookingCount, s.earned, s.paid, s.balance])
-        )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
-          <EmojiIcon icon="📊" size={16}/> تصدير CSV
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => exportCSV(
+            "العمولات.csv",
+            ["الصالون", "المالك", "الجوال", "عدد الحجوزات", "المستحق", "المدفوع", "الرصيد"],
+            salons.map((s) => [s.name, s.owner, s.phone, s.bookingCount, s.earned, s.paid, s.balance])
+          )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
+            <EmojiIcon icon="📊" size={16}/> CSV
+          </button>
+          <button onClick={() => exportPDF(
+            "العمولات",
+            ["الصالون", "المالك", "الجوال", "عدد الحجوزات", "المستحق", "المدفوع", "الرصيد"],
+            salons.map((s) => [s.name, s.owner, s.phone, s.bookingCount, s.earned, s.paid, s.balance])
+          )} className="px-4 py-2.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-sm font-bold hover:bg-red-500/20 transition-colors">
+            <EmojiIcon icon="📄" size={16}/> PDF
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">

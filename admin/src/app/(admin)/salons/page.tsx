@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
-import { exportCSVRaw } from "@/lib/csv";
+import { exportCSVRaw, exportPDFRaw } from "@/lib/csv";
 import { EmojiIcon } from "@/components/Icons";
 
 interface Salon {
@@ -657,6 +657,30 @@ export default function SalonsPage() {
     exportCSVRaw(`${s.name}.csv`, rows);
   };
 
+  const exportSalonPDF = async (s: Salon, balance: number) => {
+    const res = await fetch(`/api/bookings?salon_id=${s.id}&limit=1000`);
+    const bks = res.ok ? await res.json() : [];
+    const rows: string[][] = [
+      ["الاسم",                 s.name],
+      ["المالك",                s.owner ?? ""],
+      ["جوال الصالون",          s.phone ?? ""],
+      ["جوال المالك",           s.owner_phone ?? ""],
+      ["المنطقة",               s.region ?? ""],
+      ["المحافظة",              s.gov ?? ""],
+      ["التقييم",               String(s.rating ?? "")],
+      ["الحالة",                s.status],
+      ["الاشتراك",              subStatus(s.subscription_end_date)],
+      ["الرصيد المتبقي",        String(balance)],
+      [],
+      ["التاريخ", "الوقت", "العميل", "الجوال", "الحلاق", "المبلغ", "الحالة", "الحضور"],
+      ...bks.map((b: Record<string, unknown>) => [
+        String(b.date ?? ""), String(b.time ?? ""), String(b.name ?? ""), String(b.phone ?? ""),
+        String(b.barber_name ?? ""), String(b.total ?? ""), String(b.status ?? ""), String(b.attendance ?? ""),
+      ]),
+    ];
+    exportPDFRaw(s.name, rows);
+  };
+
   const renewSub = async (id: string, months: number) => {
     const today = new Date();
     const current = salons.find((s) => s.id === id)?.subscription_end_date;
@@ -857,6 +881,10 @@ export default function SalonsPage() {
                   <button onClick={() => exportSalonCSV(s, balance)}
                     className="px-3 py-1.5 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors font-semibold">
                     <EmojiIcon icon="📊" size={16}/> CSV
+                  </button>
+                  <button onClick={() => exportSalonPDF(s, balance)}
+                    className="px-3 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors font-semibold">
+                    <EmojiIcon icon="📄" size={16}/> PDF
                   </button>
                   <button onClick={() => deleteSalon(s.id)}
                     className="px-3 py-1.5 rounded-lg text-xs bg-red-900/20 text-red-400 border border-red-800/30 hover:bg-red-900/30 transition-colors font-semibold">
