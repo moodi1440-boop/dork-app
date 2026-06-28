@@ -75,7 +75,8 @@ module.exports = async (req, res) => {
         .select("customer_id,booking_id")
         .eq("salon_id", Number(salonId))
         .eq("from_customer", true)
-        .is("read_at", null);
+        .is("read_at", null)
+        .limit(500);
 
       const unreadMap = {};
       for (const msg of (unreadData || [])) {
