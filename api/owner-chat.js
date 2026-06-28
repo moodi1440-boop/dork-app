@@ -91,6 +91,19 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // بحث عن عملاء برقم الجوال أو الاسم
+    if (req.query.searchPhone) {
+      const phone = String(req.query.searchPhone).trim();
+      if (!phone) { res.status(200).json([]); return; }
+      const { data } = await sb
+        .from("customers")
+        .select("id,name,phone")
+        .or(`phone.ilike.%${phone}%,name.ilike.%${phone}%`)
+        .limit(10);
+      res.status(200).json(data || []);
+      return;
+    }
+
     // رسائل محادثة محددة — salon_id + customer_id (+ booking_id اختياري)
     const cId = Number(customerId);
     const bId = Number(bookingId) || null;
@@ -161,8 +174,19 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // DELETE: مسح كل رسائل محادثة محددة
+  // DELETE: مسح رسائل محادثة محددة أو جميع محادثات الصالون
   if (req.method === "DELETE") {
+    // مسح الكل
+    if (req.query.clearAll === "1") {
+      const { error } = await sb
+        .from("customer_messages")
+        .delete()
+        .eq("salon_id", Number(salonId));
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      res.status(200).json({ ok: true });
+      return;
+    }
+    // مسح محادثة عميل محدد
     const cId = Number(req.query.customerId);
     const bId = req.query.bookingId ? Number(req.query.bookingId) : null;
     if (!cId) {

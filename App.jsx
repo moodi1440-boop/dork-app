@@ -6242,6 +6242,10 @@ function MessagesPanel({salon,toast$}){
   const prevAdminCount=useRef(-1);
   const prevCustCount=useRef(-1);
   const[clearConfirm,setClearConfirm]=useState(false);
+  const[searchTxt,setSearchTxt]=useState("");
+  const[searchResults,setSearchResults]=useState(null); // null=لم يُبحث, array=نتائج
+  const[searching,setSearching]=useState(false);
+  const[clearAllConfirm,setClearAllConfirm]=useState(false);
 
   // تحميل الرسائل من Supabase
   const loadMsgs=useCallback(async()=>{
@@ -6308,6 +6312,18 @@ function MessagesPanel({salon,toast$}){
       else setCustMsgs([]);
     }catch{setCustMsgs([]);}
   },[]);
+
+  const searchCustomer=useCallback(async()=>{
+    const q=searchTxt.trim();
+    if(!q)return;
+    setSearching(true);
+    try{
+      const res=await fetch(`/api/owner-chat?searchPhone=${encodeURIComponent(q)}`,{credentials:"include"});
+      const data=await res.json();
+      setSearchResults(Array.isArray(data)?data:[]);
+    }catch{setSearchResults([]);}
+    setSearching(false);
+  },[searchTxt]);
 
   useEffect(()=>{if(msgTab==="customers")loadConvList();},[msgTab,loadConvList]);
   // تحديث القائمة دورياً (كل 10 ثوانٍ) لتحديث عداد غير المقروء حتى بدون دخول المحادثة
@@ -6404,23 +6420,70 @@ function MessagesPanel({salon,toast$}){
       {/* تبويب العملاء */}
       {msgTab==="customers"&&<>
         {!selCust?(
-          <div style={{flex:1,overflowY:"auto"}}>
-            {loadingConv&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:20}}>{t('ui.loading')}</div>}
-            {!loadingConv&&convList.length===0&&<div style={G.empty}>{t('ui.no_cust_messages')}</div>}
-            {convList.map((c,i)=>(
-              <div key={i} onClick={()=>setSelCust({customerId:c.customer_id,bookingId:c.booking_id,customerName:c.customer_name||`عميل #${c.customer_id}`})}
-                style={{padding:"10px 12px",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}
-                onMouseEnter={e=>e.currentTarget.style.background="var(--surface-2)"}
-                onMouseLeave={e=>e.currentTarget.style.background=""}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{c.customer_name||t('ui.customer_prefix',{id:c.customer_id})} {c.booking_id&&<span style={{fontSize:11,color:"var(--text-muted)",fontWeight:400}}>· {t('ui.booking_prefix',{id:c.booking_id})}</span>}</div>
-                  <div style={{fontSize:11,color:(c.unread_count||0)>0?"var(--text-primary)":"var(--text-muted)",fontWeight:(c.unread_count||0)>0?600:400,marginTop:2,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.text}</div>
-                </div>
-                {(c.unread_count||0)>0
-                  ?<span style={{background:"var(--p)",color:"var(--bg-base)",borderRadius:999,fontSize:10,fontWeight:900,minWidth:19,height:19,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 5px",flexShrink:0}}>{c.unread_count>99?"99+":c.unread_count}</span>
-                  :null}
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            {/* شريط البحث */}
+            <div style={{display:"flex",gap:5,marginBottom:7}}>
+              <input
+                style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"inherit",outline:"none",direction:"rtl"}}
+                placeholder="بحث بالاسم أو رقم الجوال..."
+                value={searchTxt}
+                onChange={e=>{setSearchTxt(e.target.value);if(!e.target.value){setSearchResults(null);}}}
+                onKeyDown={e=>e.key==="Enter"&&searchCustomer()}
+              />
+              <button onClick={searchCustomer} style={{background:"var(--pa08)",border:"1px solid var(--pa4)",borderRadius:8,cursor:"pointer",padding:"0 9px",color:"var(--p)",fontSize:13}} title="بحث">🔍</button>
+              {searchTxt&&<button onClick={()=>{setSearchTxt("");setSearchResults(null);}} style={{background:"none",border:"1px solid var(--border-ui)",borderRadius:8,cursor:"pointer",padding:"0 8px",color:"var(--text-muted)",fontSize:11}}>✕</button>}
+            </div>
+            {/* زر مسح الكل */}
+            {convList.length>0&&!clearAllConfirm&&!searchTxt&&(
+              <button onClick={()=>setClearAllConfirm(true)} style={{background:"none",border:"1px solid #ef444430",borderRadius:7,color:"#ef4444",fontSize:10,fontWeight:700,cursor:"pointer",padding:"4px 10px",fontFamily:"inherit",marginBottom:7,alignSelf:"flex-end"}}>مسح الكل 🗑</button>
+            )}
+            {clearAllConfirm&&(
+              <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:7,padding:"6px 10px",borderRadius:8,background:"#ef444415",border:"1px solid #ef444430"}}>
+                <span style={{fontSize:11,color:"var(--text-muted)",flex:1}}>مسح جميع المحادثات نهائياً؟</span>
+                <button onClick={async()=>{
+                  try{await fetch("/api/owner-chat?clearAll=1",{method:"DELETE",credentials:"include"});}catch{}
+                  setConvList([]);setClearAllConfirm(false);
+                }} style={{background:"#ef4444",color:"#fff",border:"none",borderRadius:5,fontSize:10,fontWeight:700,cursor:"pointer",padding:"3px 9px",fontFamily:"inherit"}}>نعم</button>
+                <button onClick={()=>setClearAllConfirm(false)} style={{background:"none",border:"1px solid var(--border-ui)",borderRadius:5,fontSize:10,cursor:"pointer",padding:"3px 8px",color:"var(--text-muted)",fontFamily:"inherit"}}>لا</button>
               </div>
-            ))}
+            )}
+            {/* القائمة */}
+            <div style={{flex:1,overflowY:"auto"}}>
+              {searchResults!==null?(
+                <>
+                  {searching&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:20}}>{t('ui.loading')}</div>}
+                  {!searching&&searchResults.length===0&&<div style={G.empty}>لا يوجد عميل بهذا الرقم أو الاسم</div>}
+                  {searchResults.map(c=>(
+                    <div key={c.id} onClick={()=>{setSelCust({customerId:c.id,bookingId:null,customerName:c.name||c.phone||`عميل #${c.id}`});setSearchTxt("");setSearchResults(null);}}
+                      style={{padding:"10px 12px",borderBottom:"1px solid var(--border-ui)",cursor:"pointer"}}
+                      onMouseEnter={e=>e.currentTarget.style.background="var(--surface-2)"}
+                      onMouseLeave={e=>e.currentTarget.style.background=""}>
+                      <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{c.name||`عميل #${c.id}`}</div>
+                      <div style={{fontSize:11,color:"var(--text-muted)"}}>{c.phone}</div>
+                    </div>
+                  ))}
+                </>
+              ):(
+                <>
+                  {loadingConv&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:20}}>{t('ui.loading')}</div>}
+                  {!loadingConv&&convList.length===0&&<div style={G.empty}>{t('ui.no_cust_messages')}</div>}
+                  {convList.filter(c=>!searchTxt||(c.customer_name||"").includes(searchTxt)).map((c,i)=>(
+                    <div key={i} onClick={()=>setSelCust({customerId:c.customer_id,bookingId:c.booking_id,customerName:c.customer_name||`عميل #${c.customer_id}`})}
+                      style={{padding:"10px 12px",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}
+                      onMouseEnter={e=>e.currentTarget.style.background="var(--surface-2)"}
+                      onMouseLeave={e=>e.currentTarget.style.background=""}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{c.customer_name||t('ui.customer_prefix',{id:c.customer_id})} {c.booking_id&&<span style={{fontSize:11,color:"var(--text-muted)",fontWeight:400}}>· {t('ui.booking_prefix',{id:c.booking_id})}</span>}</div>
+                        <div style={{fontSize:11,color:(c.unread_count||0)>0?"var(--text-primary)":"var(--text-muted)",fontWeight:(c.unread_count||0)>0?600:400,marginTop:2,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.text}</div>
+                      </div>
+                      {(c.unread_count||0)>0
+                        ?<span style={{background:"var(--p)",color:"var(--bg-base)",borderRadius:999,fontSize:10,fontWeight:900,minWidth:19,height:19,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 5px",flexShrink:0}}>{c.unread_count>99?"99+":c.unread_count}</span>
+                        :null}
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
           </div>
         ):(
           <div style={{flex:1,display:"flex",flexDirection:"column"}}>
