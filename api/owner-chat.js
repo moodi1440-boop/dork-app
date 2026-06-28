@@ -69,9 +69,24 @@ module.exports = async (req, res) => {
         for (const bk of (bkData || [])) bkNameMap[bk.id] = bk.customer_name;
       }
 
+      // عدد الرسائل غير المقروءة من العميل لكل محادثة
+      const { data: unreadData } = await sb
+        .from("customer_messages")
+        .select("customer_id,booking_id")
+        .eq("salon_id", Number(salonId))
+        .eq("from_customer", true)
+        .is("read_at", null);
+
+      const unreadMap = {};
+      for (const msg of (unreadData || [])) {
+        const key = `${msg.customer_id}-${msg.booking_id}`;
+        unreadMap[key] = (unreadMap[key] || 0) + 1;
+      }
+
       res.status(200).json(convs.map(m => ({
         ...m,
         customer_name: custNameMap[m.customer_id] || bkNameMap[m.booking_id] || null,
+        unread_count: unreadMap[`${m.customer_id}-${m.booking_id}`] || 0,
       })));
       return;
     }
@@ -143,6 +158,26 @@ module.exports = async (req, res) => {
       return;
     }
     res.status(200).json(data);
+    return;
+  }
+
+  // DELETE: مسح كل رسائل محادثة محددة
+  if (req.method === "DELETE") {
+    const cId = Number(req.query.customerId);
+    const bId = req.query.bookingId ? Number(req.query.bookingId) : null;
+    if (!cId) {
+      res.status(400).json({ error: "customerId مطلوب" });
+      return;
+    }
+    let q = sb
+      .from("customer_messages")
+      .delete()
+      .eq("salon_id", Number(salonId))
+      .eq("customer_id", cId);
+    if (bId) q = q.eq("booking_id", bId);
+    const { error } = await q;
+    if (error) { res.status(500).json({ error: error.message }); return; }
+    res.status(200).json({ ok: true });
     return;
   }
 

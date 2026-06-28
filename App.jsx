@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L104";
+const APP_VERSION = "L105";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -6241,6 +6241,7 @@ function MessagesPanel({salon,toast$}){
   const custBoxRef=useRef(null);
   const prevAdminCount=useRef(-1);
   const prevCustCount=useRef(-1);
+  const[clearConfirm,setClearConfirm]=useState(false);
 
   // تحميل الرسائل من Supabase
   const loadMsgs=useCallback(async()=>{
@@ -6309,7 +6310,23 @@ function MessagesPanel({salon,toast$}){
   },[]);
 
   useEffect(()=>{if(msgTab==="customers")loadConvList();},[msgTab,loadConvList]);
-  useEffect(()=>{if(selCust){setCustMsgs([]);loadOwnerChat(selCust.customerId,selCust.bookingId);}},[selCust,loadOwnerChat]);
+  // تحديث القائمة دورياً (كل 10 ثوانٍ) لتحديث عداد غير المقروء حتى بدون دخول المحادثة
+  useEffect(()=>{
+    if(msgTab!=="customers")return;
+    const id=setInterval(loadConvList,10000);
+    return()=>clearInterval(id);
+  },[msgTab,loadConvList]);
+  // Realtime: تحديث القائمة فورياً عند وصول رسالة جديدة من أي عميل
+  useEffect(()=>{
+    if(msgTab!=="customers"||!salon?.id)return;
+    const ch=supabase.channel(`convlist-${salon.id}`)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages',filter:`salon_id=eq.${salon.id}`},()=>{
+        loadConvList();
+      })
+      .subscribe();
+    return()=>{supabase.removeChannel(ch);};
+  },[msgTab,salon?.id,loadConvList]);
+  useEffect(()=>{if(selCust){prevCustCount.current=-1;setClearConfirm(false);setCustMsgs([]);loadOwnerChat(selCust.customerId,selCust.bookingId);}},[selCust,loadOwnerChat]);
   useEffect(()=>{
     if(!selCust)return;
     const id=setInterval(()=>loadOwnerChat(selCust.customerId,selCust.bookingId),3000);
@@ -6349,14 +6366,18 @@ function MessagesPanel({salon,toast$}){
     setOwnerSending(false);
   };
 
-  const tabBtn=(v,l)=>(
-    <button onClick={()=>setMsgTab(v)} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${msgTab===v?"var(--p)":"var(--border-ui)"}`,background:msgTab===v?"var(--pa08)":"transparent",color:msgTab===v?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit"}}>{l}</button>
+  const unreadCustTotal=convList.reduce((a,c)=>a+(c.unread_count||0),0);
+  const tabBtn=(v,l,badge)=>(
+    <button onClick={()=>setMsgTab(v)} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${msgTab===v?"var(--p)":"var(--border-ui)"}`,background:msgTab===v?"var(--pa08)":"transparent",color:msgTab===v?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+      {l}
+      {badge>0&&<span style={{background:"var(--p)",color:"var(--bg-base)",borderRadius:999,fontSize:10,fontWeight:900,minWidth:17,height:17,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 4px"}}>{badge>99?"99+":badge}</span>}
+    </button>
   );
 
   return(
     <div style={{display:"flex",flexDirection:"column",height:440}}>
       {/* تبويبات */}
-      <div style={{display:"flex",gap:6,marginBottom:10}}>{tabBtn("customers","العملاء")}{tabBtn("admin","الإدارة")}</div>
+      <div style={{display:"flex",gap:6,marginBottom:10}}>{tabBtn("customers","العملاء",unreadCustTotal)}{tabBtn("admin","الإدارة",0)}</div>
 
       {/* تبويب الإدارة */}
       {msgTab==="admin"&&<>
@@ -6391,11 +6412,13 @@ function MessagesPanel({salon,toast$}){
                 style={{padding:"10px 12px",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}
                 onMouseEnter={e=>e.currentTarget.style.background="var(--surface-2)"}
                 onMouseLeave={e=>e.currentTarget.style.background=""}>
-                <div>
+                <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{c.customer_name||t('ui.customer_prefix',{id:c.customer_id})} {c.booking_id&&<span style={{fontSize:11,color:"var(--text-muted)",fontWeight:400}}>· {t('ui.booking_prefix',{id:c.booking_id})}</span>}</div>
-                  <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.text}</div>
+                  <div style={{fontSize:11,color:(c.unread_count||0)>0?"var(--text-primary)":"var(--text-muted)",fontWeight:(c.unread_count||0)>0?600:400,marginTop:2,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.text}</div>
                 </div>
-                {!c.read_at&&c.from_customer&&<div style={{width:8,height:8,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>}
+                {(c.unread_count||0)>0
+                  ?<span style={{background:"var(--p)",color:"var(--bg-base)",borderRadius:999,fontSize:10,fontWeight:900,minWidth:19,height:19,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 5px",flexShrink:0}}>{c.unread_count>99?"99+":c.unread_count}</span>
+                  :null}
               </div>
             ))}
           </div>
@@ -6406,6 +6429,24 @@ function MessagesPanel({salon,toast$}){
                 <IconArrowRight size={12}/>{t('ui.back_label')}
               </button>
               <div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)"}}>{selCust.customerName}</div>
+              {!clearConfirm
+                ?<button onClick={()=>setClearConfirm(true)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:11,fontFamily:"inherit",padding:"2px 6px",borderRadius:6}} title="مسح الدردشة">🗑</button>
+                :<div style={{display:"flex",gap:4,alignItems:"center"}}>
+                  <span style={{fontSize:10,color:"var(--text-muted)"}}>تأكيد المسح؟</span>
+                  <button onClick={async()=>{
+                    try{
+                      const url=selCust.bookingId
+                        ?`/api/owner-chat?customerId=${selCust.customerId}&bookingId=${selCust.bookingId}`
+                        :`/api/owner-chat?customerId=${selCust.customerId}`;
+                      await fetch(url,{method:"DELETE",credentials:"include"});
+                      setCustMsgs([]);
+                      loadConvList();
+                    }catch{}
+                    setClearConfirm(false);
+                  }} style={{background:"#ef4444",color:"#fff",border:"none",borderRadius:5,fontSize:10,fontWeight:700,cursor:"pointer",padding:"2px 7px",fontFamily:"inherit"}}>نعم</button>
+                  <button onClick={()=>setClearConfirm(false)} style={{background:"none",border:"1px solid var(--border-ui)",borderRadius:5,fontSize:10,cursor:"pointer",padding:"2px 6px",color:"var(--text-muted)",fontFamily:"inherit"}}>لا</button>
+                </div>
+              }
             </div>
             <div ref={custBoxRef} style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
               {custMsgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:20}}>{t('ui.no_messages')}</div>}
