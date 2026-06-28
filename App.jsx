@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L103";
+const APP_VERSION = "L104";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -6230,15 +6230,17 @@ function MessagesPanel({salon,toast$}){
   const[msgs,setMsgs]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
   const[txt,setTxt]=useState("");
   const[sending,setSending]=useState(false);
-  const bottomRef=useRef(null);
-  const[msgTab,setMsgTab]=useState("admin"); // "admin" | "customers"
+  const adminBoxRef=useRef(null);
+  const[msgTab,setMsgTab]=useState("customers"); // "admin" | "customers"
   const[selCust,setSelCust]=useState(null); // {customerId,bookingId,customerName}
   const[convList,setConvList]=useState([]);
   const[loadingConv,setLoadingConv]=useState(false);
   const[custMsgs,setCustMsgs]=useState([]);
   const[ownerTxt,setOwnerTxt]=useState("");
   const[ownerSending,setOwnerSending]=useState(false);
-  const custBottomRef=useRef(null);
+  const custBoxRef=useRef(null);
+  const prevAdminCount=useRef(-1);
+  const prevCustCount=useRef(-1);
 
   // تحميل الرسائل من Supabase
   const loadMsgs=useCallback(async()=>{
@@ -6265,7 +6267,7 @@ function MessagesPanel({salon,toast$}){
     return()=>{supabase.removeChannel(channel);};
   },[salon.id,loadMsgs]);
 
-  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+  useEffect(()=>{const el=adminBoxRef.current;if(!el)return;if(prevAdminCount.current<0||msgs.length>prevAdminCount.current)el.scrollTop=el.scrollHeight;prevAdminCount.current=msgs.length;},[msgs]);
 
   const send=async()=>{
     if(!txt.trim()||sending)return;
@@ -6323,7 +6325,7 @@ function MessagesPanel({salon,toast$}){
       .subscribe();
     return()=>{supabase.removeChannel(ch);};
   },[selCust,salon?.id,loadOwnerChat]);
-  useEffect(()=>{custBottomRef.current?.scrollIntoView({behavior:"smooth"});},[custMsgs]);
+  useEffect(()=>{const el=custBoxRef.current;if(!el)return;if(prevCustCount.current<0||custMsgs.length>prevCustCount.current)el.scrollTop=el.scrollHeight;prevCustCount.current=custMsgs.length;},[custMsgs]);
 
   const sendOwnerReply=async()=>{
     if(!ownerTxt.trim()||ownerSending||!selCust)return;
@@ -6354,22 +6356,21 @@ function MessagesPanel({salon,toast$}){
   return(
     <div style={{display:"flex",flexDirection:"column",height:440}}>
       {/* تبويبات */}
-      <div style={{display:"flex",gap:6,marginBottom:10}}>{tabBtn("admin","الإدارة")}{tabBtn("customers","العملاء")}</div>
+      <div style={{display:"flex",gap:6,marginBottom:10}}>{tabBtn("customers","العملاء")}{tabBtn("admin","الإدارة")}</div>
 
       {/* تبويب الإدارة */}
       {msgTab==="admin"&&<>
-        <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+        <div ref={adminBoxRef} style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
           {msgs.length===0&&<div style={G.empty}>{t("messages.empty")}</div>}
           {msgs.map(m=>(
             <div key={m.id} style={{display:"flex",justifyContent:m.from==="owner"?"flex-end":"flex-start"}}>
               <div style={{maxWidth:"80%",padding:"8px 12px",borderRadius:m.from==="owner"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.from==="owner"?"var(--pa25)":"var(--surface-2)",border:`1px solid ${m.from==="owner"?"var(--pa4)":"var(--border-ui)"}`}}>
                 <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:3}}>{m.from==="owner"?t("messages.from_you"):t("messages.from_admin")}</div>
                 <div style={{fontSize:13,color:"var(--text-primary)"}}>{m.text}</div>
-                <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3,textAlign:m.from==="owner"?"left":"right"}}>{m.time}{m.from==="owner"&&m.readAt?` · ✓✓ ${t("messages.read")}`:""}</div>
+                <div style={{fontSize:9,color:"var(--text-muted)",marginTop:3,display:"flex",alignItems:"center",justifyContent:m.from==="owner"?"flex-start":"flex-end",gap:3}}>{m.time}{m.from==="owner"&&<span style={{color:m.readAt?"#34B7F1":"#888888"}}>✓✓</span>}</div>
               </div>
             </div>
           ))}
-          <div ref={bottomRef}/>
         </div>
         <div style={{display:"flex",gap:8}}>
           <input style={{flex:1,padding:"10px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
@@ -6406,7 +6407,7 @@ function MessagesPanel({salon,toast$}){
               </button>
               <div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)"}}>{selCust.customerName}</div>
             </div>
-            <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
+            <div ref={custBoxRef} style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
               {custMsgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:20}}>{t('ui.no_messages')}</div>}
               {custMsgs.map(m=>(
                 <div key={m.id} style={{display:"flex",justifyContent:m.from_customer?"flex-start":"flex-end"}}>
@@ -6415,14 +6416,13 @@ function MessagesPanel({salon,toast$}){
                     border:`1px solid ${m.from_customer?"var(--border-ui)":"var(--pa4)"}`}}>
                     <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:2}}>{m.from_customer?"العميل":"أنت"}</div>
                     <div style={{fontSize:13,color:"var(--text-primary)"}}>{m.text}</div>
-                    <div style={{fontSize:9,color:"var(--text-muted)",marginTop:2}}>
+                    <div style={{fontSize:9,color:"var(--text-muted)",marginTop:2,display:"flex",alignItems:"center",gap:3}}>
                       {new Date(m.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit",hour12:true})}
-                      {!m.from_customer&&m.read_at?" · ✓✓":""}
+                      {!m.from_customer&&<span style={{color:m.read_at?"#34B7F1":"#888888"}}>✓✓</span>}
                     </div>
                   </div>
                 </div>
               ))}
-              <div ref={custBottomRef}/>
             </div>
             <div style={{display:"flex",gap:6}}>
               <input style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
@@ -6445,7 +6445,8 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
   const{msgs,setMsgs,addMsg}=useChat(cKey);
   const[txt,setTxt]=useState("");
   const[sending,setSending]=useState(false);
-  const bottomRef=useRef(null);
+  const chatBoxRef=useRef(null);
+  const prevMsgCount=useRef(-1);
 
   const load=useCallback(async()=>{
     if(!salonId||!customerId)return;
@@ -6455,6 +6456,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
       const res=await fetch(url);
       const data=await res.json();
       if(Array.isArray(data)){setMsgs(data);}
+      fetch(url,{method:"PATCH"}).catch(()=>{});
     }catch{}
   },[salonId,customerId,bookingId,setMsgs]);
 
@@ -6474,7 +6476,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
     return()=>{supabase.removeChannel(ch);};
   },[salonId,customerId,bookingId,load]);
 
-  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+  useEffect(()=>{const el=chatBoxRef.current;if(!el)return;if(prevMsgCount.current<0||msgs.length>prevMsgCount.current)el.scrollTop=el.scrollHeight;prevMsgCount.current=msgs.length;},[msgs]);
 
   const send=async()=>{
     if(!txt.trim()||sending)return;
@@ -6503,7 +6505,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
         <div style={{fontSize:12,fontWeight:700,color:"var(--p)",display:"flex",alignItems:"center",gap:5}}><IconChat size={13}/>{t('ui.contact_salon',{salon:salonName||""})}</div>
         <button style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",padding:0}} onClick={onClose}><IconClose size={14}/></button>
       </div>
-      <div style={{height:220,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
+      <div ref={chatBoxRef} style={{height:220,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
         {msgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:40}}>{t('ui.no_messages_yet')}</div>}
         {msgs.map(m=>(
           <div key={m.id} style={{display:"flex",justifyContent:m.from_customer?"flex-end":"flex-start"}}>
@@ -6512,14 +6514,13 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
               border:`1px solid ${m.from_customer?"rgba(var(--pr),.3)":"var(--border-ui)"}`}}>
               <div style={{fontSize:10,color:"var(--text-muted)",marginBottom:2}}>{m.from_customer?"أنت":salonName||"الصالون"}</div>
               <div style={{fontSize:13,color:"var(--text-primary)"}}>{m.text}</div>
-              <div style={{fontSize:9,color:"var(--text-muted)",marginTop:2}}>
+              <div style={{fontSize:9,color:"var(--text-muted)",marginTop:2,display:"flex",alignItems:"center",gap:3}}>
                 {new Date(m.created_at).toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit",hour12:true})}
-                {m.from_customer&&m.read_at?" · ✓✓":""}
+                {m.from_customer&&<span style={{color:String(m.id).startsWith("tmp-")?"#888":(m.read_at?"#34B7F1":"#888888")}}>{String(m.id).startsWith("tmp-")?"✓":"✓✓"}</span>}
               </div>
             </div>
           </div>
         ))}
-        <div ref={bottomRef}/>
       </div>
       <div style={{display:"flex",gap:6}}>
         <input style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
