@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L102";
+const APP_VERSION = "L103";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -6448,9 +6448,11 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
   const bottomRef=useRef(null);
 
   const load=useCallback(async()=>{
-    if(!salonId||!customerId||!bookingId)return;
+    if(!salonId||!customerId)return;
     try{
-      const res=await fetch(`/api/customer-messages?salonId=${salonId}&customerId=${customerId}&bookingId=${bookingId}`);
+      let url=`/api/customer-messages?salonId=${salonId}&customerId=${customerId}`;
+      if(bookingId)url+=`&bookingId=${bookingId}`;
+      const res=await fetch(url);
       const data=await res.json();
       if(Array.isArray(data)){setMsgs(data);}
     }catch{}
@@ -6465,17 +6467,12 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
 
   useEffect(()=>{
     const ch=supabase.channel(`cm-${salonId}-${customerId}-${bookingId}`)
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages'},(payload)=>{
-        const n=payload.new;
-        if(n&&Number(n.salon_id)===Number(salonId)&&Number(n.customer_id)===Number(customerId)&&Number(n.booking_id)===Number(bookingId)){
-          addMsg(n);
-        }else{
-          load();
-        }
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages',filter:`salon_id=eq.${salonId}`},(payload)=>{
+        load();
       })
       .subscribe();
     return()=>{supabase.removeChannel(ch);};
-  },[salonId,customerId,bookingId,load,addMsg]);
+  },[salonId,customerId,bookingId,load]);
 
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
 
@@ -6488,7 +6485,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
     addMsg({id:tempId,from_customer:true,text:msgText,created_at:new Date().toISOString(),read_at:null});
     try{
       await sb("customer_messages","POST",{
-        salon_id:Number(salonId),customer_id:Number(customerId),booking_id:Number(bookingId),
+        salon_id:Number(salonId),customer_id:Number(customerId),booking_id:bookingId?Number(bookingId):null,
         from_customer:true,text:msgText
       });
       await load();
