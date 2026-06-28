@@ -126,7 +126,7 @@ module.exports = async (req, res) => {
       .order("created_at", { ascending: true })
       .limit(50);
 
-    if (bId) query = query.eq("booking_id", bId);
+    if (bId) query = query.or(`booking_id.eq.${bId},booking_id.is.null`);
 
     const { data, error } = await query;
 
@@ -140,7 +140,7 @@ module.exports = async (req, res) => {
       .eq("customer_id", cId)
       .eq("from_customer", true)
       .is("read_at", null);
-    if (bId) markQuery = markQuery.eq("booking_id", bId);
+    if (bId) markQuery = markQuery.or(`booking_id.eq.${bId},booking_id.is.null`);
     await markQuery;
 
     res.status(200).json(data || []);

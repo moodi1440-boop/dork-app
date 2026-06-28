@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
     .order("created_at", { ascending: true })
     .limit(50);
 
-  if (bookingId) query = query.eq("booking_id", bookingId);
+  if (bookingId) query = query.or(`booking_id.eq.${bookingId},booking_id.is.null`);
 
   const { data, error } = await query;
   if (error) { res.status(500).json({ error: error.message }); return; }

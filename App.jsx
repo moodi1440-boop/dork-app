@@ -6570,6 +6570,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
   const chatBoxRef=useRef(null);
   const prevMsgCount=useRef(-1);
   const prevFromSalonRef=useRef(0);
+  const didMarkReadRef=useRef(false);
 
   const load=useCallback(async()=>{
     if(!salonId||!customerId)return;
@@ -6586,7 +6587,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
         }
         prevFromSalonRef.current=salonMsgsCount;
       }
-      fetch(url,{method:"PATCH"}).catch(()=>{});
+      if(!didMarkReadRef.current){didMarkReadRef.current=true;fetch(url,{method:"PATCH"}).catch(()=>{});}
     }catch{}
   },[salonId,customerId,bookingId,setMsgs,toast$]);
 
