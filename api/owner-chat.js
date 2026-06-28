@@ -39,10 +39,10 @@ module.exports = async (req, res) => {
 
       if (error) { res.status(500).json({ error: error.message }); return; }
 
-      // نجمع آخر رسالة لكل (customer_id, booking_id)
+      // نجمع آخر رسالة لكل customer_id (محادثة واحدة لكل عميل)
       const seen = new Map();
       for (const msg of (data || [])) {
-        const key = `${msg.customer_id}-${msg.booking_id}`;
+        const key = `${msg.customer_id}`;
         if (!seen.has(key)) seen.set(key, msg);
       }
       const convs = [...seen.values()];
@@ -84,7 +84,7 @@ module.exports = async (req, res) => {
 
       const unreadMap = {};
       for (const msg of (unreadData || [])) {
-        const key = `${msg.customer_id}-${msg.booking_id}`;
+        const key = `${msg.customer_id}`;
         unreadMap[key] = (unreadMap[key] || 0) + 1;
       }
 
@@ -92,7 +92,7 @@ module.exports = async (req, res) => {
         ...m,
         customer_name: custNameMap[m.customer_id] || bkNameMap[m.booking_id] || null,
         customer_phone: custPhoneMap[m.customer_id] || null,
-        unread_count: unreadMap[`${m.customer_id}-${m.booking_id}`] || 0,
+        unread_count: unreadMap[`${m.customer_id}`] || 0,
       })));
       return;
     }
@@ -124,24 +124,20 @@ module.exports = async (req, res) => {
       .eq("salon_id", Number(salonId))
       .eq("customer_id", cId)
       .order("created_at", { ascending: true })
-      .limit(50);
-
-    if (bId) query = query.or(`booking_id.eq.${bId},booking_id.is.null`);
+      .limit(200);
 
     const { data, error } = await query;
 
     if (error) { res.status(500).json({ error: error.message }); return; }
 
-    // تعليم رسائل العميل كمقروءة
-    let markQuery = sb
+    // تعليم كل رسائل العميل كمقروءة (بغض النظر عن booking_id)
+    await sb
       .from("customer_messages")
       .update({ read_at: new Date().toISOString() })
       .eq("salon_id", Number(salonId))
       .eq("customer_id", cId)
       .eq("from_customer", true)
       .is("read_at", null);
-    if (bId) markQuery = markQuery.or(`booking_id.eq.${bId},booking_id.is.null`);
-    await markQuery;
 
     res.status(200).json(data || []);
     return;

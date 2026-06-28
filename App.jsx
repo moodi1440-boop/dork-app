@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L107";
+const APP_VERSION = "L108";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -5173,7 +5173,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       if(_shownAdminRef.current.has(String(n.id)))continue;
       _shownAdminRef.current.add(String(n.id));
       try{localStorage.setItem("dork_shown_admin",JSON.stringify([..._shownAdminRef.current]));}catch{}
-      toast$&&toast$(`${n.icon||"📢"} ${n.title}: ${n.body||""}`.trim(),"info",18000);
+      toast$&&toast$(`${n.icon||"📢"} ${n.title}: ${n.body||""}`.trim(),"info",5000);
     }
   },[ownerNotifs]);
   const _oPtStartY=useRef(0);const _oPtActive=useRef(false);const _oPtYRef=useRef(0);
@@ -6337,7 +6337,7 @@ function MessagesPanel({salon,toast$}){
       if(Array.isArray(data)){
         setConvList(data);
         const newTotal=data.reduce((a,c)=>a+(c.unread_count||0),0);
-        if(prevUnreadRef.current>=0&&newTotal>prevUnreadRef.current&&!selCust){
+        if(prevUnreadRef.current>=0&&newTotal>prevUnreadRef.current){
           toast$&&toast$("💬 رسالة جديدة من عميل","info");
         }
         prevUnreadRef.current=newTotal;
@@ -6403,7 +6403,7 @@ function MessagesPanel({salon,toast$}){
       .subscribe();
     return()=>{supabase.removeChannel(ch);};
   },[selCust,salon?.id,loadOwnerChat]);
-  useEffect(()=>{const el=custBoxRef.current;if(!el)return;if(needScrollRef.current||prevCustCount.current<0||custMsgs.length>prevCustCount.current){el.scrollTop=el.scrollHeight;needScrollRef.current=false;}prevCustCount.current=custMsgs.length;},[custMsgs]);
+  useEffect(()=>{const el=custBoxRef.current;if(!el)return;if(needScrollRef.current||prevCustCount.current<0||custMsgs.length>prevCustCount.current){requestAnimationFrame(()=>{if(custBoxRef.current)custBoxRef.current.scrollTop=custBoxRef.current.scrollHeight;});needScrollRef.current=false;}prevCustCount.current=custMsgs.length;},[custMsgs]);
 
   const sendOwnerReply=async()=>{
     if(!ownerTxt.trim()||ownerSending||!selCust)return;
@@ -6436,7 +6436,7 @@ function MessagesPanel({salon,toast$}){
   );
 
   return(
-    <div style={{display:"flex",flexDirection:"column",height:440}}>
+    <div style={{display:"flex",flexDirection:"column",height:440,overflow:"hidden"}}>
       {/* تبويبات */}
       <div style={{display:"flex",gap:6,marginBottom:10}}>{tabBtn("customers","العملاء",unreadCustTotal)}{tabBtn("admin","الإدارة",0)}</div>
 
@@ -6531,8 +6531,8 @@ function MessagesPanel({salon,toast$}){
             </div>
           </div>
         ):(
-          <div style={{flex:1,display:"flex",flexDirection:"column"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,position:"sticky",top:0,zIndex:5,background:"var(--surface-1)",borderRadius:6,padding:"4px 2px"}}>
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,flexShrink:0,background:"var(--surface-1)",borderRadius:6,padding:"4px 2px"}}>
               <button onClick={()=>{setSelCust(null);loadConvList();}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--p)",fontSize:12,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
                 <IconArrowRight size={12}/>{t('ui.back_label')}
               </button>
@@ -6634,7 +6634,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
     return()=>{supabase.removeChannel(ch);};
   },[salonId,customerId,bookingId,load]);
 
-  useEffect(()=>{const el=chatBoxRef.current;if(!el)return;if(prevMsgCount.current<0||msgs.length>prevMsgCount.current)el.scrollTop=el.scrollHeight;prevMsgCount.current=msgs.length;},[msgs]);
+  useEffect(()=>{const el=chatBoxRef.current;if(!el)return;if(prevMsgCount.current<0||msgs.length>prevMsgCount.current){requestAnimationFrame(()=>{if(chatBoxRef.current)chatBoxRef.current.scrollTop=chatBoxRef.current.scrollHeight;});}prevMsgCount.current=msgs.length;},[msgs]);
 
   const send=async()=>{
     if(!txt.trim()||sending)return;
@@ -8297,7 +8297,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                           }catch(e){toast$(i18n.t('ui.cancel_error'),"err");}
                         }}><IconBlocked size={13}/> إلغاء</button>
                       </>)}
-                      {!isPast&&h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>{t('ui.contact')}{(chatUnread[h.bookingId]||0)>0&&<span style={{background:"#e74c3c",color:"#fff",borderRadius:999,fontSize:9,fontWeight:900,minWidth:14,height:14,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 3px",marginLeft:2}}>{chatUnread[h.bookingId]>9?"9+":chatUnread[h.bookingId]}</span>}</button>}
+                      {!isPast&&h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>{t('ui.contact')}{(chatUnread[h.salonId]||0)>0&&<span style={{background:"#e74c3c",color:"#fff",borderRadius:999,fontSize:9,fontWeight:900,minWidth:14,height:14,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 3px",marginLeft:2}}>{chatUnread[h.salonId]>9?"9+":chatUnread[h.salonId]}</span>}</button>}
                     </div>
                   </div>
                   {/* التقييم فقط بعد انتهاء وقت الحجز */}

@@ -11,14 +11,14 @@ module.exports = async (req, res) => {
     const sb = createAdminClient();
     const { data } = await sb
       .from("customer_messages")
-      .select("booking_id")
+      .select("salon_id")
       .eq("customer_id", customerId)
       .eq("from_customer", false)
       .is("read_at", null)
       .limit(200);
     const counts = {};
     for (const m of (data || [])) {
-      if (m.booking_id) counts[m.booking_id] = (counts[m.booking_id] || 0) + 1;
+      if (m.salon_id) counts[m.salon_id] = (counts[m.salon_id] || 0) + 1;
     }
     res.status(200).json(counts);
     return;
@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
       .eq("customer_id", customerId)
       .eq("from_customer", false)
       .is("read_at", null);
-    if (bookingId) q = q.eq("booking_id", bookingId);
+    // لا نفلتر بـ booking_id — نعلّم كل رسائل الصالون لهذا العميل كمقروءة
     await q;
     res.status(200).json({ ok: true });
     return;
@@ -57,9 +57,7 @@ module.exports = async (req, res) => {
     .eq("salon_id", salonId)
     .eq("customer_id", customerId)
     .order("created_at", { ascending: true })
-    .limit(50);
-
-  if (bookingId) query = query.or(`booking_id.eq.${bookingId},booking_id.is.null`);
+    .limit(200);
 
   const { data, error } = await query;
   if (error) { res.status(500).json({ error: error.message }); return; }
