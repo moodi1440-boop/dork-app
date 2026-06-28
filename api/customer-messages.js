@@ -5,6 +5,25 @@ module.exports = async (req, res) => {
   const customerId = Number(req.query.customerId);
   const bookingId  = Number(req.query.bookingId) || null;
 
+  // عدد الرسائل غير المقروءة من الصالون لكل booking (للعميل)
+  if (req.method === "GET" && req.query.unreadByBooking === "1") {
+    if (!customerId) { res.status(400).json({ error: "customerId مطلوب" }); return; }
+    const sb = createAdminClient();
+    const { data } = await sb
+      .from("customer_messages")
+      .select("booking_id")
+      .eq("customer_id", customerId)
+      .eq("from_customer", false)
+      .is("read_at", null)
+      .limit(200);
+    const counts = {};
+    for (const m of (data || [])) {
+      if (m.booking_id) counts[m.booking_id] = (counts[m.booking_id] || 0) + 1;
+    }
+    res.status(200).json(counts);
+    return;
+  }
+
   if (!salonId || !customerId) {
     res.status(400).json({ error: "salonId و customerId مطلوبان" });
     return;

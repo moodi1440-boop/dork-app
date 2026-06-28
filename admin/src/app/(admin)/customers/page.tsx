@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
-import { exportCSVRaw, exportPDFRaw } from "@/lib/csv";
+import { exportPDFRaw } from "@/lib/csv";
 import { EmojiIcon } from "@/components/Icons";
 
 interface Customer { id: string; name: string; phone: string; email: string; loyalty_points: number; loyalty_frozen: boolean; admin_notes?: string; blocked?: boolean; favs?: unknown[]; pin?: string; }
@@ -116,26 +116,6 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
     await load();
   };
 
-  const exportCustomerCSV = () => {
-    if (!customer) return;
-    const totalSpent = bookings.reduce((a, b) => a + (b.total || 0), 0);
-    const rows: string[][] = [
-      ["معلومات العميل", ""],
-      ["الاسم",          customer.name],
-      ["الجوال",         customer.phone],
-      ["البريد",         customer.email ?? ""],
-      ["الحالة",         customer.blocked ? "محظور" : customer.loyalty_frozen ? "مجمّد" : "نشط"],
-      ["نقاط الولاء",    String(customer.loyalty_points ?? 0)],
-      ["إجمالي الإنفاق", String(totalSpent)],
-      ["عدد الحجوزات",   String(bookings.length)],
-      [],
-      [`الحجوزات (${bookings.length} حجز)`, ""],
-      ["التاريخ", "الوقت", "الصالون", "المبلغ", "الحالة"],
-      ...bookings.map((b) => [b.date, b.time, b.salonName ?? "", String(b.total), b.status]),
-    ];
-    exportCSVRaw(`${customer.name}.csv`, rows);
-  };
-
   const exportCustomerPDF = () => {
     if (!customer) return;
     const totalSpent = bookings.reduce((a, b) => a + (b.total || 0), 0);
@@ -163,9 +143,6 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
         <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-navy">
           <h2 className="text-white font-bold"><EmojiIcon icon="👤" size={18}/> {customer.name}</h2>
           <div className="flex items-center gap-2">
-            <button onClick={exportCustomerCSV} className="px-3 py-1.5 text-xs bg-green-500/10 border border-green-500/30 text-green-400 rounded-lg font-bold hover:bg-green-500/20 transition-colors">
-              <EmojiIcon icon="📊" size={14}/> CSV
-            </button>
             <button onClick={exportCustomerPDF} className="px-3 py-1.5 text-xs bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg font-bold hover:bg-red-500/20 transition-colors">
               <EmojiIcon icon="📄" size={14}/> PDF
             </button>

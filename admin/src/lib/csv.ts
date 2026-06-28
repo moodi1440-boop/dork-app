@@ -1,37 +1,3 @@
-// Tab كفاصل — يعمل في كل locale (عربي/إنجليزي) بدون مشاكل
-function esc(val: string | number | null | undefined): string {
-  return String(val ?? "").replace(/[\t\r\n]+/g, " ");
-}
-
-function _dl(filename: string, content: string) {
-  // BOM كـ bytes حقيقية لضمان اكتشاف UTF-8 في Excel وNumbers
-  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-  const encoded = new TextEncoder().encode(content);
-  const blob = new Blob([bom, encoded], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-// للصفحات ذات الـ headers المنفصلة (حجوزات، عمولات، مقارنة)
-export function exportCSV(filename: string, headers: string[], rows: (string | number)[][]) {
-  const name = filename.replace(/\.(csv|xls|xlsx)$/i, "") + ".csv";
-  const lines = [
-    headers.map(esc).join("\t"),
-    ...rows.map(r => r.map(esc).join("\t")),
-  ].join("\r\n");
-  _dl(name, lines);
-}
-
-// للصفحات ذات الصفوف المدمجة (صالونات، عملاء)
-export function exportCSVRaw(filename: string, rows: string[][]) {
-  const lines = rows.map(r => r.map(esc).join("\t")).join("\r\n");
-  _dl(filename, lines);
-}
-
 // PDF: headers + صفوف منظمة → نافذة طباعة
 export function exportPDF(title: string, headers: string[], rows: (string | number)[][]) {
   const thead = headers.map(h => `<th>${h}</th>`).join("");

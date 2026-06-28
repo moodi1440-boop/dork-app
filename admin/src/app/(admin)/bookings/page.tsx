@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
-import { exportCSV, exportPDF } from "@/lib/csv";
+import { exportPDF } from "@/lib/csv";
 import { EmojiIcon } from "@/components/Icons";
 
 type Booking = { id: string; salon_id: string; salonName: string; name: string; phone: string; barber_name: string; date: string; time: string; total: number; status: string; attendance: string | null; };
@@ -61,13 +61,6 @@ export default function BookingsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div><h1 className="text-2xl font-black text-white">الحجوزات</h1><p className="text-gray-400 text-sm mt-1">{bookings.length} حجز</p></div>
         <div className="flex gap-2">
-          <button onClick={() => exportCSV(
-            "الحجوزات.csv",
-            ["العميل", "الجوال", "الصالون", "التاريخ", "الوقت", "الإجمالي", "الحالة"],
-            bookings.map((b) => [b.name, b.phone, b.salonName, b.date, b.time, b.total, b.status])
-          )} className="px-4 py-2.5 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl text-sm font-bold hover:bg-green-500/20 transition-colors">
-            <EmojiIcon icon="📊" size={16}/> CSV
-          </button>
           <button onClick={() => exportPDF(
             "الحجوزات",
             ["العميل", "الجوال", "الصالون", "التاريخ", "الوقت", "الإجمالي", "الحالة"],

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L105";
+const APP_VERSION = "L106";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -1756,7 +1756,7 @@ export default function App(){
   const allLoc=[...BASE_LOC,...extraLoc];
   useEffect(()=>{localStorage.setItem("bbv6_loc",JSON.stringify(extraLoc));},[extraLoc]);
 
-  const toast$=(msg,type="ok")=>{setToast({msg,type});setTimeout(()=>setToast(null),3200);};
+  const toast$=(msg,type="ok",ms=3200)=>{setToast({msg,type});setTimeout(()=>setToast(null),ms);};
 
   // فحص صلاحية كوكي جلسة صاحب الصالون عند تحميل التطبيق - لو كانت منتهية أو
   // غير صالحة (مثلاً بعد 30 يوم أو حذف الكوكي يدويًا) نرجّعه لتسجيل الدخول
@@ -2393,7 +2393,7 @@ export default function App(){
       <style>{CSS}</style>
       {/* بانر خطأ الاتصال - يظهر فقط عند الخطأ */}
       {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"rgba(231,76,60,.12)",borderBottom:"1px solid rgba(231,76,60,.3)",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconError size={14}/>{t('ui.db_error')}</div>}
-      {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":"#1a5c34",display:"flex",alignItems:"center",gap:8}}>{toast.type==="err"?<IconError size={16}/>:toast.type==="warn"?null:<IconSuccess size={16}/>}<span>{toast.msg}</span></div>}
+      {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":toast.type==="info"?"rgba(150,110,0,.9)":"#1a5c34",display:"flex",alignItems:"center",gap:8}}>{toast.type==="err"?<IconError size={16}/>:toast.type==="warn"?null:<IconSuccess size={16}/>}<span>{toast.msg}</span></div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
       <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} activeDrawerItem={activeDrawerItem} setActiveDrawerItem={setActiveDrawerItem} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
       <SalonDrawer open={showSalonDrawer} onClose={()=>setShowSalonDrawer(false)} salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} view={view} setView={setView} setOwnerSession={sharedProps.setOwnerSession} settings={sharedProps.settings} setSettings={sharedProps.setSettings} persistUiToSupabase={sharedProps.persistUiToSupabase} toast$={toast$}/>
@@ -2718,11 +2718,16 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
 // ==============================================
 //  SALON DRAWER — قائمة صاحب الصالون
 // ==============================================
-function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOwnerSession,settings,setSettings,persistUiToSupabase,toast$}){
+function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOwnerSession,settings,setSettings,persistUiToSupabase,toast$,salonUnreadMsgs=0}){
   const[showLogout,setShowLogout]=useState(false);
   const{t,i18n}=useTranslation();
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
   useEffect(()=>{if(!open)setShowLogout(false);},[open]);
+  const[_sUnread,_setSUnread]=useState(salonUnreadMsgs);
+  useEffect(()=>{
+    if(!open||!salon?.id)return;
+    fetch("/api/owner-chat?list=1",{credentials:"include"}).then(r=>r.json()).then(data=>{if(Array.isArray(data))_setSUnread(data.reduce((a,c)=>a+(c.unread_count||0),0));}).catch(()=>{});
+  },[open,salon?.id]);
   if(!salon)return null;
 
   const nav=(fn)=>{fn();onClose();};
@@ -2753,7 +2758,7 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
         <Row icon="🗓" label={t("salon_drawer.bookings")} active={ownerTab==="calendar"} onClick={()=>nav(()=>{setOwnerTab("calendar");setView("ownerDash");})}/>
         <Row icon="🔥" label="إرسال عرض" active={ownerTab==="promo"} onClick={()=>nav(()=>{setOwnerTab("promo");setView("ownerDash");})}/>
         <Row icon="⭐" label={t("salon_drawer.reviews")} active={ownerTab==="reviews"} onClick={()=>nav(()=>{setOwnerTab("reviews");setView("ownerDash");})}/>
-        <Row icon="💬" label={t("salon_drawer.messages")} active={ownerTab==="messages"} onClick={()=>nav(()=>{setOwnerTab("messages");setView("ownerDash");})}/>
+        <Row icon="💬" label={<span style={{display:"flex",alignItems:"center",gap:5}}>{t("salon_drawer.messages")}{_sUnread>0&&<span style={{background:"#e74c3c",color:"#fff",borderRadius:999,fontSize:9,fontWeight:900,minWidth:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 4px"}}>{_sUnread>99?"99+":_sUnread}</span>}</span>} active={ownerTab==="messages"} onClick={()=>nav(()=>{setOwnerTab("messages");setView("ownerDash");})}/>
         <Row icon="📊" label={t("salon_drawer.stats")} active={ownerTab==="stats"} onClick={()=>nav(()=>{setOwnerTab("stats");setView("ownerDash");})}/>
         <SecHead label={t("salon_drawer.section_salon")}/>
         <Row icon="📋" label={t("salon_drawer.salon_info")} active={view==="ownerInfo"} onClick={()=>nav(()=>setView("ownerInfo"))}/>
@@ -2845,7 +2850,7 @@ function EntryView({setView}){
 // ==============================================
 //  TOP BAR - 3 role buttons on the LEFT
 // ==============================================
-function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustomerSession,darkMode,setDarkMode,resetHome,showDrawer,setShowDrawer,showSalonDrawer,setShowSalonDrawer}){
+function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustomerSession,darkMode,setDarkMode,resetHome,showDrawer,setShowDrawer,showSalonDrawer,setShowSalonDrawer,setOwnerTab}){
   const{t}=useTranslation();
   // للعميل: هيدر مبسط مع زر ≡
   if(customerSession&&!ownerSession){
@@ -2876,7 +2881,7 @@ function TopBar({ownerSession,customerSession,setView,setOwnerSession,setCustome
           <span style={{display:"block",width:14,height:2,background:"var(--p)",borderRadius:2,transition:"all 0.2s"}}/>
           <span style={{display:"block",width:18,height:2,background:"var(--p)",borderRadius:2,transition:"all 0.2s"}}/>
         </button>
-        <button onClick={()=>setView("ownerDash")} style={{width:44,height:44,borderRadius:12,background:"var(--surface-1)",border:"1.5px solid rgba(var(--pr),.3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--p)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>      </div>
+        <button onClick={()=>{setView("ownerDash");setOwnerTab&&setOwnerTab(null);}} style={{width:44,height:44,borderRadius:12,background:"var(--surface-1)",border:"1.5px solid rgba(var(--pr),.3)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--p)",padding:0,flexShrink:0,transition:"all 0.2s"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V10"/></svg></button>      </div>
       <div style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>setView("ownerDash")}>
         <span style={{fontFamily:"'Cairo',sans-serif",fontSize:17,fontWeight:900,color:"var(--p)",letterSpacing:0.5}}>{t('ui.book')}</span>
         <span style={{fontFamily:"'Cinzel',serif",fontSize:48,fontWeight:900,background:"linear-gradient(180deg,var(--pll) 0%,var(--p) 50%,var(--pd) 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",filter:"drop-shadow(0px 2px 2px rgba(0,0,0,0.25))",letterSpacing:2,lineHeight:1}}>DORK</span>
@@ -5134,6 +5139,16 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const[dashCashAmt,setDashCashAmt]=useState("");
   const[dashCashBarber,setDashCashBarber]=useState("");
   useEffect(()=>{if(salon?.id)refreshSalonBookings(salon.id);},[salon?.id]);
+  const _shownAdminRef=useRef(()=>{try{return new Set(JSON.parse(localStorage.getItem("dork_shown_admin")||"[]"));}catch{return new Set();}});
+  useEffect(()=>{
+    const adminNotifs=ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان")));
+    for(const n of adminNotifs){
+      if(_shownAdminRef.current.has(String(n.id)))continue;
+      _shownAdminRef.current.add(String(n.id));
+      try{localStorage.setItem("dork_shown_admin",JSON.stringify([..._shownAdminRef.current]));}catch{}
+      toast$&&toast$(`${n.icon||"📢"} ${n.title}: ${n.body||""}`.trim(),"info",18000);
+    }
+  },[ownerNotifs]);
   const _oPtStartY=useRef(0);const _oPtActive=useRef(false);const _oPtYRef=useRef(0);
   const[_oPtY,_setOPtY]=useState(0);const[_oPtRefreshing,_setOPtRefreshing]=useState(false);const _OPT=65;
   useEffect(()=>{
@@ -5213,14 +5228,6 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
       `}</style>
       <div style={G.fp}>
       {(_oPtY>8||_oPtRefreshing)&&<div style={{position:"fixed",top:64,left:"50%",transform:`translate(-50%,${_oPtRefreshing?10:Math.max(_oPtY-16,0)}px)`,zIndex:100,transition:_oPtRefreshing?"transform .2s":"none",width:34,height:34,borderRadius:"50%",background:"var(--p)",color:"var(--p-text)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,boxShadow:"0 2px 10px rgba(0,0,0,.35)",pointerEvents:"none"}}>{_oPtRefreshing?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}><NotifIcon icon="↻" size={17}/></span>:<NotifIcon icon={_oPtY>=_OPT?"↑":"↓"} size={17}/>}</div>}
-
-      {/* بانر إشعارات الإدارة */}
-      {ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان"))).slice(0,1).map(n=>(
-        <div key={n.id} className="notif-banner" style={{background:"linear-gradient(135deg,rgba(var(--gold-rgb),.12),rgba(var(--gold-rgb),.06))",border:"1px solid rgba(var(--gold-rgb),.35)",borderRadius:10,padding:"10px 12px",marginBottom:12,fontSize:12,color:"var(--p)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{display:"flex",alignItems:"center",gap:6}}><NotifIcon icon={n.icon} size={16}/>{n.title} — {n.body}</span>
-          <button onClick={()=>setOwnerNotifs(p=>p.filter(x=>x.id!==n.id))} style={{background:"transparent",border:"none",color:"var(--text-muted)",cursor:"pointer",fontSize:14,padding:0,display:"flex",alignItems:"center"}}><IconTrash size={14}/></button>
-        </div>
-      ))}
 
       {/* ── الواجهة الرئيسية (لوحتي) ── */}
       {ownerTab===null&&(
@@ -6241,6 +6248,9 @@ function MessagesPanel({salon,toast$}){
   const custBoxRef=useRef(null);
   const prevAdminCount=useRef(-1);
   const prevCustCount=useRef(-1);
+  const needScrollRef=useRef(false);
+  const prevUnreadRef=useRef(0);
+  const isFirstLoadConv=useRef(true);
   const[clearConfirm,setClearConfirm]=useState(false);
   const[searchTxt,setSearchTxt]=useState("");
   const[searchResults,setSearchResults]=useState(null); // null=لم يُبحث, array=نتائج
@@ -6293,14 +6303,22 @@ function MessagesPanel({salon,toast$}){
 
   // تحميل قائمة محادثات العملاء
   const loadConvList=useCallback(async()=>{
-    setLoadingConv(true);
+    if(isFirstLoadConv.current)setLoadingConv(true);
     try{
       const res=await fetch("/api/owner-chat?list=1",{credentials:"include"});
       const data=await res.json();
-      if(Array.isArray(data))setConvList(data);
+      if(Array.isArray(data)){
+        setConvList(data);
+        const newTotal=data.reduce((a,c)=>a+(c.unread_count||0),0);
+        if(prevUnreadRef.current>0&&newTotal>prevUnreadRef.current&&!selCust){
+          toast$&&toast$("💬 رسالة جديدة من عميل","info");
+        }
+        prevUnreadRef.current=newTotal;
+        isFirstLoadConv.current=false;
+      }
     }catch{}
     setLoadingConv(false);
-  },[]);
+  },[selCust,toast$]);
 
   // تحميل رسائل محادثة عميل محدد
   const loadOwnerChat=useCallback(async(cId,bId)=>{
@@ -6342,7 +6360,7 @@ function MessagesPanel({salon,toast$}){
       .subscribe();
     return()=>{supabase.removeChannel(ch);};
   },[msgTab,salon?.id,loadConvList]);
-  useEffect(()=>{if(selCust){prevCustCount.current=-1;setClearConfirm(false);setCustMsgs([]);loadOwnerChat(selCust.customerId,selCust.bookingId);}},[selCust,loadOwnerChat]);
+  useEffect(()=>{if(selCust){needScrollRef.current=true;prevCustCount.current=-1;setClearConfirm(false);setCustMsgs([]);loadOwnerChat(selCust.customerId,selCust.bookingId);}},[selCust,loadOwnerChat]);
   useEffect(()=>{
     if(!selCust)return;
     const id=setInterval(()=>loadOwnerChat(selCust.customerId,selCust.bookingId),3000);
@@ -6358,7 +6376,7 @@ function MessagesPanel({salon,toast$}){
       .subscribe();
     return()=>{supabase.removeChannel(ch);};
   },[selCust,salon?.id,loadOwnerChat]);
-  useEffect(()=>{const el=custBoxRef.current;if(!el)return;if(prevCustCount.current<0||custMsgs.length>prevCustCount.current)el.scrollTop=el.scrollHeight;prevCustCount.current=custMsgs.length;},[custMsgs]);
+  useEffect(()=>{const el=custBoxRef.current;if(!el)return;if(needScrollRef.current||prevCustCount.current<0||custMsgs.length>prevCustCount.current){el.scrollTop=el.scrollHeight;needScrollRef.current=false;}prevCustCount.current=custMsgs.length;},[custMsgs]);
 
   const sendOwnerReply=async()=>{
     if(!ownerTxt.trim()||ownerSending||!selCust)return;
@@ -6386,7 +6404,7 @@ function MessagesPanel({salon,toast$}){
   const tabBtn=(v,l,badge)=>(
     <button onClick={()=>setMsgTab(v)} style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${msgTab===v?"var(--p)":"var(--border-ui)"}`,background:msgTab===v?"var(--pa08)":"transparent",color:msgTab===v?"var(--p)":"var(--text-muted)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
       {l}
-      {badge>0&&<span style={{background:"var(--p)",color:"var(--bg-base)",borderRadius:999,fontSize:10,fontWeight:900,minWidth:17,height:17,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 4px"}}>{badge>99?"99+":badge}</span>}
+      {badge>0&&<span style={{background:"var(--p)",color:"#fff",borderRadius:999,fontSize:10,fontWeight:900,minWidth:17,height:17,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 4px"}}>{badge>99?"99+":badge}</span>}
     </button>
   );
 
@@ -6465,9 +6483,9 @@ function MessagesPanel({salon,toast$}){
                 </>
               ):(
                 <>
-                  {loadingConv&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:20}}>{t('ui.loading')}</div>}
+                  {loadingConv&&isFirstLoadConv.current&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,padding:20}}>{t('ui.loading')}</div>}
                   {!loadingConv&&convList.length===0&&<div style={G.empty}>{t('ui.no_cust_messages')}</div>}
-                  {convList.filter(c=>!searchTxt||(c.customer_name||"").includes(searchTxt)).map((c,i)=>(
+                  {convList.filter(c=>!searchTxt||(c.customer_name||"").toLowerCase().includes(searchTxt.toLowerCase())||(c.customer_phone||"").includes(searchTxt)).map((c,i)=>(
                     <div key={i} onClick={()=>setSelCust({customerId:c.customer_id,bookingId:c.booking_id,customerName:c.customer_name||`عميل #${c.customer_id}`})}
                       style={{padding:"10px 12px",borderBottom:"1px solid var(--border-ui)",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}
                       onMouseEnter={e=>e.currentTarget.style.background="var(--surface-2)"}
@@ -6477,7 +6495,7 @@ function MessagesPanel({salon,toast$}){
                         <div style={{fontSize:11,color:(c.unread_count||0)>0?"var(--text-primary)":"var(--text-muted)",fontWeight:(c.unread_count||0)>0?600:400,marginTop:2,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.text}</div>
                       </div>
                       {(c.unread_count||0)>0
-                        ?<span style={{background:"var(--p)",color:"var(--bg-base)",borderRadius:999,fontSize:10,fontWeight:900,minWidth:19,height:19,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 5px",flexShrink:0}}>{c.unread_count>99?"99+":c.unread_count}</span>
+                        ?<span style={{background:"var(--p)",color:"#fff",borderRadius:999,fontSize:10,fontWeight:900,minWidth:19,height:19,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 5px",flexShrink:0}}>{c.unread_count>99?"99+":c.unread_count}</span>
                         :null}
                     </div>
                   ))}
@@ -6487,7 +6505,7 @@ function MessagesPanel({salon,toast$}){
           </div>
         ):(
           <div style={{flex:1,display:"flex",flexDirection:"column"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,position:"sticky",top:0,zIndex:5,background:"var(--surface-1)",borderRadius:6,padding:"4px 2px"}}>
               <button onClick={()=>{setSelCust(null);loadConvList();}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--p)",fontSize:12,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
                 <IconArrowRight size={12}/>{t('ui.back_label')}
               </button>
@@ -6551,6 +6569,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
   const[sending,setSending]=useState(false);
   const chatBoxRef=useRef(null);
   const prevMsgCount=useRef(-1);
+  const prevFromSalonRef=useRef(0);
 
   const load=useCallback(async()=>{
     if(!salonId||!customerId)return;
@@ -6559,10 +6578,17 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
       if(bookingId)url+=`&bookingId=${bookingId}`;
       const res=await fetch(url);
       const data=await res.json();
-      if(Array.isArray(data)){setMsgs(data);}
+      if(Array.isArray(data)){
+        setMsgs(data);
+        const salonMsgsCount=data.filter(m=>!m.from_customer).length;
+        if(prevFromSalonRef.current>0&&salonMsgsCount>prevFromSalonRef.current){
+          toast$&&toast$("💬 رسالة جديدة من الصالون","info");
+        }
+        prevFromSalonRef.current=salonMsgsCount;
+      }
       fetch(url,{method:"PATCH"}).catch(()=>{});
     }catch{}
-  },[salonId,customerId,bookingId,setMsgs]);
+  },[salonId,customerId,bookingId,setMsgs,toast$]);
 
   useEffect(()=>{load();},[load]);
 
@@ -7956,6 +7982,20 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[myWaiting,setMyWaiting]=useState([]);
   const[openChatBookingId,setOpenChatBookingId]=useState(()=>{try{const v=sessionStorage.getItem("dork_chat_bid");return v?JSON.parse(v):null;}catch{return null;}});
   useEffect(()=>{if(openChatBookingId!=null)sessionStorage.setItem("dork_chat_bid",JSON.stringify(openChatBookingId));else sessionStorage.removeItem("dork_chat_bid");},[openChatBookingId]);
+  const[chatUnread,setChatUnread]=useState({});
+  useEffect(()=>{
+    if(!customer?.id)return;
+    const fetchUnread=async()=>{
+      try{
+        const res=await fetch(`/api/customer-messages?customerId=${customer.id}&unreadByBooking=1`);
+        const data=await res.json();
+        if(data&&typeof data==="object"&&!Array.isArray(data))setChatUnread(data);
+      }catch{}
+    };
+    fetchUnread();
+    const id=setInterval(fetchUnread,15000);
+    return()=>clearInterval(id);
+  },[customer?.id]);
   useEffect(()=>{
     if(!customer?.phone)return;
     sb("waiting_list","GET",null,`?phone=eq.${encodeURIComponent(customer.phone)}&select=id,salon_id,slot_date,slot_time,status,created_at&order=created_at.desc&limit=50`)
@@ -8218,7 +8258,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                           }catch(e){toast$(i18n.t('ui.cancel_error'),"err");}
                         }}><IconBlocked size={13}/> إلغاء</button>
                       </>)}
-                      {!isPast&&h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>{t('ui.contact')}</button>}
+                      {!isPast&&h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>{t('ui.contact')}{(chatUnread[h.bookingId]||0)>0&&<span style={{background:"#e74c3c",color:"#fff",borderRadius:999,fontSize:9,fontWeight:900,minWidth:14,height:14,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 3px",marginLeft:2}}>{chatUnread[h.bookingId]>9?"9+":chatUnread[h.bookingId]}</span>}</button>}
                     </div>
                   </div>
                   {/* التقييم فقط بعد انتهاء وقت الحجز */}
