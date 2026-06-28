@@ -1798,7 +1798,12 @@ export default function App(){
     };
     poll();
     const id=setInterval(poll,20000);
-    return()=>clearInterval(id);
+    const ch=supabase.channel(`app-owner-msgs-${ownerSession}`)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages',filter:`salon_id=eq.${ownerSession}`},(payload)=>{
+        if(payload?.new?.from_customer)poll();
+      })
+      .subscribe();
+    return()=>{clearInterval(id);supabase.removeChannel(ch);};
   },[ownerSession]);
 
   // -- تحميل البيانات من Supabase --
@@ -6273,6 +6278,7 @@ function MessagesPanel({salon,toast$}){
   const[ownerTxt,setOwnerTxt]=useState("");
   const[ownerSending,setOwnerSending]=useState(false);
   const custBoxRef=useRef(null);
+  const custMsgsEndRef=useRef(null);
   const prevAdminCount=useRef(-1);
   const prevCustCount=useRef(-1);
   const needScrollRef=useRef(false);
@@ -6403,7 +6409,7 @@ function MessagesPanel({salon,toast$}){
       .subscribe();
     return()=>{supabase.removeChannel(ch);};
   },[selCust,salon?.id,loadOwnerChat]);
-  useEffect(()=>{const el=custBoxRef.current;if(!el)return;if(needScrollRef.current||prevCustCount.current<0||custMsgs.length>prevCustCount.current){requestAnimationFrame(()=>{if(custBoxRef.current)custBoxRef.current.scrollTop=custBoxRef.current.scrollHeight;});needScrollRef.current=false;}prevCustCount.current=custMsgs.length;},[custMsgs]);
+  useEffect(()=>{if(needScrollRef.current||prevCustCount.current<0||custMsgs.length>prevCustCount.current){requestAnimationFrame(()=>{custMsgsEndRef.current?.scrollIntoView({block:"end"});});needScrollRef.current=false;}prevCustCount.current=custMsgs.length;},[custMsgs]);
 
   const sendOwnerReply=async()=>{
     if(!ownerTxt.trim()||ownerSending||!selCust)return;
@@ -6531,7 +6537,7 @@ function MessagesPanel({salon,toast$}){
             </div>
           </div>
         ):(
-          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{flex:1,minHeight:0,display:"flex",flexDirection:"column",overflow:"hidden"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,flexShrink:0,background:"var(--surface-1)",borderRadius:6,padding:"4px 2px"}}>
               <button onClick={()=>{setSelCust(null);loadConvList();}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--p)",fontSize:12,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
                 <IconArrowRight size={12}/>{t('ui.back_label')}
@@ -6556,7 +6562,7 @@ function MessagesPanel({salon,toast$}){
                 </div>
               }
             </div>
-            <div ref={custBoxRef} style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
+            <div ref={custBoxRef} style={{flex:1,minHeight:0,overflowY:"auto",display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
               {custMsgs.length===0&&<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:12,marginTop:20}}>{t('ui.no_messages')}</div>}
               {custMsgs.map(m=>(
                 <div key={m.id} style={{display:"flex",justifyContent:m.from_customer?"flex-start":"flex-end"}}>
@@ -6572,6 +6578,7 @@ function MessagesPanel({salon,toast$}){
                   </div>
                 </div>
               ))}
+              <div ref={custMsgsEndRef}/>
             </div>
             <div style={{display:"flex",gap:6}}>
               <input style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:13,fontFamily:"inherit",outline:"none",direction:"rtl"}}
