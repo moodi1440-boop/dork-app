@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { exportCSV, exportPDF } from "@/lib/csv";
+import { exportPDF } from "@/lib/csv";
 import { EmojiIcon } from "@/components/Icons";
 
 interface SalonRow {
@@ -53,13 +53,6 @@ export default function ComparePage() {
       </div>
 
       <div className="flex gap-3 mb-6">
-        <button onClick={() => exportCSV(
-          "تقرير_دورك.csv",
-          ["الترتيب", "الصالون", "المالك", "الهاتف", "التقييم", "الحالة"],
-          sorted.map((s, i) => [i + 1, s.name, s.owner, s.phone, s.rating, s.status])
-        )} className="flex-1 py-2.5 rounded-xl text-sm font-bold border bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors">
-          <EmojiIcon icon="📊" size={16}/> CSV
-        </button>
         <button onClick={() => exportPDF(
           "مقارنة الصالونات",
           ["الترتيب", "الصالون", "المالك", "الهاتف", "التقييم", "الحالة"],

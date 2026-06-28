@@ -50,12 +50,16 @@ module.exports = async (req, res) => {
       // جلب أسماء العملاء من جدول customers مباشرة
       const customerIds = [...new Set(convs.map(m => m.customer_id).filter(Boolean))];
       let custNameMap = {};
+      let custPhoneMap = {};
       if (customerIds.length > 0) {
         const { data: custData } = await sb
           .from("customers")
           .select("id,name,phone")
           .in("id", customerIds);
-        for (const c of (custData || [])) custNameMap[c.id] = c.name || c.phone || null;
+        for (const c of (custData || [])) {
+          custNameMap[c.id] = c.name || c.phone || null;
+          custPhoneMap[c.id] = c.phone || null;
+        }
       }
 
       // جلب أسماء من جدول الحجوزات كاحتياط إضافي
@@ -87,6 +91,7 @@ module.exports = async (req, res) => {
       res.status(200).json(convs.map(m => ({
         ...m,
         customer_name: custNameMap[m.customer_id] || bkNameMap[m.booking_id] || null,
+        customer_phone: custPhoneMap[m.customer_id] || null,
         unread_count: unreadMap[`${m.customer_id}-${m.booking_id}`] || 0,
       })));
       return;
