@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L98";
+const APP_VERSION = "L99";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -43,12 +43,33 @@ class ErrorBoundary extends React.Component {
 }
 
 // ==============================================
-//  CHAT CONTEXT — يحتفظ بالرسائل في الذاكرة عند التنقل بين الأقسام
+//  CHAT CONTEXT — يحتفظ بالرسائل في localStorage مع تنظيف 30 يوم
 // ==============================================
 const ChatCtx = React.createContext(null);
+const CHAT_STORAGE_KEY = "dork_chats";
+const THIRTY_DAYS_MS   = 30 * 24 * 60 * 60 * 1000;
+
+function loadChatsFromStorage() {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    const now = Date.now();
+    const cleaned = {};
+    for (const [key, msgs] of Object.entries(parsed)) {
+      const recent = (msgs || []).filter(m => (now - new Date(m.created_at).getTime()) < THIRTY_DAYS_MS);
+      if (recent.length > 0) cleaned[key] = recent;
+    }
+    return cleaned;
+  } catch { return {}; }
+}
 
 export function ChatProvider({ children }) {
-  const [chats, setChats] = React.useState({});
+  const [chats, setChats] = React.useState(loadChatsFromStorage);
+
+  React.useEffect(() => {
+    try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chats)); } catch {}
+  }, [chats]);
 
   const setMessages = React.useCallback((key, msgs) => {
     setChats(prev => ({ ...prev, [key]: msgs }));
@@ -6444,15 +6465,21 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
   },[load]);
 
   useEffect(()=>{
+    // بدون فلتر server-side لضمان استقبال رسائل الصالون (from_customer=false) بلا حجب
     const ch=supabase.channel(`cm-${salonId}-${customerId}-${bookingId}`)
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages',filter:`salon_id=eq.${salonId}`},(payload)=>{
-        if(payload.new&&Number(payload.new.customer_id)===Number(customerId)&&Number(payload.new.booking_id)===Number(bookingId)){
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages'},(payload)=>{
+        if(
+          payload.new&&
+          Number(payload.new.salon_id)===Number(salonId)&&
+          Number(payload.new.customer_id)===Number(customerId)&&
+          Number(payload.new.booking_id)===Number(bookingId)
+        ){
           addMsg(payload.new);
-        }else{load();}
+        }
       })
       .subscribe();
     return()=>{supabase.removeChannel(ch);};
-  },[salonId,customerId,bookingId,load,addMsg]);
+  },[salonId,customerId,bookingId,addMsg]);
 
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
 
@@ -8053,6 +8080,10 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               const status=realBooking?.status||h.status||"pending";
               const stColor=status==="approved"?"#27ae60":status==="rejected"?"#e74c3c":status==="cancelled"?"#888":"#f39c12";
               const stLabel=status==="approved"?t("cust_dash.status_approved"):status==="rejected"?t("cust_dash.status_rejected"):status==="cancelled"?t("cust_dash.status_cancelled"):t("cust_dash.status_pending");
+              const _pb_barber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));
+              const _pb_dur=realBooking?.slotDuration||h.slotDuration||(Array.isArray(h.services)?h.services.reduce((a,svc)=>a+((_pb_barber?.durations?.[svc])||s?.prices?.__durations?.[svc]||0),0):0)||(s?.slotMin||40);
+              const _pb_end=new Date(new Date(`${h.date}T${(h.time||"00:00")}:00`).getTime()+_pb_dur*60000);
+              const isPast=new Date()>=_pb_end;
               return(
                 <div key={i} style={{...G.bItem,borderRight:`3px solid ${stColor}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
@@ -8068,17 +8099,13 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
                       {h.rating>0&&<div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><IconStar key={n} size={12} color={n<=h.rating?"var(--p)":"#333"}/>)}</div>}
-                      {s&&<button style={{...G.bookBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>{setSelSalon(s);setView("book");}}>{t("cust_dash.book_again")}</button>}
-                      <button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>scheduleReminder({...h,salonName:s?.name})}>{t("cust_dash.remind_btn")}</button>
-                      {status==="approved"&&<button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>{
-                        const bBarber=s?.barbers?.find(x=>x.id===(realBooking?.barberId||h.barberId));
-                        const svcDur=Array.isArray(h.services)?h.services.reduce((a,svc)=>a+((bBarber?.durations?.[svc])||s?.prices?.__durations?.[svc]||0),0):0;
-                        const dur=realBooking?.slotDuration||h.slotDuration||svcDur||(s?.slotMin||40);
+                      {!isPast&&<button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>scheduleReminder({...h,salonName:s?.name})}>{t("cust_dash.remind_btn")}</button>}
+                      {!isPast&&status==="approved"&&<button style={{...G.pageBtn,fontSize:10,padding:"4px 8px"}} onClick={()=>{
                         const title=i18n.t('ui.ics_booking_title',{salon:s?.name||h.salonName||""});
                         const desc=i18n.t('ui.service_label')+' '+(Array.isArray(h.services)?h.services.join(" + "):h.service||"");
-                        downloadICS(buildICS({title,date:h.date,time:h.time,durationMins:dur,location:s?.address||"",description:desc}),`booking-${h.date}.ics`);
+                        downloadICS(buildICS({title,date:h.date,time:h.time,durationMins:_pb_dur,location:s?.address||"",description:desc}),`booking-${h.date}.ics`);
                       }}>{t("cust_dash.add_calendar")}</button>}
-                      {(status==="pending"||status==="approved")&&realBooking?.id&&(<>
+                      {!isPast&&(status==="pending"||status==="approved")&&realBooking?.id&&(<>
                         <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>{if(window.confirm(i18n.t('ui.confirm_edit_booking'))){setRescheduleId(realBooking.id);setSelSalon(s);setView("book");}}}><IconPencil size={10}/>{t('ui.edit')}</button>
                         <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={async()=>{
                           if(!window.confirm(i18n.t('ui.confirm_cancel_booking')))return;
@@ -8093,7 +8120,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                           }catch(e){toast$(i18n.t('ui.cancel_error'),"err");}
                         }}><IconBlocked size={13}/> إلغاء</button>
                       </>)}
-                      {h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>{t('ui.contact')}</button>}
+                      {!isPast&&h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>{t('ui.contact')}</button>}
                     </div>
                   </div>
                   {/* التقييم فقط بعد انتهاء وقت الحجز */}
@@ -8121,7 +8148,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       setSalons(p=>p.map(s=>Number(s.id)===salonId?{...s,rating:data.rating}:s));
                     }catch(e){console.error(e);}
                   }}/>;})()}
-                  {openChatBookingId===h.bookingId&&h.bookingId&&<CustomerSalonChat salonId={Number(h.salonId)} customerId={customer.id} bookingId={Number(h.bookingId)} salonName={s?.name||h.salonName} onClose={()=>setOpenChatBookingId(null)} toast$={toast$}/>}
+                  {!isPast&&openChatBookingId===h.bookingId&&h.bookingId&&<CustomerSalonChat salonId={Number(h.salonId)} customerId={customer.id} bookingId={Number(h.bookingId)} salonName={s?.name||h.salonName} onClose={()=>setOpenChatBookingId(null)} toast$={toast$}/>}
                 </div>
               );
             })}

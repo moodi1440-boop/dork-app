@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { EmojiIcon } from "@/components/Icons";
+import { sb } from "@/lib/supabase-browser";
 
 interface SalonList { id: string; name: string; unread: number; totalMsgs: number; lastMsg: { text: string; from_admin: boolean; created_at: string } | null; }
 interface Message { id: number; salon_id: number; from_admin: boolean; text: string; created_at: string; read_at: string | null; }
@@ -36,22 +37,52 @@ export default function MessagesPage() {
     } catch {
       setMessages([]);
     }
-    // وضع علامة مقروء على رسائل المالك
     try {
       await fetch("/api/messages", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ salon_id: id }),
       });
-    } catch {
-      // non-critical, ignore
-    }
+    } catch {}
     loadSalons();
   }, [loadSalons]);
 
+  // تحميل أولي
   useEffect(() => { loadSalons(); }, [loadSalons]);
   useEffect(() => { if (selId) loadChat(selId); }, [selId, loadChat]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  // Realtime: رسائل المحادثة المفتوحة
+  useEffect(() => {
+    if (!selId) return;
+    const ch = sb
+      .channel(`admin-msg-chat-${selId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          if (!payload.new || String((payload.new as Message).salon_id) !== String(selId)) return;
+          setMessages(prev => {
+            const msg = payload.new as Message;
+            if (prev.some(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+        }
+      )
+      .subscribe();
+    return () => { sb.removeChannel(ch); };
+  }, [selId]);
+
+  // Realtime: تحديث قائمة الصالونات عند أي رسالة جديدة
+  useEffect(() => {
+    const ch = sb
+      .channel("admin-msg-list")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
+        loadSalons();
+      })
+      .subscribe();
+    return () => { sb.removeChannel(ch); };
+  }, [loadSalons]);
 
   const send = async () => {
     if (!text.trim() || !selId || sending) return;
@@ -64,7 +95,6 @@ export default function MessagesPage() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setText("");
-      await loadChat(selId);
     } catch {
       // keep text so user can retry
     } finally {
@@ -80,7 +110,6 @@ export default function MessagesPage() {
         <div className="flex items-center gap-3 mb-5">
           <button onClick={() => setSelId(null)} className="w-8 h-8 rounded-lg bg-card border border-border text-gray-400 hover:text-white flex items-center justify-center text-lg transition-colors">‹</button>
           <h2 className="text-white font-bold"><EmojiIcon icon="💬" size={18}/> {selSalon?.name}</h2>
-          <button onClick={() => loadChat(selId)} className="mr-auto text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">تحديث <EmojiIcon icon="↺" size={12}/></button>
         </div>
 
         <div className="flex-1 bg-card border border-border rounded-2xl overflow-hidden flex flex-col" style={{ minHeight: 400 }}>
