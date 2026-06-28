@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L106";
+const APP_VERSION = "L107";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -1775,6 +1775,32 @@ export default function App(){
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
+  // poll خلفي: عدد رسائل العملاء غير المقروءة (للصالون) — يُغذّي badge الدرج + toast
+  const[salonMsgUnread,setSalonMsgUnread]=useState(0);
+  const _prevSMUnreadRef=useRef(-1);
+  const _ownerTabRef=useRef(null);
+  useEffect(()=>{_ownerTabRef.current=ownerTab;},[ownerTab]);
+  useEffect(()=>{
+    if(!ownerSession){_prevSMUnreadRef.current=-1;setSalonMsgUnread(0);return;}
+    _prevSMUnreadRef.current=-1;
+    const poll=async()=>{
+      try{
+        const res=await fetch("/api/owner-chat?list=1",{credentials:"include"});
+        const data=await res.json();
+        if(!Array.isArray(data))return;
+        const total=data.reduce((a,c)=>a+(c.unread_count||0),0);
+        setSalonMsgUnread(total);
+        if(_prevSMUnreadRef.current>=0&&total>_prevSMUnreadRef.current&&_ownerTabRef.current!=="messages"){
+          toast$("💬 رسالة جديدة من عميل","info");
+        }
+        _prevSMUnreadRef.current=total;
+      }catch{}
+    };
+    poll();
+    const id=setInterval(poll,20000);
+    return()=>clearInterval(id);
+  },[ownerSession]);
+
   // -- تحميل البيانات من Supabase --
   const loadData = useCallback(async (opts) => {
     const silent=opts&&opts.silent;
@@ -2396,7 +2422,7 @@ export default function App(){
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":toast.type==="info"?"rgba(150,110,0,.9)":"#1a5c34",display:"flex",alignItems:"center",gap:8}}>{toast.type==="err"?<IconError size={16}/>:toast.type==="warn"?null:<IconSuccess size={16}/>}<span>{toast.msg}</span></div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
       <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} activeDrawerItem={activeDrawerItem} setActiveDrawerItem={setActiveDrawerItem} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
-      <SalonDrawer open={showSalonDrawer} onClose={()=>setShowSalonDrawer(false)} salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} view={view} setView={setView} setOwnerSession={sharedProps.setOwnerSession} settings={sharedProps.settings} setSettings={sharedProps.setSettings} persistUiToSupabase={sharedProps.persistUiToSupabase} toast$={toast$}/>
+      <SalonDrawer open={showSalonDrawer} onClose={()=>setShowSalonDrawer(false)} salon={salons.find(s=>s.id===ownerSession)} ownerTab={ownerTab} setOwnerTab={setOwnerTab} view={view} setView={setView} setOwnerSession={sharedProps.setOwnerSession} settings={sharedProps.settings} setSettings={sharedProps.setSettings} persistUiToSupabase={sharedProps.persistUiToSupabase} toast$={toast$} salonUnreadMsgs={salonMsgUnread}/>
       <div style={{paddingTop:(view==="entry"||view==="custLogin"||view==="ownerLogin")?0:64}}>
         {view==="entry"&&     <EntryView setView={setView}/>}
         {view==="home"&&      <HomeView {...sharedProps}/>}
@@ -2724,6 +2750,7 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
   useEffect(()=>{if(!open)setShowLogout(false);},[open]);
   const[_sUnread,_setSUnread]=useState(salonUnreadMsgs);
+  useEffect(()=>{_setSUnread(salonUnreadMsgs);},[salonUnreadMsgs]);
   useEffect(()=>{
     if(!open||!salon?.id)return;
     fetch("/api/owner-chat?list=1",{credentials:"include"}).then(r=>r.json()).then(data=>{if(Array.isArray(data))_setSUnread(data.reduce((a,c)=>a+(c.unread_count||0),0));}).catch(()=>{});
@@ -6249,7 +6276,7 @@ function MessagesPanel({salon,toast$}){
   const prevAdminCount=useRef(-1);
   const prevCustCount=useRef(-1);
   const needScrollRef=useRef(false);
-  const prevUnreadRef=useRef(0);
+  const prevUnreadRef=useRef(-1);
   const isFirstLoadConv=useRef(true);
   const[clearConfirm,setClearConfirm]=useState(false);
   const[searchTxt,setSearchTxt]=useState("");
@@ -6310,7 +6337,7 @@ function MessagesPanel({salon,toast$}){
       if(Array.isArray(data)){
         setConvList(data);
         const newTotal=data.reduce((a,c)=>a+(c.unread_count||0),0);
-        if(prevUnreadRef.current>0&&newTotal>prevUnreadRef.current&&!selCust){
+        if(prevUnreadRef.current>=0&&newTotal>prevUnreadRef.current&&!selCust){
           toast$&&toast$("💬 رسالة جديدة من عميل","info");
         }
         prevUnreadRef.current=newTotal;
@@ -6569,7 +6596,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
   const[sending,setSending]=useState(false);
   const chatBoxRef=useRef(null);
   const prevMsgCount=useRef(-1);
-  const prevFromSalonRef=useRef(0);
+  const prevFromSalonRef=useRef(-1);
   const didMarkReadRef=useRef(false);
 
   const load=useCallback(async()=>{
@@ -6582,7 +6609,7 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
       if(Array.isArray(data)){
         setMsgs(data);
         const salonMsgsCount=data.filter(m=>!m.from_customer).length;
-        if(prevFromSalonRef.current>0&&salonMsgsCount>prevFromSalonRef.current){
+        if(prevFromSalonRef.current>=0&&salonMsgsCount>prevFromSalonRef.current){
           toast$&&toast$("💬 رسالة جديدة من الصالون","info");
         }
         prevFromSalonRef.current=salonMsgsCount;
@@ -7984,13 +8011,24 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[openChatBookingId,setOpenChatBookingId]=useState(()=>{try{const v=sessionStorage.getItem("dork_chat_bid");return v?JSON.parse(v):null;}catch{return null;}});
   useEffect(()=>{if(openChatBookingId!=null)sessionStorage.setItem("dork_chat_bid",JSON.stringify(openChatBookingId));else sessionStorage.removeItem("dork_chat_bid");},[openChatBookingId]);
   const[chatUnread,setChatUnread]=useState({});
+  const _prevChatTotalRef=useRef(-1);
+  const _openChatBidRef=useRef(openChatBookingId);
+  useEffect(()=>{_openChatBidRef.current=openChatBookingId;},[openChatBookingId]);
   useEffect(()=>{
     if(!customer?.id)return;
+    _prevChatTotalRef.current=-1;
     const fetchUnread=async()=>{
       try{
         const res=await fetch(`/api/customer-messages?customerId=${customer.id}&unreadByBooking=1`);
         const data=await res.json();
-        if(data&&typeof data==="object"&&!Array.isArray(data))setChatUnread(data);
+        if(data&&typeof data==="object"&&!Array.isArray(data)){
+          setChatUnread(data);
+          const total=Object.values(data).reduce((a,b)=>a+(b||0),0);
+          if(_prevChatTotalRef.current>=0&&total>_prevChatTotalRef.current&&_openChatBidRef.current==null){
+            toast$&&toast$("💬 رسالة جديدة من الصالون","info");
+          }
+          _prevChatTotalRef.current=total;
+        }
       }catch{}
     };
     fetchUnread();
