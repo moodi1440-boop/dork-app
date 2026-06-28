@@ -5139,7 +5139,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
   const[dashCashAmt,setDashCashAmt]=useState("");
   const[dashCashBarber,setDashCashBarber]=useState("");
   useEffect(()=>{if(salon?.id)refreshSalonBookings(salon.id);},[salon?.id]);
-  const _shownAdminRef=useRef(()=>{try{return new Set(JSON.parse(localStorage.getItem("dork_shown_admin")||"[]"));}catch{return new Set();}});
+  const _shownAdminRef=useRef(null);if(!_shownAdminRef.current){try{_shownAdminRef.current=new Set(JSON.parse(localStorage.getItem("dork_shown_admin")||"[]"));}catch{_shownAdminRef.current=new Set();}}
   useEffect(()=>{
     const adminNotifs=ownerNotifs.filter(n=>n.title&&(n.title.includes("إدارة")||n.title.includes("اشتراك")||n.title.includes("تحذير")||n.title.includes("إعلان")));
     for(const n of adminNotifs){
