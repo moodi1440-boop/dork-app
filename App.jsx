@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L99";
+const APP_VERSION = "L100";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -6450,9 +6450,8 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
   const load=useCallback(async()=>{
     if(!salonId||!customerId||!bookingId)return;
     try{
-      const data=await sb("customer_messages","GET",null,
-        `?select=id,from_customer,text,created_at,read_at&salon_id=eq.${salonId}&customer_id=eq.${customerId}&booking_id=eq.${bookingId}&order=created_at.asc&limit=50`
-      );
+      const res=await fetch(`/api/customer-messages?salonId=${salonId}&customerId=${customerId}&bookingId=${bookingId}`);
+      const data=await res.json();
       if(Array.isArray(data)){setMsgs(data);}
     }catch{}
   },[salonId,customerId,bookingId,setMsgs]);
