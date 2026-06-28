@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L100";
+const APP_VERSION = "L101";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -6464,21 +6464,18 @@ function CustomerSalonChat({salonId,customerId,bookingId,salonName,onClose,toast
   },[load]);
 
   useEffect(()=>{
-    // بدون فلتر server-side لضمان استقبال رسائل الصالون (from_customer=false) بلا حجب
+    // Realtime يُشغّل load() عبر admin API — نفس نهج الإدارة
     const ch=supabase.channel(`cm-${salonId}-${customerId}-${bookingId}`)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'customer_messages'},(payload)=>{
-        if(
-          payload.new&&
-          Number(payload.new.salon_id)===Number(salonId)&&
-          Number(payload.new.customer_id)===Number(customerId)&&
-          Number(payload.new.booking_id)===Number(bookingId)
-        ){
-          addMsg(payload.new);
-        }
+        const n=payload.new;
+        const match=n
+          ?Number(n.salon_id)===Number(salonId)&&Number(n.customer_id)===Number(customerId)&&Number(n.booking_id)===Number(bookingId)
+          :true;
+        if(match)load();
       })
       .subscribe();
     return()=>{supabase.removeChannel(ch);};
-  },[salonId,customerId,bookingId,addMsg]);
+  },[salonId,customerId,bookingId,load]);
 
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
 
