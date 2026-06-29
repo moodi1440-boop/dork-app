@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L109";
+const APP_VERSION = "L112";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -2441,6 +2441,7 @@ export default function App(){
         {view==="ownerDark"&&<SettingsView {...sharedProps} onlySec="dark" backFn={()=>{setOwnerTab(null);setShowSalonDrawer(true);}}/>}
         {view==="ownerLang"&&<OwnerLangView setView={setView} setOwnerTab={setOwnerTab} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="ownerFaq"&&<OwnerFaqView setView={setView} setOwnerTab={setOwnerTab} setShowSalonDrawer={setShowSalonDrawer}/>}
+        {view==="ownerPrivacy"&&<OwnerPrivacyView setView={setView} setShowSalonDrawer={setShowSalonDrawer}/>}
         {view==="custLang"&&<CustLangView setView={setView} setShowDrawer={setShowDrawer}/>}
         {view==="custEditData"&&customer&&<CustEditDataView customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setShowDrawer={setShowDrawer} toast$={toast$}/>}
         {view==="custSettingsTheme"&&<SettingsView {...sharedProps} onlySec="theme" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
@@ -2751,9 +2752,11 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
 // ==============================================
 function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOwnerSession,settings,setSettings,persistUiToSupabase,toast$,salonUnreadMsgs=0}){
   const[showLogout,setShowLogout]=useState(false);
+  const[showDeleteSalon,setShowDeleteSalon]=useState(false);
+  const[deletingSalon,setDeletingSalon]=useState(false);
   const{t,i18n}=useTranslation();
   const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
-  useEffect(()=>{if(!open)setShowLogout(false);},[open]);
+  useEffect(()=>{if(!open){setShowLogout(false);setShowDeleteSalon(false);};},[open]);
   const[_sUnread,_setSUnread]=useState(salonUnreadMsgs);
   useEffect(()=>{_setSUnread(salonUnreadMsgs);},[salonUnreadMsgs]);
   useEffect(()=>{
@@ -2804,10 +2807,14 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
         <Row icon="🔔" label={t("salon_drawer.tones")} active={view==="ownerTone"} onClick={()=>nav(()=>setView("ownerTone"))}/>
         <Row icon="🔐" label={t("salon_drawer.pin")} active={view==="ownerPin"} onClick={()=>nav(()=>setView("ownerPin"))}/>
         <Row icon="❓" label={t("salon_drawer.faq")} active={view==="ownerFaq"} onClick={()=>nav(()=>setView("ownerFaq"))}/>
+        <Row icon="🔒" label={t("salon_drawer.privacy")} active={view==="ownerPrivacy"} onClick={()=>nav(()=>setView("ownerPrivacy"))}/>
 
         <div style={{height:16}}/>
         <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:dir==="rtl"?"right":"left",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",gap:8}}>
           <NotifIcon icon="🚪" size={16}/> {t("salon_drawer.logout_btn")}
+        </button>
+        <button onClick={()=>setShowDeleteSalon(true)} style={{width:"100%",padding:"12px 20px",background:"transparent",border:"none",borderTop:"1px solid rgba(231,76,60,.2)",color:"#e74c3c",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit",textAlign:dir==="rtl"?"right":"left",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",gap:8,opacity:.75}}>
+          <NotifIcon icon="🗑" size={14}/> {t("salon_drawer.delete_account")}
         </button>
         <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>{t("salon_drawer.version")} {APP_VERSION}</div>
         <div style={{height:40}}/>
@@ -2823,6 +2830,42 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
             <div style={{display:"flex",gap:10}}>
               <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none"}} onClick={()=>setShowLogout(false)}>{t("salon_drawer.cancel")}</button>
               <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={()=>{setOwnerSession&&setOwnerSession(null);setView("entry");onClose();}}>{t("salon_drawer.exit")}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteSalon&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:1400,display:"flex",alignItems:"flex-end"}} onClick={()=>!deletingSalon&&setShowDeleteSalon(false)}>
+          <div style={{width:"100%",background:"linear-gradient(135deg,#13131f,#1a1a2e)",borderRadius:"20px 20px 0 0",padding:"28px 24px 36px",border:"1.5px solid rgba(231,76,60,.5)",borderBottom:"none",boxShadow:"0 -8px 32px rgba(231,76,60,.1)",direction:dir}} onClick={e=>e.stopPropagation()}>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><IconWarning size={36}/></div>
+              <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:6}}>{t("salon_drawer.delete_account_title")}</div>
+              <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.6}}>{t("salon_drawer.delete_account_body")}</div>
+            </div>
+            <div style={{background:"rgba(231,76,60,.08)",border:"1px solid rgba(231,76,60,.25)",borderRadius:12,padding:14,marginBottom:16,fontSize:12,color:"#ddd",lineHeight:1.9}}>
+              <div style={{marginBottom:6,fontWeight:700,color:"#e74c3c"}}>{t("salon_drawer.delete_account_will")}</div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}><NotifIcon icon="✗" size={11}/> {t("salon_drawer.delete_account_item1")}</div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}><NotifIcon icon="✗" size={11}/> {t("salon_drawer.delete_account_item2")}</div>
+            </div>
+            <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:10,padding:10,marginBottom:20,textAlign:"center",fontSize:11,color:"#ff6b6b",fontWeight:700,display:"flex",justifyContent:"center"}}>
+              <LabelWithIcon label={t("salon_drawer.delete_account_warn")} size={11}/>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button disabled={deletingSalon} style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={()=>setShowDeleteSalon(false)}><NotifIcon icon="↩️" size={13}/> {t("salon_drawer.delete_account_cancel")}</button>
+              <button disabled={deletingSalon} style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:deletingSalon?"not-allowed":"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none",opacity:deletingSalon?.6:1}} onClick={async()=>{
+                setDeletingSalon(true);
+                try{
+                  const res=await fetch("/api/delete-salon",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"}});
+                  const d=await res.json().catch(()=>({}));
+                  if(!res.ok)throw new Error(d.error||"فشل الحذف");
+                  setOwnerSession&&setOwnerSession(null);
+                  setView("entry");
+                  onClose();
+                }catch(e){
+                  alert("خطأ: "+e.message);
+                  setDeletingSalon(false);
+                }
+              }}>{deletingSalon?"جارٍ الحذف...":t("salon_drawer.delete_account_confirm")}</button>
             </div>
           </div>
         </div>
@@ -4441,7 +4484,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
 // ==============================================
 function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
   const{t}=useTranslation();
-  const[form,setForm]=useState({name:"",owner:"",ownerPhone:"",region:"",gov:"",center:"",village:"",phone:"",address:"",locationUrl:"",services:[],prices:{},shiftEnabled:false,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"09:00",workEnd:"22:00",barbers:[{id:"b"+Date.now(),name:""}],tone:"bell",pin:"",pinConfirm:""});
+  const[form,setForm]=useState({name:"",owner:"",ownerPhone:"",ownerEmail:"",region:"",gov:"",center:"",village:"",phone:"",address:"",locationUrl:"",services:[],prices:{},shiftEnabled:false,shift1Start:"08:00",shift1End:"13:00",shift2Start:"16:00",shift2End:"23:00",workStart:"09:00",workEnd:"22:00",barbers:[{id:"b"+Date.now(),name:""}],tone:"bell",pin:"",pinConfirm:""});
   const[errors,setErrors]=useState({});
   const[locMethod,setLocMethod]=useState("link");
   const[detecting,setDetecting]=useState(false);
@@ -4587,6 +4630,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
         <F label={t("register.salon_name")} error={errors.name}><input style={fi(errors.name)} placeholder="صالون النخبة" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></F>
         <F label={t("register.owner_name")} error={errors.owner}><input style={fi(errors.owner)} placeholder="الاسم الكامل" value={form.owner} onChange={e=>setForm(p=>({...p,owner:e.target.value}))}/></F>
         <F label={t("register.owner_phone")} error={errors.ownerPhone}><input style={fi(errors.ownerPhone)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={form.ownerPhone} onChange={e=>setForm(p=>({...p,ownerPhone:e.target.value}))}/></F>
+        <F label={t("register.owner_email")}><input style={fi()} type="email" inputMode="email" placeholder={t("register.owner_email_ph")} value={form.ownerEmail} onChange={e=>setForm(p=>({...p,ownerEmail:e.target.value}))}/><div style={{fontSize:10,color:"var(--text-muted)",marginTop:3}}>{t("register.owner_email_hint")}</div></F>
         <F label={t("register.salon_phone")} error={errors.phone}><input style={fi(errors.phone)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/></F>
         <F label={t("register.address")} error={errors.address}><input style={fi(errors.address)} placeholder="الشارع والحي" value={form.address} onChange={e=>setForm(p=>({...p,address:e.target.value}))}/></F>
       </div>
@@ -5117,11 +5161,29 @@ function ShareBtn({salon}){
 // ==============================================
 function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
   const{t}=useTranslation();
-  const[phone,setPhone]=useState("");
+  const[phone,setPhone]=useState(()=>{ try{return localStorage.getItem("dork_owner_saved_phone")||"";}catch{return"";}});
   const[pin,setPin]=useState("");
   const[showPin,setShowPin]=useState(false);
+  const[rememberPhone,setRememberPhone]=useState(()=>{ try{return!!localStorage.getItem("dork_owner_saved_phone");}catch{return false;}});
   const[err,setErr]=useState("");
   const[loading,setLoading]=useState(false);
+  // استعادة الرمز السري
+  const[resetStep,setResetStep]=useState(null); // null | "phone" | "otp" | "pin"
+  const[resetPhone,setResetPhone]=useState("");
+  const[resetEmail,setResetEmail]=useState("");
+  const[resetOtp,setResetOtp]=useState("");
+  const[resetNewPin,setResetNewPin]=useState("");
+  const[resetConfirmPin,setResetConfirmPin]=useState("");
+  const[resetErr,setResetErr]=useState("");
+  const[resetLoading,setResetLoading]=useState(false);
+  const[resetOtpSent,setResetOtpSent]=useState(false);
+  const[resetAccessToken,setResetAccessToken]=useState("");
+
+  const handleRemember=(checked)=>{
+    setRememberPhone(checked);
+    try{if(checked)localStorage.setItem("dork_owner_saved_phone",phone);else localStorage.removeItem("dork_owner_saved_phone");}catch{}
+  };
+
   const login=async()=>{
     if(!phone.trim()||pin.length!==6){setErr(t("owner_login.err_pin_wrong"));return;}
     setLoading(true); setErr("");
@@ -5145,13 +5207,88 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
     }
     setLoading(false);
   };
+  const sendResetOtp=async()=>{
+    setResetErr(""); setResetLoading(true);
+    try{
+      const res=await fetch("/api/salon-reset-pin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"verify",phone:resetPhone.trim(),email:resetEmail.trim()})});
+      const d=await res.json();
+      if(!res.ok){setResetErr(d.error||"خطأ");setResetLoading(false);return;}
+      const{data,error}=await supabase.auth.signInWithOtp({email:resetEmail.trim(),options:{shouldCreateUser:false}});
+      if(error){setResetErr(error.message);setResetLoading(false);return;}
+      setResetOtpSent(true);setResetStep("otp");
+      toast$&&toast$(t("owner_login.reset_otp_sent"));
+    }catch(e){setResetErr(e.message);}
+    setResetLoading(false);
+  };
+
+  const verifyResetOtp=async()=>{
+    setResetErr(""); setResetLoading(true);
+    try{
+      const otp=resetOtp.replace(/\D/g,"").slice(0,6);
+      if(otp.length<6){setResetErr(t("owner_login.reset_err_6digits"));setResetLoading(false);return;}
+      const{data,error}=await supabase.auth.verifyOtp({email:resetEmail.trim(),token:otp,type:"email"});
+      if(error){setResetErr(error.message);setResetLoading(false);return;}
+      setResetAccessToken(data.session?.access_token||"");
+      setResetStep("pin");
+    }catch(e){setResetErr(e.message);}
+    setResetLoading(false);
+  };
+
+  const saveResetPin=async()=>{
+    setResetErr("");
+    if(!/^\d{6}$/.test(resetNewPin)){setResetErr(t("owner_login.reset_err_6digits"));return;}
+    if(resetNewPin!==resetConfirmPin){setResetErr(t("owner_login.reset_err_mismatch"));return;}
+    setResetLoading(true);
+    try{
+      const res=await fetch("/api/salon-reset-pin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"reset",phone:resetPhone.trim(),accessToken:resetAccessToken,newPin:resetNewPin})});
+      const d=await res.json();
+      if(!res.ok){setResetErr(d.error||"خطأ");setResetLoading(false);return;}
+      await supabase.auth.signOut().catch(()=>{});
+      toast$&&toast$(t("owner_login.reset_success"));
+      setResetStep(null);setResetPhone("");setResetEmail("");setResetOtp("");setResetNewPin("");setResetConfirmPin("");setResetAccessToken("");
+    }catch(e){setResetErr(e.message);}
+    setResetLoading(false);
+  };
+
+  if(resetStep){
+    return(
+      <div style={G.page}><div style={G.fp}>
+        <div style={G.fh}><button style={G.bb} onClick={()=>{setResetStep(null);setResetErr("");}}><IconArrowRight size={20}/></button><h2 style={G.ft}>{t("owner_login.reset_title")}</h2></div>
+        <div style={G.fc}>
+          {resetStep==="phone"&&<>
+            <SL>{t("owner_login.reset_step1_hint")}</SL>
+            <F label={t("owner_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={resetPhone} onChange={e=>{setResetPhone(e.target.value);setResetErr("");}}/></F>
+            <F label={t("owner_login.reset_email_label")} error={resetErr}><input style={fi(resetErr)} type="email" inputMode="email" placeholder="example@email.com" value={resetEmail} onChange={e=>{setResetEmail(e.target.value);setResetErr("");}}/></F>
+            <button style={{...G.sub,opacity:resetLoading?0.7:1}} disabled={resetLoading} onClick={sendResetOtp}>{resetLoading?t("owner_login.reset_sending"):t("owner_login.reset_send_otp")}</button>
+          </>}
+          {resetStep==="otp"&&<>
+            <SL>{t("owner_login.reset_otp_sent")}</SL>
+            <F label={t("owner_login.reset_otp_label")} error={resetErr}><input style={fi(resetErr)} type="text" inputMode="numeric" placeholder="123456" maxLength={6} value={resetOtp} onChange={e=>{setResetOtp(e.target.value.replace(/\D/g,"").slice(0,6));setResetErr("");}}/></F>
+            <button style={{...G.sub,opacity:resetLoading?0.7:1}} disabled={resetLoading} onClick={verifyResetOtp}>{resetLoading?t("owner_login.reset_verifying"):t("owner_login.reset_verify_btn")}</button>
+          </>}
+          {resetStep==="pin"&&<>
+            <SL>✅ تم التحقق — أدخل رمزاً سرياً جديداً</SL>
+            <F label={t("owner_login.reset_new_pin_label")} error={resetErr}><input style={{...fi(resetErr),letterSpacing:4,textAlign:"center"}} type="password" inputMode="numeric" placeholder="••••••" maxLength={6} value={resetNewPin} onChange={e=>{setResetNewPin(e.target.value.replace(/\D/g,"").slice(0,6));setResetErr("");}}/></F>
+            <F label={t("owner_login.reset_confirm_pin_label")}><input style={{...fi(),letterSpacing:4,textAlign:"center"}} type="password" inputMode="numeric" placeholder="••••••" maxLength={6} value={resetConfirmPin} onChange={e=>{setResetConfirmPin(e.target.value.replace(/\D/g,"").slice(0,6));setResetErr("");}}/></F>
+            <button style={{...G.sub,opacity:resetLoading?0.7:1}} disabled={resetLoading} onClick={saveResetPin}>{resetLoading?t("owner_login.reset_saving"):t("owner_login.reset_save_btn")}</button>
+          </>}
+        </div>
+      </div></div>
+    );
+  }
+
   return(
     <div style={G.page}><div style={G.fp}>
       <div style={G.fc}>
         <SL>{t("owner_login.phone_hint")}</SL>
-        <F label={t("owner_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+        <F label={t("owner_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");if(rememberPhone)try{localStorage.setItem("dork_owner_saved_phone",e.target.value);}catch{}}}/></F>
+        <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"var(--text-muted)",cursor:"pointer",marginTop:-6,marginBottom:8}}>
+          <input type="checkbox" checked={rememberPhone} onChange={e=>handleRemember(e.target.checked)} style={{width:15,height:15,accentColor:"var(--p)",cursor:"pointer"}}/>
+          {t("owner_login.remember_phone")}
+        </label>
         <F label={t("owner_login.pin_label")} error={err}><div style={{position:"relative"}}><input style={{...fi(err),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setErr("");}}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
         <button style={{...G.sub,opacity:loading?0.7:1}} disabled={loading} onClick={login}>{t("owner_login.login_btn")}</button>
+        <button onClick={()=>{setResetStep("phone");setResetPhone(phone);setResetErr("");}} style={{background:"transparent",border:"none",color:"var(--p)",fontSize:12,cursor:"pointer",fontFamily:"inherit",padding:"4px 0",textAlign:"center",width:"100%",textDecoration:"underline"}}>{t("owner_login.forgot_pin")}</button>
       </div>
       <div style={{margin:"0 0 16px",background:"rgba(var(--pr),.06)",border:"1.5px dashed rgba(var(--pr),.4)",borderRadius:13,padding:"18px 16px",textAlign:"center"}}>
         <div style={{fontSize:15,color:"var(--p)",fontWeight:700,marginBottom:6}}>{t("owner_login.no_salon_title")}</div>
@@ -7431,6 +7568,31 @@ function CustLangView({setView,setShowDrawer}){
   );
 }
 // ==============================================
+//  OWNER PRIVACY VIEW - سياسة الخصوصية لصاحب الصالون
+// ==============================================
+function OwnerPrivacyView({setView,setShowSalonDrawer}){
+  const{t}=useTranslation();
+  const box={background:"var(--surface-1)",borderRadius:13,padding:14,border:"1px solid var(--border-ui)",marginBottom:10};
+  const hdr={fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10,paddingBottom:6,borderBottom:"1px solid var(--border-ui)"};
+  const sections=t("settings.privacy_sections",{returnObjects:true})||[];
+  return(
+    <div style={G.page}><div style={G.fp}>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{setShowSalonDrawer&&setShowSalonDrawer(true);setView("ownerDash");}}><IconArrowRight size={20}/></button><h2 style={G.ft}>{t("settings.privacy_header")}</h2></div>
+      <div style={box}>
+        <div style={hdr}>{t("settings.privacy_header")}</div>
+        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:12}}>{t("settings.privacy_updated")}</div>
+        {sections.map(({title,content},i)=>(
+          <div key={i} style={{marginBottom:14}}>
+            <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:5}}>{title}</div>
+            <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.8}}>{content}</div>
+          </div>
+        ))}
+      </div>
+    </div></div>
+  );
+}
+
+// ==============================================
 //  OWNER FAQ VIEW - أسئلة شائعة لصاحب الصالون
 // ==============================================
 function OwnerFaqView({setView,setShowSalonDrawer,setOwnerTab}){
@@ -7452,6 +7614,14 @@ function OwnerFaqView({setView,setShowSalonDrawer,setOwnerTab}){
     {q:"ما هو القسم الشرعي الذي يظهر عند أول دخول؟",a:"هو تعهد شرفي بالالتزام بدفع عمولة دورك (1 ريال لكل حجز مكتمل). يظهر مرة واحدة فقط عند أول تسجيل دخول للصالون."},
     {q:"كيف أعدّل معلومات الصالون (الاسم، الجوال، العنوان)؟",a:"من قائمة الدرج (≡) ← معلومات الصالون. عدّل الحقول التي تريد ثم اضغط حفظ التعديلات."},
     {q:"هل يمكنني تتبع إحصائيات الصالون؟",a:"نعم. من قائمة الدرج (≡) ← الإحصائيات. تعرض بيانات تفصيلية للحجوزات والإيرادات والأداء."},
+    {q:"كيف تعمل قائمة الانتظار للعملاء؟",a:"عندما تمتلئ مواعيدك المتاحة يمكن للعميل الانضمام لقائمة انتظار. ستظهر طلباتهم في قسم الحجوزات ويمكنك قبولها أو رفضها عند توفر مكان."},
+    {q:"هل يمكن للعملاء مراسلتي مباشرةً؟",a:"نعم. من قسم الرسائل (💬) في لوحة التحكم يمكنك التواصل المباشر مع العملاء، ويُشعَر العميل بوصول ردّك فوراً."},
+    {q:"كيف تعمل العروض الترويجية؟",a:"من الدرج ← إرسال عرض. اختر مستوى العرض (برونزي/فضي/ذهبي) والمدة وشريحة العملاء (أحدث/أكثر حجوزاً/الكل) ثم أرسل."},
+    {q:"كيف أسجّل مدفوعات نقدية؟",a:"من لوحة التحكم الرئيسية، أدخل المبلغ في حقل \"إضافة إيرادات\" واختر الحلاق المسؤول ثم احفظ."},
+    {q:"ماذا أفعل لو نسيت رمز PIN؟",a:"تواصل مع إدارة دورك مباشرةً وستساعدك في إعادة تعيين رمز PIN الخاص بحسابك."},
+    {q:"هل يحق لدورك تجميد حسابي أو حظره؟",a:"نعم. تحتفظ إدارة دورك بحق تجميد أو حظر أي صالون يخالف شروط الاستخدام أو يتأخر في تسوية العمولات المستحقة."},
+    {q:"هل يمكن تغيير عمولة الحجز؟",a:"لا. العمولة (1 ريال لكل حجز مكتمل) تحددها إدارة دورك. يحتفظ دورك بحق مراجعة الأسعار وتعديلها مستقبلاً مع إشعار مسبق."},
+    {q:"كيف أتحقق من حضور العملاء؟",a:"من تقويم الحجوزات، اختر الحجز وعدّل حالة الحضور (حاضر / لم يحضر). يُستخدم هذا في احتساب نسبة الحضور بتقاريرك."},
   ];
   const filtered=faqQ.trim()?ALL.filter(f=>(f.q+f.a).includes(faqQ.trim())):ALL;
   const box={background:"var(--surface-1)",borderRadius:13,padding:14,border:"1px solid var(--border-ui)",marginBottom:10};
@@ -7625,11 +7795,12 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const{t}=useTranslation();
   const[tab,setTab]=useState("login");
   const[loginMethod,setLoginMethod]=useState("phone");
-  const[phone,setPhone]=useState(""); const[name,setName]=useState("");
+  const[phone,setPhone]=useState(()=>{try{return localStorage.getItem("dork_customer_saved_phone")||"";}catch{return "";}});
+  const[name,setName]=useState("");
   const[email,setEmail]=useState(""); const[pass,setPass]=useState("");
   const[err,setErr]=useState("");
   const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState(""); const[showPin,setShowPin]=useState(false);
- const[otpSent,setOtpSent]=useState(false);
+  const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
   const[otpTimer,setOtpTimer]=useState(0);
   const[otpExpired,setOtpExpired]=useState(false);
@@ -7637,6 +7808,59 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[verifying,setVerifying]=useState(false);
   const[attempts,setAttempts]=useState(0);
   const[resendTimer,setResendTimer]=useState(0);
+  const[rememberPhone,setRememberPhone]=useState(()=>{try{return !!localStorage.getItem("dork_customer_saved_phone");}catch{return false;}});
+  const[resetStep,setResetStep]=useState(null);
+  const[resetEmail,setResetEmail]=useState("");
+  const[resetOtp,setResetOtp]=useState("");
+  const[resetErr,setResetErr]=useState("");
+  const[resetLoading,setResetLoading]=useState(false);
+
+  const handleRemember=(checked)=>{
+    setRememberPhone(checked);
+    try{
+      if(checked&&phone.trim()) localStorage.setItem("dork_customer_saved_phone",phone.trim());
+      else localStorage.removeItem("dork_customer_saved_phone");
+    }catch{}
+  };
+
+  const sendResetOtp=async()=>{
+    if(resetLoading)return;
+    const emailTrimmed=resetEmail.trim();
+    if(!emailTrimmed){setResetErr(t("cust_login.err_email"));return;}
+    const emailRx=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRx.test(emailTrimmed)){setResetErr(t("cust_login.err_email_invalid"));return;}
+    try{
+      setResetLoading(true);setResetErr("");
+      const{error}=await supabase.auth.signInWithOtp({email:emailTrimmed,options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
+      if(error){
+        const isRate=error.message.includes("rate")||error.message.includes("too many")||error.message.includes("security");
+        setResetErr(isRate?i18n.t('ui.wait_two_mins'):i18n.t('ui.error_prefix')+error.message.substring(0,40));
+        return;
+      }
+      setResetStep("otp");
+    }catch(e){setResetErr(i18n.t('ui.connection_internet'));}
+    finally{setResetLoading(false);}
+  };
+
+  const verifyResetOtp=async()=>{
+    if(resetLoading)return;
+    const otpClean=String(resetOtp||"").replace(/\D/g,"").slice(0,6);
+    if(otpClean.length<6){setResetErr(t("cust_login.err_6digits"));return;}
+    try{
+      setResetLoading(true);setResetErr("");
+      const{data,error}=await supabase.auth.verifyOtp({email:resetEmail.trim(),token:otpClean,type:"email"});
+      if(error){setResetErr(i18n.t('ui.code_wrong_check'));setResetOtp("");return;}
+      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&email=eq.${encodeURIComponent(resetEmail.trim())}&limit=1`);
+      if(!rows.length){setResetErr(t("cust_login.err_not_found"));return;}
+      const c=toAppCustomer(rows[0]);
+      if(c.blocked){setResetErr(i18n.t('ui.account_banned'));return;}
+      try{localStorage.removeItem(`dork_customer_pin_${c.id}`);}catch{}
+      setCustomerSession(c);setView("home");
+      localStorage.setItem("dork_biometric_id",String(c.id));
+      toast$&&toast$(t("cust_login.reset_success"),"success");
+    }catch(e){setResetErr(i18n.t('ui.op_error_retry')+e.message.substring(0,40));}
+    finally{setResetLoading(false);}
+  };
 
   // تسجيل دخول بالبصمة
   const loginWithBiometric=async()=>{
@@ -7797,6 +8021,35 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   return(
     <div style={G.page}><div style={G.fp}>
 
+      {/* شاشة استعادة الرمز السري */}
+      {resetStep!==null?<>
+        <div style={G.fc}>
+          <SL>{t("cust_login.reset_title")}</SL>
+          {resetStep==="email"?<>
+            <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:12,lineHeight:1.6}}>{t("cust_login.reset_hint")}</div>
+            <F label={t("cust_login.email_label")} error={resetErr}>
+              <input style={{...fi(resetErr),direction:"ltr",textAlign:"left"}} type="email" inputMode="email" placeholder="example@email.com" value={resetEmail} onChange={e=>{setResetEmail(e.target.value);setResetErr("");}} dir="ltr"/>
+            </F>
+            <button style={{...G.sub,opacity:resetLoading?.6:1,cursor:resetLoading?"not-allowed":"pointer"}} onClick={sendResetOtp} disabled={resetLoading}>
+              {resetLoading?t("cust_login.reset_sending"):t("cust_login.reset_send_otp")}
+            </button>
+          </>:null}
+          {resetStep==="otp"?<>
+            <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:12,lineHeight:1.6}}>{t("cust_login.reset_otp_sent")} <strong dir="ltr">{resetEmail}</strong></div>
+            <F label={t("cust_login.reset_otp_label")} error={resetErr}>
+              <OtpInput value={resetOtp} onChange={val=>{setResetOtp(val);setResetErr("");}} error={false} use6Boxes={true} disabled={resetLoading}/>
+            </F>
+            <button style={{...G.sub,opacity:resetLoading?.6:1,cursor:resetLoading?"not-allowed":"pointer"}} onClick={verifyResetOtp} disabled={resetLoading}>
+              {resetLoading?t("cust_login.reset_verifying"):t("cust_login.reset_verify_btn")}
+            </button>
+          </>:null}
+          <button onClick={()=>{setResetStep(null);setResetEmail("");setResetOtp("");setResetErr("");}} style={{width:"100%",marginTop:10,padding:"10px 0",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
+            {t("cust_login.reset_back")}
+          </button>
+        </div>
+        <button onClick={()=>setView("entry")} style={{width:"100%",marginTop:20,padding:"14px 0",borderRadius:12,border:"1.5px solid var(--pa25)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:15,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_login.back")}</button>
+      </>:<>
+
       {/* دخول بالبصمة */}
       {localStorage.getItem("dork_biometric_id")&&(
         <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid var(--pa25)",background:"var(--pa08)",color:"var(--p)",cursor:"pointer",fontSize:14,fontFamily:"inherit",fontWeight:700,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={loginWithBiometric}>
@@ -7816,12 +8069,19 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           </div>
           {loginMethod==="phone"?<>
             <SL>{t("cust_login.login_title")}</SL>
-            <F label={t("cust_login.phone_label")} error={err}><input style={fi(err)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
-            <button style={G.sub} onClick={loginWithPhone}>{t("cust_login.login_btn")}</button>
+            <F label={t("cust_login.phone_label")} error={err}><input style={fi(err)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");if(rememberPhone){try{localStorage.setItem("dork_customer_saved_phone",e.target.value.trim());}catch{}}}}/></F>
+            <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"var(--text-muted)",cursor:"pointer",margin:"4px 0 10px",userSelect:"none"}}>
+              <input type="checkbox" checked={rememberPhone} onChange={e=>handleRemember(e.target.checked)} style={{width:16,height:16,cursor:"pointer",accentColor:"var(--p)"}}/>
+              {t("cust_login.remember_phone")}
+            </label>
+            <button style={G.sub} onClick={()=>{if(rememberPhone&&phone.trim()){try{localStorage.setItem("dork_customer_saved_phone",phone.trim());}catch{}}loginWithPhone();}}>{t("cust_login.login_btn")}</button>
           </>:<>
             <SL>{t("cust_login.pin_title")}</SL>
             <F label={t("cust_login.pin_label")} error={pinErr}><div style={{position:"relative"}}><input style={{...fi(pinErr),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
             <button style={G.sub} onClick={loginWithPin}>{t("cust_login.login_btn")}</button>
+            <button onClick={()=>{setResetStep("email");setResetEmail("");setResetOtp("");setResetErr("");}} style={{width:"100%",marginTop:8,padding:"8px 0",border:"none",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:13,textDecoration:"underline",textAlign:"center"}}>
+              {t("cust_login.forgot_pin")}
+            </button>
           </>}
           <div style={{textAlign:"center",margin:"12px 0",color:"var(--text-muted)",fontSize:12}}>{t("cust_login.or")}</div>
           <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #4285f4",background:"rgba(66,133,244,.1)",color:"#4285f4",cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={async()=>{
@@ -7889,6 +8149,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         </>}
       </div>
       <button onClick={()=>setView("entry")} style={{width:"100%",marginTop:20,padding:"14px 0",borderRadius:12,border:"1.5px solid var(--pa25)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:15,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_login.back")}</button>
+    </>}
     </div></div>
   );
 }
@@ -8545,8 +8806,9 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
     {id:"tone",  icon:"🔔",label:t("settings.sec_tone")},
     {id:"social",icon:"📱",label:t("settings.sec_social")},
     {id:"guide", icon:"📖",label:t("settings.sec_guide")},
-    {id:"faq",   icon:"❓",label:t("settings.sec_faq")},
-    {id:"danger",icon:"⚠", label:t("settings.sec_danger")},
+    {id:"faq",     icon:"❓",label:t("settings.sec_faq")},
+    {id:"privacy", icon:"🔒",label:t("settings.sec_privacy")},
+    {id:"danger",  icon:"⚠", label:t("settings.sec_danger")},
   ];
   const THEME_OPTIONS=[
     {id:"gold",     label:t("settings.themes.gold"),     color:"#d4a017",    emoji:"✨"},
@@ -8761,6 +9023,8 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
         ))}
       </div>}
 
+      {sec==="privacy"&&<PrivacyPolicyContent/>}
+
       {sec==="danger"&&<div style={{background:"var(--surface-1)",borderRadius:13,padding:16,border:"1px solid #c0392b33"}}>
         <div style={{fontSize:13,fontWeight:700,color:"#e74c3c",marginBottom:8,paddingBottom:6,borderBottom:"1px solid #c0392b33"}}>{t("settings.danger_header")}</div>
         <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:12}}>{t("settings.danger_hint")}</div>
@@ -8772,6 +9036,25 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
         <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>{t("settings.version")}</div>
       </div>
     </div></div>
+  );
+}
+
+function PrivacyPolicyContent(){
+  const{t}=useTranslation();
+  const box={background:"var(--surface-1)",borderRadius:13,padding:16,border:"1px solid var(--border-ui)",marginBottom:12};
+  const hdr={fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:10,paddingBottom:6,borderBottom:"1px solid var(--border-ui)"};
+  const sections=t("settings.privacy_sections",{returnObjects:true})||[];
+  return(
+    <div style={box}>
+      <div style={hdr}>{t("settings.privacy_header")}</div>
+      <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:12}}>{t("settings.privacy_updated")}</div>
+      {sections.map(({title,content},i)=>(
+        <div key={i} style={{marginBottom:14}}>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:5}}>{title}</div>
+          <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.8}}>{content}</div>
+        </div>
+      ))}
+    </div>
   );
 }
 
