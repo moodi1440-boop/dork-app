@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L108";
+const APP_VERSION = "L109";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -5284,7 +5284,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           {/* صف أخير: تاريخ الانضمام + نشط */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div style={{fontSize:14,color:"var(--p)",fontWeight:600,display:"flex",alignItems:"center",gap:5}}><IconCalendar size={13}/>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):t("owner_dash.not_available")}</div>
-            {salon.status==="approved"&&<div style={{background:"rgba(var(--pr),.2)",border:"1px solid rgba(var(--pr),.5)",borderRadius:8,padding:"3px 10px",fontSize:12,color:"var(--p)",fontWeight:700}}>{t("owner_dash.salon_active")}</div>}
+            {salon.status==="approved"&&<div style={{background:"rgba(39,174,96,.10)",border:"1.5px solid rgba(39,174,96,.4)",borderRadius:10,padding:"5px 10px",display:"flex",alignItems:"center",gap:4,flexShrink:0,fontSize:14,fontWeight:900,color:"#27ae60"}}>{t("owner_dash.salon_active")}</div>}
           </div>
         </div>
       </div>
