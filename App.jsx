@@ -5132,7 +5132,11 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
       });
       const data=await res.json();
       if(!res.ok){
-        setErr(t(`owner_login.${data.code||"err_generic"}`));
+        if(data.code==="err_locked"&&data.remainingMinutes){
+          setErr(`تم قفل الدخول مؤقتاً — أعد المحاولة بعد ${data.remainingMinutes} ${data.remainingMinutes===1?"دقيقة":"دقائق"}`);
+        }else{
+          setErr(t(`owner_login.${data.code||"err_generic"}`));
+        }
         setLoading(false); return;
       }
       setOwnerSession(data.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",data.id);

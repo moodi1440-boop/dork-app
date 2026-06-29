@@ -3,7 +3,7 @@ const { hashOwnerPin, signOwnerSession } = require("./_lib/owner-session");
 const { serializeCookie } = require("./_lib/cookies");
 
 const MAX_FAILS = 5;
-const LOCK_MINUTES = 15;
+const LOCK_MINUTES = 10;
 const COOKIE_NAME = "dork_owner_session";
 
 async function readJson(req) {
@@ -61,7 +61,9 @@ module.exports = async (req, res) => {
 
     const lockedUntil = salon.owner_pin_locked_until ? new Date(salon.owner_pin_locked_until) : null;
     if (lockedUntil && lockedUntil.getTime() > Date.now()) {
-      res.status(429).json({ error: "تم قفل الدخول مؤقتًا بسبب محاولات خاطئة متكررة، حاول لاحقًا", code: "err_locked" });
+      const remainingMs = lockedUntil.getTime() - Date.now();
+      const remainingMinutes = Math.ceil(remainingMs / 60000);
+      res.status(429).json({ error: "تم قفل الدخول مؤقتًا", code: "err_locked", remainingMinutes });
       return;
     }
 
