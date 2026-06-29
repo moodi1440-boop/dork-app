@@ -12,6 +12,7 @@ async function readJson(req) {
 function toDbSalon(s, status) {
   return {
     name: s.name, owner: s.owner, owner_phone: s.ownerPhone,
+    owner_email: s.ownerEmail || null,
     region: s.region, gov: s.gov, center: s.center, village: s.village,
     phone: s.phone, address: s.address, location_url: s.locationUrl,
     services: s.services, prices: s.prices,
