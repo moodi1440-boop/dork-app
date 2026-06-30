@@ -1,6 +1,7 @@
 const { createAdminClient } = require("./_lib/supabase-admin");
 const { hashOwnerPin, signOwnerSession } = require("./_lib/owner-session");
 const { serializeCookie } = require("./_lib/cookies");
+const { checkRateLimit } = require("./_lib/rate-limit");
 
 const MAX_FAILS = 5;
 const LOCK_MINUTES = 10;
@@ -27,6 +28,12 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const allowed = await checkRateLimit(req, "owner-auth", 10);
+    if (!allowed) {
+      res.status(429).json({ error: "طلبات كثيرة جداً، أعد المحاولة بعد دقيقة", code: "err_rate_limit" });
+      return;
+    }
+
     const { phone, pin } = await readJson(req);
     if (!phone || !pin) {
       res.status(400).json({ error: "رقم الهاتف والرقم السري مطلوبان" });
