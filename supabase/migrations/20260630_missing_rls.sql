@@ -57,6 +57,20 @@ END $$;
 -- ============================================================
 -- promo_codes / promotions (إن وُجدا)
 -- ============================================================
+-- ============================================================
+-- user_sessions (جدول قديم — service_role فقط)
+-- ============================================================
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='user_sessions') THEN
+    EXECUTE 'ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'REVOKE SELECT, INSERT, UPDATE, DELETE ON user_sessions FROM anon';
+    EXECUTE 'GRANT ALL ON user_sessions TO service_role';
+  END IF;
+END $$;
+
+-- ============================================================
+-- promo_codes / promotions (إن وُجدا)
+-- ============================================================
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='promo_codes') THEN
     EXECUTE 'ALTER TABLE promo_codes ENABLE ROW LEVEL SECURITY';
