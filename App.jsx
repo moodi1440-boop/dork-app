@@ -114,22 +114,36 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 const getTodayDateInRiyadh = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" });
 
+// Circuit Breaker — نقطة 25: توقف بعد 3 فشل متتاليين، انتظر 30 ثانية
+const _cb = { fails: 0, openUntil: 0 };
+
 async function sb(table, method, body, query = "") {
+  if (_cb.openUntil > Date.now()) {
+    throw new Error("circuit_open");
+  }
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "apikey": SUPABASE_ANON,
-      "Authorization": `Bearer ${SUPABASE_ANON}`,
-      "Content-Type": "application/json",
-      "Prefer": method === "POST" ? "return=representation" : "return=representation",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: {
+        "apikey": SUPABASE_ANON,
+        "Authorization": `Bearer ${SUPABASE_ANON}`,
+        "Content-Type": "application/json",
+        "Prefer": method === "POST" ? "return=representation" : "return=representation",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (e) {
+    if (++_cb.fails >= 3) { _cb.openUntil = Date.now() + 30_000; _cb.fails = 0; }
+    throw e;
+  }
   if (!res.ok) {
     const err = await res.text();
+    if (++_cb.fails >= 3) { _cb.openUntil = Date.now() + 30_000; _cb.fails = 0; }
     throw new Error(`Supabase ${method} ${table}: ${err}`);
   }
+  _cb.fails = 0;
   const text = await res.text();
   return text ? JSON.parse(text) : [];
 }
