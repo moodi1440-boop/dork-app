@@ -2193,6 +2193,7 @@ export default function App(){
         notes:bk.email||"",
         reminder_minutes:bk.reminderMins??60,
         slot_duration_minutes:bk.totalDuration||(salon?.slotMin||SLOT_MIN),
+        idempotency_key:crypto.randomUUID(),
       },"");
       if(isReschedule){
         await sb("bookings","PATCH",{status:"cancelled"},"?id=eq."+rescheduleOldId).catch(()=>{});
