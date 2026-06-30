@@ -1860,7 +1860,7 @@ export default function App(){
       setDbError(null);
     } catch(e) {
       console.error(e);
-      setDbError(e.message);
+      setDbError(e.message==="circuit_open"?"الخدمة متوقفة مؤقتاً — سيُعاد المحاولة خلال 30 ثانية":e.message);
     } finally {
       if(!silent)setLoading(false);
     }
@@ -2443,7 +2443,7 @@ export default function App(){
       <div id="dork-bg" style={dorkBgStyle}/>
       <style>{CSS}</style>
       {/* بانر خطأ الاتصال - يظهر فقط عند الخطأ */}
-      {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"rgba(231,76,60,.12)",borderBottom:"1px solid rgba(231,76,60,.3)",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconError size={14}/>{t('ui.db_error')}</div>}
+      {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"rgba(231,76,60,.12)",borderBottom:"1px solid rgba(231,76,60,.3)",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconError size={14}/>{dbError.startsWith("الخدمة متوقفة")?dbError:t('ui.db_error')}</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":toast.type==="info"?"rgba(150,110,0,.9)":"#1a5c34",display:"flex",alignItems:"center",gap:8}}>{toast.type==="err"?<IconError size={16}/>:toast.type==="warn"?null:<IconSuccess size={16}/>}<span>{toast.msg}</span></div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
       <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} activeDrawerItem={activeDrawerItem} setActiveDrawerItem={setActiveDrawerItem} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
