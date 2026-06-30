@@ -4602,7 +4602,17 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
     inp.onchange=e=>{
       const file=e.target.files[0]; if(!file)return;
       const reader=new FileReader();
-      reader.onload=ev=>upBarberPhoto(id,ev.target.result);
+      reader.onload=ev=>{
+        const img=new Image();
+        img.onload=()=>{
+          const MAX=150;let w=img.width,h=img.height;
+          if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}
+          const c=document.createElement("canvas");c.width=w;c.height=h;
+          c.getContext("2d").drawImage(img,0,0,w,h);
+          upBarberPhoto(id,c.toDataURL("image/jpeg",0.75));
+        };
+        img.src=ev.target.result;
+      };
       reader.readAsDataURL(file);
     };
     inp.click();
