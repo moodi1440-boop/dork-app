@@ -18,6 +18,7 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-analytics': ['@vercel/analytics'],
+          'vendor-sentry': ['@sentry/react'],
         },
       },
     },

@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sentry/react": "^10.62.0",
     "@supabase/supabase-js": "^2.105.4",
     "@vercel/analytics": "^1.6.1",
     "i18next": "^26.3.0",
