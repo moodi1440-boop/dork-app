@@ -80,3 +80,32 @@ WHERE salon_id = <id> AND date >= '<date>';
 - [ ] توثيق الحادثة: التاريخ، السبب، الحل، الوقت المستغرق
 - [ ] تحديث هذا الـ Runbook إذا اكتُشفت ثغرة في الإجراء
 - [ ] SQL dump يدوي للنسخ الاحتياطي
+
+---
+
+## 6. الفحص الرباعي قبل كل إصدار (نقطة 14)
+
+قبل أي merge إلى `main` أو رفع للإنتاج:
+
+### أ) التطبيق (App.jsx / React)
+- [ ] `npm run build` — لا أخطاء أو تحذيرات حرجة
+- [ ] `npm audit --audit-level=high --production` — 0 ثغرات
+- [ ] اختبار تسجيل دخول العميل (OTP)
+- [ ] اختبار الحجز من البداية للنهاية (5 خطوات)
+- [ ] فحص Console في المتصفح — لا أخطاء JavaScript
+
+### ب) الأدمن (admin/ Next.js)
+- [ ] اختبار تسجيل دخول الأدمن
+- [ ] التحقق من ظهور الصالونات الجديدة في لوحة الأدمن
+- [ ] فحص صفحة Audit Log — التسجيلات تظهر
+
+### ج) Supabase
+- [ ] Dashboard → Database → لا Errors في الـ Logs
+- [ ] Dashboard → Auth → مشاريع OTP تعمل
+- [ ] تشغيل: `SELECT * FROM admin_audit_log ORDER BY created_at DESC LIMIT 5;` — يُرجع بيانات
+- [ ] فحص table_bloat_monitor — dead_pct < 20%
+
+### د) Vercel
+- [ ] Dashboard → Functions — لا 5xx errors
+- [ ] Dashboard → Analytics — Core Web Vitals تُحمَّل
+- [ ] ALLOWED_ORIGINS محدَّث إذا تغيّر النطاق
