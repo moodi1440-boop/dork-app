@@ -117,6 +117,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
 const getTodayDateInRiyadh = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" });
 
+// أفضل صيغة صورة — WebP أصغر بـ 30% من JPEG، مع fallback للمتصفحات القديمة
+const IMG_FMT = (() => { try { return document.createElement("canvas").toDataURL("image/webp").startsWith("data:image/webp") ? "image/webp" : "image/jpeg"; } catch { return "image/jpeg"; } })();
+
 // Circuit Breaker — نقطة 25: توقف بعد 3 فشل متتاليين، انتظر 30 ثانية
 const _cb = { fails: 0, openUntil: 0 };
 
@@ -4612,7 +4615,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
           if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}
           const c=document.createElement("canvas");c.width=w;c.height=h;
           c.getContext("2d").drawImage(img,0,0,w,h);
-          upBarberPhoto(id,c.toDataURL("image/jpeg",0.75));
+          upBarberPhoto(id,c.toDataURL(IMG_FMT,0.75));
         };
         img.src=ev.target.result;
       };
@@ -7030,7 +7033,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}
           const c=document.createElement("canvas");c.width=w;c.height=h;
           c.getContext("2d").drawImage(img,0,0,w,h);
-          resolve(c.toDataURL("image/jpeg",0.75));
+          resolve(c.toDataURL(IMG_FMT,0.75));
         };
         img.onerror=()=>resolve(dataUrl);
         img.src=dataUrl;
@@ -7230,7 +7233,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                         const canvas=document.createElement("canvas");
                         canvas.width=w;canvas.height=h;
                         canvas.getContext("2d").drawImage(img,0,0,w,h);
-                        const compressed=canvas.toDataURL("image/jpeg",0.75);
+                        const compressed=canvas.toDataURL(IMG_FMT,0.75);
                         setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,photo:compressed}:x)}));
                       };
                       img.src=ev.target.result;

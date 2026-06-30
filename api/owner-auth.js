@@ -113,9 +113,19 @@ module.exports = async (req, res) => {
       secure: process.env.VERCEL_ENV !== "development",
     });
     res.setHeader("Set-Cookie", cookie);
+
+    // تسجيل حدث الدخول في audit_log — نقطة 59
+    const sb = createAdminClient();
+    sb.from("admin_audit_log").insert({
+      actor: `salon:${salon.id}`,
+      action: "salon.login",
+      target_type: "salon",
+      target_id: String(salon.id),
+      details: { ip: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || null },
+    }).catch(() => {});
+
     res.status(200).json({ id: salon.id, name: salon.name, owner: salon.owner, ...sessionTokens });
   } catch (e) {
-    console.error("[owner-auth] error:", e);
     res.status(500).json({ error: "خطأ بالسيرفر" });
   }
 };
