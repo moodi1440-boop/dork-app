@@ -114,22 +114,36 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 const getTodayDateInRiyadh = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" });
 
-async function sb(table, method, body, query = "") {
+// Circuit Breaker — نقطة 25: توقف بعد 3 فشل متتاليين، انتظر 30 ثانية
+const _cb = { fails: 0, openUntil: 0 };
+
+async function sb(table, method, body, query = "", authToken = null) {
+  if (_cb.openUntil > Date.now()) {
+    throw new Error("circuit_open");
+  }
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "apikey": SUPABASE_ANON,
-      "Authorization": `Bearer ${SUPABASE_ANON}`,
-      "Content-Type": "application/json",
-      "Prefer": method === "POST" ? "return=representation" : "return=representation",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: {
+        "apikey": SUPABASE_ANON,
+        "Authorization": `Bearer ${authToken || SUPABASE_ANON}`,
+        "Content-Type": "application/json",
+        "Prefer": method === "POST" ? "return=representation" : "return=representation",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (e) {
+    if (++_cb.fails >= 3) { _cb.openUntil = Date.now() + 30_000; _cb.fails = 0; }
+    throw e;
+  }
   if (!res.ok) {
     const err = await res.text();
+    if (++_cb.fails >= 3) { _cb.openUntil = Date.now() + 30_000; _cb.fails = 0; }
     throw new Error(`Supabase ${method} ${table}: ${err}`);
   }
+  _cb.fails = 0;
   const text = await res.text();
   return text ? JSON.parse(text) : [];
 }
@@ -1838,7 +1852,7 @@ export default function App(){
       try{
         // حفظ نسخة مصغرة للكاش (بدون services/prices/barbers) لضمان النجاح في Safari
         const slim=salonsWithBookings.map(s=>({id:s.id,name:s.name,region:s.region,gov:s.gov,center:s.center,village:s.village,phone:s.phone,address:s.address,locationUrl:s.locationUrl,tone:s.tone,rating:s.rating,status:s.status,paused:s.paused,frozen:s.frozen,banned:s.banned,workStart:s.workStart,workEnd:s.workEnd,closedDays:s.closedDays,shiftEnabled:s.shiftEnabled,shift1Start:s.shift1Start,shift1End:s.shift1End,shift2Start:s.shift2Start,shift2End:s.shift2End,slotMin:s.slotMin,bookings:s.bookings,services:[],prices:{},barbers:[]}));
-        localStorage.setItem("dork_salons_cache",JSON.stringify(slim));
+        localStorage.setItem("dork_salons_cache",JSON.stringify({ts:Date.now(),data:slim}));
       }catch{}
       setCustomers(custRows.map(toAppCustomer));
       setReviews(reviewRows||[]);
@@ -1863,8 +1877,13 @@ export default function App(){
   },[loadData,loadAppSettings]);
 
   useEffect(()=>{
-    const hasCached=!!localStorage.getItem("dork_salons_cache");
-    loadData(hasCached?{silent:true}:{});
+    const SALONS_CACHE_TTL=24*60*60*1000;
+    let isCacheFresh=false;
+    try{
+      const raw=localStorage.getItem("dork_salons_cache");
+      if(raw){const cached=JSON.parse(raw);isCacheFresh=!!(cached.ts&&(Date.now()-cached.ts)<SALONS_CACHE_TTL&&Array.isArray(cached.data));}
+    }catch{}
+    loadData(isCacheFresh?{silent:true}:{});
     loadAppSettings();
   },[loadData,loadAppSettings]);
 
@@ -2174,6 +2193,7 @@ export default function App(){
         notes:bk.email||"",
         reminder_minutes:bk.reminderMins??60,
         slot_duration_minutes:bk.totalDuration||(salon?.slotMin||SLOT_MIN),
+        idempotency_key:crypto.randomUUID(),
       },"");
       if(isReschedule){
         await sb("bookings","PATCH",{status:"cancelled"},"?id=eq."+rescheduleOldId).catch(()=>{});
@@ -5200,6 +5220,9 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
           setErr(t(`owner_login.${data.code||"err_generic"}`));
         }
         setLoading(false); return;
+      }
+      if(data.access_token&&data.refresh_token){
+        await supabase.auth.setSession({access_token:data.access_token,refresh_token:data.refresh_token}).catch(()=>{});
       }
       setOwnerSession(data.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",data.id);
     }catch{
