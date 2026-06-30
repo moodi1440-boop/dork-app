@@ -3656,7 +3656,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
   const inner=(
     <>
       {!inline&&<div style={G.salonBadge}><IconScissors size={20} color="var(--p)"/><div style={{flex:1}}><div style={{fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>{salon.gov||salon.region}</div></div><button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg></button></div>}
-      <div style={{...G.steps,gap:2}}>{[t("book.step1"),t("book.step2"),t("book.step3"),t("book.step4"),t("book.step5")].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:8,color:"var(--p)",textAlign:"center",lineHeight:1.1}}>{l}</span></div>)}</div>
+      <div style={{...G.steps,gap:2}}>{[t("book.step1"),t("book.step2"),t("book.step3"),t("book.step4"),t("book.step5")].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:10,color:"var(--p)",textAlign:"center",lineHeight:1.1}}>{l}</span></div>)}</div>
       {/* ── الخطوة 1: البيانات ── */}
       {step===1&&<div style={G.fc}>
         <F label={t("book.name_label")} error={errors.name}><input style={fi(errors.name)} placeholder={t("book.name_ph")} value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></F>
@@ -4663,7 +4663,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
         {t("register.pending_notice")}
       </div>
 
-      <div style={{...G.steps,gap:2}}>{[t("register.step1"),t("register.step2"),t("register.step3"),t("register.step4")].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:8,color:"var(--p)",textAlign:"center",lineHeight:1.1}}>{l}</span></div>)}</div>
+      <div style={{...G.steps,gap:2}}>{[t("register.step1"),t("register.step2"),t("register.step3"),t("register.step4")].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:10,color:"var(--p)",textAlign:"center",lineHeight:1.1}}>{l}</span></div>)}</div>
 
       {step===1&&<>
       <div style={G.fc}>
