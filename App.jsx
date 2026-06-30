@@ -775,7 +775,7 @@ function getSlotsForBarber(salon,barber){
   }
   return getSlotsForSalon(salon);
 }
-function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function todayStr(){return new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Riyadh"});}
 function to12h(tt){if(!tt)return tt;const[h,m]=tt.split(":").map(Number);return`${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"ص":"م"}`; }
 function toM(tt){const[h,m]=(tt||"").split(":").map(Number);return(h||0)*60+(m||0);}
 function openMaps(url,name,addr){window.open(url?.trim()||`https://www.google.com/maps/search/${encodeURIComponent(name+" "+addr)}`,"_blank");}
@@ -3624,7 +3624,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
   const total=calcTotal(form.services,salon.prices);
   const toggle=s=>setForm(p=>({...p,time:"",services:p.services.includes(s)?p.services.filter(x=>x!==s):[...p.services,s]}));
   const DAYS=t("book.days",{returnObjects:true});
-  const days7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()+i);const dow=d.getDay();const dateStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;return{dateStr,dayName:DAYS[dow],dayNum:d.getDate(),isClosed:salon.closedDays?.includes(dow),isToday:i===0};});
+  const days7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()+i);const dateStr=new Date(d).toLocaleDateString("en-CA",{timeZone:"Asia/Riyadh"});const dow=new Date(dateStr+"T12:00:00+03:00").getDay();return{dateStr,dayName:DAYS[dow],dayNum:Number(dateStr.slice(8)),isClosed:salon.closedDays?.includes(dow),isToday:i===0};});
   const toM=(tt)=>{const[h,m]=(tt||"").split(":").map(Number);return(h||0)*60+(m||0);};
   const closingM=(()=>{if(barber?.shiftEnd)return toM(barber.shiftEnd);if(salon.shiftEnabled)return toM(salon.shift2End||salon.shift1End||"22:00");return toM(salon.workEnd||"22:00");})();
   const slotsVisible=slots.filter(sl=>toM(sl)+(totalDuration||(salon.slotMin||SLOT_MIN))<=closingM);
@@ -5745,8 +5745,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
 // ==============================================
 function BookingCalendar({salon,onUpdate}){
   const{t}=useTranslation();
-  const today=new Date();
-  const todayDateStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+  const todayDateStr=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Riyadh"});
 
   const[expandedDate,setExpandedDate]=useState(null);
   const[localAttendance,setLocalAttendance]=useState({});
