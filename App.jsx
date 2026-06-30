@@ -3873,7 +3873,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
       setDayStats(grp(dayR));
       setMonthStats(grp(monthR));
       setYearStats(grp(yearR));
-    }catch(e){console.warn("barber stats error:",e);}
+    }catch(e){}
     setLoadingStats(false);
   },[salon.id,salon.barbers?.length,barberDay,barberM,barberY]);
 
