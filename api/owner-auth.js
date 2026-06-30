@@ -2,17 +2,11 @@ const { createAdminClient, createAnonClient } = require("./_lib/supabase-admin")
 const { hashOwnerPin, signOwnerSession } = require("./_lib/owner-session");
 const { serializeCookie } = require("./_lib/cookies");
 const { checkRateLimit } = require("./_lib/rate-limit");
+const { readJson } = require("./_lib/request");
 
 const MAX_FAILS = 5;
 const LOCK_MINUTES = 10;
 const COOKIE_NAME = "dork_owner_session";
-
-async function readJson(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8");
-  return raw ? JSON.parse(raw) : {};
 }
 
 module.exports = async (req, res) => {

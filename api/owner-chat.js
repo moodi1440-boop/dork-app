@@ -1,19 +1,5 @@
 const { createAdminClient } = require("./_lib/supabase-admin");
-const { verifyOwnerSession } = require("./_lib/owner-session");
-const { parseCookies } = require("./_lib/cookies");
-
-async function readJson(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8");
-  return raw ? JSON.parse(raw) : {};
-}
-
-async function getSalonId(req) {
-  const cookies = parseCookies(req);
-  return verifyOwnerSession(cookies["dork_owner_session"]);
-}
+const { readJson, getSalonId } = require("./_lib/request");
 
 module.exports = async (req, res) => {
   const salonId = await getSalonId(req);
