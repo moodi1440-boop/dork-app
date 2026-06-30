@@ -1,5 +1,6 @@
 const { createAdminClient } = require("./_lib/supabase-admin");
 const { readJson } = require("./_lib/request");
+const { logApiError } = require("./_lib/admin-error-log");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -49,7 +50,7 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ ok: true });
   } catch (e) {
-    console.error("[delete-account] error:", e);
+    logApiError("delete-account", e, req);
     res.status(500).json({ error: "خطأ بالسيرفر" });
   }
 };

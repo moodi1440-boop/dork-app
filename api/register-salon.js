@@ -2,6 +2,7 @@ const { createAdminClient } = require("./_lib/supabase-admin");
 const { hashOwnerPin } = require("./_lib/owner-session");
 const { checkRateLimit } = require("./_lib/rate-limit");
 const { readJson } = require("./_lib/request");
+const { logApiError } = require("./_lib/admin-error-log");
 
 function toDbSalon(s, status) {
   return {
@@ -73,7 +74,7 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ ok: true, id: data.id });
   } catch (e) {
-    console.error("[register-salon] error:", e);
+    logApiError("register-salon", e, req);
     res.status(500).json({ error: "خطأ بالسيرفر" });
   }
 };
