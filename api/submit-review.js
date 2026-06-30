@@ -66,18 +66,18 @@ module.exports = async (req, res) => {
 
     let review;
     if (existing) {
-      const { data } = await sb.from("reviews").update({ rating, comment }).eq("id", existing.id).select().single();
+      const { data } = await sb.from("reviews").update({ rating, comment }).eq("id", existing.id).select("id,salon_id,customer_id,customer_name,rating,comment,booking_date,created_at").single();
       review = data;
     } else {
       const { data } = await sb.from("reviews").insert({
         salon_id: salonId, customer_id: customerId,
         customer_name: booking.customer_name || body.customerName || "",
         rating, comment, booking_date: bookingDate,
-      }).select().single();
+      }).select("id,salon_id,customer_id,customer_name,rating,comment,booking_date,created_at").single();
       review = data;
     }
 
-    const { data: allReviews } = await sb.from("reviews").select("rating").eq("salon_id", salonId);
+    const { data: allReviews } = await sb.from("reviews").select("rating").eq("salon_id", salonId).limit(1000);
     const newRating = allReviews?.length
       ? Math.round((allReviews.reduce((a, r) => a + r.rating, 0) / allReviews.length) * 10) / 10
       : rating;

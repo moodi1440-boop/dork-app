@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
   const sb = createAdminClient();
 
   if (req.method === "GET") {
-    const { data, error } = await sb.from("salons").select("*").eq("id", salonId).single();
+    const { data, error } = await sb.from("salons").select("id,name,owner,owner_phone,owner_email,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at").eq("id", salonId).single();
     if (error) {
       res.status(500).json({ error: error.message });
       return;
