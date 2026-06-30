@@ -1,4 +1,4 @@
-const { createAdminClient } = require("./_lib/supabase-admin");
+const { createAdminClient, createAnonClient } = require("./_lib/supabase-admin");
 const { hashOwnerPin, signOwnerSession } = require("./_lib/owner-session");
 const { serializeCookie } = require("./_lib/cookies");
 const { checkRateLimit } = require("./_lib/rate-limit");
@@ -89,12 +89,37 @@ module.exports = async (req, res) => {
 
     await sb.from("salons").update({ owner_pin_fails: 0, owner_pin_locked_until: null }).eq("id", salon.id);
 
+    // إصدار Supabase Session للصالونات التي عندها owner_email (فشل صامت — الكوكي يكفي)
+    let sessionTokens = null;
+    if (salon.owner_email) {
+      try {
+        const { data: linkData } = await sb.auth.admin.generateLink({
+          type: "magiclink",
+          email: salon.owner_email,
+        });
+        const otp = linkData?.properties?.email_otp;
+        if (otp) {
+          const { data: sessionData } = await createAnonClient().auth.verifyOtp({
+            email: salon.owner_email,
+            token: otp,
+            type: "email",
+          });
+          if (sessionData?.session) {
+            sessionTokens = {
+              access_token: sessionData.session.access_token,
+              refresh_token: sessionData.session.refresh_token,
+            };
+          }
+        }
+      } catch { /* فشل صامت */ }
+    }
+
     const cookie = serializeCookie(COOKIE_NAME, await signOwnerSession(salon.id), {
       maxAge: 60 * 60 * 24 * 30,
       secure: process.env.VERCEL_ENV !== "development",
     });
     res.setHeader("Set-Cookie", cookie);
-    res.status(200).json({ id: salon.id, name: salon.name, owner: salon.owner });
+    res.status(200).json({ id: salon.id, name: salon.name, owner: salon.owner, ...sessionTokens });
   } catch (e) {
     console.error("[owner-auth] error:", e);
     res.status(500).json({ error: "خطأ بالسيرفر" });

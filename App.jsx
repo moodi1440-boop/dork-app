@@ -117,7 +117,7 @@ const getTodayDateInRiyadh = () =>
 // Circuit Breaker — نقطة 25: توقف بعد 3 فشل متتاليين، انتظر 30 ثانية
 const _cb = { fails: 0, openUntil: 0 };
 
-async function sb(table, method, body, query = "") {
+async function sb(table, method, body, query = "", authToken = null) {
   if (_cb.openUntil > Date.now()) {
     throw new Error("circuit_open");
   }
@@ -128,7 +128,7 @@ async function sb(table, method, body, query = "") {
       method,
       headers: {
         "apikey": SUPABASE_ANON,
-        "Authorization": `Bearer ${SUPABASE_ANON}`,
+        "Authorization": `Bearer ${authToken || SUPABASE_ANON}`,
         "Content-Type": "application/json",
         "Prefer": method === "POST" ? "return=representation" : "return=representation",
       },
@@ -5219,6 +5219,9 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
           setErr(t(`owner_login.${data.code||"err_generic"}`));
         }
         setLoading(false); return;
+      }
+      if(data.access_token&&data.refresh_token){
+        await supabase.auth.setSession({access_token:data.access_token,refresh_token:data.refresh_token}).catch(()=>{});
       }
       setOwnerSession(data.id); setOwnerTab(null); setView("ownerDash"); registerPushSubForUser("salon",data.id);
     }catch{

@@ -65,6 +65,19 @@ module.exports = async (req, res) => {
     const owner_pin_hash = await hashOwnerPin(pin, data.id);
     await sb.from("salons").update({ owner_pin_hash }).eq("id", data.id);
 
+    // ربط الصالون الجديد بـ Supabase Auth (إذا عنده owner_email)
+    if (body.ownerEmail) {
+      try {
+        const { data: authUser } = await sb.auth.admin.createUser({
+          email: body.ownerEmail,
+          email_confirm: true,
+        });
+        if (authUser?.user?.id) {
+          await sb.from("salons").update({ auth_uid: authUser.user.id }).eq("id", data.id);
+        }
+      } catch { /* فشل صامت — التسجيل يكتمل بدون auth_uid */ }
+    }
+
     res.status(200).json({ ok: true, id: data.id });
   } catch (e) {
     console.error("[register-salon] error:", e);
