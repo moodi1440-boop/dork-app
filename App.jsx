@@ -1852,7 +1852,7 @@ export default function App(){
       try{
         // حفظ نسخة مصغرة للكاش (بدون services/prices/barbers) لضمان النجاح في Safari
         const slim=salonsWithBookings.map(s=>({id:s.id,name:s.name,region:s.region,gov:s.gov,center:s.center,village:s.village,phone:s.phone,address:s.address,locationUrl:s.locationUrl,tone:s.tone,rating:s.rating,status:s.status,paused:s.paused,frozen:s.frozen,banned:s.banned,workStart:s.workStart,workEnd:s.workEnd,closedDays:s.closedDays,shiftEnabled:s.shiftEnabled,shift1Start:s.shift1Start,shift1End:s.shift1End,shift2Start:s.shift2Start,shift2End:s.shift2End,slotMin:s.slotMin,bookings:s.bookings,services:[],prices:{},barbers:[]}));
-        localStorage.setItem("dork_salons_cache",JSON.stringify(slim));
+        localStorage.setItem("dork_salons_cache",JSON.stringify({ts:Date.now(),data:slim}));
       }catch{}
       setCustomers(custRows.map(toAppCustomer));
       setReviews(reviewRows||[]);
@@ -1877,8 +1877,13 @@ export default function App(){
   },[loadData,loadAppSettings]);
 
   useEffect(()=>{
-    const hasCached=!!localStorage.getItem("dork_salons_cache");
-    loadData(hasCached?{silent:true}:{});
+    const SALONS_CACHE_TTL=24*60*60*1000;
+    let isCacheFresh=false;
+    try{
+      const raw=localStorage.getItem("dork_salons_cache");
+      if(raw){const cached=JSON.parse(raw);isCacheFresh=!!(cached.ts&&(Date.now()-cached.ts)<SALONS_CACHE_TTL&&Array.isArray(cached.data));}
+    }catch{}
+    loadData(isCacheFresh?{silent:true}:{});
     loadAppSettings();
   },[loadData,loadAppSettings]);
 
