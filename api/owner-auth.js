@@ -124,6 +124,7 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ id: salon.id, name: salon.name, owner: salon.owner, ...sessionTokens });
   } catch (e) {
+    console.error("[owner-auth] error:", e?.message ?? e);
     res.status(500).json({ error: "خطأ بالسيرفر" });
   }
 };
