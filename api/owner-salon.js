@@ -1,6 +1,6 @@
 const { createAdminClient } = require("./_lib/supabase-admin");
-const { verifyOwnerSession, hashOwnerPin } = require("./_lib/owner-session");
-const { parseCookies } = require("./_lib/cookies");
+const { hashOwnerPin } = require("./_lib/owner-session");
+const { readJson, getSalonId } = require("./_lib/request");
 
 // الحقول التي يملك صاحب الصالون صلاحية تعديلها بنفسه. أي حقل آخر (status,
 // banned, frozen, rating, total_paid, owner, owner_phone...) يبقى بيد الإدارة فقط.
@@ -8,21 +8,8 @@ const OWNER_EDITABLE_FIELDS = [
   "name", "phone", "address", "location_url", "welcome_msg", "closed_days",
   "slot_min", "cancellation_window", "services", "prices", "barbers",
   "shift_enabled", "work_start", "work_end", "shift1_start", "shift1_end",
-  "shift2_start", "shift2_end", "tone", "social",
+  "shift2_start", "shift2_end", "tone", "social", "owner_email",
 ];
-
-async function readJson(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8");
-  return raw ? JSON.parse(raw) : {};
-}
-
-async function getSalonId(req) {
-  const cookies = parseCookies(req);
-  return verifyOwnerSession(cookies["dork_owner_session"]);
-}
 
 module.exports = async (req, res) => {
   const salonId = await getSalonId(req);

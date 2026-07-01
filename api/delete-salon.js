@@ -1,6 +1,7 @@
 const { createAdminClient } = require("./_lib/supabase-admin");
 const { verifyOwnerSession } = require("./_lib/owner-session");
 const { serializeCookie } = require("./_lib/cookies");
+const { logApiError } = require("./_lib/admin-error-log");
 
 const COOKIE_NAME = "dork_owner_session";
 
@@ -47,7 +48,7 @@ module.exports = async (req, res) => {
     res.setHeader("Set-Cookie", serializeCookie(COOKIE_NAME, "", { maxAge: 0 }));
     res.status(200).json({ ok: true });
   } catch (e) {
-    console.error("[delete-salon] error:", e);
+    logApiError("delete-salon", e, req);
     res.status(500).json({ error: "خطأ بالسيرفر" });
   }
 };

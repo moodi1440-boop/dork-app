@@ -53,6 +53,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const sb = createAdminClient();
+  // حذف الحجوزات المرتبطة أولاً لتجنب خطأ foreign key constraint
+  await sb.from("bookings").delete().eq("salon_id", params.id);
   const { error } = await sb.from("salons").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   await logAdminAction("salon.delete", "salon", params.id);

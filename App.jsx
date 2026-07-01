@@ -107,12 +107,18 @@ function useChat(key) {
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL  || "https://ywrlhvzfefvyogfxfdhl.supabase.co";
 const SUPABASE_ANON   = import.meta.env.VITE_SUPABASE_ANON || "sb_publishable_3tbZHK51ohv9AITf-Mt5Ww_MGZ1DMQs";
 
-// Supabase JS client for Realtime subscriptions
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+// Supabase JS client — autoRefreshToken يُجدّد JWT تلقائياً قبل انتهائه
+// إعدادات Dashboard المطلوبة: Auth → JWT expiry = 3600s، Enable reuse detection = ON
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: false },
+});
 
 // Helper function: الحصول على تاريخ اليوم بتوقيت السعودية (AST/GMT+3)
 const getTodayDateInRiyadh = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" });
+
+// أفضل صيغة صورة — WebP أصغر بـ 30% من JPEG، مع fallback للمتصفحات القديمة
+const IMG_FMT = (() => { try { return document.createElement("canvas").toDataURL("image/webp").startsWith("data:image/webp") ? "image/webp" : "image/jpeg"; } catch { return "image/jpeg"; } })();
 
 // Circuit Breaker — نقطة 25: توقف بعد 3 فشل متتاليين، انتظر 30 ثانية
 const _cb = { fails: 0, openUntil: 0 };
@@ -146,6 +152,11 @@ async function sb(table, method, body, query = "", authToken = null) {
   _cb.fails = 0;
   const text = await res.text();
   return text ? JSON.parse(text) : [];
+}
+
+async function hashPin(pin) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("dork:" + pin));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function ownerApi(method, body) {
@@ -270,6 +281,7 @@ function toAppSalon(row) {
     name: row.name,
     owner: row.owner,
     ownerPhone: row.owner_phone,
+    owner_email: row.owner_email,
     region: row.region,
     gov: row.gov,
     center: row.center,
@@ -775,7 +787,7 @@ function getSlotsForBarber(salon,barber){
   }
   return getSlotsForSalon(salon);
 }
-function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function todayStr(){return new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Riyadh"});}
 function to12h(tt){if(!tt)return tt;const[h,m]=tt.split(":").map(Number);return`${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"ص":"م"}`; }
 function toM(tt){const[h,m]=(tt||"").split(":").map(Number);return(h||0)*60+(m||0);}
 function openMaps(url,name,addr){window.open(url?.trim()||`https://www.google.com/maps/search/${encodeURIComponent(name+" "+addr)}`,"_blank");}
@@ -1516,7 +1528,9 @@ export default function App(){
   const[salons,setSalons]=useState(()=>{
     try{
       const c=localStorage.getItem("dork_salons_cache");
-      return c?JSON.parse(c):[];
+      if(!c)return[];
+      const p=JSON.parse(c);
+      return Array.isArray(p)?p:Array.isArray(p?.data)?p.data:[];
     }catch{return[];}
   });
   const[customers,setCustomers]=useState([]);
@@ -1826,7 +1840,7 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
       const [salonRows,bookingRows,custRows]=await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at&status=eq.approved&order=created_at.desc&limit=500"),
+        sb("salons","GET",null,"?select=id,name,owner,owner_phone,owner_email,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at&status=eq.approved&order=created_at.desc&limit=500"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&order=created_at.desc&limit=1000").catch(()=>[]),
         sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&limit=500").catch(()=>[]),
       ]);
@@ -1860,7 +1874,7 @@ export default function App(){
       setDbError(null);
     } catch(e) {
       console.error(e);
-      setDbError(e.message);
+      setDbError(e.message==="circuit_open"?"الخدمة متوقفة مؤقتاً — سيُعاد المحاولة خلال 30 ثانية":e.message);
     } finally {
       if(!silent)setLoading(false);
     }
@@ -2169,7 +2183,7 @@ export default function App(){
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||"register-salon failed");
       toast$(i18n.t('ui.salon_reg_sent'));
-      setView("home");
+      setView("ownerLogin");
       await loadData();
     }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };
@@ -2443,7 +2457,7 @@ export default function App(){
       <div id="dork-bg" style={dorkBgStyle}/>
       <style>{CSS}</style>
       {/* بانر خطأ الاتصال - يظهر فقط عند الخطأ */}
-      {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"rgba(231,76,60,.12)",borderBottom:"1px solid rgba(231,76,60,.3)",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconError size={14}/>{t('ui.db_error')}</div>}
+      {dbError&&!loading&&<div style={{position:"fixed",top:64,left:0,right:0,zIndex:998,background:"rgba(231,76,60,.12)",borderBottom:"1px solid rgba(231,76,60,.3)",color:"#e74c3c",padding:"8px 16px",fontSize:12,textAlign:"center",fontFamily:"'Cairo',sans-serif",direction:"rtl",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IconError size={14}/>{dbError.startsWith("الخدمة متوقفة")?dbError:t('ui.db_error')}</div>}
       {toast&&<div style={{...G.toast,background:toast.type==="warn"?"#7a3a10":toast.type==="err"?"#7a1a1a":toast.type==="info"?"rgba(150,110,0,.9)":"#1a5c34",display:"flex",alignItems:"center",gap:8}}>{toast.type==="err"?<IconError size={16}/>:toast.type==="warn"?null:<IconSuccess size={16}/>}<span>{toast.msg}</span></div>}
       {view!=="entry"&&view!=="custLogin"&&view!=="ownerLogin"&&<TopBar {...sharedProps} showDrawer={showDrawer} setShowDrawer={setShowDrawer}/>}
       <CustomerDrawer open={showDrawer} onClose={()=>setShowDrawer(false)} customer={customer} setCustomers={sharedProps.setCustomers} setCustomerSession={sharedProps.setCustomerSession} setView={setView} setCustDashKey={setCustDashKey} setCustDashNav={setCustDashNav} activeDrawerItem={activeDrawerItem} setActiveDrawerItem={setActiveDrawerItem} settings={sharedProps.settings} setSettings={sharedProps.setSettings} darkMode={darkMode} setDarkMode={setDarkMode} themeMode={themeMode} setThemeMode={setThemeMode} persistUiToSupabase={sharedProps.persistUiToSupabase} socialLinks={sharedProps.socialLinks} setSocialLinks={sharedProps.setSocialLinks} toast$={toast$} salons={salons} favSet={sharedProps.favSet}/>
@@ -2757,7 +2771,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
               <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr(t("cust_drawer.pin_mismatch"));}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr",boxSizing:"border-box"}} placeholder="•••••" autoFocus/>
               {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
               <div style={{display:"flex",gap:8,marginTop:16}}>
-                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const k=String(customer.id);localStorage.setItem(`dork_customer_pin_${k}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${k}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$(t("cust_drawer.pin_success"));}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_drawer.pin_save")}</button>
+                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const k=String(customer.id);hashPin(editTempPin).then(h=>{localStorage.setItem(`dork_customer_pin_${k}`,h);localStorage.setItem(`dork_customer_pin_length_${k}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$(t("cust_drawer.pin_success"));});}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_drawer.pin_save")}</button>
                 <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_drawer.cancel")}</button>
               </div>
             </>:null}
@@ -3624,7 +3638,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
   const total=calcTotal(form.services,salon.prices);
   const toggle=s=>setForm(p=>({...p,time:"",services:p.services.includes(s)?p.services.filter(x=>x!==s):[...p.services,s]}));
   const DAYS=t("book.days",{returnObjects:true});
-  const days7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()+i);const dow=d.getDay();const dateStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;return{dateStr,dayName:DAYS[dow],dayNum:d.getDate(),isClosed:salon.closedDays?.includes(dow),isToday:i===0};});
+  const days7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()+i);const dateStr=new Date(d).toLocaleDateString("en-CA",{timeZone:"Asia/Riyadh"});const dow=new Date(dateStr+"T12:00:00+03:00").getDay();return{dateStr,dayName:DAYS[dow],dayNum:Number(dateStr.slice(8)),isClosed:salon.closedDays?.includes(dow),isToday:i===0};});
   const toM=(tt)=>{const[h,m]=(tt||"").split(":").map(Number);return(h||0)*60+(m||0);};
   const closingM=(()=>{if(barber?.shiftEnd)return toM(barber.shiftEnd);if(salon.shiftEnabled)return toM(salon.shift2End||salon.shift1End||"22:00");return toM(salon.workEnd||"22:00");})();
   const slotsVisible=slots.filter(sl=>toM(sl)+(totalDuration||(salon.slotMin||SLOT_MIN))<=closingM);
@@ -3645,7 +3659,7 @@ function BookView({salon,addBooking,onBack,inline,setView,customer,rescheduleId,
   const inner=(
     <>
       {!inline&&<div style={G.salonBadge}><IconScissors size={20} color="var(--p)"/><div style={{flex:1}}><div style={{fontWeight:700,color:"var(--text-primary)"}}>{salon.name}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>{salon.gov||salon.region}</div></div><button style={G.mapsBtn} onClick={()=>openMaps(salon.locationUrl,salon.name,salon.address)}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/></svg></button></div>}
-      <div style={{...G.steps,gap:2}}>{[t("book.step1"),t("book.step2"),t("book.step3"),t("book.step4"),t("book.step5")].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:8,color:"var(--p)",textAlign:"center",lineHeight:1.1}}>{l}</span></div>)}</div>
+      <div style={{...G.steps,gap:2}}>{[t("book.step1"),t("book.step2"),t("book.step3"),t("book.step4"),t("book.step5")].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:10,color:"var(--p)",textAlign:"center",lineHeight:1.1}}>{l}</span></div>)}</div>
       {/* ── الخطوة 1: البيانات ── */}
       {step===1&&<div style={G.fc}>
         <F label={t("book.name_label")} error={errors.name}><input style={fi(errors.name)} placeholder={t("book.name_ph")} value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/></F>
@@ -3865,7 +3879,7 @@ function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarne
       setDayStats(grp(dayR));
       setMonthStats(grp(monthR));
       setYearStats(grp(yearR));
-    }catch(e){console.warn("barber stats error:",e);}
+    }catch(e){}
     setLoadingStats(false);
   },[salon.id,salon.barbers?.length,barberDay,barberM,barberY]);
 
@@ -4597,7 +4611,17 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
     inp.onchange=e=>{
       const file=e.target.files[0]; if(!file)return;
       const reader=new FileReader();
-      reader.onload=ev=>upBarberPhoto(id,ev.target.result);
+      reader.onload=ev=>{
+        const img=new Image();
+        img.onload=()=>{
+          const MAX=150;let w=img.width,h=img.height;
+          if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}
+          const c=document.createElement("canvas");c.width=w;c.height=h;
+          c.getContext("2d").drawImage(img,0,0,w,h);
+          upBarberPhoto(id,c.toDataURL(IMG_FMT,0.75));
+        };
+        img.src=ev.target.result;
+      };
       reader.readAsDataURL(file);
     };
     inp.click();
@@ -4642,7 +4666,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
         {t("register.pending_notice")}
       </div>
 
-      <div style={{...G.steps,gap:2}}>{[t("register.step1"),t("register.step2"),t("register.step3"),t("register.step4")].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:8,color:"var(--p)",textAlign:"center",lineHeight:1.1}}>{l}</span></div>)}</div>
+      <div style={{...G.steps,gap:2}}>{[t("register.step1"),t("register.step2"),t("register.step3"),t("register.step4")].map((l,i)=><div key={i} style={{...G.si,...(step>=i+1?{opacity:1}:{})}}><div style={G.sd}>{i+1}</div><span style={{fontSize:10,color:"var(--p)",textAlign:"center",lineHeight:1.1}}>{l}</span></div>)}</div>
 
       {step===1&&<>
       <div style={G.fc}>
@@ -5745,8 +5769,7 @@ function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
 // ==============================================
 function BookingCalendar({salon,onUpdate}){
   const{t}=useTranslation();
-  const today=new Date();
-  const todayDateStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+  const todayDateStr=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Riyadh"});
 
   const[expandedDate,setExpandedDate]=useState(null);
   const[localAttendance,setLocalAttendance]=useState({});
@@ -6955,6 +6978,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     name:salon.name||"",
     phone:salon.phone||"",
     address:salon.address||"",
+    ownerEmail:salon.owner_email||"",
     locationUrl:salon.locationUrl||"",
     shiftEnabled:salon.shiftEnabled||false,
     shift1Start:salon.shift1Start||"08:00",
@@ -7013,14 +7037,14 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
           if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}
           const c=document.createElement("canvas");c.width=w;c.height=h;
           c.getContext("2d").drawImage(img,0,0,w,h);
-          resolve(c.toDataURL("image/jpeg",0.75));
+          resolve(c.toDataURL(IMG_FMT,0.75));
         };
         img.onerror=()=>resolve(dataUrl);
         img.src=dataUrl;
       });
       const compressedBarbers=await Promise.all(f.barbers.map(async b=>({...b,photo:await compressPhoto(b.photo)})));
       const patch={
-        name:f.name,phone:f.phone,address:f.address,location_url:f.locationUrl,
+        name:f.name,phone:f.phone,address:f.address,location_url:f.locationUrl,owner_email:f.ownerEmail||null,
         shift_enabled:f.shiftEnabled,
         shift1_start:f.shift1Start,shift1_end:f.shift1End,
         shift2_start:f.shift2Start,shift2_end:f.shift2End,
@@ -7068,6 +7092,11 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
             <input style={inp} value={f[k]} onChange={e=>upd(k,e.target.value)}/>
           </div>
         ))}
+        <div style={{marginBottom:10}}>
+          <label style={lbl}>{t("register.owner_email")}</label>
+          <input style={inp} type="email" inputMode="email" placeholder="example@email.com" value={f.ownerEmail} onChange={e=>upd("ownerEmail",e.target.value)}/>
+          <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3}}>{t("register.owner_email_hint")}</div>
+        </div>
         {/* قسم الموقع */}
         <div style={{background:"rgba(var(--pr),.06)",borderRadius:12,padding:12,border:"1px solid rgba(var(--pr),.2)"}}>
           <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconPin size={12}/>{t("owner_settings.map_url")}</div>
@@ -7213,7 +7242,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
                         const canvas=document.createElement("canvas");
                         canvas.width=w;canvas.height=h;
                         canvas.getContext("2d").drawImage(img,0,0,w,h);
-                        const compressed=canvas.toDataURL("image/jpeg",0.75);
+                        const compressed=canvas.toDataURL(IMG_FMT,0.75);
                         setF(p=>({...p,barbers:p.barbers.map((x,j)=>j===i?{...x,photo:compressed}:x)}));
                       };
                       img.src=ev.target.result;
@@ -7429,7 +7458,7 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
   };
   const savePin=async()=>{
     if(tempPin!==pinConfirm){setPinErr(t("cust_drawer.pin_mismatch"));return;}
-    localStorage.setItem(`dork_customer_pin_${customer.id}`,tempPin);
+    localStorage.setItem(`dork_customer_pin_${customer.id}`,await hashPin(tempPin));
     try{await sb("customers","PATCH",{pin:tempPin,pin_length:pinLen},`?id=eq.${customer.id}`);}catch{}
     toast$(""+t("cust_drawer.pin_success"));setPinStep(null);setTempPin("");setPinConfirm("");setPinErr("");
   };
@@ -7912,7 +7941,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   };
 
   const loginWithPin=async()=>{
-    const c=customers.find(cust=>{const savedPin=localStorage.getItem(`dork_customer_pin_${cust.id}`);return savedPin&&savedPin===pin;});
+    const pinHash=await hashPin(pin);
+    const c=customers.find(cust=>{const savedPin=localStorage.getItem(`dork_customer_pin_${cust.id}`);return savedPin&&savedPin===pinHash;});
     if(!c){setPinErr(t("cust_login.err_pin_wrong"));setPin("");return;}
     if(c.blocked){setPinErr(i18n.t('ui.account_banned'));setPin("");return;}
     setCustomerSession(c);setView("home");
@@ -8730,10 +8760,10 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               <input type="password" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editTempPin.length===editPinLength)setEditPinStep("confirm");}} />
             </>:editPinStep==="confirm"?<>
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t('ui.confirm_pin')}</div>
-              <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr(i18n.t('cust_drawer.pin_mismatch'));}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}}} />
+              <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr(i18n.t('cust_drawer.pin_mismatch'));}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);hashPin(editTempPin).then(h=>{localStorage.setItem(`dork_customer_pin_${customerIdStr}`,h);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");});}}} />
               {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
               <div style={{display:"flex",gap:8,marginTop:16}}>
-                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);localStorage.setItem(`dork_customer_pin_${customerIdStr}`,editTempPin);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$&&toast$(i18n.t('ui.pin_updated'));}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);hashPin(editTempPin).then(h=>{localStorage.setItem(`dork_customer_pin_${customerIdStr}`,h);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$&&toast$(i18n.t('ui.pin_updated'));});}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
                   حفظ
                 </button>
                 <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>

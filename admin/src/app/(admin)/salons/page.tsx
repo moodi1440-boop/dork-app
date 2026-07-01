@@ -625,8 +625,12 @@ export default function SalonsPage() {
   };
 
   const deleteSalon = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا الصالون؟")) return;
-    await fetch(`/api/salons/${id}`, { method: "DELETE" });
+    if (!confirm("هل أنت متأكد من حذف هذا الصالون نهائياً؟ سيُحذف مع جميع حجوزاته.")) return;
+    const res = await fetch(`/api/salons/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      alert("فشل الحذف: " + (d.error || `HTTP ${res.status}`));
+    }
     load();
   };
 

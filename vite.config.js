@@ -12,5 +12,15 @@ export default defineConfig({
     outDir: 'dist',
     chunkSizeWarningLimit: 600,
     copyPublicDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-analytics': ['@vercel/analytics'],
+          'vendor-sentry': ['@sentry/react'],
+        },
+      },
+    },
   },
 })

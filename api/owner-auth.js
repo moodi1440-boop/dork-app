@@ -2,18 +2,11 @@ const { createAdminClient, createAnonClient } = require("./_lib/supabase-admin")
 const { hashOwnerPin, signOwnerSession } = require("./_lib/owner-session");
 const { serializeCookie } = require("./_lib/cookies");
 const { checkRateLimit } = require("./_lib/rate-limit");
+const { readJson } = require("./_lib/request");
 
 const MAX_FAILS = 5;
 const LOCK_MINUTES = 10;
 const COOKIE_NAME = "dork_owner_session";
-
-async function readJson(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8");
-  return raw ? JSON.parse(raw) : {};
-}
 
 module.exports = async (req, res) => {
   if (req.method === "DELETE") {
@@ -46,6 +39,7 @@ module.exports = async (req, res) => {
       .select("id,name,owner,phone,owner_phone,owner_email,status,banned,frozen,owner_pin_hash,owner_pin_fails,owner_pin_locked_until")
       .or(`phone.eq.${phone},owner_phone.eq.${phone}`)
       .eq("status", "approved")
+      .order("frozen", { ascending: true, nullsFirst: true })
       .limit(1)
       .maybeSingle();
 
@@ -119,9 +113,19 @@ module.exports = async (req, res) => {
       secure: process.env.VERCEL_ENV !== "development",
     });
     res.setHeader("Set-Cookie", cookie);
+
+    // تسجيل حدث الدخول في audit_log — نقطة 59
+    Promise.resolve(sb.from("admin_audit_log").insert({
+      actor: `salon:${salon.id}`,
+      action: "salon.login",
+      target_type: "salon",
+      target_id: String(salon.id),
+      details: { ip: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || null },
+    })).catch(() => {});
+
     res.status(200).json({ id: salon.id, name: salon.name, owner: salon.owner, ...sessionTokens });
   } catch (e) {
-    console.error("[owner-auth] error:", e);
+    console.error("[owner-auth] error:", e?.message ?? e);
     res.status(500).json({ error: "خطأ بالسيرفر" });
   }
 };
