@@ -879,12 +879,12 @@ CREATE TRIGGER trg_audit_customers
 CREATE OR REPLACE VIEW table_bloat_monitor AS
 SELECT
   schemaname,
-  tablename,
-  pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS total_size,
-  pg_size_pretty(pg_relation_size(schemaname||'.'||tablename))       AS table_size,
+  relname AS tablename,
+  pg_size_pretty(pg_total_relation_size(schemaname||'.'||quote_ident(relname))) AS total_size,
+  pg_size_pretty(pg_relation_size(schemaname||'.'||quote_ident(relname)))       AS table_size,
   pg_size_pretty(
-    pg_total_relation_size(schemaname||'.'||tablename) -
-    pg_relation_size(schemaname||'.'||tablename)
+    pg_total_relation_size(schemaname||'.'||quote_ident(relname)) -
+    pg_relation_size(schemaname||'.'||quote_ident(relname))
   ) AS index_size,
   n_dead_tup,
   n_live_tup,
@@ -893,7 +893,7 @@ SELECT
     ELSE 0
   END AS dead_pct
 FROM pg_stat_user_tables
-ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+ORDER BY pg_total_relation_size(schemaname||'.'||quote_ident(relname)) DESC;
 
 -- ==================== Cron Jobs ====================
 -- ملاحظة: يتطلب تفعيل pg_cron من Dashboard → Database → Extensions
