@@ -8,7 +8,7 @@ const OWNER_EDITABLE_FIELDS = [
   "name", "phone", "address", "location_url", "welcome_msg", "closed_days",
   "slot_min", "cancellation_window", "services", "prices", "barbers",
   "shift_enabled", "work_start", "work_end", "shift1_start", "shift1_end",
-  "shift2_start", "shift2_end", "tone", "social",
+  "shift2_start", "shift2_end", "tone", "social", "owner_email",
 ];
 
 module.exports = async (req, res) => {

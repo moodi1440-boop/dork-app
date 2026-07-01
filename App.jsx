@@ -6977,6 +6977,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
     name:salon.name||"",
     phone:salon.phone||"",
     address:salon.address||"",
+    ownerEmail:salon.owner_email||"",
     locationUrl:salon.locationUrl||"",
     shiftEnabled:salon.shiftEnabled||false,
     shift1Start:salon.shift1Start||"08:00",
@@ -7042,7 +7043,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
       });
       const compressedBarbers=await Promise.all(f.barbers.map(async b=>({...b,photo:await compressPhoto(b.photo)})));
       const patch={
-        name:f.name,phone:f.phone,address:f.address,location_url:f.locationUrl,
+        name:f.name,phone:f.phone,address:f.address,location_url:f.locationUrl,owner_email:f.ownerEmail||null,
         shift_enabled:f.shiftEnabled,
         shift1_start:f.shift1Start,shift1_end:f.shift1End,
         shift2_start:f.shift2Start,shift2_end:f.shift2End,
@@ -7090,6 +7091,11 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
             <input style={inp} value={f[k]} onChange={e=>upd(k,e.target.value)}/>
           </div>
         ))}
+        <div style={{marginBottom:10}}>
+          <label style={lbl}>{t("register.owner_email")}</label>
+          <input style={inp} type="email" inputMode="email" placeholder="example@email.com" value={f.ownerEmail} onChange={e=>upd("ownerEmail",e.target.value)}/>
+          <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3}}>{t("register.owner_email_hint")}</div>
+        </div>
         {/* قسم الموقع */}
         <div style={{background:"rgba(var(--pr),.06)",borderRadius:12,padding:12,border:"1px solid rgba(var(--pr),.2)"}}>
           <div style={{fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:8,display:"flex",alignItems:"center",gap:4}}><IconPin size={12}/>{t("owner_settings.map_url")}</div>
