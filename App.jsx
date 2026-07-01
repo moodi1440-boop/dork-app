@@ -2182,7 +2182,7 @@ export default function App(){
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||"register-salon failed");
       toast$(i18n.t('ui.salon_reg_sent'));
-      setView("home");
+      setView("ownerLogin");
       await loadData();
     }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
   };

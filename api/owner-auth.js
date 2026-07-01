@@ -39,6 +39,7 @@ module.exports = async (req, res) => {
       .select("id,name,owner,phone,owner_phone,owner_email,status,banned,frozen,owner_pin_hash,owner_pin_fails,owner_pin_locked_until")
       .or(`phone.eq.${phone},owner_phone.eq.${phone}`)
       .eq("status", "approved")
+      .order("frozen", { ascending: true, nullsFirst: true })
       .limit(1)
       .maybeSingle();
 
