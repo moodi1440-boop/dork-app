@@ -201,7 +201,7 @@ ALTER TABLE salons ADD COLUMN IF NOT EXISTS auth_uid UUID REFERENCES auth.users(
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS reminder_minutes integer NOT NULL DEFAULT 60;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS reminder_sent    boolean NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS idx_bookings_reminder
-  ON bookings (reminder_sent, slot_time)
+  ON bookings (reminder_sent, date)
   WHERE reminder_sent = false;
 
 -- bookings: مفتاح idempotency لمنع الحجز المزدوج
@@ -225,7 +225,7 @@ CREATE INDEX IF NOT EXISTS idx_salons_status     ON salons(status);
 CREATE INDEX IF NOT EXISTS idx_salons_created_at ON salons(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_bookings_salon_id ON bookings(salon_id);
 CREATE INDEX IF NOT EXISTS idx_bookings_customer ON bookings(customer_id);
-CREATE INDEX IF NOT EXISTS idx_bookings_slot     ON bookings(slot_time);
+CREATE INDEX IF NOT EXISTS idx_bookings_slot     ON bookings(date, time);
 CREATE INDEX IF NOT EXISTS idx_bookings_status   ON bookings(status);
 
 -- ================================================================
@@ -287,26 +287,26 @@ CREATE TRIGGER audit_bookings_changes
 CREATE OR REPLACE FUNCTION public.process_appointment_reminders()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  rec RECORD;
+  rec  RECORD;
   appt TIMESTAMPTZ;
 BEGIN
   FOR rec IN
-    SELECT b.id, b.salon_id, b.customer_id, b.slot_time, b.reminder_minutes,
+    SELECT b.id, b.salon_id, b.customer_id, b.date, b.time, b.reminder_minutes,
            c.phone AS customer_phone
     FROM bookings b
     JOIN customers c ON c.id = b.customer_id
     WHERE b.status = 'approved'
       AND b.reminder_sent = false
-      AND b.slot_time > now()
-      AND b.slot_time <= now() + make_interval(mins => b.reminder_minutes)
   LOOP
-    -- تسجيل الإشعار في system_logs (الإرسال الفعلي يتم من Edge Function)
+    appt := (rec.date || 'T' || rec.time)::timestamptz;
+    CONTINUE WHEN appt <= now() OR appt > now() + make_interval(mins => rec.reminder_minutes);
+
     INSERT INTO system_logs (level, source, message, details)
     VALUES ('info', 'reminder', 'reminder_due', jsonb_build_object(
       'booking_id', rec.id,
       'salon_id', rec.salon_id,
       'customer_id', rec.customer_id,
-      'slot_time', rec.slot_time
+      'appt_time', appt
     ));
     UPDATE bookings SET reminder_sent = true WHERE id = rec.id;
   END LOOP;
