@@ -114,13 +114,13 @@ module.exports = async (req, res) => {
     res.setHeader("Set-Cookie", cookie);
 
     // تسجيل حدث الدخول في audit_log — نقطة 59
-    sb.from("admin_audit_log").insert({
+    Promise.resolve(sb.from("admin_audit_log").insert({
       actor: `salon:${salon.id}`,
       action: "salon.login",
       target_type: "salon",
       target_id: String(salon.id),
       details: { ip: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || null },
-    }).catch(() => {});
+    })).catch(() => {});
 
     res.status(200).json({ id: salon.id, name: salon.name, owner: salon.owner, ...sessionTokens });
   } catch (e) {
