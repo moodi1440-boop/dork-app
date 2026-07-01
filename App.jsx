@@ -104,8 +104,8 @@ function useChat(key) {
 // ==============================================
 //  SUPABASE CLIENT
 // ==============================================
-const SUPABASE_URL    = "https://ywrlhvzfefvyogfxfdhl.supabase.co";
-const SUPABASE_ANON   = "sb_publishable_3tbZHK51ohv9AITf-Mt5Ww_MGZ1DMQs";
+const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL  || "https://ywrlhvzfefvyogfxfdhl.supabase.co";
+const SUPABASE_ANON   = import.meta.env.VITE_SUPABASE_ANON || "sb_publishable_3tbZHK51ohv9AITf-Mt5Ww_MGZ1DMQs";
 
 // Supabase JS client for Realtime subscriptions
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
