@@ -7,7 +7,6 @@ const { readJson } = require("./_lib/request");
 const MAX_FAILS = 5;
 const LOCK_MINUTES = 10;
 const COOKIE_NAME = "dork_owner_session";
-}
 
 module.exports = async (req, res) => {
   if (req.method === "DELETE") {
@@ -115,7 +114,6 @@ module.exports = async (req, res) => {
     res.setHeader("Set-Cookie", cookie);
 
     // تسجيل حدث الدخول في audit_log — نقطة 59
-    const sb = createAdminClient();
     sb.from("admin_audit_log").insert({
       actor: `salon:${salon.id}`,
       action: "salon.login",
