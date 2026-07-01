@@ -281,6 +281,7 @@ function toAppSalon(row) {
     name: row.name,
     owner: row.owner,
     ownerPhone: row.owner_phone,
+    owner_email: row.owner_email,
     region: row.region,
     gov: row.gov,
     center: row.center,
@@ -1839,7 +1840,7 @@ export default function App(){
     try {
       if(!silent)setLoading(true);
       const [salonRows,bookingRows,custRows]=await Promise.all([
-        sb("salons","GET",null,"?select=id,name,owner,owner_phone,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at&status=eq.approved&order=created_at.desc&limit=500"),
+        sb("salons","GET",null,"?select=id,name,owner,owner_phone,owner_email,region,gov,center,village,phone,address,location_url,services,prices,shift_enabled,shift1_start,shift1_end,shift2_start,shift2_end,work_start,work_end,barbers,tone,rating,status,paused,frozen,banned,welcome_msg,closed_days,slot_min,cancellation_window,total_paid,social,created_at&status=eq.approved&order=created_at.desc&limit=500"),
         sb("bookings","GET",null,"?select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&order=created_at.desc&limit=1000").catch(()=>[]),
         sb("customers","GET",null,"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&limit=500").catch(()=>[]),
       ]);
