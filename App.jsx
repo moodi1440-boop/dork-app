@@ -1527,7 +1527,9 @@ export default function App(){
   const[salons,setSalons]=useState(()=>{
     try{
       const c=localStorage.getItem("dork_salons_cache");
-      return c?JSON.parse(c):[];
+      if(!c)return[];
+      const p=JSON.parse(c);
+      return Array.isArray(p)?p:Array.isArray(p?.data)?p.data:[];
     }catch{return[];}
   });
   const[customers,setCustomers]=useState([]);
