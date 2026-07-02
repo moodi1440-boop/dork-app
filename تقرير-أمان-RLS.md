@@ -22,11 +22,11 @@ SELECT tablename, policyname, cmd, roles, qual FROM pg_policies WHERE schemaname
 
 | # | الجدول | المشكلة | الخطورة | الحالة |
 |---|--------|---------|---------|--------|
-| 1 | `customers` | سياسة `public_all` (ALL/public/true) — أي شخص يقرأ/يعدّل/**يحذف** أي عميل | 🔴 حرجة | 🔲 لم يُصلح |
-| 2 | `bookings` | سياسة `allow_all` (ALL/public/true) — أي شخص يقرأ/يعدّل/**يحذف** أي حجز | 🔴 حرجة | 🔲 لم يُصلح |
-| 3 | `reviews` | سياسة `allow_all` (ALL/public/true) — أي شخص يقرأ/يعدّل/**يحذف** أي تقييم | 🔴 حرجة | 🔲 لم يُصلح |
-| 4 | `promo_codes` | سياسة `admin_full_access` مُعطاة لـ `{public}` — أي شخص ينشئ/يحذف أكواد خصم | 🔴 حرجة (مالية) | 🔲 لم يُصلح |
-| 5 | `notifications` | `notifications_public_delete` + `notifications_public_update` مفتوحة للجميع — أي شخص يحذف/يعدّل إشعارات كل المستخدمين | 🟠 متوسطة | 🔲 لم يُصلح |
+| 1 | `customers` | سياسة `public_all` (ALL/public/true) — أي شخص يقرأ/يعدّل/**يحذف** أي عميل | 🔴 حرجة | ✅ أُصلح 2026-07-02 |
+| 2 | `bookings` | سياسة `allow_all` (ALL/public/true) — أي شخص يقرأ/يعدّل/**يحذف** أي حجز | 🔴 حرجة | ✅ أُصلح 2026-07-02 |
+| 3 | `reviews` | سياسة `allow_all` (ALL/public/true) — أي شخص يقرأ/يعدّل/**يحذف** أي تقييم | 🔴 حرجة | ✅ أُصلح 2026-07-02 |
+| 4 | `promo_codes` | سياسة `admin_full_access` مُعطاة لـ `{public}` — أي شخص ينشئ/يحذف أكواد خصم | 🔴 حرجة (مالية) | ✅ أُصلح 2026-07-02 |
+| 5 | `notifications` | `notifications_public_delete` + `notifications_public_update` مفتوحة للجميع — أي شخص يحذف/يعدّل إشعارات كل المستخدمين | 🟠 متوسطة | ✅ أُصلح 2026-07-02 |
 | 6 | `customer_messages` / `messages` | قراءة عامة (`SELECT true`) لمحادثات خاصة بين عميل وصالون / صالون وأدمن | 🟠 متوسطة | 🟡 مؤجل — Tier 2 |
 | 7 | `promotions` | `update own promotion` غير مقيّدة فعلياً (`true`) — أي صالون يقدر يعدّل عرض صالون ثاني | 🟡 منخفضة | 🟡 مؤجل — Tier 2 |
 | 8 | `waiting_list` | `waiting_list_public_delete` مفتوحة، لكنها ميزة حقيقية مستخدمة بالتطبيق | 🟡 منخفضة | 🟡 مؤجل — Tier 2 |
@@ -85,4 +85,14 @@ CREATE POLICY "promo_codes_public_update" ON promo_codes FOR UPDATE USING (true)
 
 ## سجل التنفيذ
 
-*(فارغ حالياً — يُحدَّث بتاريخ كل تشغيل SQL فعلي مع تأكيد النتيجة)*
+### 2026-07-02 — Tier 1 نُفّذ على Sydney ✅
+
+شُغّل SQL الإصلاح الطارئ كامل (customers/bookings/reviews/notifications/promo_codes) بنجاح ("Success. No rows returned"). تحقق مباشر بعدها عبر `SET ROLE anon` أكّد قراءة سليمة على الثلاثة جداول (customers=3, bookings=55, reviews=8).
+
+**اكتشاف جانبي غير متوقع أثناء الاختبار:** بعد الإصلاح، ظهر خطأ "قاعدة بيانات" بالتطبيق الحي — التحقيق كشف مشكلة **منفصلة تماماً وسابقة لهذا الإصلاح**: ملف `20260621_lockdown_salons_rls.sql` (بتاريخ 21 يونيو) منح `anon` صلاحية `SELECT` على أعمدة محددة فقط بجدول `salons`، ولم يشمل عمود `owner_email` الذي أُضيف لاحقاً لاستعلام `App.jsx` (commit `d4bbe0d`). أي عمود غير مصرَّح به ضمن استعلام SELECT يُسقط الاستعلام كاملاً في PostgreSQL — هذا عطّل قراءة الصالونات بالكامل لدور `anon` منذ نزول ذاك الـcommit، بشكل مستقل تماماً عن ثغرات RLS المذكورة أعلاه.
+
+**الإصلاح:** `GRANT SELECT (owner_email) ON salons TO anon;` — نُفّذ ونجح.
+
+**التحقق النهائي (اختبار حي كامل من أحمد):** حجز تجريبي من صفحة العميل → ظهر بلوحة الصالون → ظهر بصفحة "حجوزاتي" للعميل. كل شي يعمل بدون أخطاء.
+
+**الحالة النهائية:** Tier 1 مكتمل بالكامل + إصلاح إضافي لمشكلة salons غير مرتبطة. Tier 2 (نظام auth.uid() الحقيقي) لسا مؤجل، مرتبط بنقطة 86.
