@@ -177,4 +177,21 @@ GRANT SELECT (
 
 **تحقق نهائي:** `information_schema.column_privileges` أكّدت كل الأعمدة المطلوبة موجودة لـ`anon`، وطلب حي من المتصفح (Network tab) رجع **200 OK** مع بيانات صالون "الوادي" الحقيقي — أول اتصال ناجح فعلي بين التطبيق المنشور فعلياً (Vercel Production) وقاعدة Mumbai.
 
+5. **بعد حل anon تماماً:** تسجيل دخول الصالون فشل بـ"صالون غير موجود" رغم إن البيانات صحيحة 100% بالجدول (تأكدنا بـ SQL مباشر: `owner_phone` مطابق تماماً). أضفنا `console.error` مؤقت بـ `api/owner-auth.js` وفحصنا Vercel Logs → كشف الخطأ الحقيقي: `42501 permission denied for table salons`, hint: `GRANT SELECT ON public.salons TO service_role`. **حتى دور service_role (الموثوق بالكامل، يُستخدم فقط من السيرفر) ما كان عنده GRANT أساسي على الجداول بمشروع Mumbai** — نفس فخ "سياسة بدون GRANT" يتكرر لثالث مرة اليوم، بس هذي المرة أخطر لأنه يؤثر غالباً على **كل الجداول** مو جدول وحيد.
+
+**الإصلاح الشامل (كل الجداول، مرة واحدة):**
+```sql
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
+```
+لا داعي لتقييد أعمدة هنا — service_role دور سيرفر موثوق بالكامل ويحتاج أصلاً كل الأعمدة (مثل `owner_pin_hash` للتحقق من الدخول).
+
+**تحقق نهائي:** `information_schema.table_privileges` أكّدت صلاحيات كاملة لـ`service_role` على كل الجداول، وتسجيل دخول صالون "الوادي" الحي نجح بالكامل (لوحة التحكم ظهرت صح بعد الدخول).
+
+**✅ الخلاصة: Mumbai أصبح فعلياً هو الإنتاج الحي — التطبيق المنشور بـ Vercel يقرأ ويكتب من Mumbai بنجاح (تصفح عام + تسجيل دخول صالون مُختبران حياً).**
+
+**درس رئيسي متكرر اليوم (3 حالات منفصلة: `salons`/anon، ثم service_role):** إعداد RLS الكامل على مشروع جديد يحتاج فحص **GRANT منفصل تماماً عن السياسات** لكل دور مُستخدم فعلياً بالكود (`anon`, `authenticated`, `service_role`) — لا يكفي التأكد من وجود Policy، ولا حتى من نجاح استعلام SQL يدوي بنفس الجلسة (لأن SQL Editor غالباً يشتغل كـ `postgres`/`service_role` بصلاحيات كاملة أصلاً، فما يكشف نقص GRANT لباقي الأدوار).
+
 **درس رئيسي:** استخدام fallback بالكود (بدل الاعتماد الكامل على Vercel env vars) ساعد نعزل المشكلة خطوة بخطوة، لكنه كشف أيضاً إن **وجود متغير فاضي/خاطئ بـ Vercel أخطر من عدم وجوده أصلاً** — لأنه يتغلب على أي fallback صحيح بالكود بصمت تام بدون أي تحذير.
