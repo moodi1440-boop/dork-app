@@ -98,3 +98,23 @@ CREATE POLICY "promo_codes_public_update" ON promo_codes FOR UPDATE USING (true)
 **التحقق النهائي (اختبار حي كامل من أحمد):** حجز تجريبي من صفحة العميل → ظهر بلوحة الصالون → ظهر بصفحة "حجوزاتي" للعميل. كل شي يعمل بدون أخطاء.
 
 **الحالة النهائية:** Tier 1 مكتمل بالكامل + إصلاح إضافي لمشكلة salons غير مرتبطة. Tier 2 (نظام auth.uid() الحقيقي) لسا مؤجل، مرتبط بنقطة 86.
+
+### 2026-07-03 — اكتشاف وإصلاح: ميزة قائمة الانتظار معطوبة بالكامل على Sydney ✅
+
+أثناء بدء العمل على RLS مشروع Mumbai، طلب أحمد نتحقق من ميزة "قائمة الانتظار" لأنه يتذكرها شغالة سابقاً. الاختبار الحي كشف خطأ حقيقي (`حدث خطأ، حاول مرة أخرى`) عند محاولة الانضمام. فحص Console + Network أظهر:
+
+```
+Proxy-Status: PostgREST; error=42501
+```
+
+نفس نمط مشكلة `salons` (عمود `owner_email`) لكن أشمل: فحص `information_schema.column_privileges` أظهر أن دور `anon` عنده على جدول `waiting_list` صلاحية **`REFERENCES` فقط على كل الأعمدة — صفر SELECT/INSERT/UPDATE/DELETE**. يعني سياسات RLS (`waiting_list_public_read/insert/delete`) كانت موجودة **لكن بلا أي صلاحية أساسية (GRANT) تُفعّلها** — الميزة كانت معطوبة بالكامل (قراءة، إضافة، حذف) من الأساس، وليس فقط "قبول/رفض" كما افترضنا أول مرة.
+
+**الإصلاح:**
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON waiting_list TO anon;
+CREATE POLICY "waiting_list_public_update" ON waiting_list FOR UPDATE USING (true);
+```
+
+**تحقق حي كامل:** انضمام لقائمة الانتظار نجح ✅ → قبول من لوحة الصالون نجح ✅ → إشعار "تم قبولك في الموعد" وصل فوراً للعميل ✅ → القائمة تفرّغت والحجز انتقل لتبويب "مقبول" تلقائياً ✅.
+
+**درس منهجي مهم لبقية العمل:** *وجود سياسة RLS لا يعني وجود GRANT الأساسي.* هذا ثاني اكتشاف من هذا النوع بنفس اليوم (بعد salons) — أي عمل RLS مستقبلي (خصوصاً على Mumbai) يجب يتحقق من `information_schema.column_privileges` أو `role_table_grants` **بالإضافة إلى** `pg_policies`، لا يكفي فحص السياسات وحدها.
