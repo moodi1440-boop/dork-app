@@ -118,3 +118,32 @@ CREATE POLICY "waiting_list_public_update" ON waiting_list FOR UPDATE USING (tru
 **تحقق حي كامل:** انضمام لقائمة الانتظار نجح ✅ → قبول من لوحة الصالون نجح ✅ → إشعار "تم قبولك في الموعد" وصل فوراً للعميل ✅ → القائمة تفرّغت والحجز انتقل لتبويب "مقبول" تلقائياً ✅.
 
 **درس منهجي مهم لبقية العمل:** *وجود سياسة RLS لا يعني وجود GRANT الأساسي.* هذا ثاني اكتشاف من هذا النوع بنفس اليوم (بعد salons) — أي عمل RLS مستقبلي (خصوصاً على Mumbai) يجب يتحقق من `information_schema.column_privileges` أو `role_table_grants` **بالإضافة إلى** `pg_policies`، لا يكفي فحص السياسات وحدها.
+
+### 2026-07-03 — 🔴 عطل مؤقت بالإنتاج (Sydney): سياسة salons مقيّدة بدور `anon` فقط، سببه تعديل اليوم على `sb()`
+
+بعد نشر تعديل `sb()` (استخدام جلسة Supabase الحقيقية تلقائياً — راجع الخطوة 3 بـ`النقاط-المتبقية.md`)، اختفت **كل** الصالونات من التطبيق الحي فجأة. التشخيص:
+
+- سياسة `salons_public_select_approved` (من `20260621_lockdown_salons_rls.sql`) مقيّدة صراحة **`TO anon`** فقط — لا يوجد أي سياسة لدور `authenticated`.
+- بمجرد ما صار عند أي متصفح جلسة Supabase حقيقية (بعد اختبار دخول عميل بـ PIN)، `sb()` الجديدة بدأت تبعث توكن الجلسة الحقيقي بدل مفتاح anon **حتى لتصفح الصالونات العام**.
+- الدور `authenticated` ما عنده أي سياسة RLS تسمح برؤية `salons` → صفر نتائج (200 OK لكن `[]`) — مش خطأ صريح، فصعب اكتشافه بسرعة.
+
+**الإصلاح (نُفّذ على Sydney، ونفس الشي لازم يُنفَّذ على Mumbai قبل أي تحويل Vercel):**
+```sql
+GRANT SELECT (
+  id, name, owner, owner_phone, owner_email, region, gov, center, village,
+  phone, address, location_url, services, prices,
+  shift_enabled, shift1_start, shift1_end, shift2_start, shift2_end,
+  work_start, work_end, barbers, tone, rating, status, paused,
+  frozen, banned, welcome_msg, closed_days, slot_min,
+  cancellation_window, total_paid, social, lang, created_at
+) ON salons TO authenticated;
+
+CREATE POLICY "salons_authenticated_select_approved" ON salons
+  FOR SELECT TO authenticated USING (status = 'approved');
+```
+
+**تحقق حي:** تحديث الصفحة بعد التنفيذ أرجع كل الصالونات للظهور فوراً.
+
+**⚠️ تذكير حرج لخطوة تحويل Vercel لـ Mumbai:** Mumbai عندها **نفس** سياسة `salons_public_select_approved TO anon` بدون سياسة `authenticated` — لازم نطبّق نفس الإصلاح أعلاه على Mumbai **قبل** التحويل، وإلا نفس العطل يصير فور التحويل لأي مستخدم عنده جلسة نشطة.
+
+**درس إضافي:** أي سياسة RLS مستقبلية يجب تُكتب `USING (...)` بدون `TO anon` تحديداً (أو تُضاف نسخة مطابقة لـ`authenticated`) إلا إذا كان القصد صراحة تقييدها بدور واحد — القراءة العامة (كالصالونات المعتمدة) يجب تشتغل بغض النظر عن وجود جلسة مصادقة أو لا.
