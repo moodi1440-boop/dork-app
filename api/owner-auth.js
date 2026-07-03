@@ -44,6 +44,7 @@ module.exports = async (req, res) => {
       .maybeSingle();
 
     if (error || !salon) {
+      console.error("[owner-auth] salon lookup failed:", JSON.stringify(error), "phone:", phone);
       res.status(401).json({ error: "صالون غير موجود أو غير مفعّل", code: "err_not_found" });
       return;
     }
