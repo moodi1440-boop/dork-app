@@ -144,6 +144,9 @@ CREATE POLICY "salons_authenticated_select_approved" ON salons
 
 **تحقق حي:** تحديث الصفحة بعد التنفيذ أرجع كل الصالونات للظهور فوراً.
 
-**⚠️ تذكير حرج لخطوة تحويل Vercel لـ Mumbai:** Mumbai عندها **نفس** سياسة `salons_public_select_approved TO anon` بدون سياسة `authenticated` — لازم نطبّق نفس الإصلاح أعلاه على Mumbai **قبل** التحويل، وإلا نفس العطل يصير فور التحويل لأي مستخدم عنده جلسة نشطة.
+**✅ تم تطبيق نفس الإصلاح على Mumbai (2026-07-03) وتحقّق مزدوج:**
+- `pg_policies` أكّدت وجود `salons_authenticated_select_approved` (`{authenticated}`, SELECT, `status='approved'`) بجانب `salons_public_select_approved` (`{anon}`) و`salons_service_role_all` (`{service_role}`, ALL)
+- `information_schema.column_privileges` أكّدت GRANT SELECT لدور `authenticated` على كل الأعمدة الـ35 المطلوبة بدون نقص
+- ما عاد فيه فرق بين Sydney وMumbai بخصوص هذي الثغرة — الطريق مفتوح لمتابعة تحويل Vercel
 
 **درس إضافي:** أي سياسة RLS مستقبلية يجب تُكتب `USING (...)` بدون `TO anon` تحديداً (أو تُضاف نسخة مطابقة لـ`authenticated`) إلا إذا كان القصد صراحة تقييدها بدور واحد — القراءة العامة (كالصالونات المعتمدة) يجب تشتغل بغض النظر عن وجود جلسة مصادقة أو لا.
