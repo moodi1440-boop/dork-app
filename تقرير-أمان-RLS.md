@@ -150,3 +150,31 @@ CREATE POLICY "salons_authenticated_select_approved" ON salons
 - ما عاد فيه فرق بين Sydney وMumbai بخصوص هذي الثغرة — الطريق مفتوح لمتابعة تحويل Vercel
 
 **درس إضافي:** أي سياسة RLS مستقبلية يجب تُكتب `USING (...)` بدون `TO anon` تحديداً (أو تُضاف نسخة مطابقة لـ`authenticated`) إلا إذا كان القصد صراحة تقييدها بدور واحد — القراءة العامة (كالصالونات المعتمدة) يجب تشتغل بغض النظر عن وجود جلسة مصادقة أو لا.
+
+---
+
+### 2026-07-03 — 🔴 تحويل Vercel لـ Mumbai: سلسلة أعطال إضافية واكتشاف GRANT ناقص لـ anon
+
+بعد تحديث متغيرات Vercel (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON`, `SUPABASE_URL`, `SUPABASE_ANON`, `SUPABASE_SERVICE_ROLE_KEY`) لتشير لـ Mumbai وعمل Redeploy، ظهر خطأ `401 Invalid API key` بدل نجاح فوري. التشخيص مرّ بعدة مراحل:
+
+1. **خطأ بشري:** قيمة `VITE_SUPABASE_ANON` انلصقت بخانة **Note** بالغلط بدل خانة **Value** بواجهة Vercel — الحل: نقلها للخانة الصحيحة.
+2. **صيغة مفتاح خاطئة:** استُخدم مفتاح anon من تبويب **"Legacy anon, service_role API keys"** (صيغة JWT قديمة)، بينما Sydney (والمفروض Mumbai كمان) يستخدم نظام **"Publishable and secret API keys"** الجديد (`sb_publishable_...`) — تبيّن Mumbai يرفض صيغة legacy تماماً.
+3. **قيمة Vercel متضاربة مع fallback الكود:** حتى بعد كتابة القيمة الصحيحة كـ fallback بالكود (`App.jsx`, `api/_lib/supabase-admin.js`, `api/supabase.js`)، القيمة القديمة/الخاطئة المحفوظة بـ`VITE_SUPABASE_ANON`/`SUPABASE_ANON` على Vercel كانت **تتغلب** على fallback الكود (لأن `import.meta.env.X || fallback` ما يرجع لـ fallback إلا لو X فاضية تماماً) — الحل: حذف المتغيرين نهائياً من Vercel والاعتماد على fallback الكود فقط.
+4. **بعد حل مشكلة المفتاح:** ظهر خطأ جديد ومختلف تماماً — `42501 permission denied for table salons`، مع hint من Postgres نفسه: `GRANT SELECT ON public.salons TO anon`. هذا أثبت المفتاح صار صحيح 100% (وصل الطلب لقاعدة البيانات فعلاً)، لكن GRANT العمودي لدور `anon` على Mumbai كان ناقصاً أو غير مكتمل رغم إنه من المفترض طُبّق بالخطوة 1 الأصلية.
+
+**الإصلاح النهائي (Mumbai):**
+```sql
+GRANT SELECT (
+  id, name, owner, owner_phone, owner_email, region, gov, center, village,
+  phone, address, location_url, services, prices,
+  shift_enabled, shift1_start, shift1_end, shift2_start, shift2_end,
+  work_start, work_end, barbers, tone, rating, status, paused,
+  frozen, banned, welcome_msg, closed_days, slot_min,
+  cancellation_window, total_paid, social, lang, created_at
+) ON salons TO anon;
+```
+⚠️ **لم نطبّق** اقتراح Postgres الحرفي (`GRANT SELECT ON public.salons TO anon` بدون تحديد أعمدة) لأنه يكشف أعمدة سرية مثل `owner_pin_hash` — طُبّق GRANT عمودي محدود بنفس منطق كل الإصلاحات السابقة.
+
+**تحقق نهائي:** `information_schema.column_privileges` أكّدت كل الأعمدة المطلوبة موجودة لـ`anon`، وطلب حي من المتصفح (Network tab) رجع **200 OK** مع بيانات صالون "الوادي" الحقيقي — أول اتصال ناجح فعلي بين التطبيق المنشور فعلياً (Vercel Production) وقاعدة Mumbai.
+
+**درس رئيسي:** استخدام fallback بالكود (بدل الاعتماد الكامل على Vercel env vars) ساعد نعزل المشكلة خطوة بخطوة، لكنه كشف أيضاً إن **وجود متغير فاضي/خاطئ بـ Vercel أخطر من عدم وجوده أصلاً** — لأنه يتغلب على أي fallback صحيح بالكود بصمت تام بدون أي تحذير.
