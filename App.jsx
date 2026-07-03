@@ -127,6 +127,12 @@ async function sb(table, method, body, query = "", authToken = null) {
   if (_cb.openUntil > Date.now()) {
     throw new Error("circuit_open");
   }
+  if (!authToken) {
+    try {
+      const { data } = await supabase.auth.getSession();
+      authToken = data?.session?.access_token || null;
+    } catch {}
+  }
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
   let res;
   try {
