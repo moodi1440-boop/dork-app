@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L114";
+const APP_VERSION = "L115";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -105,7 +105,7 @@ function useChat(key) {
 //  SUPABASE CLIENT
 // ==============================================
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL  || "https://kowotztbxgoodvnjyxyq.supabase.co";
-const SUPABASE_ANON   = import.meta.env.VITE_SUPABASE_ANON || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtvd290enRieGdvb2R2bmp5eHlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NDM1MzAsImV4cCI6MjA5ODQxOTUzMH0.Dr8uaT9cDVrTcCGGJyRBJZEEwTpFs5V3NlS6aI6GXeY";
+const SUPABASE_ANON   = import.meta.env.VITE_SUPABASE_ANON || "sb_publishable_FZoSBhhAiKi8cefVUyg2eQ_GqUTlTg2";
 
 // Supabase JS client — autoRefreshToken يُجدّد JWT تلقائياً قبل انتهائه
 // إعدادات Dashboard المطلوبة: Auth → JWT expiry = 3600s، Enable reuse detection = ON
