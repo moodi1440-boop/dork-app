@@ -127,8 +127,14 @@ async function sendPush(
   }
 }
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-token",
+};
+
 // ── Edge Function entry point ─────────────────────────────────────────────────
 Deno.serve(async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const incomingToken = req.headers.get("x-cron-token");
   if (incomingToken !== null) {
     const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
@@ -236,5 +242,5 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
   return out;
 }
 function json(body: object, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }

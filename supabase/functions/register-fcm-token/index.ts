@@ -1,6 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 Deno.serve(async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
     return json({ success: false, error: "Method not allowed" }, 405);
   }
@@ -25,7 +31,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // Verify user exists — prevents fake user_id injection
-    const table = user_type === "salon" ? "owners" : "customers";
+    const table = user_type === "salon" ? "salons" : "customers";
     const { data: userRow, error: userErr } = await supabase
       .from(table)
       .select("id")
@@ -66,6 +72,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
 function json(body: object, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
