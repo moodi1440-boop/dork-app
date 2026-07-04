@@ -1,3 +1,7 @@
+function esc(v: string | number): string {
+  return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 // PDF: headers + صفوف منظمة → نافذة طباعة
 export function exportPDF(title: string, headers: string[], rows: (string | number)[][]) {
   const thead = headers.map(h => `<th>${h}</th>`).join("");
