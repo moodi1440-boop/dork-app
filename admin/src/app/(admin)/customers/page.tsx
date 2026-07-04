@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
-import { exportPDFRaw } from "@/lib/csv";
+import { exportPDFRaw } from "@/lib/pdf";
 import { EmojiIcon } from "@/components/Icons";
 
 interface Customer { id: string; name: string; phone: string; email: string; loyalty_points: number; loyalty_frozen: boolean; admin_notes?: string; blocked?: boolean; favs?: unknown[]; pin?: string; }

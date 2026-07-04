@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
-import { exportPDF } from "@/lib/csv";
+import { exportPDF } from "@/lib/pdf";
 import { EmojiIcon } from "@/components/Icons";
 
 type Booking = { id: string; salon_id: string; salonName: string; name: string; phone: string; barber_name: string; date: string; time: string; total: number; status: string; attendance: string | null; };
