@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L115";
+const APP_VERSION = "L116";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -5779,8 +5779,8 @@ function BookingCalendar({salon,onUpdate}){
 
   const[expandedDate,setExpandedDate]=useState(null);
   const[localAttendance,setLocalAttendance]=useState({});
-  const[viewMonth,setViewMonth]=useState(today.getMonth());
-  const[viewYear,setViewYear]=useState(today.getFullYear());
+  const[viewMonth,setViewMonth]=useState(()=>new Date().getMonth());
+  const[viewYear,setViewYear]=useState(()=>new Date().getFullYear());
 
   const daysInMonth=new Date(viewYear,viewMonth+1,0).getDate();
   const firstDay=new Date(viewYear,viewMonth,1).getDay();
