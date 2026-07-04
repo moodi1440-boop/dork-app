@@ -178,8 +178,14 @@ async function sendBatch(
   return { sent, failed, invalidTokens };
 }
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-token",
+};
+
 // ── Edge Function entry point ─────────────────────────────────────────────────
 Deno.serve(async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   // ── Auth gate ─────────────────────────────────────────────────────────────
   // Two caller types:
   //   pg_cron   → sends  x-cron-token: <CRON_SECRET>
