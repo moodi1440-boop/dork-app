@@ -195,3 +195,36 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role
 **درس رئيسي متكرر اليوم (3 حالات منفصلة: `salons`/anon، ثم service_role):** إعداد RLS الكامل على مشروع جديد يحتاج فحص **GRANT منفصل تماماً عن السياسات** لكل دور مُستخدم فعلياً بالكود (`anon`, `authenticated`, `service_role`) — لا يكفي التأكد من وجود Policy، ولا حتى من نجاح استعلام SQL يدوي بنفس الجلسة (لأن SQL Editor غالباً يشتغل كـ `postgres`/`service_role` بصلاحيات كاملة أصلاً، فما يكشف نقص GRANT لباقي الأدوار).
 
 **درس رئيسي:** استخدام fallback بالكود (بدل الاعتماد الكامل على Vercel env vars) ساعد نعزل المشكلة خطوة بخطوة، لكنه كشف أيضاً إن **وجود متغير فاضي/خاطئ بـ Vercel أخطر من عدم وجوده أصلاً** — لأنه يتغلب على أي fallback صحيح بالكود بصمت تام بدون أي تحذير.
+
+---
+
+### 2026-07-04 — الاختبار الشامل الحي على Mumbai: 3 أعطال إضافية (Site URL + schema مفقود + sequences)
+
+بعد نجاح تحويل Vercel، بدأنا الاختبار الشامل الفعلي (Step 5): تسجيل عميل جديد → تسجيل دخول → حجز كامل. واجهنا 3 مشاكل جديدة، كلها انحلّت بنفس منهجية اليوم (فحص مباشر بدل تخمين):
+
+**1. روابط بريد التحقق (OTP) تودّي لـ`localhost` بدل الموقع الحقيقي**
+- **السبب:** إعداد **Site URL** بـ Supabase Auth (Authentication → URL Configuration) لمشروع Mumbai كان لسا على القيمة الافتراضية `http://localhost:3000` — لم يُحدَّث أبداً منذ إنشاء المشروع.
+- **الإصلاح:** تغييره لـ `https://dork-app.vercel.app` + إضافة نفس الرابط (مع `/**`) لقائمة **Redirect URLs**.
+- **تحقق حي:** تسجيل عميل جديد بالبريد نجح بعدها مباشرة.
+
+**2. فروقات Schema حقيقية بين Sydney وMumbai — اكتُشفت بمقارنة شاملة**
+بدل انتظار كل ميزة تكشف عطل جديد بالصدفة (زي ما صار مع `salons` و`service_role`)، قارنّا **كامل** هيكلة الجدولين (`information_schema.columns`) دفعة وحدة. النتيجة: 326 عمود بـSydney مقابل 262 بـMumbai. بعد استبعاد الجداول/الأعمدة غير المستخدمة فعلياً بالكود (تحقّقنا بـ`grep` مباشر، ليس تخميناً) — 3 فروقات حقيقية:
+
+| الجدول | المشكلة | الحل |
+|---|---|---|
+| `customers` | 8 أعمدة ناقصة: `favs`, `google_uid`, `history`, `lang`, `location_lat`, `location_lng`, `notifications`, `photo` | `ALTER TABLE ADD COLUMN` لكل عمود + `GRANT SELECT/UPDATE` لـ`anon`/`authenticated` |
+| `app_settings` | بنية مختلفة جذرياً (كان `key`/`value` بدل `id`/`loyalty_settings`/`social_links`/`ui_settings`) | إضافة الأعمدة المطلوبة (الجدول كان فارغاً أصلاً على Mumbai فما احتجنا حذف القديم) |
+| `reviews` | عمود `owner_reply` ناقص (يُستخدم فعلياً لرد الصالون على التقييم) | `ALTER TABLE ADD COLUMN` + GRANT |
+
+**غير مهم (تحقّقنا وتجاهلناها بأمان):** `financial_records` و`notification_logs` (جداول موجودة بSydney لكن صفر استخدام بالكود الحالي)، `salons_backup_auth_migration` (جدول نسخة احتياطية قديم، ليس جزءاً من التطبيق)، `salons.oath_done`/`salons.bookings(jsonb)` (أعمدة قديمة صفر استخدام، قرار مأخوذ سابقاً وقت نقل صالون 17).
+
+**3. فخ الصلاحيات يتكرر — بس هذي المرة على Sequences وليس الجداول**
+حتى بعد GRANT صحيح على الجداول (`bookings`, `reviews`, `app_settings`)، محاولة **إضافة** صف جديد فشلت برسالة: `permission denied for sequence bookings_id_seq`. الأعمدة التلقائية (bigint/bigserial) تعتمد على **sequence منفصل** يحتاج صلاحية GRANT خاصة به، غير كافية صلاحية الجدول نفسه.
+```sql
+GRANT USAGE, SELECT ON bookings_id_seq TO anon, authenticated;
+GRANT USAGE, SELECT ON app_settings_id_seq TO anon, authenticated;
+```
+
+**تحقق نهائي شامل:** حجز عميل تجريبي كامل (اختيار حلاق نشط + خدمة + موعد + تأكيد) نجح فعلياً على Mumbai، وتأكّدنا بـSQL مباشر من وجود الصف بجدول `bookings` ببيانات صحيحة تماماً.
+
+**درس إضافي مهم:** لما تتكرر نفس فئة العطل (GRANT ناقص) أكثر من مرتين بنفس اليوم، الأفضل التحول من "أصلح كل ما يظهر خطأ" إلى **"قارن الهيكلة الكاملة مرة وحدة"** — أسرع وأشمل بكثير من انتظار كل ميزة تكتشف عطل جديد بالصدفة أثناء استخدام حقيقي.
