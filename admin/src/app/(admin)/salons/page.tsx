@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { sb } from "@/lib/supabase-browser";
-import { exportPDFRaw } from "@/lib/csv";
+import { exportPDFRaw } from "@/lib/pdf";
 import { EmojiIcon } from "@/components/Icons";
 
 interface Salon {

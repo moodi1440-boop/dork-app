@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { exportPDF } from "@/lib/csv";
+import { exportPDF } from "@/lib/pdf";
 import { EmojiIcon } from "@/components/Icons";
 
 interface SalonFinance {
