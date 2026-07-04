@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L116";
+const APP_VERSION = "L117";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -5584,10 +5584,13 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           {_tmrBks.length===0?
             <div style={{fontSize:12,color:"var(--text-muted)",textAlign:"center"}}>{t('ui.no_tomorrow')}</div>
           :_tmrBks.sort((a,b)=>(a.time||"").localeCompare(b.time||"")).map((b,i)=>(
-            <div key={b.id||i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",borderBottom:i<_tmrBks.length-1?"1px solid var(--border-ui)":"none"}}>
-              <span style={{fontSize:11,fontWeight:800,color:"var(--p)",minWidth:48}}>{to12h(b.time)}</span>
-              <span style={{flex:1,fontSize:12,color:"var(--text-primary)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.name||t("owner_dash.customer")}</span>
-              <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:b.status==="approved"?"rgba(39,174,96,.15)":"rgba(243,156,18,.15)",color:b.status==="approved"?"#27ae60":"#f39c12"}}>{b.status==="approved"?t("owner_dash.filter_approved"):t("owner_dash.filter_pending")}</span>
+            <div key={b.id||i} style={{padding:"7px 14px",borderBottom:i<_tmrBks.length-1?"1px solid var(--border-ui)":"none"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:11,fontWeight:800,color:"var(--p)",minWidth:48}}>{to12h(b.time)}</span>
+                <span style={{flex:1,fontSize:12,color:"var(--text-primary)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{b.name||t("owner_dash.customer")}</span>
+                <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:b.status==="approved"?"rgba(39,174,96,.15)":b.status==="rejected"?"rgba(231,76,60,.15)":"rgba(243,156,18,.15)",color:b.status==="approved"?"#27ae60":b.status==="rejected"?"#e74c3c":"#f39c12"}}>{b.status==="approved"?t("owner_dash.filter_approved"):b.status==="rejected"?t("owner_dash.filter_rejected"):t("owner_dash.filter_pending")}</span>
+              </div>
+              {b.status==="pending"&&<div style={{display:"flex",gap:7,marginTop:6}}><button style={G.accBtn} onClick={()=>updateBookingStatus(salon.id,b.id,"approved")}>{t("notif.approve")}</button><button style={G.rejBtn} onClick={()=>updateBookingStatus(salon.id,b.id,"rejected")}>{t("notif.reject")}</button></div>}
             </div>
           ))}
         </div>
