@@ -281,4 +281,19 @@ CREATE POLICY promo_codes_public_delete ON public.promo_codes
 
 ⚠️ **لم يُطبَّق بعد على DORK-TEST** — حسب القاعدة الجديدة بـ`CLAUDE.md` (ننتظر تأكيد الاشتغال قبل النسخ)، والتأكيد صار الآن — يُضاف لـ DORK-TEST بنهاية الجلسة.
 
+---
+
+### 2026-07-07 — خلل قديم ثانٍ مكتشَف بالصدفة: `promotions_id_seq` بدون GRANT لـ anon/authenticated على DORK
+
+أثناء اختبار أحمد الحي لميزة "إرسال عرض ترويجي" (كود خصم DORK، باقة فضي)، ظهر خطأ **`permission denied for sequence`** (كود 42501). نفس فخّ `bookings_id_seq` المكتشَف سابقاً اليوم، بس على sequence جدول `promotions` هذي المرة: الجدول نفسه عنده GRANT INSERT لـ`anon`/`authenticated`، لكن sequence الـid (`promotions_id_seq`) كان ممنوح فقط لـ`service_role`.
+
+**الإصلاح المطبَّق على DORK:**
+```sql
+GRANT USAGE, SELECT ON SEQUENCE public.promotions_id_seq TO anon, authenticated;
+```
+
+**تحقق حي:** إعادة إرسال نفس العرض التجريبي من التطبيق الحقيقي نجحت بعد الإصلاح.
+
+⚠️ **لم يُطبَّق بعد على DORK-TEST** — يُضاف بنهاية الجلسة مع باقي الإصلاحات المؤكدة اليوم.
+
 **درس إضافي مهم:** لما تتكرر نفس فئة العطل (GRANT ناقص) أكثر من مرتين بنفس اليوم، الأفضل التحول من "أصلح كل ما يظهر خطأ" إلى **"قارن الهيكلة الكاملة مرة وحدة"** — أسرع وأشمل بكثير من انتظار كل ميزة تكتشف عطل جديد بالصدفة أثناء استخدام حقيقي.
