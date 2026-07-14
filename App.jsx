@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L120";
+const APP_VERSION = "L121";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -2491,6 +2491,7 @@ export default function App(){
         {view==="custSettingsTone"&&<SettingsView {...sharedProps} onlySec="tone" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
         {view==="social"&&<SettingsView {...sharedProps} onlySec="social" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
         {view==="faq"&&<SettingsView {...sharedProps} onlySec="faq" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
+        {view==="privacy"&&<SettingsView {...sharedProps} onlySec="privacy" backFn={()=>{setView("home");setShowDrawer(true);}}/>}
         {view==="custLogin"&& <CustomerLogin {...sharedProps}/>}
         {view==="custDash"&&  <CustomerDash key={custDashKey} initTab={custDashNav.tab} initSection={custDashNav.section} customer={customer} setShowDrawer={setShowDrawer} {...sharedProps}/>}
         {view==="settings"&&  <SettingsView {...sharedProps}/>}
@@ -2698,6 +2699,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         <SecHead label={t("cust_drawer.more")}/>
         <Row icon="📱" label={t("cust_drawer.social")} itemId="social" onClick={()=>{setActiveDrawerItem("social");onClose();setView("social");}}/>
         <Row icon="❓" label={t("cust_drawer.faq")} itemId="faq" onClick={()=>{setActiveDrawerItem("faq");onClose();setView("faq");}}/>
+        <Row icon="🔒" label={t("settings.sec_privacy")} itemId="privacy" onClick={()=>{setActiveDrawerItem("privacy");onClose();setView("privacy");}}/>
         {/* الخروج والحذف */}
         <div style={{height:16}}/>
         <button onClick={()=>setShowLogout(true)} style={{width:"100%",padding:"15px 20px",background:"transparent",border:"none",borderTop:"1px solid var(--border-ui)",color:"#e74c3c",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"inherit",textAlign:"right",WebkitAppearance:"none",appearance:"none"}}>
@@ -8924,7 +8926,7 @@ function SettingsView({settings,setSettings,setView,toast$,socialLinks,setSocial
 
   return(
     <div style={{...G.page,direction:dir}}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{if(backFn){backFn();}else{setView("home");setShowDrawer&&setShowDrawer(true);}}}><IconArrowRight size={20}/></button><h2 style={G.ft}>{onlySec?({social:t("settings.title_social"),faq:t("settings.title_faq"),theme:t("settings.title_theme")}[onlySec]||t("settings.title")):t("settings.title")}</h2></div>
+      <div style={G.fh}><button style={G.bb} onClick={()=>{if(backFn){backFn();}else{setView("home");setShowDrawer&&setShowDrawer(true);}}}><IconArrowRight size={20}/></button><h2 style={G.ft}>{onlySec?({social:t("settings.title_social"),faq:t("settings.title_faq"),privacy:t("settings.title_privacy"),theme:t("settings.title_theme")}[onlySec]||t("settings.title")):t("settings.title")}</h2></div>
       {!onlySec&&<div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
         {SECS.map(s=>(
           <button key={s.id} onClick={()=>setSec(s.id)}
