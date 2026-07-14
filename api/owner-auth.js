@@ -51,6 +51,11 @@ module.exports = async (req, res) => {
       res.status(401).json({ error: "هذا الصالون محظور", code: "err_banned" });
       return;
     }
+    if (salon.frozen && !salon.owner_pin_hash) {
+      // حذف ذاتي نهائي (delete-salon يجمّد الصالون ويمسح رمز الدخول معاً) — يُعامَل كصالون غير موجود، لا "مجمّد مؤقتاً"
+      res.status(401).json({ error: "صالون غير موجود أو غير مفعّل", code: "err_not_found" });
+      return;
+    }
     if (salon.frozen) {
       res.status(401).json({ error: "هذا الصالون مجمّد مؤقتًا", code: "err_frozen" });
       return;
