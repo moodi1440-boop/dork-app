@@ -568,3 +568,20 @@ GRANT UPDATE (
 **الحالة: ✅ مُصلح فعلياً على DORK (مؤكد بثلاث طبقات تحقق).** ⏳ **لسا يحتاج تطبيق نفس السكربت على DORK-TEST** (بعد تأكيد الاستقرار — القاعدة المعتادة بالمشروع).
 
 **درس جديد مُضاف لـCLAUDE.md (بند 11):** REVOKE عمودي لا يقدر يسحب صلاحية موروثة من منح جدول كامل — ينجح بصمت بدون أي تحذير. أي REVOKE لعمود حساس يجب يُتحقق بعده من `table_privileges` كمان، مو `column_privileges` بس.
+
+---
+
+### 2026-07-14 — فحص شامل نهائي: هل نفس فخّ "منح جدول كامل يتجاوز REVOKE عمودي" موجود بجداول ثانية؟
+
+بعد اكتشاف الفخّ على `customers.pin_hash`، فُحصت **كل الأعمدة الحساسة بكل الجداول دفعة وحدة** (نمط `pin`/`hash`/`password`/`secret`/`token` عبر `information_schema.columns`) مقابل `information_schema.table_privileges` لـ`anon`/`authenticated` بنفس الاستعلام المدمج (LEFT JOIN واحد، مو جدولاً جدولاً):
+
+| الجدول.العمود | النتيجة |
+|---|---|
+| `admin_users.password_hash` | ✅ نظيف — ولا منح جدول كامل |
+| `customers.pin_hash/pin_fails/pin_locked_until` | ✅ نظيف (بعد إصلاح اليوم) |
+| `salons.owner_pin_hash/owner_pin_fails/owner_pin_locked_until/password` | ✅ نظيف — تحقّق مزدوج (فحص مباشر لجدول salons + هذا الفحص الشامل) |
+| `fcm_tokens.device_token` | ✅ نظيف |
+| `notification_logs.fcm_token_id` | ✅ نظيف |
+| `user_sessions.session_token` | ✅ نظيف |
+
+**النتيجة:** فخّ "منح جدول كامل يتجاوز REVOKE عمودي" كان **محصوراً بـ`customers.pin_hash` بس** — بقية الجداول الحساسة سليمة فعلياً (تأكيد بالفحص، مو افتراض). هذا يقفل ملف "الأعمدة الحساسة" (بند 9 بـCLAUDE.md) بثقة كاملة لأول مرة منذ فتحه.
