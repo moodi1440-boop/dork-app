@@ -296,4 +296,27 @@ GRANT USAGE, SELECT ON SEQUENCE public.promotions_id_seq TO anon, authenticated;
 
 ⚠️ **لم يُطبَّق بعد على DORK-TEST** — يُضاف بنهاية الجلسة مع باقي الإصلاحات المؤكدة اليوم.
 
+---
+
+### 2026-07-07 — إغلاق فخّ "sequence بدون GRANT" نهائياً على DORK (استباقي + دائم)
+
+بعد ما تكرر نفس فخّ "permission denied for sequence" ثلاث مرات بنفس اليوم (`bookings_id_seq`, `app_settings_id_seq`, `promotions_id_seq`)، بدل ننتظر كل جدول يكتشف عطله بالصدفة أثناء استخدام حقيقي — فحصنا **كل** الجداول اللي عندها INSERT لـ`anon`/`authenticated` مقابل صلاحيات الـsequences الفعلية دفعة وحدة (مقارنة `role_table_grants` مع الـsequence ACL المحفوظة من فحص اليوم، بدون تخمين).
+
+**لُقيت 4 جداول ثانية عندها نفس الفخّ نايم (لسا ما انكشف لأن حد ما جرّب الإضافة فيها فعلياً):** `messages`, `notifications`, `reviews`, `waiting_list`.
+
+**إصلاح استباقي مطبَّق على DORK:**
+```sql
+GRANT USAGE, SELECT ON SEQUENCE public.messages_id_seq TO anon;
+GRANT USAGE, SELECT ON SEQUENCE public.notifications_id_seq TO anon;
+GRANT USAGE, SELECT ON SEQUENCE public.reviews_id_seq TO anon, authenticated;
+GRANT USAGE, SELECT ON SEQUENCE public.waiting_list_id_seq TO anon;
+```
+
+**إصلاح دائم (يقفل الفخّ للأبد — أي جدول جديد مستقبلاً يرث الصلاحية تلقائياً):**
+```sql
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated;
+```
+
+⚠️ **لم يُطبَّق بعد على DORK-TEST** — يُضاف بنهاية الجلسة (والأهم: الحل الدائم `ALTER DEFAULT PRIVILEGES` نفسه يُطبَّق على DORK-TEST أيضاً حتى يبقى الفخّ مقفول بالمشروعين معاً).
+
 **درس إضافي مهم:** لما تتكرر نفس فئة العطل (GRANT ناقص) أكثر من مرتين بنفس اليوم، الأفضل التحول من "أصلح كل ما يظهر خطأ" إلى **"قارن الهيكلة الكاملة مرة وحدة"** — أسرع وأشمل بكثير من انتظار كل ميزة تكتشف عطل جديد بالصدفة أثناء استخدام حقيقي.
