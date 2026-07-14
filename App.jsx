@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L123";
+const APP_VERSION = "L124";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -7065,7 +7065,7 @@ function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySe
         barbers:compressedBarbers,tone:f.tone,
       };
       await ownerApi("PATCH",patch);
-      setSalons(p=>p.map(s=>s.id===salon.id?{...s,name:f.name,phone:f.phone,address:f.address,locationUrl:f.locationUrl,shiftEnabled:f.shiftEnabled,shift1Start:f.shift1Start,shift1End:f.shift1End,shift2Start:f.shift2Start,shift2End:f.shift2End,workStart:f.workStart,workEnd:f.workEnd,services:f.services,prices:{...f.prices,__durations:f.durations},barbers:compressedBarbers,tone:f.tone}:s));
+      setSalons(p=>p.map(s=>s.id===salon.id?{...s,name:f.name,phone:f.phone,address:f.address,owner_email:f.ownerEmail||null,locationUrl:f.locationUrl,shiftEnabled:f.shiftEnabled,shift1Start:f.shift1Start,shift1End:f.shift1End,shift2Start:f.shift2Start,shift2End:f.shift2End,workStart:f.workStart,workEnd:f.workEnd,services:f.services,prices:{...f.prices,__durations:f.durations},barbers:compressedBarbers,tone:f.tone}:s));
       toast$&&toast$(t("owner_settings.success"));
     }catch(e){toast$&&toast$(i18n.t('ui.error_prefix')+e.message,"err");}
     setSaving(false);
