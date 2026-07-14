@@ -98,7 +98,6 @@ const STATUSES = [
   { value: "all",      label: "الكل" },
   { value: "pending",  label: "تنتظر مراجعة" },
   { value: "approved", label: "موافق عليها" },
-  { value: "suspended",label: "موقوفة" },
   { value: "rejected", label: "مرفوضة" },
 ];
 
@@ -561,7 +560,7 @@ export default function SalonsPage() {
   const [weekSalon, setWeekSalon] = useState("");
   const [showAdd,   setShowAdd]   = useState(false);
   const [autoApprove, setAutoApprove] = useState(false);
-  const [showFrozen, setShowFrozen] = useState(false);
+  const [frozenView, setFrozenView] = useState<"none" | "frozen" | "deleted">("none");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -668,10 +667,15 @@ export default function SalonsPage() {
     load();
   };
 
-  const frozenCount = salons.filter((s) => s.frozen).length;
+  const frozenOnlyCount = salons.filter((s) => s.frozen && !s.is_deleted).length;
+  const deletedCount    = salons.filter((s) => s.is_deleted).length;
   const sorted = [...salons]
     .filter((s) => subFilter === "all" || subStatus(s.subscription_end_date) === subFilter)
-    .filter((s) => showFrozen ? s.frozen : !s.frozen)
+    .filter((s) => {
+      if (frozenView === "frozen")  return s.frozen && !s.is_deleted;
+      if (frozenView === "deleted") return s.is_deleted;
+      return !s.frozen;
+    })
     .sort((a, b) => {
       const aw = weekSalon === a.id ? 2 : 0, bw = weekSalon === b.id ? 2 : 0;
       const ap = pinned.includes(a.id) ? 1 : 0, bp = pinned.includes(b.id) ? 1 : 0;
@@ -719,10 +723,16 @@ export default function SalonsPage() {
             {f.label}
           </button>
         ))}
-        {frozenCount > 0 && (
-          <button onClick={() => setShowFrozen((v) => !v)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${showFrozen ? "bg-red-500/10 border-red-500/30 text-red-400" : "border-border text-gray-500 hover:border-red-500/20"}`}>
-            <EmojiIcon icon="🔒" size={14}/> {showFrozen ? "إخفاء" : "عرض"} المجمّدة/المحذوفة ({frozenCount})
+        {frozenOnlyCount > 0 && (
+          <button onClick={() => setFrozenView((v) => v === "frozen" ? "none" : "frozen")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${frozenView === "frozen" ? "bg-orange-500/10 border-orange-500/30 text-orange-400" : "border-border text-gray-500 hover:border-orange-500/20"}`}>
+            <EmojiIcon icon="🔒" size={14}/> المجمّدة ({frozenOnlyCount})
+          </button>
+        )}
+        {deletedCount > 0 && (
+          <button onClick={() => setFrozenView((v) => v === "deleted" ? "none" : "deleted")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${frozenView === "deleted" ? "bg-gray-500/20 border-gray-500/40 text-gray-300" : "border-border text-gray-500 hover:border-gray-500/20"}`}>
+            <EmojiIcon icon="🗑" size={14}/> المحذوفة ({deletedCount})
           </button>
         )}
       </div>
@@ -767,7 +777,7 @@ export default function SalonsPage() {
             const subColor  = sStatus === "ملتزم" ? "text-green-400" : sStatus === "ينتهي قريباً" ? "text-yellow-400" : sStatus === "متأخر" ? "text-red-400" : "text-gray-500";
 
             return (
-              <div key={s.id} className={`bg-card border-2 rounded-2xl p-5 transition-all ${isBanned ? "border-red-800" : isWeek ? "border-yellow-400/50" : isPinned ? "border-purple-500/40" : isFrozen ? "border-red-500/40" : s.status === "approved" ? "border-green-500/30" : s.status === "rejected" ? "border-red-600/40" : s.status === "suspended" ? "border-orange-500/30" : "border-border"}`}>
+              <div key={s.id} className={`bg-card border-2 rounded-2xl p-5 transition-all ${isBanned ? "border-red-800" : isWeek ? "border-yellow-400/50" : isPinned ? "border-purple-500/40" : isFrozen ? "border-red-500/40" : s.status === "approved" ? "border-green-500/30" : s.status === "rejected" ? "border-red-600/40" : "border-border"}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-white">{i + 1}. <EmojiIcon icon="✂" size={16}/> {s.name}</span>
@@ -825,13 +835,7 @@ export default function SalonsPage() {
                       <EmojiIcon icon="❌" size={16}/> رفض
                     </button>
                   )}
-                  {s.status === "approved" && (
-                    <button onClick={() => updateStatus(s.id, "suspended")}
-                      className="px-3 py-1.5 rounded-lg text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-colors font-semibold">
-                      ⏸ تعليق
-                    </button>
-                  )}
-                  {(s.status === "suspended" || s.status === "rejected") && (
+                  {s.status === "rejected" && (
                     <button onClick={() => updateStatus(s.id, "pending")}
                       className="px-3 py-1.5 rounded-lg text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors font-semibold">
                       <EmojiIcon icon="🔄" size={16}/> إعادة مراجعة
