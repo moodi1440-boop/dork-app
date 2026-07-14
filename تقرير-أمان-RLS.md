@@ -528,3 +528,43 @@ REVOKE SELECT (pin_hash, pin_fails, pin_locked_until), UPDATE (pin_hash, pin_fai
 **الحالة: ✅ الإصلاح الفوري (تقليل التسريب) مكتمل. 🔲 الإصلاح الجذري (سياسة RLS تمنعه من جذوره حتى لو تكرر خطأ مشابه بالكود مستقبلاً) لسه ينتظر مرحلة 2 الكاملة.**
 
 **التالي بعد القرار:** استكمال نفس الجرد لجداول `reviews` و`promo_codes`، ثم تصميم سياسات RLS الكاملة + إصلاح كل نقاط الوصول المكتشَفة، اختبار على DORK-TEST، ثم DORK.
+
+---
+
+### 2026-07-14 — 🔴 اكتشاف: إصلاح `customers.pin_hash` الصباحي لم يُغلق الثغرة فعلياً + عطل حي بتسجيل دخول العميل
+
+أثناء اختبار Tier 2 مرحلة 1 (تسجيل دخول/خروج متكرر بنفس المتصفح لصالون "الوادي" ثم لحساب عميل)، ظهر خطأ حي بشاشة دخول العميل:
+
+```
+Supabase GET customers: {"code":"42501",...,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.customers TO authenticated;","message":"permission denied for table customers"}
+```
+
+**السبب الأول (عطل الدخول):** المتصفح كان يحمل جلسة Supabase Auth حقيقية متبقّية من دخول صاحب الصالون قبلها (نفس آلية Tier 2 الجديدة) — و`sb()` تلقائياً استخدمت توكن `authenticated` بدل مفتاح `anon` العام. الدور `authenticated` **ما كان عنده ولا صلاحية SELECT/UPDATE واحدة على جدول customers بمستوى الجدول أو العمود** — أي طلب من مستخدم عنده جلسة حقيقية (بدل anon) يفشل بالكامل.
+
+**الاكتشاف الأخطر أثناء التشخيص:** فحص `information_schema.table_privileges` كشف إن `anon` عنده `GRANT SELECT, UPDATE` على **جدول customers كامل** (كل الأعمدة). هذا يعني **إصلاح REVOKE العمودي لـ`pin_hash`/`pin_fails`/`pin_locked_until` من نفس صباح اليوم لم يُغلق الثغرة فعلياً** — الأمر نجح ("Success. No rows returned") لكن بلا أثر حقيقي، لأن الوصول كان قادماً أصلاً من منح الجدول الكامل، لا من صلاحية عمودية منفصلة. **يعني `pin_hash` كان لا يزال قابل للقراءة والتعديل من `anon` طول اليوم رغم "الإصلاح" الصباحي**، حتى اكتشاف هذا العطل المنفصل بالمساء.
+
+**الإصلاح الشامل المطبَّق على DORK (بتأكيد أحمد، عبر 3 استعلامات تحقق متتالية):**
+```sql
+REVOKE SELECT, UPDATE ON customers FROM anon;
+
+GRANT SELECT (
+  admin_notes, auth_uid, blocked, created_at, email, favs, google_uid,
+  history, id, lang, location_lat, location_lng, name, notifications,
+  phone, photo, profile_img
+) ON customers TO anon, authenticated;
+
+GRANT UPDATE (
+  favs, history, location_lat, location_lng, name, phone, email,
+  lang, notifications, photo, profile_img
+) ON customers TO anon, authenticated;
+```
+ملاحظة: `pin_hash`, `pin_fails`, `pin_locked_until` مُستبعَدة عمداً من قائمتي SELECT وUPDATE — هذي المرة الاستبعاد فعلي 100% لأن الوصول الوحيد المتبقي هو المنح العمودي الصريح أعلاه، ولا يوجد منح جدول كامل يتجاوزه.
+
+**تحقق نهائي (3 خطوات متتالية):**
+1. `table_privileges` بعد الإصلاح: صفر صفوف SELECT/UPDATE لـ`anon`/`authenticated` (بس TRUNCATE/REFERENCES/TRIGGER الغير حساسة) ✅
+2. اختبار حي: تسجيل دخول عميل (نفس المتصفح اللي فشل فيه قبل) نجح بدون خطأ 42501 ✅
+3. الصفحة الرئيسية للعميل ظهرت صح بعد الدخول (صالونات "لقمان" و"الوادي" ظاهرة) ✅
+
+**الحالة: ✅ مُصلح فعلياً على DORK (مؤكد بثلاث طبقات تحقق).** ⏳ **لسا يحتاج تطبيق نفس السكربت على DORK-TEST** (بعد تأكيد الاستقرار — القاعدة المعتادة بالمشروع).
+
+**درس جديد مُضاف لـCLAUDE.md (بند 11):** REVOKE عمودي لا يقدر يسحب صلاحية موروثة من منح جدول كامل — ينجح بصمت بدون أي تحذير. أي REVOKE لعمود حساس يجب يُتحقق بعده من `table_privileges` كمان، مو `column_privileges` بس.
