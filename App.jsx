@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L124";
+const APP_VERSION = "L125";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -2092,10 +2092,11 @@ export default function App(){
     bookingStatusSnapRef.current=snap;
   },[salons,customerSession]);
 
-  const refreshSalonBookings=useCallback(async(salonId)=>{
+  const refreshSalonBookings=useCallback(async(salonId,customerId)=>{
     try{
+      const custFilter=customerId?`&customer_id=eq.${customerId}`:"";
       const rows=await sb("bookings","GET",null,
-        `?salon_id=eq.${salonId}&select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&order=created_at.desc&limit=500`
+        `?salon_id=eq.${salonId}${custFilter}&select=id,salon_id,customer_id,customer_name,customer_phone,barber_id,barber_name,service,date,time,total,status,attendance,slot_duration_minutes,created_at&order=created_at.desc&limit=500`
       );
       const bookings=rows.map(b=>({
         id:b.id,
@@ -2113,7 +2114,13 @@ export default function App(){
         attendance:b.attendance||null,
         slotDuration:b.slot_duration_minutes||null,
       }));
-      setSalons(prev=>prev.map(s=>String(s.id)===String(salonId)?{...s,bookings}:s));
+      setSalons(prev=>prev.map(s=>{
+        if(String(s.id)!==String(salonId))return s;
+        if(!customerId)return {...s,bookings};
+        // نطاق عميل محدد: ندمج بدل الاستبدال — يمنع تضييق بيانات مشتركة (عدد الحجوزات بمقارنة الصالونات، إحصاءات لوحة الصالون)
+        const others=(s.bookings||[]).filter(b=>String(b.customer_id)!==String(customerId));
+        return {...s,bookings:[...others,...bookings]};
+      }));
     }catch(e){console.error(e);}
   },[]);
 
@@ -8350,7 +8357,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   useEffect(()=>{
     if(!refreshSalonBookings)return;
     const ids=[...new Set((customer.history||[]).map(h=>h.salonId).filter(Boolean))];
-    ids.slice(0,5).forEach(sid=>refreshSalonBookings(sid));
+    ids.slice(0,5).forEach(sid=>refreshSalonBookings(sid,customer.id));
   },[customer.id]);
   const[editName,setEditName]=useState(customer?.name||"");
   const[editPhone,setEditPhone]=useState(customer?.phone||"");
