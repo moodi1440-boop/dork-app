@@ -566,7 +566,6 @@ export default function SalonsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (status && status !== "all") params.set("status", status);
       if (search) params.set("search", search);
       const res = await fetch(`/api/salons?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -578,7 +577,7 @@ export default function SalonsPage() {
     } finally {
       setLoading(false);
     }
-  }, [status, search]);
+  }, [search]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -670,6 +669,7 @@ export default function SalonsPage() {
   const frozenOnlyCount = salons.filter((s) => s.frozen && !s.is_deleted).length;
   const deletedCount    = salons.filter((s) => s.is_deleted).length;
   const sorted = [...salons]
+    .filter((s) => status === "all" || s.status === status)
     .filter((s) => subFilter === "all" || subStatus(s.subscription_end_date) === subFilter)
     .filter((s) => {
       if (frozenView === "frozen")  return s.frozen && !s.is_deleted;
