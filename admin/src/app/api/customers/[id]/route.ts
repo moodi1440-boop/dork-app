@@ -4,7 +4,7 @@ import { logAdminAction } from "@/lib/audit-log";
 
 // الحقول التي يملك الأدمن صلاحية تعديلها عبر هذا المسار.
 const ADMIN_EDITABLE_FIELDS = [
-  "name", "phone", "email", "admin_notes", "loyalty_points", "loyalty_frozen", "blocked", "pin",
+  "name", "phone", "email", "admin_notes", "blocked", "pin",
 ] as const;
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {

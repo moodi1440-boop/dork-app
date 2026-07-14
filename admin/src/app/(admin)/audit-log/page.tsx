@@ -54,7 +54,6 @@ const FIELD_AR: Record<string, string> = {
   phone:                 "الجوال",
   email:                 "البريد",
   blocked:               "محظور",
-  loyalty_frozen:        "مجمّد",
   address:               "العنوان",
   rating:                "التقييم",
   owner:                 "المالك",

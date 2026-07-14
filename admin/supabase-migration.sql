@@ -53,7 +53,7 @@ CREATE POLICY "anon_delete" ON notifications FOR DELETE USING (true);
 CREATE POLICY "service_role_all" ON notifications FOR ALL TO service_role USING (true);
 
 -- جدول إعدادات الإدارة (pinned, week_salon, etc.)
--- ملاحظة: جدول app_settings موجود مسبقاً (loyalty_settings, social_links, ui_settings)
+-- ملاحظة: جدول app_settings موجود مسبقاً (social_links, ui_settings)
 CREATE TABLE IF NOT EXISTS admin_config (
   key    text primary key,
   value  jsonb not null default 'null'

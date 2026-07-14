@@ -4,7 +4,7 @@ import { sb } from "@/lib/supabase-browser";
 import { exportPDFRaw } from "@/lib/pdf";
 import { EmojiIcon } from "@/components/Icons";
 
-interface Customer { id: string; name: string; phone: string; email: string; loyalty_points: number; loyalty_frozen: boolean; admin_notes?: string; blocked?: boolean; favs?: unknown[]; pin?: string; }
+interface Customer { id: string; name: string; phone: string; email: string; admin_notes?: string; blocked?: boolean; favs?: unknown[]; pin?: string; }
 type Booking = { id: string; date: string; time: string; services: string[]; total: number; status: string; salonName?: string; };
 
 function AddCustomerModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
@@ -123,8 +123,7 @@ function CustomerPanel({ customerId, onClose }: { customerId: string; onClose: (
       ["الاسم",          customer.name],
       ["الجوال",         customer.phone],
       ["البريد",         customer.email ?? ""],
-      ["الحالة",         customer.blocked ? "محظور" : customer.loyalty_frozen ? "مجمّد" : "نشط"],
-      ["نقاط الولاء",    String(customer.loyalty_points ?? 0)],
+      ["الحالة",         customer.blocked ? "محظور" : "نشط"],
       ["إجمالي الإنفاق", String(totalSpent)],
       ["عدد الحجوزات",   String(bookings.length)],
       [],
@@ -297,7 +296,7 @@ export default function CustomersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-gray-400 text-xs">
-                  {["#","الاسم","الجوال","البريد","نشط","تجميد","حظر","تفاصيل","حذف"].map((h) => <th key={h} className="px-3 py-3 text-right font-semibold">{h}</th>)}
+                  {["#","الاسم","الجوال","البريد","نشط","حظر","تفاصيل","حذف"].map((h) => <th key={h} className="px-3 py-3 text-right font-semibold">{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -308,15 +307,9 @@ export default function CustomersPage() {
                     <td className="px-3 py-3 text-gray-300">{c.phone}</td>
                     <td className="px-3 py-3 text-gray-400 text-xs">{c.email || "—"}</td>
                     <td className="px-3 py-3">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${!c.blocked && !c.loyalty_frozen ? "bg-green-400/10 text-green-400 border-green-400/30" : "bg-gray-500/10 text-gray-500 border-gray-500/20"}`}>
-                        {!c.blocked && !c.loyalty_frozen ? "نشط" : "—"}
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${!c.blocked ? "bg-green-400/10 text-green-400 border-green-400/30" : "bg-gray-500/10 text-gray-500 border-gray-500/20"}`}>
+                        {!c.blocked ? "نشط" : "—"}
                       </span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <button onClick={() => quickPatch(c.id, { loyalty_frozen: !c.loyalty_frozen })}
-                        className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${c.loyalty_frozen ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-orange-500/10 text-orange-400 border-orange-500/20"}`}>
-                        {c.loyalty_frozen ? "رفع" : "تجميد"}
-                      </button>
                     </td>
                     <td className="px-3 py-3">
                       <button onClick={() => quickPatch(c.id, { blocked: !c.blocked })}
