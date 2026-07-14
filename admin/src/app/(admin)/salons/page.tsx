@@ -671,7 +671,7 @@ export default function SalonsPage() {
   const frozenCount = salons.filter((s) => s.frozen).length;
   const sorted = [...salons]
     .filter((s) => subFilter === "all" || subStatus(s.subscription_end_date) === subFilter)
-    .filter((s) => showFrozen || !s.frozen)
+    .filter((s) => showFrozen ? s.frozen : !s.frozen)
     .sort((a, b) => {
       const aw = weekSalon === a.id ? 2 : 0, bw = weekSalon === b.id ? 2 : 0;
       const ap = pinned.includes(a.id) ? 1 : 0, bp = pinned.includes(b.id) ? 1 : 0;
