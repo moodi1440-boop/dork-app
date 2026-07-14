@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
     const sb = createAdminClient();
     const { data: salon, error } = await sb
       .from("salons")
-      .select("id,name,owner,phone,owner_phone,owner_email,status,banned,frozen,owner_pin_hash,owner_pin_fails,owner_pin_locked_until")
+      .select("id,name,owner,phone,owner_phone,owner_email,status,banned,frozen,owner_pin_hash,owner_pin_fails,owner_pin_locked_until,auth_uid")
       .or(`phone.eq.${phone},owner_phone.eq.${phone}`)
       .eq("status", "approved")
       .order("frozen", { ascending: true, nullsFirst: true })
@@ -108,6 +108,9 @@ module.exports = async (req, res) => {
               access_token: sessionData.session.access_token,
               refresh_token: sessionData.session.refresh_token,
             };
+            if (!salon.auth_uid && sessionData.user?.id) {
+              await sb.from("salons").update({ auth_uid: sessionData.user.id }).eq("id", salon.id);
+            }
           }
         }
       } catch { /* فشل صامت */ }
