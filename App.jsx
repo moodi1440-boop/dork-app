@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L122";
+const APP_VERSION = "L123";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -4535,6 +4535,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
   const[newR,setNewR]=useState(""); const[newG,setNewG]=useState(""); const[newC,setNewC]=useState(""); const[newV,setNewV]=useState("");
   const[showAddLoc,setShowAddLoc]=useState(false);
   const[step,setStep]=useState(1);
+  const[submitting,setSubmitting]=useState(false);
   const BtnBack=({toStep})=><button style={{background:"var(--surface-2)",color:"var(--text-muted)",border:"none",padding:"12px 16px",borderRadius:10,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Cairo',sans-serif",flexShrink:0}} onClick={()=>setStep(toStep)}>{t("salon_page.back")}</button>;
 
   const govList=form.region?(allLoc.find(r=>r.region===form.region)?.govs||[]):[];
@@ -4841,7 +4842,7 @@ function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
         <F label={t("register.pin_confirm_label")} error={errors.pinConfirm}><input style={fi(errors.pinConfirm)} type="password" inputMode="numeric" placeholder="••••••" value={form.pinConfirm} onChange={e=>setForm(p=>({...p,pinConfirm:e.target.value.replace(/\D/g,"").slice(0,6)}))}/></F>
       </div>
 
-      <div style={{display:"flex",gap:8,marginBottom:30}}><BtnBack toStep={3}/><button style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}} onClick={()=>{if(validate())addSalon(form);}}>{t("register.submit")}</button></div>
+      <div style={{display:"flex",gap:8,marginBottom:30}}><BtnBack toStep={3}/><button disabled={submitting} style={{flex:1,background:"var(--grad)",color:"var(--p-text,#000)",border:"none",padding:"12px",borderRadius:10,fontWeight:700,fontSize:14,cursor:submitting?"not-allowed":"pointer",fontFamily:"'Cairo',sans-serif",opacity:submitting?.6:1}} onClick={async()=>{if(submitting||!validate())return;setSubmitting(true);await addSalon(form);setSubmitting(false);}}>{submitting?"⏳":t("register.submit")}</button></div>
       </>}
     </div></div>
   );
