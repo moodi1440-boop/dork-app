@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(row);
 }
 
-const FULL_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,total_paid,address,welcome_msg,closed_days,slot_min,cancellation_window,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,location_url,paused,created_at,subscription_end_date,subscription_months";
-const SAFE_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,banned,address,welcome_msg,closed_days,slot_min,cancellation_window,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone";
+const FULL_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,owner_pin_hash,banned,total_paid,address,welcome_msg,closed_days,slot_min,cancellation_window,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone,social,location_url,paused,created_at,subscription_end_date,subscription_months";
+const SAFE_SELECT   = "id,name,owner,owner_phone,region,gov,phone,rating,status,frozen,owner_pin_hash,banned,address,welcome_msg,closed_days,slot_min,cancellation_window,services,prices,barbers,shift_enabled,work_start,work_end,shift1_start,shift1_end,shift2_start,shift2_end,tone";
 
 export async function GET(req: NextRequest) {
   try {
@@ -63,7 +63,10 @@ export async function GET(req: NextRequest) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = rows.map((s: any) => ({ ...s, bookings: bookingsBySalon.get(String(s.id)) ?? [] }));
+    const result = rows.map((s: any) => {
+      const { owner_pin_hash, ...rest } = s;
+      return { ...rest, is_deleted: !!(s.frozen && !owner_pin_hash), bookings: bookingsBySalon.get(String(s.id)) ?? [] };
+    });
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

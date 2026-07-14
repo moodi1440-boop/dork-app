@@ -7,7 +7,7 @@ import { EmojiIcon } from "@/components/Icons";
 interface Salon {
   id: string; name: string; owner: string; owner_phone: string;
   region: string; gov: string; phone: string; rating: number;
-  status: string; frozen: boolean; banned: boolean; total_paid: number;
+  status: string; frozen: boolean; is_deleted?: boolean; banned: boolean; total_paid: number;
   address: string; welcome_msg: string; closed_days: number[];
   slot_min: number; cancellation_window: number; services: string[]; prices: Record<string, number>;
   barbers: Array<{ name: string; photo?: string }>;
@@ -561,6 +561,7 @@ export default function SalonsPage() {
   const [weekSalon, setWeekSalon] = useState("");
   const [showAdd,   setShowAdd]   = useState(false);
   const [autoApprove, setAutoApprove] = useState(false);
+  const [showFrozen, setShowFrozen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -667,8 +668,10 @@ export default function SalonsPage() {
     load();
   };
 
+  const frozenCount = salons.filter((s) => s.frozen).length;
   const sorted = [...salons]
     .filter((s) => subFilter === "all" || subStatus(s.subscription_end_date) === subFilter)
+    .filter((s) => showFrozen || !s.frozen)
     .sort((a, b) => {
       const aw = weekSalon === a.id ? 2 : 0, bw = weekSalon === b.id ? 2 : 0;
       const ap = pinned.includes(a.id) ? 1 : 0, bp = pinned.includes(b.id) ? 1 : 0;
@@ -716,6 +719,12 @@ export default function SalonsPage() {
             {f.label}
           </button>
         ))}
+        {frozenCount > 0 && (
+          <button onClick={() => setShowFrozen((v) => !v)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${showFrozen ? "bg-red-500/10 border-red-500/30 text-red-400" : "border-border text-gray-500 hover:border-red-500/20"}`}>
+            <EmojiIcon icon="🔒" size={14}/> {showFrozen ? "إخفاء" : "عرض"} المجمّدة/المحذوفة ({frozenCount})
+          </button>
+        )}
       </div>
 
       <div className="mb-4 flex items-center justify-between gap-3 bg-card border border-border rounded-2xl p-4">
@@ -749,6 +758,7 @@ export default function SalonsPage() {
             const isPinned  = pinned.includes(s.id);
             const isWeek    = weekSalon === s.id;
             const isFrozen  = s.frozen;
+            const isDeleted = !!s.is_deleted;
             const isBanned  = s.banned;
             const earned    = (s.bookings ?? []).filter((b) => b.status === "approved").reduce((a, b) => a + (b.total ?? 0), 0);
             const paid      = s.total_paid ?? 0;
@@ -764,7 +774,11 @@ export default function SalonsPage() {
                     <StatusBadge status={s.status} />
                     {isWeek && <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 font-bold"><EmojiIcon icon="🏅" size={16}/> الأسبوع</span>}
                     {isPinned && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold"><EmojiIcon icon="📌" size={16}/> مثبّت</span>}
-                    {isFrozen && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-bold"><EmojiIcon icon="🔒" size={16}/> مجمّد</span>}
+                    {isDeleted ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-600/20 text-gray-400 border border-gray-600/30 font-bold"><EmojiIcon icon="🗑" size={16}/> محذوف (بقرار المالك)</span>
+                    ) : isFrozen && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-bold"><EmojiIcon icon="🔒" size={16}/> مجمّد</span>
+                    )}
                     {isBanned && <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/30 text-red-400 border border-red-800/30 font-bold"><EmojiIcon icon="🚫" size={16}/> محظور</span>}
                   </div>
                   {s.rating ? <span className="text-gold font-bold text-sm"><EmojiIcon icon="★" size={16}/> {s.rating}</span> : null}
