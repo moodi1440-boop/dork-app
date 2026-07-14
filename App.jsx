@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L119";
+const APP_VERSION = "L120";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -5467,7 +5467,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
             <div style={{background:"var(--pa08)",border:"1px solid rgba(var(--pr),.3)",borderRadius:20,padding:"5px 14px",display:"inline-flex",alignItems:"center",maxWidth:"65%",overflow:"hidden"}}>
               <span style={{fontSize:14,fontWeight:800,color:"var(--p)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{salon.name}</span>
             </div>
-            <div style={{background:"var(--pa08)",border:"1.5px solid rgba(var(--gold-rgb),.4)",borderRadius:10,padding:"5px 10px",display:"flex",alignItems:"center",justifyContent:"center",gap:4,flexShrink:0,minWidth:64}}>
+            <div style={{background:"var(--pa08)",border:"1.5px solid rgba(var(--gold-rgb),.4)",borderRadius:10,padding:"5px 10px",display:"flex",alignItems:"center",justifyContent:"center",gap:4,flexShrink:0,minWidth:74}}>
               <span style={{fontSize:14,fontWeight:900,color:"var(--gold)",display:"inline-flex",alignItems:"center",gap:4}}><IconStar size={13}/>{(salon.rating||0).toFixed(1)}</span>
             </div>
           </div>
@@ -5478,7 +5478,7 @@ function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,
           {/* صف أخير: تاريخ الانضمام + نشط */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div style={{fontSize:14,color:"var(--p)",fontWeight:600,display:"flex",alignItems:"center",gap:5}}><IconCalendar size={13}/>{salon.createdAt?new Date(salon.createdAt).toLocaleDateString("ar-SA"):t("owner_dash.not_available")}</div>
-            {salon.status==="approved"&&<div style={{background:"rgba(39,174,96,.10)",border:"1.5px solid rgba(39,174,96,.4)",borderRadius:10,padding:"5px 10px",display:"flex",alignItems:"center",justifyContent:"center",gap:4,flexShrink:0,fontSize:14,fontWeight:900,color:"#27ae60",minWidth:64}}>{t("owner_dash.salon_active")}</div>}
+            {salon.status==="approved"&&<div style={{background:"rgba(39,174,96,.10)",border:"1.5px solid rgba(39,174,96,.4)",borderRadius:10,padding:"5px 10px",display:"flex",alignItems:"center",justifyContent:"center",gap:4,flexShrink:0,fontSize:14,fontWeight:900,color:"#27ae60",minWidth:74}}>{t("owner_dash.salon_active")}</div>}
           </div>
         </div>
       </div>
