@@ -81,8 +81,6 @@ CREATE TABLE IF NOT EXISTS customers (
   pin_fails           integer DEFAULT 0,
   pin_locked_until    timestamptz,
   profile_img         text,
-  loyalty_points      integer DEFAULT 0,
-  loyalty_frozen      boolean DEFAULT false,
   admin_notes         text DEFAULT '',
   blocked             boolean DEFAULT false,
   auth_uid            uuid,
@@ -137,7 +135,6 @@ CREATE TABLE IF NOT EXISTS app_settings (
 
 -- بيانات افتراضية لإعدادات التطبيق
 INSERT INTO app_settings (key, value) VALUES
-  ('loyalty_settings', '{"enabled":false,"points_per_booking":10,"redemption_rate":0.1}'::jsonb),
   ('ui_settings',      '{"show_reviews":true,"show_prices":true}'::jsonb),
   ('social_links',     '{}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
@@ -481,7 +478,7 @@ GRANT SELECT (
   cancellation_window, total_paid, social, lang, created_at
 ) ON salons TO anon;
 
-REVOKE UPDATE (blocked, loyalty_points, loyalty_frozen, admin_notes) ON customers FROM anon;
+REVOKE UPDATE (blocked, admin_notes) ON customers FROM anon;
 REVOKE DELETE ON customers FROM anon;
 
 REVOKE UPDATE ON fcm_tokens FROM anon;
