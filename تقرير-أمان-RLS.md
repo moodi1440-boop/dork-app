@@ -258,4 +258,27 @@ GRANT USAGE, SELECT ON app_settings_id_seq TO anon, authenticated;
 
 **الحالة: ✅ مكتمل بالكامل 2026-07-07 — DORK-TEST نسخة طبق الأصل من DORK هيكلةً وصلاحياتٍ.**
 
+---
+
+### 2026-07-07 — خلل قديم مكتشَف بالصدفة: `promo_codes` بدون GRANT/Policy لـ INSERT/DELETE على DORK
+
+أثناء استخدام أحمد الفعلي للوحة الإدارة (توليد كود خصم تطبيق)، ظهرت رسالة **"permission denied for table promo_codes"**. هذا خلل قديم موجود بالإنتاج نفسه (DORK) — **غير متعلق بترحيل Mumbai ولا بشغل DORK-TEST اليوم**، انكشف بالصدفة لأنه أول مرة يجرَّب توليد كود فعلياً.
+
+**السبب:** صفحة `admin/src/app/(admin)/promo-codes/page.tsx` تتصل مباشرة بقاعدة البيانات عبر مفتاح `anon` (`sb` من `supabase-browser.ts`)، ودور `anon` كان يملك فقط `SELECT`/`UPDATE` على `promo_codes` — بدون `INSERT` ولا `DELETE` (لا GRANT ولا RLS policy).
+
+**الإصلاح المطبَّق على DORK:**
+```sql
+GRANT INSERT, DELETE ON public.promo_codes TO anon;
+
+CREATE POLICY promo_codes_public_insert ON public.promo_codes
+  FOR INSERT TO public WITH CHECK (true);
+
+CREATE POLICY promo_codes_public_delete ON public.promo_codes
+  FOR DELETE TO public USING (true);
+```
+
+**تحقق حي:** توليد كود تطبيق فعلي من لوحة الإدارة الحقيقية (project-nfzka.vercel.app) نجح بعد الإصلاح — تحقّق عبر Network tab (طلب `201 Created`).
+
+⚠️ **لم يُطبَّق بعد على DORK-TEST** — حسب القاعدة الجديدة بـ`CLAUDE.md` (ننتظر تأكيد الاشتغال قبل النسخ)، والتأكيد صار الآن — يُضاف لـ DORK-TEST بنهاية الجلسة.
+
 **درس إضافي مهم:** لما تتكرر نفس فئة العطل (GRANT ناقص) أكثر من مرتين بنفس اليوم، الأفضل التحول من "أصلح كل ما يظهر خطأ" إلى **"قارن الهيكلة الكاملة مرة وحدة"** — أسرع وأشمل بكثير من انتظار كل ميزة تكتشف عطل جديد بالصدفة أثناء استخدام حقيقي.
