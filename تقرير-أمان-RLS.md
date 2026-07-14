@@ -279,7 +279,7 @@ CREATE POLICY promo_codes_public_delete ON public.promo_codes
 
 **تحقق حي:** توليد كود تطبيق فعلي من لوحة الإدارة الحقيقية (project-nfzka.vercel.app) نجح بعد الإصلاح — تحقّق عبر Network tab (طلب `201 Created`).
 
-⚠️ **لم يُطبَّق بعد على DORK-TEST** — حسب القاعدة الجديدة بـ`CLAUDE.md` (ننتظر تأكيد الاشتغال قبل النسخ)، والتأكيد صار الآن — يُضاف لـ DORK-TEST بنهاية الجلسة.
+✅ **طُبِّق على DORK-TEST أيضاً (2026-07-07)** — تحقّق: تشغيل ناجح لنفس GRANT+policies.
 
 ---
 
@@ -294,7 +294,7 @@ GRANT USAGE, SELECT ON SEQUENCE public.promotions_id_seq TO anon, authenticated;
 
 **تحقق حي:** إعادة إرسال نفس العرض التجريبي من التطبيق الحقيقي نجحت بعد الإصلاح.
 
-⚠️ **لم يُطبَّق بعد على DORK-TEST** — يُضاف بنهاية الجلسة مع باقي الإصلاحات المؤكدة اليوم.
+✅ **طُبِّق على DORK-TEST أيضاً (2026-07-07)**.
 
 ---
 
@@ -317,6 +317,8 @@ GRANT USAGE, SELECT ON SEQUENCE public.waiting_list_id_seq TO anon;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated;
 ```
 
-⚠️ **لم يُطبَّق بعد على DORK-TEST** — يُضاف بنهاية الجلسة (والأهم: الحل الدائم `ALTER DEFAULT PRIVILEGES` نفسه يُطبَّق على DORK-TEST أيضاً حتى يبقى الفخّ مقفول بالمشروعين معاً).
+✅ **طُبِّق على DORK-TEST أيضاً (2026-07-07)** — بما فيها `ALTER DEFAULT PRIVILEGES` الدائم، فالفخّ مقفول بالمشروعين معاً الآن.
+
+**النتيجة النهائية:** كل الإصلاحات الأربعة المؤكدة اليوم (promo_codes، promotions_id_seq، الفخّ الاستباقي للـ4 جداول، والحل الدائم) مطبَّقة على **DORK وDORK-TEST معاً** — المشروعان متطابقان 100% هيكلةً وصلاحياتٍ.
 
 **درس إضافي مهم:** لما تتكرر نفس فئة العطل (GRANT ناقص) أكثر من مرتين بنفس اليوم، الأفضل التحول من "أصلح كل ما يظهر خطأ" إلى **"قارن الهيكلة الكاملة مرة وحدة"** — أسرع وأشمل بكثير من انتظار كل ميزة تكتشف عطل جديد بالصدفة أثناء استخدام حقيقي.
