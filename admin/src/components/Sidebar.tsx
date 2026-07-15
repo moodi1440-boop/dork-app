@@ -124,7 +124,7 @@ export default function Sidebar() {
           filter: "drop-shadow(0px 2px 2px rgba(0,0,0,0.35))",
           letterSpacing: 4,
           lineHeight: 1,
-        }}>DORK</span>
+        }}>DAWRUK</span>
       </div>
 
       <nav className="flex-1 px-3 py-5 space-y-1">

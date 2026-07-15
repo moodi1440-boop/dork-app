@@ -36,7 +36,7 @@ self.addEventListener("push", (e) => {
   } catch (error) {
     console.error("[Service Worker] Error handling push notification:", error);
     e.waitUntil(
-      self.registration.showNotification("إشعار من DORK", {
+      self.registration.showNotification("إشعار من DAWRUK", {
         body: "حدث خطأ في استقبال الإشعار",
         icon: "/Logo.svg",
         dir: "rtl",

@@ -25,7 +25,7 @@ function genRandom(len = 5) {
   for (let i = 0; i < len; i++) r += CHARS[Math.floor(Math.random() * CHARS.length)];
   return r;
 }
-const genApp = () => `DORK-${genRandom()}`;
+const genApp = () => `DAWRUK-${genRandom()}`;
 const genWa  = () => `WH-${genRandom()}`;
 
 function getStatus(c: PromoCode): "unused" | "used" | "expired" {

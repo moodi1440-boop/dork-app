@@ -9,8 +9,8 @@ const cairo  = Cairo ({ subsets: ["arabic", "latin"], variable: "--font-cairo"  
 const cinzel = Cinzel({ subsets: ["latin"],             variable: "--font-cinzel", weight: ["900"] });
 
 export const metadata: Metadata = {
-  title: "DORK Admin",
-  description: "لوحة إدارة منصة DORK",
+  title: "DAWRUK Admin",
+  description: "لوحة إدارة منصة DAWRUK",
   manifest: "/manifest.json",
 };
 
