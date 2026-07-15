@@ -92,8 +92,9 @@ module.exports = async (req, res) => {
     let sessionTokens = null;
     if (salon.owner_email) {
       try {
+        // نوع "recovery" مقصود وليس "magiclink" — راجع نفس التعليق بـ customer-auth.js
         const { data: linkData } = await sb.auth.admin.generateLink({
-          type: "magiclink",
+          type: "recovery",
           email: salon.owner_email,
         });
         const otp = linkData?.properties?.email_otp;
@@ -101,7 +102,7 @@ module.exports = async (req, res) => {
           const { data: sessionData } = await createAnonClient().auth.verifyOtp({
             email: salon.owner_email,
             token: otp,
-            type: "email",
+            type: "recovery",
           });
           if (sessionData?.session) {
             sessionTokens = {

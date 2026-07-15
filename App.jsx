@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L128";
+const APP_VERSION = "L129";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -7977,7 +7977,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         if(data.code==="err_locked"&&data.remainingMinutes){
           setErr(`تم قفل الدخول مؤقتاً — أعد المحاولة بعد ${data.remainingMinutes} ${data.remainingMinutes===1?"دقيقة":"دقائق"}`);
         }else if(data.code==="err_no_pin"){
-          setErr("يلزم ضبط رمز سري لهذا الحساب أول مرة — استخدم تبويب الدخول السريع أو تواصل مع الإدارة");
+          setErr("يلزم ضبط رمز سري لهذا الحساب أول مرة — استخدم 'نسيت الرمز السري؟' لضبطه");
         }else{
           setErr(data.error||t("cust_login.err_pin_wrong"));
         }

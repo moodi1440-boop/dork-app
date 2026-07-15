@@ -106,8 +106,12 @@ module.exports = async (req, res) => {
 
     let sessionTokens = null;
     try {
+      // نوع "recovery" مقصود وليس "magiclink" — يستخدم خانة توكن منفصلة بالكامل
+      // بقاعدة GoTrue، لأن "magiclink" هي نفس الخانة التي يستخدمها signInWithOtp()
+      // بشاشات "نسيت الرمز السري" (تسجيل/استرجاع)، وأي توليد صامت هنا كان يُبطل
+      // صمتاً كود OTP الذي ينتظره المستخدم بصندوق بريده لنفس البريد (راجع تقرير-أمان-RLS.md)
       const { data: linkData } = await sb.auth.admin.generateLink({
-        type: "magiclink",
+        type: "recovery",
         email: authEmail,
       });
       const otp = linkData?.properties?.email_otp;
@@ -115,7 +119,7 @@ module.exports = async (req, res) => {
         const { data: sessionData } = await createAnonClient().auth.verifyOtp({
           email: authEmail,
           token: otp,
-          type: "email",
+          type: "recovery",
         });
         if (sessionData?.session) {
           sessionTokens = {
