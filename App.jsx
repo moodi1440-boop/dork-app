@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L125";
+const APP_VERSION = "L126";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -5238,6 +5238,13 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
   const[resetLoading,setResetLoading]=useState(false);
   const[resetOtpSent,setResetOtpSent]=useState(false);
   const[resetAccessToken,setResetAccessToken]=useState("");
+  const[resendTimer,setResendTimer]=useState(0);
+
+  useEffect(()=>{
+    if(resendTimer<=0)return;
+    const interval=setInterval(()=>setResendTimer(prev=>Math.max(prev-1,0)),1000);
+    return()=>clearInterval(interval);
+  },[resendTimer]);
 
   const handleRemember=(checked)=>{
     setRememberPhone(checked);
@@ -5271,6 +5278,7 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
     setLoading(false);
   };
   const sendResetOtp=async()=>{
+    if(resendTimer>0){setResetErr(`⏳ انتظر ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")} قبل إعادة الإرسال`);return;}
     setResetErr(""); setResetLoading(true);
     try{
       const res=await fetch("/api/salon-reset-pin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"verify",phone:resetPhone.trim(),email:resetEmail.trim()})});
@@ -5278,6 +5286,7 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
       if(!res.ok){setResetErr(d.error||"خطأ");setResetLoading(false);return;}
       const{data,error}=await supabase.auth.signInWithOtp({email:resetEmail.trim(),options:{shouldCreateUser:false}});
       if(error){setResetErr(error.message);setResetLoading(false);return;}
+      setResendTimer(120);
       setResetOtpSent(true);setResetStep("otp");
       toast$&&toast$(t("owner_login.reset_otp_sent"));
     }catch(e){setResetErr(e.message);}
@@ -5328,6 +5337,9 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
             <SL>{t("owner_login.reset_otp_sent")}</SL>
             <F label={t("owner_login.reset_otp_label")} error={resetErr}><input style={fi(resetErr)} type="text" inputMode="numeric" placeholder="123456" maxLength={6} value={resetOtp} onChange={e=>{setResetOtp(e.target.value.replace(/\D/g,"").slice(0,6));setResetErr("");}}/></F>
             <button style={{...G.sub,opacity:resetLoading?0.7:1}} disabled={resetLoading} onClick={verifyResetOtp}>{resetLoading?t("owner_login.reset_verifying"):t("owner_login.reset_verify_btn")}</button>
+            {resendTimer>0
+              ?<div style={{textAlign:"center",fontSize:12,color:"var(--text-muted)",marginTop:8}}>⏳ إعادة الإرسال متاحة بعد {Math.floor(resendTimer/60)}:{String(resendTimer%60).padStart(2,"0")}</div>
+              :<button onClick={sendResetOtp} disabled={resetLoading} style={{width:"100%",marginTop:8,padding:"8px 0",background:"transparent",border:"none",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:12,textDecoration:"underline"}}>إعادة إرسال الكود</button>}
           </>}
           {resetStep==="pin"&&<>
             <SL>✅ تم التحقق — أدخل رمزاً سرياً جديداً</SL>
@@ -7897,6 +7909,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 
   const sendResetOtp=async()=>{
     if(resetLoading)return;
+    if(resendTimer>0){setResetErr(`⏳ انتظر ${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")} قبل إعادة الإرسال`);return;}
     const emailTrimmed=resetEmail.trim();
     if(!emailTrimmed){setResetErr(t("cust_login.err_email"));return;}
     const emailRx=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -7907,8 +7920,10 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(error){
         const isRate=error.message.includes("rate")||error.message.includes("too many")||error.message.includes("security");
         setResetErr(isRate?i18n.t('ui.wait_two_mins'):i18n.t('ui.error_prefix')+error.message.substring(0,40));
+        if(isRate)setResendTimer(120);
         return;
       }
+      setResendTimer(120);
       setResetStep("otp");
     }catch(e){setResetErr(i18n.t('ui.connection_internet'));}
     finally{setResetLoading(false);}
@@ -8128,6 +8143,9 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             <button style={{...G.sub,opacity:resetLoading?.6:1,cursor:resetLoading?"not-allowed":"pointer"}} onClick={verifyResetOtp} disabled={resetLoading}>
               {resetLoading?t("cust_login.reset_verifying"):t("cust_login.reset_verify_btn")}
             </button>
+            {resendTimer>0
+              ?<div style={{textAlign:"center",fontSize:12,color:"var(--text-muted)",marginTop:8}}>⏳ إعادة الإرسال متاحة بعد {Math.floor(resendTimer/60)}:{String(resendTimer%60).padStart(2,"0")}</div>
+              :<button onClick={sendResetOtp} disabled={resetLoading} style={{width:"100%",marginTop:8,padding:"8px 0",background:"transparent",border:"none",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:12,textDecoration:"underline"}}>إعادة إرسال الكود</button>}
           </>:null}
           <button onClick={()=>{setResetStep(null);setResetEmail("");setResetOtp("");setResetErr("");}} style={{width:"100%",marginTop:10,padding:"10px 0",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
             {t("cust_login.reset_back")}
