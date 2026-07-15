@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L127";
+const APP_VERSION = "L128";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -5335,7 +5335,7 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
           </>}
           {resetStep==="otp"&&<>
             <SL>{t("owner_login.reset_otp_sent")}</SL>
-            <F label={t("owner_login.reset_otp_label")} error={resetErr}><input style={fi(resetErr)} type="text" inputMode="numeric" placeholder="123456" maxLength={6} value={resetOtp} onChange={e=>{setResetOtp(e.target.value.replace(/\D/g,"").slice(0,6));setResetErr("");}}/></F>
+            <F label={t("owner_login.reset_otp_label")} error={resetErr}><OtpInput value={resetOtp} onChange={val=>{setResetOtp(val);setResetErr("");}} error={!!resetErr} use6Boxes={true} disabled={resetLoading}/></F>
             <button style={{...G.sub,opacity:resetLoading?0.7:1}} disabled={resetLoading} onClick={verifyResetOtp}>{resetLoading?t("owner_login.reset_verifying"):t("owner_login.reset_verify_btn")}</button>
             {resendTimer>0
               ?<div style={{textAlign:"center",fontSize:12,color:"var(--text-muted)",marginTop:8}}>⏳ إعادة الإرسال متاحة بعد {Math.floor(resendTimer/60)}:{String(resendTimer%60).padStart(2,"0")}</div>
@@ -7878,12 +7878,11 @@ function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
 function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$,setCustDashNav}){
   const{t}=useTranslation();
   const[tab,setTab]=useState("login");
-  const[loginMethod,setLoginMethod]=useState("phone");
   const[phone,setPhone]=useState(()=>{try{return localStorage.getItem("dork_customer_saved_phone")||"";}catch{return "";}});
   const[name,setName]=useState("");
   const[email,setEmail]=useState(""); const[pass,setPass]=useState("");
   const[err,setErr]=useState("");
-  const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState(""); const[showPin,setShowPin]=useState(false);
+  const[pin,setPin]=useState(""); const[showPin,setShowPin]=useState(false);
   const[phoneLoginLoading,setPhoneLoginLoading]=useState(false);
   const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
@@ -7993,28 +7992,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       localStorage.setItem("dork_biometric_id",String(c.id));
     }catch(e){setErr(i18n.t('ui.error_prefix')+e.message);}
     setPhoneLoginLoading(false);
-  };
-
-  const loginWithPin=async()=>{
-    const pinHash=await hashPin(pin);
-    const c=customers.find(cust=>{const savedPin=localStorage.getItem(`dork_customer_pin_${cust.id}`);return savedPin&&savedPin===pinHash;});
-    if(!c){setPinErr(t("cust_login.err_pin_wrong"));setPin("");return;}
-    if(c.blocked){setPinErr(i18n.t('ui.account_banned'));setPin("");return;}
-    setCustomerSession(c);setView("home");
-    localStorage.setItem("dork_biometric_id",String(c.id));
-    // تحقق حقيقي بالسيرفر + جلسة Supabase — بدون ما يغيّر تجربة الدخول الحالية
-    // (لا يمنع الدخول لو فشل، بس يوثّق الرمز بالسيرفر ويجيب جلسة حقيقية)
-    const enteredPin=pin;
-    (async()=>{
-      try{
-        await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:c.id,pin:enteredPin})});
-        const r=await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:c.phone,pin:enteredPin})});
-        const data=await r.json().catch(()=>null);
-        if(data?.access_token&&data?.refresh_token){
-          await supabase.auth.setSession({access_token:data.access_token,refresh_token:data.refresh_token}).catch(()=>{});
-        }
-      }catch{}
-    })();
   };
 
   // مؤقت صلاحية الكود (5 دقائق)
@@ -8187,27 +8164,43 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       </div>
       <div style={G.fc}>
         {tab==="login"?<>
-          <div style={{display:"flex",gap:8,marginBottom:12}}>
-            <button style={{...G.tabBtn,flex:1,...(loginMethod==="phone"?G.tabOn:{})}} onClick={()=>{setLoginMethod("phone");setErr("");setPinErr("");}}>{t("cust_login.phone_tab")}</button>
-            <button style={{...G.tabBtn,flex:1,...(loginMethod==="pin"?G.tabOn:{})}} onClick={()=>{setLoginMethod("pin");setErr("");setPinErr("");}}>{t("cust_login.pin_tab")}</button>
-          </div>
-          {loginMethod==="phone"?<>
-            <SL>{t("cust_login.login_title")}</SL>
-            <F label={t("cust_login.phone_label")} error={err}><input style={fi(err)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");if(rememberPhone){try{localStorage.setItem("dork_customer_saved_phone",e.target.value.trim());}catch{}}}}/></F>
-            <F label={t("cust_login.pin_label")}><div style={{position:"relative"}}><input style={{...fi(),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
-            <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"var(--text-muted)",cursor:"pointer",margin:"4px 0 10px",userSelect:"none"}}>
-              <input type="checkbox" checked={rememberPhone} onChange={e=>handleRemember(e.target.checked)} style={{width:16,height:16,cursor:"pointer",accentColor:"var(--p)"}}/>
-              {t("cust_login.remember_phone")}
-            </label>
-            <button style={{...G.sub,opacity:phoneLoginLoading?.6:1,cursor:phoneLoginLoading?"not-allowed":"pointer"}} disabled={phoneLoginLoading} onClick={()=>{if(rememberPhone&&phone.trim()){try{localStorage.setItem("dork_customer_saved_phone",phone.trim());}catch{}}loginWithPhone();}}>{phoneLoginLoading?"...":t("cust_login.login_btn")}</button>
-          </>:<>
-            <SL>{t("cust_login.pin_title")}</SL>
-            <F label={t("cust_login.pin_label")} error={pinErr}><div style={{position:"relative"}}><input style={{...fi(pinErr),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
-            <button style={G.sub} onClick={loginWithPin}>{t("cust_login.login_btn")}</button>
-            <button onClick={()=>{setResetStep("email");setResetEmail("");setResetOtp("");setResetErr("");}} style={{width:"100%",marginTop:8,padding:"8px 0",border:"none",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:13,textDecoration:"underline",textAlign:"center"}}>
-              {t("cust_login.forgot_pin")}
+          <SL>{t("cust_login.login_title")}</SL>
+          <F label={t("cust_login.phone_label")} error={err}><input style={fi(err)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");if(rememberPhone){try{localStorage.setItem("dork_customer_saved_phone",e.target.value.trim());}catch{}}}}/></F>
+          <F label={t("cust_login.pin_label")}><div style={{position:"relative"}}><input style={{...fi(),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
+          <button onClick={()=>{setResetStep("email");setResetEmail("");setResetOtp("");setResetErr("");}} style={{width:"100%",marginTop:-4,marginBottom:10,padding:"4px 0",border:"none",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:13,textDecoration:"underline",textAlign:"center"}}>
+            {t("cust_login.forgot_pin")}
+          </button>
+          <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"var(--text-muted)",cursor:"pointer",margin:"4px 0 10px",userSelect:"none"}}>
+            <input type="checkbox" checked={rememberPhone} onChange={e=>handleRemember(e.target.checked)} style={{width:16,height:16,cursor:"pointer",accentColor:"var(--p)"}}/>
+            {t("cust_login.remember_phone")}
+          </label>
+          <button style={{...G.sub,opacity:phoneLoginLoading?.6:1,cursor:phoneLoginLoading?"not-allowed":"pointer"}} disabled={phoneLoginLoading} onClick={()=>{if(rememberPhone&&phone.trim()){try{localStorage.setItem("dork_customer_saved_phone",phone.trim());}catch{}}loginWithPhone();}}>{phoneLoginLoading?"...":t("cust_login.login_btn")}</button>
+        </>:<>
+          <SL>{t("cust_login.reg_title")}</SL>
+          <F label={t("cust_login.name_label")}><input style={fi()} placeholder={t("cust_login.name_ph")} value={name} onChange={e=>setName(e.target.value)}/></F>
+          <F label={t("cust_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+          <F label={t("cust_login.email_label")} error={err}><div style={{display:"flex",gap:8}}>
+            <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
+            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:sending?.6:1,cursor:sending?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending}>
+              {sending?t("cust_login.sending"):otpSent?t("cust_login.resend_btn"):t("cust_login.send_btn")}
+            </button>
+          </div></F>
+          {otpSent&&<>
+            <F label={t("cust_login.code_label")}>
+              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={false} use6Boxes={true} disabled={verifying||attempts>=5}/>
+              <div style={{fontSize:11,color:attempts>=5?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
+                {t("cust_login.code_sent_to")} <span dir="ltr" style={{display:"inline-block"}}><strong>{email}</strong></span>
+                {attempts>0&&attempts<5&&<><br/>{t("cust_login.attempts_left")} {5-attempts}</>}
+                {attempts>=5&&<><br/>{t("cust_login.max_attempts")}</>}
+              </div>
+            </F>
+            <button style={{width:"100%",padding:"8px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1,marginTop:12,fontSize:12}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);setResendTimer(0);setAttempts(0);}}>
+              {t("cust_login.edit_email")}
             </button>
           </>}
+          <button style={{...G.sub,opacity:(verifying||!otpSent)?.6:1,cursor:(verifying||!otpSent)?"not-allowed":"pointer"}} onClick={register} disabled={!otpSent||verifying||otpExpired}>
+            {verifying?t("cust_login.verifying"):t("cust_login.reg_btn")}
+          </button>
           <div style={{textAlign:"center",margin:"12px 0",color:"var(--text-muted)",fontSize:12}}>{t("cust_login.or")}</div>
           <button style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #4285f4",background:"rgba(66,133,244,.1)",color:"#4285f4",cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={async()=>{
             try{
@@ -8244,32 +8237,6 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           }}>
             <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
             {t("cust_login.google_btn")}
-          </button>
-        </>:<>
-          <SL>{t("cust_login.reg_title")}</SL>
-          <F label={t("cust_login.name_label")}><input style={fi()} placeholder={t("cust_login.name_ph")} value={name} onChange={e=>setName(e.target.value)}/></F>
-          <F label={t("cust_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
-          <F label={t("cust_login.email_label")} error={err}><div style={{display:"flex",gap:8}}>
-            <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
-            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:sending?.6:1,cursor:sending?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending}>
-              {sending?t("cust_login.sending"):otpSent?t("cust_login.resend_btn"):t("cust_login.send_btn")}
-            </button>
-          </div></F>
-          {otpSent&&<>
-            <F label={t("cust_login.code_label")}>
-              <OtpInput value={otpCode} onChange={(val)=>{setOtpCode(val);setErr("");}} error={false} use6Boxes={true} disabled={verifying||attempts>=5}/>
-              <div style={{fontSize:11,color:attempts>=5?"#e74c3c":"#888",marginTop:8,direction:"rtl"}}>
-                {t("cust_login.code_sent_to")} <span dir="ltr" style={{display:"inline-block"}}><strong>{email}</strong></span>
-                {attempts>0&&attempts<5&&<><br/>{t("cust_login.attempts_left")} {5-attempts}</>}
-                {attempts>=5&&<><br/>{t("cust_login.max_attempts")}</>}
-              </div>
-            </F>
-            <button style={{width:"100%",padding:"8px 12px",borderRadius:9,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:verifying?"not-allowed":"pointer",fontFamily:"inherit",opacity:verifying?.5:1,marginTop:12,fontSize:12}} disabled={verifying} onClick={()=>{setOtpSent(false);setOtpCode("");setErr("");setOtpExpired(false);setOtpTimer(0);setResendTimer(0);setAttempts(0);}}>
-              {t("cust_login.edit_email")}
-            </button>
-          </>}
-          <button style={{...G.sub,opacity:(verifying||!otpSent)?.6:1,cursor:(verifying||!otpSent)?"not-allowed":"pointer"}} onClick={register} disabled={!otpSent||verifying||otpExpired}>
-            {verifying?t("cust_login.verifying"):t("cust_login.reg_btn")}
           </button>
         </>}
       </div>
