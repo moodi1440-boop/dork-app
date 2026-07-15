@@ -70,7 +70,7 @@ module.exports = async (req, res) => {
         // البحث عن الصالون
         const { data: salon, error: salonErr } = await sb
           .from("salons")
-          .select("id,owner_email")
+          .select("id,owner_email,owner_pin_hash")
           .or(`phone.eq.${phone.trim()},owner_phone.eq.${phone.trim()}`)
           .eq("status", "approved")
           .maybeSingle();
@@ -85,6 +85,10 @@ module.exports = async (req, res) => {
         }
 
         const newHash = await hashOwnerPin(String(newPin), String(salon.id));
+        if (salon.owner_pin_hash && newHash === salon.owner_pin_hash) {
+          res.status(400).json({ error: "الرمز السري الجديد يجب أن يختلف عن الرمز السابق" });
+          return;
+        }
         const { error: updateErr } = await sb
           .from("salons")
           .update({ owner_pin_hash: newHash, owner_pin_fails: 0, owner_pin_locked_until: null })
