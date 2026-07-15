@@ -39,7 +39,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-card border border-gold/30 mb-4 shadow-[0_0_30px_rgba(212,160,23,0.2)]">
             <EmojiIcon icon="✂" size={32}/>
           </div>
-          <h1 className="text-3xl font-black gold-text tracking-widest">DORK</h1>
+          <h1 className="text-3xl font-black gold-text tracking-widest">DAWRUK</h1>
           <p className="text-gray-400 text-sm mt-1">لوحة الإدارة</p>
         </div>
 
@@ -110,7 +110,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-gray-600 text-xs mt-6">DORK Salon Booking — Admin Panel</p>
+        <p className="text-center text-gray-600 text-xs mt-6">DAWRUK Salon Booking — Admin Panel</p>
       </div>
     </div>
   );

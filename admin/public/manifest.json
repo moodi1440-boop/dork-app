@@ -1,7 +1,7 @@
 {
-  "name": "DORK Admin Panel",
-  "short_name": "DORK Admin",
-  "description": "لوحة إدارة منصة حجز الصالونات DORK",
+  "name": "DAWRUK Admin Panel",
+  "short_name": "DAWRUK Admin",
+  "description": "لوحة إدارة منصة حجز الصالونات DAWRUK",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
