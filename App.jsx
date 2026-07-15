@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L129";
+const APP_VERSION = "L130";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -7937,7 +7937,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       setResetLoading(true);setResetErr("");
       const{data,error}=await supabase.auth.verifyOtp({email:resetEmail.trim(),token:otpClean,type:"email"});
       if(error){setResetErr(i18n.t('ui.code_wrong_check'));setResetOtp("");return;}
-      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&email=eq.${encodeURIComponent(resetEmail.trim())}&limit=1`);
+      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&email=ilike.${encodeURIComponent(resetEmail.trim())}&limit=1`);
       if(!rows.length){setResetErr(t("cust_login.err_not_found"));return;}
       const c=toAppCustomer(rows[0]);
       if(c.blocked){setResetErr(i18n.t('ui.account_banned'));return;}
