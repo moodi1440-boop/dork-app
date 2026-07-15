@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L126";
+const APP_VERSION = "L127";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -7884,6 +7884,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[email,setEmail]=useState(""); const[pass,setPass]=useState("");
   const[err,setErr]=useState("");
   const[pin,setPin]=useState(""); const[pinErr,setPinErr]=useState(""); const[showPin,setShowPin]=useState(false);
+  const[phoneLoginLoading,setPhoneLoginLoading]=useState(false);
   const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
   const[otpTimer,setOtpTimer]=useState(0);
@@ -7965,14 +7966,33 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 
   const loginWithPhone=async()=>{
     if(!phone.trim()){setErr(t("cust_login.err_phone"));return;}
+    if(pin.length!==6){setErr(t("cust_login.err_pin_wrong"));return;}
+    setPhoneLoginLoading(true);setErr("");
     try{
-      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
-      if(!rows.length){setErr(t("cust_login.err_not_found"));return;}
-      const c=toAppCustomer(rows[0]);
-      if(c.blocked){setErr(i18n.t('ui.account_banned'));return;}
+      const res=await fetch("/api/customer-auth",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({phone:phone.trim(),pin}),
+      });
+      const data=await res.json();
+      if(!res.ok){
+        if(data.code==="err_locked"&&data.remainingMinutes){
+          setErr(`تم قفل الدخول مؤقتاً — أعد المحاولة بعد ${data.remainingMinutes} ${data.remainingMinutes===1?"دقيقة":"دقائق"}`);
+        }else if(data.code==="err_no_pin"){
+          setErr("يلزم ضبط رمز سري لهذا الحساب أول مرة — استخدم تبويب الدخول السريع أو تواصل مع الإدارة");
+        }else{
+          setErr(data.error||t("cust_login.err_pin_wrong"));
+        }
+        setPhoneLoginLoading(false);return;
+      }
+      if(data.access_token&&data.refresh_token){
+        await supabase.auth.setSession({access_token:data.access_token,refresh_token:data.refresh_token}).catch(()=>{});
+      }
+      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&id=eq.${data.id}&limit=1`).catch(()=>[]);
+      const c=rows?.length?toAppCustomer(rows[0]):{id:data.id,name:data.name,phone:data.phone,email:data.email,history:[],favs:[]};
       setCustomerSession(c);setView("home");
       localStorage.setItem("dork_biometric_id",String(c.id));
     }catch(e){setErr(i18n.t('ui.error_prefix')+e.message);}
+    setPhoneLoginLoading(false);
   };
 
   const loginWithPin=async()=>{
@@ -8174,11 +8194,12 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           {loginMethod==="phone"?<>
             <SL>{t("cust_login.login_title")}</SL>
             <F label={t("cust_login.phone_label")} error={err}><input style={fi(err)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");if(rememberPhone){try{localStorage.setItem("dork_customer_saved_phone",e.target.value.trim());}catch{}}}}/></F>
+            <F label={t("cust_login.pin_label")}><div style={{position:"relative"}}><input style={{...fi(),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
             <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"var(--text-muted)",cursor:"pointer",margin:"4px 0 10px",userSelect:"none"}}>
               <input type="checkbox" checked={rememberPhone} onChange={e=>handleRemember(e.target.checked)} style={{width:16,height:16,cursor:"pointer",accentColor:"var(--p)"}}/>
               {t("cust_login.remember_phone")}
             </label>
-            <button style={G.sub} onClick={()=>{if(rememberPhone&&phone.trim()){try{localStorage.setItem("dork_customer_saved_phone",phone.trim());}catch{}}loginWithPhone();}}>{t("cust_login.login_btn")}</button>
+            <button style={{...G.sub,opacity:phoneLoginLoading?.6:1,cursor:phoneLoginLoading?"not-allowed":"pointer"}} disabled={phoneLoginLoading} onClick={()=>{if(rememberPhone&&phone.trim()){try{localStorage.setItem("dork_customer_saved_phone",phone.trim());}catch{}}loginWithPhone();}}>{phoneLoginLoading?"...":t("cust_login.login_btn")}</button>
           </>:<>
             <SL>{t("cust_login.pin_title")}</SL>
             <F label={t("cust_login.pin_label")} error={pinErr}><div style={{position:"relative"}}><input style={{...fi(pinErr),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setPinErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
