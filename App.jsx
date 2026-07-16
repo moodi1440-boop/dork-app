@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L137";
+const APP_VERSION = "L138";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -4459,7 +4459,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
               <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
                 {allSlots.map(sl=>{const sel=mForm.slot===sl;const booked=bookedSlots.has(sl);return(
                   <button key={sl} onClick={()=>setMForm(p=>({...p,slot:p.slot===sl?"":sl}))}
-                    style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa25)":booked?"var(--border-ui)":"var(--surface-1)",color:sel?"var(--p)":"var(--text-muted)",opacity:booked&&!sel?0.6:1,fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:sel?700:400}} title={booked?t("notif.slot_booked"):""}>
+                    style={{width:64,padding:"5px 4px",borderRadius:8,border:`1.5px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa25)":booked?"var(--border-ui)":"var(--surface-1)",color:sel?"var(--p)":"var(--text-muted)",opacity:booked&&!sel?0.6:1,fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:sel?700:400,textAlign:"center",flexShrink:0}} title={booked?t("notif.slot_booked"):""}>
                     {to12h(sl)}
                   </button>
                 );})}
