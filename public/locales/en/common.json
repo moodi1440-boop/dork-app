@@ -89,7 +89,7 @@
     "err_code_expired": "❌ Code expired — press Resend",
     "err_pin_wrong": "Incorrect PIN code",
     "err_exists": "❌ This number is already registered",
-    "success_otp": "✅ Code sent to your email — valid for 5 minutes",
+    "success_otp": "✅ Code sent to your email — valid for 2:50",
     "success_reg": "✅ Account created successfully!"
   },
   "cust_drawer": {
