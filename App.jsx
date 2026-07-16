@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L135";
+const APP_VERSION = "L136";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -6148,6 +6148,7 @@ function PromoPanel({salon,customers,toast$}){
               const pkgInfo=PACKAGES.find(p=>p.id===pr.package);
               const ms=pr.ends_at?new Date(pr.ends_at)-Date.now():null;
               const hrsLeft=ms!==null?Math.max(0,Math.ceil(ms/3600000)):null;
+              const minsLeft=ms!==null?Math.max(0,Math.ceil(ms/60000)):null;
               const isExpired=pr._expired||false;
               const urgent=hrsLeft!==null&&hrsLeft<=24&&pr.status==="active"&&!isExpired;
               const isPending=pr.status==="pending";
@@ -6167,7 +6168,7 @@ function PromoPanel({salon,customers,toast$}){
                 <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.6,padding:"8px 10px",background:"rgba(255,255,255,.03)",borderRadius:8,marginBottom:8}}>{pr.promo_text}</div>
                 {!isPending&&pr.ends_at&&(
                   <div style={{fontSize:10,color:urgent?"#e67e22":"var(--text-muted)",marginBottom:8,fontWeight:urgent?700:400,display:"flex",alignItems:"center",gap:4}}>
-                    {urgent?<LabelWithIcon label={`⚡ ينتهي خلال ${hrsLeft} ساعة`} size={10}/>:pr.status==="active"?`⏳ ينتهي: ${new Date(pr.ends_at).toLocaleDateString("ar-SA")}`:`انتهى: ${new Date(pr.ends_at).toLocaleDateString("ar-SA")}`}
+                    {urgent?<LabelWithIcon label={ms<3600000?`⚡ ينتهي خلال ${minsLeft} دقيقة`:`⚡ ينتهي خلال ${hrsLeft} ساعة`} size={10}/>:pr.status==="active"?`⏳ ينتهي: ${new Date(pr.ends_at).toLocaleDateString("ar-SA")}`:`انتهى: ${new Date(pr.ends_at).toLocaleDateString("ar-SA")}`}
                   </div>
                 )}
                 <div style={{display:"flex",gap:6}}>
