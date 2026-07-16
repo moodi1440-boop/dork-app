@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L134";
+const APP_VERSION = "L135";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -142,7 +142,7 @@ async function sb(table, method, body, query = "", authToken = null) {
         "apikey": SUPABASE_ANON,
         "Authorization": `Bearer ${authToken || SUPABASE_ANON}`,
         "Content-Type": "application/json",
-        "Prefer": method === "POST" ? "return=representation" : "return=representation",
+        "Prefer": method === "POST" ? "return=representation" : "return=minimal",
       },
       body: body ? JSON.stringify(body) : undefined,
     });
