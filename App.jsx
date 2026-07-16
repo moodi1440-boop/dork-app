@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L149";
+const APP_VERSION = "L150";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -1625,6 +1625,7 @@ export default function App(){
   const[customerSession,setCustomerSession]=useState(()=>{try{const v=localStorage.getItem("dork_customer");return v?JSON.parse(v):null;}catch{return null;}});
 
   const bookingStatusSnapRef=useRef(null);
+  const updatingBookingsRef=useRef(new Set());
   const customerNotifyPrimedRef=useRef(false);
 
   useEffect(()=>{try{if(ownerSession)localStorage.setItem("dork_owner",String(ownerSession));else localStorage.removeItem("dork_owner");}catch{}},[ownerSession]);
@@ -2314,11 +2315,14 @@ export default function App(){
     }
   };
   const updateBookingStatus=async(sid,bid,status)=>{
+    const _ubKey=`${sid}-${bid}`;
+    if(updatingBookingsRef.current.has(_ubKey))return;
+    updatingBookingsRef.current.add(_ubKey);
     try{
       const salon=salons.find(s=>s.id===sid);
       if(!salon)return;
       const bk=salon.bookings.find(b=>b.id===bid);
-      if(!bk)return;
+      if(!bk||bk.status===status)return;
       await sb("bookings","PATCH",{status},`?id=eq.${bid}`);
       if(status==="cancelled"){
         sb("waiting_list","GET",null,`?select=id,name,phone,customer_id&salon_id=eq.${sid}&slot_date=eq.${bk.date}&slot_time=eq.${bk.time}&status=eq.waiting&limit=10`)
@@ -2367,6 +2371,7 @@ export default function App(){
       toast$(status==="approved"?i18n.t('ui.booking_accepted_toast'):i18n.t('ui.booking_status_updated'));
       await loadData();
     }catch(e){toast$(i18n.t('ui.error_prefix')+e.message,"err");}
+    finally{updatingBookingsRef.current.delete(_ubKey);}
   };
 
   const addExtraLoc=(r,g,c,v)=>{
