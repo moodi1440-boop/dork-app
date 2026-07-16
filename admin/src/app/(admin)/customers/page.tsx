@@ -250,7 +250,7 @@ export default function CustomersPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let q = sb.from("customers").select("*").order("id", { ascending: false });
+    let q = sb.from("customers").select("id,name,phone,email,admin_notes,blocked,favs,created_at").order("id", { ascending: false });
     if (search) q = q.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
     const { data } = await q.limit(200);
     setCustomers((data ?? []) as Customer[]);
