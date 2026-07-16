@@ -89,7 +89,7 @@
     "err_code_expired": "❌ Kodun süresi doldu — yeniden gönderin",
     "err_pin_wrong": "PIN kodu yanlış",
     "err_exists": "❌ Bu numara zaten kayıtlı",
-    "success_otp": "✅ Kod e-postanıza gönderildi — 5 dakika geçerli",
+    "success_otp": "✅ Kod e-postanıza gönderildi — 2:50 geçerli",
     "success_reg": "✅ Hesap başarıyla oluşturuldu!"
   },
   "cust_drawer": {
