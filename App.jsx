@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L133";
+const APP_VERSION = "L134";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -7490,7 +7490,6 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
   const savePin=async()=>{
     if(tempPin!==pinConfirm){setPinErr(t("cust_drawer.pin_mismatch"));return;}
     localStorage.setItem(`dork_customer_pin_${customer.id}`,await hashPin(tempPin));
-    try{await sb("customers","PATCH",{pin:tempPin,pin_length:pinLen},`?id=eq.${customer.id}`);}catch{}
     fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:customer.id,pin:tempPin})}).catch(()=>{});
     toast$(""+t("cust_drawer.pin_success"));setPinStep(null);setTempPin("");setPinConfirm("");setPinErr("");
   };
