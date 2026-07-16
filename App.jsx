@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L138";
+const APP_VERSION = "L139";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -8182,8 +8182,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <F label={t("cust_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <F label={t("cust_login.email_label")} error={err}><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
-            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:sending?.6:1,cursor:sending?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending}>
-              {sending?t("cust_login.sending"):otpSent?t("cust_login.resend_btn"):t("cust_login.send_btn")}
+            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(sending||resendTimer>0)?.6:1,cursor:(sending||resendTimer>0)?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending||resendTimer>0}>
+              {sending?t("cust_login.sending"):resendTimer>0?`${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")}`:otpSent?t("cust_login.resend_btn"):t("cust_login.send_btn")}
             </button>
           </div></F>
           {otpSent&&<>
