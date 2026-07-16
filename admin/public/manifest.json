@@ -1,7 +1,7 @@
 {
-  "name": "DAWRUK Admin Panel",
-  "short_name": "DAWRUK Admin",
-  "description": "لوحة إدارة منصة حجز الصالونات DAWRUK",
+  "name": "DAWRAK Admin Panel",
+  "short_name": "DAWRAK Admin",
+  "description": "لوحة إدارة منصة حجز الصالونات DAWRAK",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

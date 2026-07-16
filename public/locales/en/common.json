@@ -630,7 +630,7 @@
       },
       {
         "title": "5. Management Obligations",
-        "content": "DAWRUK management reserves the right to suspend or cancel any account that violates the terms of use."
+        "content": "DAWRAK management reserves the right to suspend or cancel any account that violates the terms of use."
       },
       {
         "title": "6. Service Quality",
@@ -638,7 +638,7 @@
       },
       {
         "title": "7. Amendments",
-        "content": "DAWRUK management reserves the right to amend these terms at any time with user notification."
+        "content": "DAWRAK management reserves the right to amend these terms at any time with user notification."
       }
     ]
   },
@@ -681,7 +681,7 @@
     "font_sm": "Small",
     "font_md": "Medium",
     "font_lg": "Large",
-    "font_preview": "Preview: This is sample text to preview the selected font size in the DAWRUK app.",
+    "font_preview": "Preview: This is sample text to preview the selected font size in the DAWRAK app.",
     "bg_header": "🖼 App Background",
     "bg_hint": "Choose a background that complements the color",
     "active": "✓ Active",
@@ -764,7 +764,7 @@
       },
       {
         "q": "Is booking free?",
-        "a": "Yes, booking through DAWRUK is completely free for customers."
+        "a": "Yes, booking through DAWRAK is completely free for customers."
       },
       {
         "q": "What if I'm late?",
