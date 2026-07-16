@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L139";
+const APP_VERSION = "L140";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -8104,7 +8104,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       }
       const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
       if(exists.length){setErr(t("cust_login.err_exists"));return;}
-      const{data:isBlacklisted}=await supabase.rpc("is_blacklisted",{p_phone:phone.trim(),p_email:email.trim()}).catch(()=>({data:false}));
+      let isBlacklisted=false;
+      try{const bl=await supabase.rpc("is_blacklisted",{p_phone:phone.trim(),p_email:email.trim()});isBlacklisted=bl?.data||false;}catch{}
       if(isBlacklisted){setErr(i18n.t('ui.account_blacklisted'));return;}
       const authUid=data?.user?.id||null;
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[],auth_uid:authUid},"");
@@ -8227,7 +8228,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
                 setCustomerSession(c);setView("home");
                 localStorage.setItem("dork_biometric_id",String(c.id));
               }else{
-                const{data:blEmail}=await supabase.rpc("is_blacklisted",{p_phone:"",p_email:gUser.email}).catch(()=>({data:false}));
+                let blEmail=false;
+                try{const bl=await supabase.rpc("is_blacklisted",{p_phone:"",p_email:gUser.email});blEmail=bl?.data||false;}catch{}
                 if(blEmail){toast$&&toast$(i18n.t('ui.email_not_allowed'),"err");return;}
                 const newRows=await sb("customers","POST",{name:gUser.name,phone:"",email:gUser.email,google_uid:gUser.googleUid,history:[],favs:[]},"");
                 const nc=toAppCustomer(newRows[0]);
