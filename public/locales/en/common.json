@@ -225,6 +225,7 @@
     "name_ph": "Name",
     "phone_ph": "Phone",
     "time_optional": "Select time (optional)",
+    "slot_booked": "This time is already booked",
     "add_btn": "➕ Add to Waiting",
     "selected_time": "⏳ Selected time:",
     "added_at": "Added:",
