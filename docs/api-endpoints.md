@@ -1,4 +1,4 @@
-# توثيق API Endpoints — Dork App
+# توثيق API Endpoints — Dawrak App
 
 ## المصادقة
 جميع endpoints الصالون تتطلب cookie `dork_owner_session` صالحة.

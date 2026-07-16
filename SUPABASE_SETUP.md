@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Dork App uses Supabase for data storage and real-time synchronization. The application fetches data using the public/anonymous API key to allow users to access salon listings without authentication.
+The Dawrak App uses Supabase for data storage and real-time synchronization. The application fetches data using the public/anonymous API key to allow users to access salon listings without authentication.
 
 ## Data Loading Issue: RLS Policies
 
