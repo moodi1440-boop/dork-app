@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L145";
+const APP_VERSION = "L146";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -178,7 +178,7 @@ async function ownerApi(method, body) {
 
 // ========== Web Push Notifications (بدون Firebase) ==========
 
-const VAPID_PUBLIC_KEY = "BPvrWkhV1bzhuiz5kxwwFGqcLnOcfxx-bJeKV8cCMY0eE94oLXvHGVccLEoCuBoyirkP7CKKdzBuU-NgkKZMlMA";
+const VAPID_PUBLIC_KEY = "BOYTV6WLNs18m10KSQrz68lMa-gdxWr-V9B6CFXKtPN-tBMNRwweSJh_q62we3BfUvv3q4VKBxNJn-DG-S1ISEU";
 
 function urlBase64ToUint8Array(b64) {
   const pad = '='.repeat((4 - b64.length % 4) % 4);
@@ -222,6 +222,12 @@ async function initializeWebPushNotifications() {
     await navigator.serviceWorker.ready;
 
     let sub = await swReg.pushManager.getSubscription();
+    if (sub) {
+      const expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      const currentKey = sub.options?.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey) : null;
+      const keyMatches = currentKey && currentKey.length === expectedKey.length && currentKey.every((v, i) => v === expectedKey[i]);
+      if (!keyMatches) { await sub.unsubscribe().catch(() => {}); sub = null; }
+    }
     if (!sub) {
       localStorage.setItem("fcm_debug", "subscribing...");
       sub = await swReg.pushManager.subscribe({
