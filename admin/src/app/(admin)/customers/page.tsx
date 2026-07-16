@@ -246,6 +246,7 @@ export default function CustomersPage() {
   const [loading,   setLoading]   = useState(true);
   const [selected,  setSelected]  = useState<string | null>(null);
   const [showAdd,   setShowAdd]   = useState(false);
+  const [blockedOnly, setBlockedOnly] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -269,6 +270,9 @@ export default function CustomersPage() {
     load();
   };
 
+  const blockedCount = customers.filter((c) => c.blocked).length;
+  const visibleCustomers = blockedOnly ? customers.filter((c) => c.blocked) : customers;
+
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       {selected && <CustomerPanel customerId={selected} onClose={() => { setSelected(null); load(); }} />}
@@ -284,13 +288,19 @@ export default function CustomersPage() {
           <EmojiIcon icon="➕" size={16}/> إضافة عميل
         </button>
       </div>
-      <div className="mb-6">
+      <div className="mb-6 flex items-center gap-3 flex-wrap">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 بحث باسم العميل أو الجوال..."
           className="w-full max-w-md bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
+        {blockedCount > 0 && (
+          <button onClick={() => setBlockedOnly((v) => !v)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${blockedOnly ? "bg-red-500/10 border-red-500/30 text-red-400" : "border-border text-gray-500 hover:border-red-500/20"}`}>
+            <EmojiIcon icon="🚫" size={14}/> المحظورين ({blockedCount})
+          </button>
+        )}
       </div>
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {loading ? <div className="text-center py-16 text-gold animate-pulse">جاري التحميل...</div>
-         : customers.length === 0 ? <div className="text-center py-16 text-gray-500">لا يوجد عملاء</div>
+         : visibleCustomers.length === 0 ? <div className="text-center py-16 text-gray-500">{blockedOnly ? "لا يوجد عملاء محظورين" : "لا يوجد عملاء"}</div>
          : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -300,7 +310,7 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody>
-                {customers.map((c, i) => (
+                {visibleCustomers.map((c, i) => (
                   <tr key={c.id} className="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
                     <td className="px-3 py-3 text-gray-500">{i + 1}</td>
                     <td className="px-3 py-3 font-semibold text-white">{c.name}</td>
