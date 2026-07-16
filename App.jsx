@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L147";
+const APP_VERSION = "L148";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -2814,6 +2814,20 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
   useEffect(()=>{if(!open){setShowLogout(false);setShowDeleteSalon(false);};},[open]);
   const[_sUnread,_setSUnread]=useState(salonUnreadMsgs);
   useEffect(()=>{_setSUnread(salonUnreadMsgs);},[salonUnreadMsgs]);
+  const[fcmStatus,setFcmStatus]=useState(()=>localStorage.getItem("fcm_debug")||"pending");
+  const[fcmMsg,setFcmMsg]=useState("");
+  const handleEnableNotifications=async()=>{
+    setFcmMsg("");
+    const permission=await Notification.requestPermission();
+    if(permission==="granted"){
+      await initializeWebPushNotifications();
+      setFcmStatus(localStorage.getItem("fcm_debug")||"pending");
+    } else {
+      localStorage.setItem("fcm_debug","permission-"+permission);
+      setFcmStatus("permission-"+permission);
+      setFcmMsg("يرجى الضغط على سماح لتصلك إشعارات الحجوزات");
+    }
+  };
   useEffect(()=>{
     if(!open||!salon?.id)return;
     fetch("/api/owner-chat?list=1",{credentials:"include"}).then(r=>r.json()).then(data=>{if(Array.isArray(data))_setSUnread(data.reduce((a,c)=>a+(c.unread_count||0),0));}).catch(()=>{});
@@ -2872,6 +2886,14 @@ function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOw
           <NotifIcon icon="🗑" size={14}/> {t("salon_drawer.delete_account")}
         </button>
         <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>{t("salon_drawer.version")} {APP_VERSION}</div>
+        <div style={{padding:"4px 20px 8px",textAlign:"center",fontSize:10,color:"var(--text-muted)",fontFamily:"monospace",wordBreak:"break-all"}}>FCM: {fcmStatus}</div>
+        {(fcmStatus.includes("permission-denied")||fcmStatus.includes("permission-blocked")||fcmStatus.includes("permission-error")||fcmStatus.includes("permission-default"))&&(
+          <div style={{margin:"0 16px 12px"}}>
+            <div style={{padding:"10px 14px",background:"rgba(231,76,60,.12)",border:"1px solid rgba(231,76,60,.3)",borderRadius:"10px 10px 0 0",fontSize:11,color:"#e74c3c",textAlign:"center",lineHeight:1.5}}>{t('ui.notif_blocked')}</div>
+            <button onClick={handleEnableNotifications} style={{width:"100%",padding:"13px",background:"var(--grad)",color:"#000",border:"none",borderRadius:"0 0 10px 10px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{t('ui.enable_notifs')} <IconBell size={14}/></button>
+            {fcmMsg&&<div style={{marginTop:8,padding:"8px 12px",background:"rgba(243,156,18,.12)",border:"1px solid rgba(243,156,18,.3)",borderRadius:8,fontSize:11,color:"#f39c12",textAlign:"center"}}>{fcmMsg}</div>}
+          </div>
+        )}
         <div style={{height:40}}/>
       </div>
       {showLogout&&(
