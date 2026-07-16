@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L144";
+const APP_VERSION = "L145";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -4386,12 +4386,20 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       // تغيير الحالة لـ accepted
       await sb("waiting_list","PATCH",{status:"accepted"},"?id=eq."+w.id);
       // إشعار للمقبول
-      {const _wa=ntxt(customers.find(c=>c.id===w.customer_id)?.lang||'ar').waitlist_approved(w.slotDate,w.slotTime,salon.name);sb("notifications","POST",{target_type:"all",title:_wa.title,body:_wa.body,icon:"✅"}).catch(()=>{});}
+      {const _wa=ntxt(customers.find(c=>c.id===w.customer_id)?.lang||'ar').waitlist_approved(w.slotDate,w.slotTime,salon.name);
+      if(w.customer_id){
+        sb("notifications","POST",{target_type:"customer",target_id:w.customer_id,title:_wa.title,body:_wa.body,icon:"✅"}).catch(()=>{});
+        supabase.functions.invoke('send-push-notification',{body:{target_type:"single",user_id:w.customer_id,user_type:"customer",title:_wa.title,body:_wa.body,data:{type:"waitlist_approved",salon_id:String(salon.id)}}}).catch(()=>{});
+      }}
       // رفض المنتظرين للنفس الوقت
       const others=waitingList.filter(x=>x.id!==w.id&&x.slotDate===w.slotDate&&x.slotTime===w.slotTime);
       for(const o of others){
         await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+o.id).catch(()=>{});
-        {const _wf=ntxt(customers.find(c=>c.id===o.customer_id)?.lang||'ar').waitlist_full(w.slotDate,w.slotTime,salon.name);sb("notifications","POST",{target_type:"all",title:_wf.title,body:_wf.body,icon:"❌"}).catch(()=>{});}
+        {const _wf=ntxt(customers.find(c=>c.id===o.customer_id)?.lang||'ar').waitlist_full(w.slotDate,w.slotTime,salon.name);
+        if(o.customer_id){
+          sb("notifications","POST",{target_type:"customer",target_id:o.customer_id,title:_wf.title,body:_wf.body,icon:"❌"}).catch(()=>{});
+          supabase.functions.invoke('send-push-notification',{body:{target_type:"single",user_id:o.customer_id,user_type:"customer",title:_wf.title,body:_wf.body,data:{type:"waitlist_full",salon_id:String(salon.id)}}}).catch(()=>{});
+        }}
       }
       await loadWaiting();
       if(refreshSalonBookings)refreshSalonBookings(salon.id);
@@ -4407,7 +4415,11 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   const rejectFromWaiting=async(w)=>{
     try{
       await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+w.id);
-      {const _wfl=ntxt(customers.find(c=>c.id===w.customer_id)?.lang||'ar').waitlist_failed(salon.name,w.slotDate,w.slotTime);sb("notifications","POST",{target_type:"all",title:_wfl.title,body:_wfl.body,icon:"❌"}).catch(()=>{});}
+      {const _wfl=ntxt(customers.find(c=>c.id===w.customer_id)?.lang||'ar').waitlist_failed(salon.name,w.slotDate,w.slotTime);
+      if(w.customer_id){
+        sb("notifications","POST",{target_type:"customer",target_id:w.customer_id,title:_wfl.title,body:_wfl.body,icon:"❌"}).catch(()=>{});
+        supabase.functions.invoke('send-push-notification',{body:{target_type:"single",user_id:w.customer_id,user_type:"customer",title:_wfl.title,body:_wfl.body,data:{type:"waitlist_failed",salon_id:String(salon.id)}}}).catch(()=>{});
+      }}
       await loadWaiting();
     }catch(e){alert(i18n.t('ui.error_icon_prefix')+e.message);}
   };
