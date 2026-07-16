@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L136";
+const APP_VERSION = "L137";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -4438,6 +4438,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       {/* قسم الانتظار - يظهر فقط عند فلتر "انتظار" */}
       {filter==="pending"&&(()=>{
         const allSlots=getSlotsForSalon(salon);
+        const bookedSlots=new Set(salon.bookings.filter(b=>b.date===mForm.date&&b.status!=="rejected"&&b.status!=="cancelled").map(b=>b.time));
         const inp2={padding:"8px 10px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"inherit",outline:"none",width:"100%",boxSizing:"border-box"};
         return(<>
           {/* زر إضافة عميل - في الأعلى مع toggle */}
@@ -4456,10 +4457,10 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
               <input type="date" value={mForm.date} min={getTodayDateInRiyadh()} onChange={e=>setMForm(p=>({...p,date:e.target.value,slot:""}))} style={{...inp2,marginBottom:8}}/>
               <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>{t("notif.time_optional")}</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
-                {allSlots.map(sl=>{const sel=mForm.slot===sl;return(
+                {allSlots.map(sl=>{const sel=mForm.slot===sl;const booked=bookedSlots.has(sl);return(
                   <button key={sl} onClick={()=>setMForm(p=>({...p,slot:p.slot===sl?"":sl}))}
-                    style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa25)":"var(--surface-1)",color:sel?"var(--p)":"var(--text-muted)",fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:sel?700:400}}>
-                    {sl}
+                    style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${sel?"var(--p)":"var(--border-ui)"}`,background:sel?"var(--pa25)":booked?"var(--border-ui)":"var(--surface-1)",color:sel?"var(--p)":"var(--text-muted)",opacity:booked&&!sel?0.6:1,fontSize:11,fontFamily:"inherit",cursor:"pointer",fontWeight:sel?700:400}} title={booked?t("notif.slot_booked"):""}>
+                    {to12h(sl)}
                   </button>
                 );})}
               </div>

@@ -225,6 +225,7 @@
     "name_ph": "Ad",
     "phone_ph": "Telefon",
     "time_optional": "Zaman seçin (isteğe bağlı)",
+    "slot_booked": "Bu saat zaten dolu",
     "add_btn": "➕ Beklemeye Ekle",
     "selected_time": "⏳ Seçilen zaman:",
     "added_at": "Eklendi:",
