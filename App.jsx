@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L148";
+const APP_VERSION = "L149";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -5403,8 +5403,8 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
           {t("owner_login.remember_phone")}
         </label>
         <F label={t("owner_login.pin_label")} error={err}><div style={{position:"relative"}}><input style={{...fi(err),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,6);setPin(val);setErr("");}}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
+        <button onClick={()=>{setResetStep("phone");setResetPhone(phone);setResetErr("");}} style={{background:"transparent",border:"none",color:"var(--p)",fontSize:12,cursor:"pointer",fontFamily:"inherit",padding:"4px 0",textAlign:"center",width:"100%",textDecoration:"underline",marginBottom:6}}>{t("owner_login.forgot_pin")}</button>
         <button style={{...G.sub,opacity:loading?0.7:1}} disabled={loading} onClick={login}>{t("owner_login.login_btn")}</button>
-        <button onClick={()=>{setResetStep("phone");setResetPhone(phone);setResetErr("");}} style={{background:"transparent",border:"none",color:"var(--p)",fontSize:12,cursor:"pointer",fontFamily:"inherit",padding:"4px 0",textAlign:"center",width:"100%",textDecoration:"underline"}}>{t("owner_login.forgot_pin")}</button>
       </div>
       <div style={{margin:"0 0 16px",background:"rgba(var(--pr),.06)",border:"1.5px dashed rgba(var(--pr),.4)",borderRadius:13,padding:"18px 16px",textAlign:"center"}}>
         <div style={{fontSize:15,color:"var(--p)",fontWeight:700,marginBottom:6}}>{t("owner_login.no_salon_title")}</div>
@@ -8208,14 +8208,14 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         {tab==="login"?<>
           <SL>{t("cust_login.login_title")}</SL>
           <F label={t("cust_login.phone_label")} error={err}><input style={fi(err)} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");if(rememberPhone){try{localStorage.setItem("dork_customer_saved_phone",e.target.value.trim());}catch{}}}}/></F>
-          <F label={t("cust_login.pin_label")}><div style={{position:"relative"}}><input style={{...fi(),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
-          <button onClick={()=>{setResetStep("email");setResetEmail("");setResetOtp("");setResetErr("");}} style={{width:"100%",marginTop:-4,marginBottom:10,padding:"4px 0",border:"none",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:13,textDecoration:"underline",textAlign:"center"}}>
-            {t("cust_login.forgot_pin")}
-          </button>
           <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"var(--text-muted)",cursor:"pointer",margin:"4px 0 10px",userSelect:"none"}}>
             <input type="checkbox" checked={rememberPhone} onChange={e=>handleRemember(e.target.checked)} style={{width:16,height:16,cursor:"pointer",accentColor:"var(--p)"}}/>
             {t("cust_login.remember_phone")}
           </label>
+          <F label={t("cust_login.pin_label")}><div style={{position:"relative"}}><input style={{...fi(),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
+          <button onClick={()=>{setResetStep("email");setResetEmail("");setResetOtp("");setResetErr("");}} style={{width:"100%",marginTop:-4,marginBottom:10,padding:"4px 0",border:"none",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:13,textDecoration:"underline",textAlign:"center"}}>
+            {t("cust_login.forgot_pin")}
+          </button>
           <button style={{...G.sub,opacity:phoneLoginLoading?.6:1,cursor:phoneLoginLoading?"not-allowed":"pointer"}} disabled={phoneLoginLoading} onClick={()=>{if(rememberPhone&&phone.trim()){try{localStorage.setItem("dork_customer_saved_phone",phone.trim());}catch{}}loginWithPhone();}}>{phoneLoginLoading?"...":t("cust_login.login_btn")}</button>
         </>:<>
           <SL>{t("cust_login.reg_title")}</SL>
