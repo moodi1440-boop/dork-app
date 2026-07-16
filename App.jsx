@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L146";
+const APP_VERSION = "L147";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -178,7 +178,7 @@ async function ownerApi(method, body) {
 
 // ========== Web Push Notifications (بدون Firebase) ==========
 
-const VAPID_PUBLIC_KEY = "BOYTV6WLNs18m10KSQrz68lMa-gdxWr-V9B6CFXKtPN-tBMNRwweSJh_q62we3BfUvv3q4VKBxNJn-DG-S1ISEU";
+const VAPID_PUBLIC_KEY = "BAiPrlWpzRxfgx_BJoi0SX46F6ZwuJNnl20nmPwO3KcCedIUq5ghPqE6qSDSpye3Ogx7OQT-51jAUwdibazE8g4";
 
 function urlBase64ToUint8Array(b64) {
   const pad = '='.repeat((4 - b64.length % 4) % 4);
