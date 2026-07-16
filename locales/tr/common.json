@@ -630,7 +630,7 @@
       },
       {
         "title": "5. Yönetim Yükümlülükleri",
-        "content": "DAWRUK yönetimi, kullanım koşullarını ihlal eden herhangi bir hesabı askıya alma veya iptal etme hakkını saklı tutar."
+        "content": "DAWRAK yönetimi, kullanım koşullarını ihlal eden herhangi bir hesabı askıya alma veya iptal etme hakkını saklı tutar."
       },
       {
         "title": "6. Hizmet Kalitesi",
@@ -638,7 +638,7 @@
       },
       {
         "title": "7. Değişiklikler",
-        "content": "DAWRUK yönetimi, kullanıcıları bilgilendirerek bu şartları istediği zaman değiştirme hakkını saklı tutar."
+        "content": "DAWRAK yönetimi, kullanıcıları bilgilendirerek bu şartları istediği zaman değiştirme hakkını saklı tutar."
       }
     ]
   },
@@ -681,7 +681,7 @@
     "font_sm": "Küçük",
     "font_md": "Orta",
     "font_lg": "Büyük",
-    "font_preview": "Önizleme: Bu, DAWRUK uygulamasında seçilen yazı tipi boyutunu önizlemek için örnek bir metindir.",
+    "font_preview": "Önizleme: Bu, DAWRAK uygulamasında seçilen yazı tipi boyutunu önizlemek için örnek bir metindir.",
     "bg_header": "🖼 Uygulama Arka Planı",
     "bg_hint": "Renge uygun bir arka plan seçin",
     "active": "✓ Aktif",
@@ -764,7 +764,7 @@
       },
       {
         "q": "Rezervasyon ücretsiz mi?",
-        "a": "Evet, DAWRUK üzerinden rezervasyon müşteriler için tamamen ücretsizdir."
+        "a": "Evet, DAWRAK üzerinden rezervasyon müşteriler için tamamen ücretsizdir."
       },
       {
         "q": "Geç kalırsam ne olur?",
