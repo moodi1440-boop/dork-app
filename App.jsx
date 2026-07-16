@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L152";
+const APP_VERSION = "L153";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -2595,6 +2595,8 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const[exp,setExp]=useState(null);
   const[showLogout,setShowLogout]=useState(false);
   const[showDel,setShowDel]=useState(false);
+  const[deletingAcc,setDeletingAcc]=useState(false);
+  const deletingAccLockRef=useRef(false);
   useEffect(()=>{if(!open){setShowLogout(false);setShowDel(false);}},[open]);
   const[editName,setEditName]=useState("");
   const[editPhone,setEditPhone]=useState("");
@@ -2771,8 +2773,19 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
               <LabelWithIcon label="⚡ تنبيه: لا يمكن استرجاع البيانات بعد الحذف" size={11}/>
             </div>
             <div style={{display:"flex",gap:10}}>
-              <button style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={()=>setShowDel(false)}><NotifIcon icon="↩️" size={13}/> {t("cust_drawer.cancel")}</button>
-              <button style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={async()=>{try{await sb("customers","DELETE",null,`?id=eq.${customer.id}`);setCustomerSession(null);setView("entry");onClose();}catch(e){toast$(""+e.message,"err");}setShowDel(false);}}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><IconTrash size={14} color="#fff"/>{t("cust_drawer.delete_confirm")}</span></button>
+              <button disabled={deletingAcc} style={{flex:1,background:"transparent",border:"1.5px solid var(--border-ui)",color:"var(--text-muted)",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={()=>setShowDel(false)}><NotifIcon icon="↩️" size={13}/> {t("cust_drawer.cancel")}</button>
+              <button disabled={deletingAcc} style={{flex:1,background:"linear-gradient(135deg,#c0392b,#e74c3c)",color:"#fff",padding:"13px",borderRadius:12,fontWeight:700,fontSize:13,cursor:deletingAcc?"not-allowed":"pointer",opacity:deletingAcc?0.6:1,fontFamily:"inherit",border:"none",WebkitAppearance:"none",appearance:"none"}} onClick={async()=>{
+                if(deletingAccLockRef.current)return;
+                deletingAccLockRef.current=true;setDeletingAcc(true);
+                try{
+                  const res=await fetch("/api/delete-account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:customer.id})});
+                  const d=await res.json().catch(()=>({}));
+                  if(!res.ok)throw new Error(d.error||"فشل الحذف");
+                  await supabase.auth.signOut().catch(()=>{});
+                  setCustomerSession(null);setView("entry");onClose();
+                }catch(e){toast$(""+e.message,"err");}
+                deletingAccLockRef.current=false;setDeletingAcc(false);setShowDel(false);
+              }}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><IconTrash size={14} color="#fff"/>{deletingAcc?"...":t("cust_drawer.delete_confirm")}</span></button>
             </div>
           </div>
         </div>
