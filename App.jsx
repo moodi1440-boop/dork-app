@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L140";
+const APP_VERSION = "L141";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -5287,7 +5287,7 @@ function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
       if(!res.ok){setResetErr(d.error||"خطأ");setResetLoading(false);return;}
       const{data,error}=await supabase.auth.signInWithOtp({email:resetEmail.trim(),options:{shouldCreateUser:false}});
       if(error){setResetErr(error.message);setResetLoading(false);return;}
-      setResendTimer(120);
+      setResendTimer(300);
       setResetOtpSent(true);setResetStep("otp");
       toast$&&toast$(t("owner_login.reset_otp_sent"));
     }catch(e){setResetErr(e.message);}
@@ -7921,10 +7921,10 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       if(error){
         const isRate=error.message.includes("rate")||error.message.includes("too many")||error.message.includes("security");
         setResetErr(isRate?i18n.t('ui.wait_two_mins'):i18n.t('ui.error_prefix')+error.message.substring(0,40));
-        if(isRate)setResendTimer(120);
+        if(isRate)setResendTimer(300);
         return;
       }
-      setResendTimer(120);
+      setResendTimer(300);
       setResetStep("otp");
     }catch(e){setResetErr(i18n.t('ui.connection_internet'));}
     finally{setResetLoading(false);}
@@ -8011,7 +8011,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     return()=>clearInterval(interval);
   },[otpSent]);
 
-  // مؤقت انتظار إعادة الإرسال (دقيقتين)
+  // مؤقت انتظار إعادة الإرسال — يطابق مدة صلاحية الكود (5 دقائق) عمداً، يمنع كسر كود لسا صالح
   useEffect(()=>{
     if(resendTimer<=0)return;
     const interval=setInterval(()=>{
@@ -8032,7 +8032,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     setOtpExpired(false);
     setOtpCode("");
     setOtpTimer(300);
-    setResendTimer(120);
+    setResendTimer(300);
     setOtpSent(true);
     setAttempts(0);
     const {data,error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:typeof window!=="undefined"?window.location.origin:""}});
@@ -8042,7 +8042,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const isRateLimit=error.message.includes("rate")||error.message.includes("too many")||error.message.includes("limit")||error.message.includes("security");
       if(isRateLimit){
         setOtpSent(true);
-        setResendTimer(120);
+        setResendTimer(300);
         setErr(i18n.t('ui.wait_two_mins'));
       }else{
         setOtpSent(false);
