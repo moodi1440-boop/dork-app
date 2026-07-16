@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L143";
+const APP_VERSION = "L144";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -2717,7 +2717,7 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
         </button>
         <div style={{padding:"14px 20px",textAlign:"center",fontSize:11,color:"var(--text-muted)",fontFamily:"monospace"}}>{t("cust_drawer.version")} {APP_VERSION}</div>
         <div style={{padding:"4px 20px 8px",textAlign:"center",fontSize:10,color:"var(--text-muted)",fontFamily:"monospace",wordBreak:"break-all"}}>FCM: {fcmStatus}</div>
-        {(fcmStatus.includes("permission-denied")||fcmStatus.includes("permission-blocked")||fcmStatus.includes("permission-error"))&&(
+        {(fcmStatus.includes("permission-denied")||fcmStatus.includes("permission-blocked")||fcmStatus.includes("permission-error")||fcmStatus.includes("permission-default"))&&(
           <div style={{margin:"0 16px 12px"}}>
             <div style={{padding:"10px 14px",background:"rgba(231,76,60,.12)",border:"1px solid rgba(231,76,60,.3)",borderRadius:"10px 10px 0 0",fontSize:11,color:"#e74c3c",textAlign:"center",lineHeight:1.5}}>{t('ui.notif_blocked')}</div>
             <button onClick={handleEnableNotifications} style={{width:"100%",padding:"13px",background:"var(--grad)",color:"#000",border:"none",borderRadius:"0 0 10px 10px",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{t('ui.enable_notifs')} <IconBell size={14}/></button>
