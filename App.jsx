@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L150";
+const APP_VERSION = "L151";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -4355,6 +4355,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
   const[mForm,setMForm]=useState({name:"",phone:"",date:getTodayDateInRiyadh(),slot:""});
   const KEY=`dork_waiting_${salon.id}`;
   const[waitingList,setWaitingList]=useState(()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]");}catch{return[];}});
+  const[processingWait,setProcessingWait]=useState(()=>new Set());
 
   const loadWaiting=useCallback(async()=>{
     try{
@@ -4411,6 +4412,8 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
 
   const acceptFromWaiting=async(w)=>{
     if(!w.slotDate||!w.slotTime){alert(i18n.t('ui.no_slot_set'));return;}
+    if(processingWait.has(w.id))return;
+    setProcessingWait(prev=>new Set(prev).add(w.id));
     try{
       // إنشاء حجز مقبول مباشرة — status pending ثم نحوّله approved لتجاوز أي trigger يمنع الإدراج المباشر
       const inserted=await sb("bookings","POST",{salon_id:String(salon.id),customer_name:w.name,customer_phone:w.phone,date:w.slotDate,time:w.slotTime,status:"pending",service:"[]",barber_id:"any",barber_name:"",total:0});
@@ -4443,9 +4446,12 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
         alert(i18n.t('ui.error_icon_prefix')+e.message);
       }
     }
+    finally{setProcessingWait(prev=>{const n=new Set(prev);n.delete(w.id);return n;});}
   };
 
   const rejectFromWaiting=async(w)=>{
+    if(processingWait.has(w.id))return;
+    setProcessingWait(prev=>new Set(prev).add(w.id));
     try{
       await sb("waiting_list","PATCH",{status:"rejected"},"?id=eq."+w.id);
       {const _wfl=ntxt(customers.find(c=>c.id===w.customer_id)?.lang||'ar').waitlist_failed(salon.name,w.slotDate,w.slotTime);
@@ -4455,6 +4461,7 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
       }}
       await loadWaiting();
     }catch(e){alert(i18n.t('ui.error_icon_prefix')+e.message);}
+    finally{setProcessingWait(prev=>{const n=new Set(prev);n.delete(w.id);return n;});}
   };
 
   const removeFromWaiting=async(id)=>{
@@ -4548,8 +4555,8 @@ function NotifPanel({salon,onUpdate,customers=[],refreshSalonBookings,defaultFil
                     <button style={G.xBtn} onClick={()=>removeFromWaiting(w.id)}><IconTrash size={14}/></button>
                   </div>
                   <div style={{display:"flex",gap:6,marginTop:6}}>
-                    {w.slotTime&&<button style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:"pointer",fontFamily:"inherit",fontWeight:700}} onClick={()=>acceptFromWaiting(w)}>{t("notif.accept_btn")}</button>}
-                    <button style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit",fontWeight:700}} onClick={()=>rejectFromWaiting(w)}>{t("notif.reject_btn")}</button>
+                    {w.slotTime&&<button disabled={processingWait.has(w.id)} style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #27ae60",background:"transparent",color:"#27ae60",cursor:processingWait.has(w.id)?"not-allowed":"pointer",opacity:processingWait.has(w.id)?0.5:1,fontFamily:"inherit",fontWeight:700}} onClick={()=>acceptFromWaiting(w)}>{processingWait.has(w.id)?"⏳":t("notif.accept_btn")}</button>}
+                    <button disabled={processingWait.has(w.id)} style={{fontSize:11,padding:"4px 12px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:processingWait.has(w.id)?"not-allowed":"pointer",opacity:processingWait.has(w.id)?0.5:1,fontFamily:"inherit",fontWeight:700}} onClick={()=>rejectFromWaiting(w)}>{processingWait.has(w.id)?"⏳":t("notif.reject_btn")}</button>
                   </div>
                 </div>
               )})}
@@ -8421,6 +8428,7 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   useEffect(()=>{localStorage.setItem("dork_reminder",String(reminderMins));},[reminderMins]);
   const[myWaiting,setMyWaiting]=useState([]);
   const[openChatBookingId,setOpenChatBookingId]=useState(()=>{try{const v=sessionStorage.getItem("dork_chat_bid");return v?JSON.parse(v):null;}catch{return null;}});
+  const[cancellingId,setCancellingId]=useState(null);
   useEffect(()=>{if(openChatBookingId!=null)sessionStorage.setItem("dork_chat_bid",JSON.stringify(openChatBookingId));else sessionStorage.removeItem("dork_chat_bid");},[openChatBookingId]);
   const[chatUnread,setChatUnread]=useState({});
   const _prevChatTotalRef=useRef(-1);
@@ -8696,8 +8704,10 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                       }}>{t("cust_dash.add_calendar")}</button>}
                       {!isPast&&(status==="pending"||status==="approved")&&realBooking?.id&&(<>
                         <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>{if(window.confirm(i18n.t('ui.confirm_edit_booking'))){setRescheduleId(realBooking.id);setSelSalon(s);setView("book");}}}><IconPencil size={10}/>{t('ui.edit')}</button>
-                        <button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={async()=>{
+                        <button disabled={cancellingId===realBooking.id} style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid #e74c3c",background:"transparent",color:"#e74c3c",cursor:cancellingId===realBooking.id?"not-allowed":"pointer",opacity:cancellingId===realBooking.id?0.6:1,fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={async()=>{
+                          if(cancellingId===realBooking.id)return;
                           if(!window.confirm(i18n.t('ui.confirm_cancel_booking')))return;
+                          setCancellingId(realBooking.id);
                           try{
                             const bookDT=new Date(`${h.date}T${h.time}`);
                             const hoursUntil=(bookDT-new Date())/(1000*60*60);
@@ -8707,7 +8717,8 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
                             {const _bc=ntxt(s?.lang||'ar').booking_cancelled(customer?.name||"",h.date,to12h(h.time),lateCancel);sb("notifications","POST",{target_type:"all",title:_bc.title,body:_bc.body,icon:"🚫"}).catch(()=>{});}
                             await loadData({silent:true});
                           }catch(e){toast$(i18n.t('ui.cancel_error'),"err");}
-                        }}><IconBlocked size={13}/> إلغاء</button>
+                          finally{setCancellingId(null);}
+                        }}><IconBlocked size={13}/> {cancellingId===realBooking.id?"...":"إلغاء"}</button>
                       </>)}
                       {!isPast&&h.bookingId&&s&&<button style={{fontSize:10,padding:"4px 8px",borderRadius:8,border:"1px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>setOpenChatBookingId(openChatBookingId===h.bookingId?null:h.bookingId)}><IconChat size={10}/>{t('ui.contact')}{(chatUnread[h.salonId]||0)>0&&<span style={{background:"#e74c3c",color:"#fff",borderRadius:999,fontSize:9,fontWeight:900,minWidth:14,height:14,display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 3px",marginLeft:2}}>{chatUnread[h.salonId]>9?"9+":chatUnread[h.salonId]}</span>}</button>}
                     </div>
@@ -8897,6 +8908,7 @@ function InlineStarRating({rated,comment,onRate}){
   const[hover,setHover]=useState(0);
   const[sel,setSel]=useState(0);
   const[txt,setTxt]=useState("");
+  const[sending,setSending]=useState(false);
   const labels=["","ضعيف","مقبول","جيد","جيد جداً","ممتاز"];
   if(rated>0) return(
     <div style={{marginTop:8,borderTop:"1px solid #1e1e2e",paddingTop:8}}>
@@ -8925,8 +8937,8 @@ function InlineStarRating({rated,comment,onRate}){
           style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl",resize:"none",minHeight:60,marginBottom:8}}
           placeholder={t('ui.add_comment_ph')}
           value={txt} onChange={e=>setTxt(e.target.value)}/>
-        <button style={{...G.sub,padding:"8px 0",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={()=>onRate(sel,txt)}>
-          إرسال التقييم <IconStar size={12}/>
+        <button disabled={sending} style={{...G.sub,padding:"8px 0",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:5,opacity:sending?0.6:1,cursor:sending?"not-allowed":"pointer"}} onClick={async()=>{if(sending)return;setSending(true);try{await onRate(sel,txt);}finally{setSending(false);}}}>
+          {sending?"...":"إرسال التقييم"} <IconStar size={12}/>
         </button>
       </>}
     </div>
