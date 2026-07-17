@@ -104,3 +104,7 @@ DROP POLICY IF EXISTS promo_codes_public_update ON promo_codes;
 DROP POLICY IF EXISTS promo_codes_public_delete ON promo_codes;
 
 REVOKE SELECT, INSERT, UPDATE, DELETE ON promo_codes FROM anon, authenticated;
+-- صلاحيات ثانوية متروكة من صلاحيات جدول افتراضية قديمة — غير قابلة
+-- للاستغلال عبر واجهة PostgREST العادية، لكن نقفلها للنظافة والاتساق
+-- مع نية "service_role فقط بالكامل"
+REVOKE REFERENCES, TRIGGER, TRUNCATE ON promo_codes FROM anon, authenticated;
