@@ -735,6 +735,12 @@ export default function SalonsPage() {
             <EmojiIcon icon="🗑" size={14}/> المحذوفة ({deletedCount})
           </button>
         )}
+        {frozenView !== "none" && (
+          <button onClick={() => setFrozenView("none")}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-gold/30 text-gold hover:bg-gold/10 transition-all">
+            ✕ عرض كل الصالونات
+          </button>
+        )}
       </div>
 
       <div className="mb-4 flex items-center justify-between gap-3 bg-card border border-border rounded-2xl p-4">
