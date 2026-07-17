@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { sb } from "@/lib/supabase-browser";
 import { EmojiIcon } from "@/components/Icons";
 
 interface PromoCode {
@@ -79,12 +78,8 @@ export default function PromoCodesPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await sb
-      .from("promo_codes")
-      .select("id,code,active,created_at,note,max_uses,used_count,duration_days,expires_at,code_type,wa_credits,used_by_salon_id,recipient_phone")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    setCodes((data ?? []) as PromoCode[]);
+    const data = await fetch("/api/promo-codes").then(r => r.json()).catch(() => []);
+    setCodes((Array.isArray(data) ? data : []) as PromoCode[]);
     setLoading(false);
   }, []);
 
@@ -113,27 +108,27 @@ export default function PromoCodesPage() {
       recipient_phone: fPhone.trim() || null,
       wa_credits: tab === "whatsapp" ? (parseInt(fWaCred) || 20) : null,
     }));
-    const { error: err } = await sb.from("promo_codes").insert(rows);
-    if (err) { setError(err.message); }
+    const res = await fetch("/api/promo-codes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rows }) });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || "فشل الحفظ"); }
     else { setShowForm(false); load(); }
     setSaving(false);
   };
 
   const toggle = async (id: string, active: boolean) => {
-    await sb.from("promo_codes").update({ active: !active }).eq("id", id);
+    await fetch(`/api/promo-codes/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ active: !active }) });
     setCodes(p => p.map(x => x.id === id ? { ...x, active: !active } : x));
   };
 
   const renew = async (c: PromoCode) => {
     if (!c.duration_days) return;
     const newExp = new Date(Date.now() + c.duration_days * 86400000).toISOString();
-    await sb.from("promo_codes").update({ expires_at: newExp, active: true }).eq("id", c.id);
+    await fetch(`/api/promo-codes/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expires_at: newExp, active: true }) });
     setCodes(p => p.map(x => x.id === c.id ? { ...x, expires_at: newExp, active: true } : x));
   };
 
   const del = async (id: string) => {
     if (!confirm("حذف هذا الكود نهائياً؟")) return;
-    await sb.from("promo_codes").delete().eq("id", id);
+    await fetch(`/api/promo-codes/${id}`, { method: "DELETE" });
     setCodes(p => p.filter(x => x.id !== id));
   };
 
