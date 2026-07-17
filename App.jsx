@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L154";
+const APP_VERSION = "L155";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -7968,6 +7968,10 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[resetOtp,setResetOtp]=useState("");
   const[resetErr,setResetErr]=useState("");
   const[resetLoading,setResetLoading]=useState(false);
+  const[resetCustomer,setResetCustomer]=useState(null);
+  const[resetPinLen,setResetPinLen]=useState(4);
+  const[resetTempPin,setResetTempPin]=useState("");
+  const[resetPinConfirm,setResetPinConfirm]=useState("");
 
   const handleRemember=(checked)=>{
     setRememberPhone(checked);
@@ -8012,8 +8016,25 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const c=toAppCustomer(rows[0]);
       if(c.blocked){setResetErr(i18n.t('ui.account_banned'));return;}
       try{localStorage.removeItem(`dork_customer_pin_${c.id}`);}catch{}
-      setCustomerSession(c);setView("home");
-      localStorage.setItem("dork_biometric_id",String(c.id));
+      // نطلب رمز سري جديد فعلياً بدل تسجيل الدخول مباشرة — وإلا يبقى pin_hash
+      // بالسيرفر فاضياً للأبد وتتكرر رسالة "يلزم ضبط رمز سري" بكل محاولة دخول قادمة
+      setResetCustomer(c);setResetTempPin("");setResetPinConfirm("");setResetPinLen(4);
+      setResetStep("pin-select");
+    }catch(e){setResetErr(i18n.t('ui.op_error_retry')+e.message.substring(0,40));}
+    finally{setResetLoading(false);}
+  };
+
+  const finishResetPin=async()=>{
+    if(resetLoading||!resetCustomer)return;
+    if(resetTempPin.length!==resetPinLen||resetPinConfirm.length!==resetPinLen){return;}
+    if(resetTempPin!==resetPinConfirm){setResetErr(t("cust_drawer.pin_mismatch"));return;}
+    try{
+      setResetLoading(true);setResetErr("");
+      const res=await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:resetCustomer.id,pin:resetTempPin})});
+      if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`HTTP ${res.status}`);}
+      localStorage.setItem(`dork_customer_pin_${resetCustomer.id}`,await hashPin(resetTempPin));
+      setCustomerSession(resetCustomer);setView("home");
+      localStorage.setItem("dork_biometric_id",String(resetCustomer.id));
       toast$&&toast$(t("cust_login.reset_success"),"success");
     }catch(e){setResetErr(i18n.t('ui.op_error_retry')+e.message.substring(0,40));}
     finally{setResetLoading(false);}
@@ -8215,7 +8236,28 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               ?<div style={{textAlign:"center",fontSize:12,color:"var(--text-muted)",marginTop:8}}>⏳ إعادة الإرسال متاحة بعد {Math.floor(resendTimer/60)}:{String(resendTimer%60).padStart(2,"0")}</div>
               :<button onClick={sendResetOtp} disabled={resetLoading} style={{width:"100%",marginTop:8,padding:"8px 0",background:"transparent",border:"none",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:12,textDecoration:"underline"}}>إعادة إرسال الكود</button>}
           </>:null}
-          <button onClick={()=>{setResetStep(null);setResetEmail("");setResetOtp("");setResetErr("");}} style={{width:"100%",marginTop:10,padding:"10px 0",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
+          {resetStep==="pin-select"?<>
+            <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:16,lineHeight:1.6,textAlign:"center"}}>{t("cust_drawer.pin_select_hint")}</div>
+            <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:16}}>
+              <button style={{flex:1,maxWidth:140,padding:"14px",borderRadius:12,border:`2px solid ${resetPinLen===4?"var(--p)":"var(--border-ui)"}`,background:resetPinLen===4?"var(--pa15)":"transparent",color:resetPinLen===4?"var(--p)":"var(--text-muted)",cursor:"pointer",fontWeight:700,fontSize:15,fontFamily:"inherit"}} onClick={()=>setResetPinLen(4)}>{t("cust_drawer.pin_4")}</button>
+              <button style={{flex:1,maxWidth:140,padding:"14px",borderRadius:12,border:`2px solid ${resetPinLen===6?"var(--p)":"var(--border-ui)"}`,background:resetPinLen===6?"var(--pa15)":"transparent",color:resetPinLen===6?"var(--p)":"var(--text-muted)",cursor:"pointer",fontWeight:700,fontSize:15,fontFamily:"inherit"}} onClick={()=>setResetPinLen(6)}>{t("cust_drawer.pin_6")}</button>
+            </div>
+            <button style={G.sub} onClick={()=>{setResetTempPin("");setResetStep("pin-enter");}}>{t("cust_drawer.pin_enter")}</button>
+          </>:null}
+          {resetStep==="pin-enter"?<>
+            <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:10,textAlign:"center"}}>{resetPinLen} {t("cust_drawer.pin_digits_hint")}</div>
+            <input type="password" inputMode="numeric" maxLength={resetPinLen} value={resetTempPin} onChange={e=>setResetTempPin(e.target.value.replace(/\D/g,"").slice(0,resetPinLen))} style={{...fi(),textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:16}} autoFocus/>
+            <button style={{...G.sub,opacity:resetTempPin.length===resetPinLen?1:.5,cursor:resetTempPin.length===resetPinLen?"pointer":"not-allowed"}} disabled={resetTempPin.length!==resetPinLen} onClick={()=>{setResetPinConfirm("");setResetStep("pin-confirm");}}>{t("cust_drawer.pin_enter")}</button>
+          </>:null}
+          {resetStep==="pin-confirm"?<>
+            <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:10,textAlign:"center"}}>{t("cust_drawer.pin_confirm_title")}</div>
+            <input type="password" inputMode="numeric" maxLength={resetPinLen} value={resetPinConfirm} onChange={e=>{setResetPinConfirm(e.target.value.replace(/\D/g,"").slice(0,resetPinLen));setResetErr("");}} style={{...fi(resetErr),textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:resetErr?6:16}} autoFocus/>
+            {resetErr&&<div style={{color:"#e74c3c",fontSize:12,marginBottom:10,textAlign:"center"}}>{resetErr}</div>}
+            <button style={{...G.sub,opacity:(resetLoading||resetPinConfirm.length!==resetPinLen)?.6:1,cursor:(resetLoading||resetPinConfirm.length!==resetPinLen)?"not-allowed":"pointer"}} disabled={resetLoading||resetPinConfirm.length!==resetPinLen} onClick={finishResetPin}>
+              {resetLoading?t("cust_login.reset_verifying"):t("cust_drawer.pin_save")}
+            </button>
+          </>:null}
+          <button onClick={()=>{setResetStep(null);setResetEmail("");setResetOtp("");setResetErr("");setResetCustomer(null);setResetTempPin("");setResetPinConfirm("");}} style={{width:"100%",marginTop:10,padding:"10px 0",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
             {t("cust_login.reset_back")}
           </button>
         </div>
