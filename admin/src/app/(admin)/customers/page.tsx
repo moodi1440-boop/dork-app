@@ -271,7 +271,12 @@ export default function CustomersPage() {
   useEffect(() => { load(); loadBlacklist(); }, [load, loadBlacklist]);
 
   const liftBan = async (id: string) => {
-    await fetch(`/api/customer-blacklist/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/customer-blacklist/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      alert("فشل رفع الحظر: " + (d.error || `HTTP ${res.status}`));
+      return;
+    }
     loadBlacklist();
   };
 
