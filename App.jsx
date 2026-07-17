@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L153";
+const APP_VERSION = "L154";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -2275,8 +2275,8 @@ export default function App(){
         }
       }
       if(customerSession){
-        const c=customers.find(x=>x.id===customerSession.id);
-        if(c){
+        const c=customers.find(x=>x.id===customerSession.id)||customerSession;
+        {
           const histItem={
             salonId:sid,
             salonName:salon?.name||"",
@@ -2300,6 +2300,7 @@ export default function App(){
           // نجرب Supabase - لو فشل نكمل بدونه
           try{await sb("customers","PATCH",{history:hist,favs:c.favs||[]},`?id=eq.${c.id}`);}catch{}
           setCustomers(p=>p.map(x=>x.id===c.id?{...x,history:hist}:x));
+          setCustomerSession(p=>p&&p.id===c.id?{...p,history:hist}:p);
         }
       }
       toast$(i18n.t('ui.booking_sent'));
