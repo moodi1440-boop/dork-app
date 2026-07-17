@@ -56,8 +56,30 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   const sb = createAdminClient();
+
+  const { data: customer } = await sb
+    .from("customers")
+    .select("phone,email,blocked,auth_uid")
+    .eq("id", params.id)
+    .single();
+
+  // إذا كان الحساب محظوراً، نسجّل الهاتف/البريد في قائمة الحظر
+  // الدائمة قبل الحذف — يمنع التحايل على الحظر بإنشاء حساب جديد.
+  if (customer?.blocked) {
+    await sb.from("customer_blacklist").insert({
+      phone: customer.phone || null,
+      email: customer.email || null,
+      reason: "banned_account_deleted_by_admin",
+    });
+  }
+
   const { error } = await sb.from("customers").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (customer?.auth_uid) {
+    await sb.auth.admin.deleteUser(customer.auth_uid).catch(() => {});
+  }
+
   await logAdminAction("customer.delete", "customer", params.id);
   return NextResponse.json({ ok: true });
 }
