@@ -88,34 +88,37 @@ module.exports = async (req, res) => {
 
     await sb.from("salons").update({ owner_pin_fails: 0, owner_pin_locked_until: null }).eq("id", salon.id);
 
-    // إصدار Supabase Session للصالونات التي عندها owner_email (فشل صامت — الكوكي يكفي)
+    // إصدار Supabase Session حقيقية لكل الصالونات — بريد اصطناعي ثابت إن لم
+    // يوجد owner_email (نفس حيلة customer-auth.js)، تجنباً لبقاء أي صالون
+    // بلا auth_uid أبداً (فشل صامت — الكوكي يكفي لتسجيل الدخول بأي حال)
     let sessionTokens = null;
-    if (salon.owner_email) {
-      try {
-        // نوع "recovery" مقصود وليس "magiclink" — راجع نفس التعليق بـ customer-auth.js
-        const { data: linkData } = await sb.auth.admin.generateLink({
+    const ownerAuthEmail = salon.owner_email && salon.owner_email.includes("@")
+      ? salon.owner_email
+      : `salon-${salon.id}@dork.internal`;
+    try {
+      // نوع "recovery" مقصود وليس "magiclink" — راجع نفس التعليق بـ customer-auth.js
+      const { data: linkData } = await sb.auth.admin.generateLink({
+        type: "recovery",
+        email: ownerAuthEmail,
+      });
+      const otp = linkData?.properties?.email_otp;
+      if (otp) {
+        const { data: sessionData } = await createAnonClient().auth.verifyOtp({
+          email: ownerAuthEmail,
+          token: otp,
           type: "recovery",
-          email: salon.owner_email,
         });
-        const otp = linkData?.properties?.email_otp;
-        if (otp) {
-          const { data: sessionData } = await createAnonClient().auth.verifyOtp({
-            email: salon.owner_email,
-            token: otp,
-            type: "recovery",
-          });
-          if (sessionData?.session) {
-            sessionTokens = {
-              access_token: sessionData.session.access_token,
-              refresh_token: sessionData.session.refresh_token,
-            };
-            if (!salon.auth_uid && sessionData.user?.id) {
-              await sb.from("salons").update({ auth_uid: sessionData.user.id }).eq("id", salon.id);
-            }
+        if (sessionData?.session) {
+          sessionTokens = {
+            access_token: sessionData.session.access_token,
+            refresh_token: sessionData.session.refresh_token,
+          };
+          if (!salon.auth_uid && sessionData.user?.id) {
+            await sb.from("salons").update({ auth_uid: sessionData.user.id }).eq("id", salon.id);
           }
         }
-      } catch { /* فشل صامت */ }
-    }
+      }
+    } catch { /* فشل صامت */ }
 
     const cookie = serializeCookie(COOKIE_NAME, await signOwnerSession(salon.id), {
       maxAge: 60 * 60 * 24 * 30,
