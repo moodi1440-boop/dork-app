@@ -308,18 +308,14 @@ export default function CustomersPage() {
       <div className="mb-6 flex items-center gap-3 flex-wrap">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 بحث باسم العميل أو الجوال..."
           className="w-full max-w-md bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold" />
-        {blockedCount > 0 && (
-          <button onClick={() => setBlockedOnly((v) => !v)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${blockedOnly ? "bg-red-500/10 border-red-500/30 text-red-400" : "border-border text-gray-500 hover:border-red-500/20"}`}>
-            <EmojiIcon icon="🚫" size={14}/> المحظورين ({blockedCount})
-          </button>
-        )}
-        {blacklist.length > 0 && (
-          <button onClick={() => setShowBlacklist((v) => !v)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${showBlacklist ? "bg-gray-500/20 border-gray-500/40 text-gray-300" : "border-border text-gray-500 hover:border-gray-500/20"}`}>
-            <EmojiIcon icon="🗑" size={14}/> المحذوفة والمحظورة ({blacklist.length})
-          </button>
-        )}
+        <button onClick={() => setBlockedOnly((v) => !v)}
+          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${blockedOnly ? "bg-red-500/10 border-red-500/30 text-red-400" : "border-border text-gray-500 hover:border-red-500/20"}`}>
+          <EmojiIcon icon="🚫" size={14}/> المحظورين ({blockedCount})
+        </button>
+        <button onClick={() => setShowBlacklist((v) => !v)}
+          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${showBlacklist ? "bg-gray-500/20 border-gray-500/40 text-gray-300" : "border-border text-gray-500 hover:border-gray-500/20"}`}>
+          <EmojiIcon icon="🗑" size={14}/> المحذوفة والمحظورة ({blacklist.length})
+        </button>
       </div>
       {showBlacklist ? (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
