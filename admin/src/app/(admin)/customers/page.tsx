@@ -5,6 +5,7 @@ import { exportPDFRaw } from "@/lib/pdf";
 import { EmojiIcon } from "@/components/Icons";
 
 interface Customer { id: string; name: string; phone: string; email: string; admin_notes?: string; blocked?: boolean; favs?: unknown[]; pin?: string; }
+interface BlacklistEntry { id: string; phone: string | null; email: string | null; reason: string; created_at: string; }
 type Booking = { id: string; date: string; time: string; services: string[]; total: number; status: string; salonName?: string; };
 
 function AddCustomerModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
@@ -247,6 +248,9 @@ export default function CustomersPage() {
   const [selected,  setSelected]  = useState<string | null>(null);
   const [showAdd,   setShowAdd]   = useState(false);
   const [blockedOnly, setBlockedOnly] = useState(false);
+  const [showBlacklist, setShowBlacklist] = useState(false);
+  const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
+  const [blacklistLoading, setBlacklistLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -257,7 +261,19 @@ export default function CustomersPage() {
     setLoading(false);
   }, [search]);
 
-  useEffect(() => { load(); }, [load]);
+  const loadBlacklist = useCallback(async () => {
+    setBlacklistLoading(true);
+    const data = await fetch("/api/customer-blacklist").then((r) => r.json()).catch(() => []);
+    setBlacklist(Array.isArray(data) ? data : []);
+    setBlacklistLoading(false);
+  }, []);
+
+  useEffect(() => { load(); loadBlacklist(); }, [load, loadBlacklist]);
+
+  const liftBan = async (id: string) => {
+    await fetch(`/api/customer-blacklist/${id}`, { method: "DELETE" });
+    loadBlacklist();
+  };
 
   const quickPatch = async (id: string, body: Record<string, unknown>) => {
     await fetch(`/api/customers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -268,6 +284,7 @@ export default function CustomersPage() {
     if (!confirm(`حذف "${name}" نهائياً؟`)) return;
     await fetch(`/api/customers/${id}`, { method: "DELETE" });
     load();
+    loadBlacklist();
   };
 
   const blockedCount = customers.filter((c) => c.blocked).length;
@@ -297,7 +314,47 @@ export default function CustomersPage() {
             <EmojiIcon icon="🚫" size={14}/> المحظورين ({blockedCount})
           </button>
         )}
+        {blacklist.length > 0 && (
+          <button onClick={() => setShowBlacklist((v) => !v)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${showBlacklist ? "bg-gray-500/20 border-gray-500/40 text-gray-300" : "border-border text-gray-500 hover:border-gray-500/20"}`}>
+            <EmojiIcon icon="🗑" size={14}/> المحذوفة والمحظورة ({blacklist.length})
+          </button>
+        )}
       </div>
+      {showBlacklist ? (
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          {blacklistLoading ? <div className="text-center py-16 text-gold animate-pulse">جاري التحميل...</div>
+           : blacklist.length === 0 ? <div className="text-center py-16 text-gray-500">لا يوجد عملاء محذوفين ومحظورين</div>
+           : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-gray-400 text-xs">
+                    {["#","الجوال","البريد","السبب","تاريخ الحذف","رفع الحظر"].map((h) => <th key={h} className="px-3 py-3 text-right font-semibold">{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {blacklist.map((b, i) => (
+                    <tr key={b.id} className="border-b border-border/50 hover:bg-white/[0.02] transition-colors">
+                      <td className="px-3 py-3 text-gray-500">{i + 1}</td>
+                      <td className="px-3 py-3 text-gray-300">{b.phone || "—"}</td>
+                      <td className="px-3 py-3 text-gray-400 text-xs">{b.email || "—"}</td>
+                      <td className="px-3 py-3 text-gray-400 text-xs">{b.reason}</td>
+                      <td className="px-3 py-3 text-gray-400 text-xs">{new Date(b.created_at).toLocaleDateString("ar")}</td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => liftBan(b.id)}
+                          className="px-2.5 py-1 rounded-lg text-xs bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors">
+                          رفع الحظر
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {loading ? <div className="text-center py-16 text-gold animate-pulse">جاري التحميل...</div>
          : visibleCustomers.length === 0 ? <div className="text-center py-16 text-gray-500">{blockedOnly ? "لا يوجد عملاء محظورين" : "لا يوجد عملاء"}</div>
@@ -340,6 +397,7 @@ export default function CustomersPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
