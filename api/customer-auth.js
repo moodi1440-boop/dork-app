@@ -29,7 +29,16 @@ module.exports = async (req, res) => {
         return;
       }
       const sbSet = createAdminClient();
+      const { data: existing } = await sbSet
+        .from("customers")
+        .select("pin_hash")
+        .eq("id", customerId)
+        .maybeSingle();
       const newHash = await hashCustomerPin(String(pin), String(customerId));
+      if (existing?.pin_hash && newHash === existing.pin_hash) {
+        res.status(400).json({ error: "الرمز السري الجديد يجب أن يختلف عن الرمز السابق", code: "err_same_pin" });
+        return;
+      }
       const { error: setErr } = await sbSet
         .from("customers")
         .update({ pin_hash: newHash, pin_fails: 0, pin_locked_until: null })

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L156";
+const APP_VERSION = "L157";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -2609,6 +2609,19 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
   const[editTempPin,setEditTempPin]=useState("");
   const[editPinConfirm,setEditPinConfirm]=useState("");
   const[editPinErr,setEditPinErr]=useState("");
+  const saveEditPin=async()=>{
+    if(editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm)return;
+    try{
+      const res=await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:customer.id,pin:editTempPin})});
+      const d=await res.json().catch(()=>({}));
+      if(!res.ok){setEditPinErr(d.error||t("cust_drawer.pin_mismatch"));if(d.code==="err_same_pin"){setEditPinStep("enter");setEditTempPin("");}return;}
+      const k=String(customer.id);
+      localStorage.setItem(`dork_customer_pin_${k}`,await hashPin(editTempPin));
+      localStorage.setItem(`dork_customer_pin_length_${k}`,String(editPinLength));
+      setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");
+      toast$(t("cust_drawer.pin_success"));
+    }catch(e){setEditPinErr(""+e.message);}
+  };
   const toggle=(s)=>setExp(e=>e===s?null:s);
   const [fcmStatus,setFcmStatus]=useState(()=>localStorage.getItem("fcm_debug")||"pending");
   const [fcmMsg,setFcmMsg]=useState("");
@@ -2805,13 +2818,14 @@ function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,s
               <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);}} style={{width:"100%",padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_drawer.cancel")}</button>
             </>:editPinStep==="enter"?<>
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t("cust_drawer.pin_enter")} ({editPinLength} {t("cust_drawer.pin_digits_hint")})</div>
-              <input type="password" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr",boxSizing:"border-box"}} placeholder="•••••" autoFocus/>
+              <input type="password" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);setEditPinErr("");if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr",boxSizing:"border-box"}} placeholder="•••••" autoFocus/>
+              {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
             </>:editPinStep==="confirm"?<>
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t("cust_drawer.pin_confirm_title")}</div>
               <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr(t("cust_drawer.pin_mismatch"));}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr",boxSizing:"border-box"}} placeholder="•••••" autoFocus/>
               {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
               <div style={{display:"flex",gap:8,marginTop:16}}>
-                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const k=String(customer.id);hashPin(editTempPin).then(h=>{localStorage.setItem(`dork_customer_pin_${k}`,h);localStorage.setItem(`dork_customer_pin_length_${k}`,String(editPinLength));fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:customer.id,pin:editTempPin})}).catch(()=>{});setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$(t("cust_drawer.pin_success"));});}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_drawer.pin_save")}</button>
+                <button onClick={saveEditPin} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_drawer.pin_save")}</button>
                 <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_drawer.cancel")}</button>
               </div>
             </>:null}
@@ -7560,9 +7574,13 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
   };
   const savePin=async()=>{
     if(tempPin!==pinConfirm){setPinErr(t("cust_drawer.pin_mismatch"));return;}
-    localStorage.setItem(`dork_customer_pin_${customer.id}`,await hashPin(tempPin));
-    fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:customer.id,pin:tempPin})}).catch(()=>{});
-    toast$(""+t("cust_drawer.pin_success"));setPinStep(null);setTempPin("");setPinConfirm("");setPinErr("");
+    try{
+      const res=await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:customer.id,pin:tempPin})});
+      const d=await res.json().catch(()=>({}));
+      if(!res.ok){setPinErr(d.error||t("cust_drawer.pin_mismatch"));if(d.code==="err_same_pin"){setPinStep("enter");setTempPin("");}return;}
+      localStorage.setItem(`dork_customer_pin_${customer.id}`,await hashPin(tempPin));
+      toast$(""+t("cust_drawer.pin_success"));setPinStep(null);setTempPin("");setPinConfirm("");setPinErr("");
+    }catch(e){setPinErr(""+e.message);}
   };
   return(
     <div style={G.page}><div style={G.fp}>
@@ -7626,7 +7644,8 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
         <div style={{textAlign:"center"}}>
           <div style={{fontSize:16,fontWeight:700,color:"var(--text-primary)",marginBottom:6}}>{t("cust_drawer.pin_enter")}</div>
           <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:16}}>{pinLen} {t("cust_drawer.pin_digits_hint")}</div>
-          <input type="password" inputMode="numeric" maxLength={pinLen} value={tempPin} onChange={e=>setTempPin(e.target.value.replace(/\D/g,"").slice(0,pinLen))} style={{...inp,textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:16}}/>
+          <input type="password" inputMode="numeric" maxLength={pinLen} value={tempPin} onChange={e=>{setTempPin(e.target.value.replace(/\D/g,"").slice(0,pinLen));setPinErr("");}} style={{...inp,textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:pinErr?6:16}}/>
+          {pinErr&&<div style={{color:"#e74c3c",fontSize:12,marginBottom:10}}>{pinErr}</div>}
           <div style={{display:"flex",gap:10}}>
             <button style={{flex:1,padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>setPinStep("select")}>{t("cust_drawer.cancel")}</button>
             <button style={{flex:1,padding:"12px",borderRadius:10,border:"none",background:"var(--p)",color:"var(--p-text)",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}} onClick={()=>{if(tempPin.length===pinLen)setPinStep("confirm");}}>{t("cust_drawer.pin_enter")}</button>
@@ -8031,7 +8050,11 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     try{
       setResetLoading(true);setResetErr("");
       const res=await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:resetCustomer.id,pin:resetTempPin})});
-      if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.error||`HTTP ${res.status}`);}
+      if(!res.ok){
+        const d=await res.json().catch(()=>({}));
+        if(d.code==="err_same_pin"){setResetErr(d.error);setResetStep("pin-enter");setResetTempPin("");return;}
+        throw new Error(d.error||`HTTP ${res.status}`);
+      }
       localStorage.setItem(`dork_customer_pin_${resetCustomer.id}`,await hashPin(resetTempPin));
       setCustomerSession(resetCustomer);setView("home");
       localStorage.setItem("dork_biometric_id",String(resetCustomer.id));
@@ -8246,8 +8269,9 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           </>:null}
           {resetStep==="pin-enter"?<>
             <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:10,textAlign:"center"}}>{resetPinLen} {t("cust_drawer.pin_digits_hint")}</div>
-            <input type="password" inputMode="numeric" maxLength={resetPinLen} value={resetTempPin} onChange={e=>setResetTempPin(e.target.value.replace(/\D/g,"").slice(0,resetPinLen))} style={{...fi(),textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:16}} autoFocus/>
-            <button style={{...G.sub,opacity:resetTempPin.length===resetPinLen?1:.5,cursor:resetTempPin.length===resetPinLen?"pointer":"not-allowed"}} disabled={resetTempPin.length!==resetPinLen} onClick={()=>{setResetPinConfirm("");setResetStep("pin-confirm");}}>{t("cust_drawer.pin_enter")}</button>
+            <input type="password" inputMode="numeric" maxLength={resetPinLen} value={resetTempPin} onChange={e=>{setResetTempPin(e.target.value.replace(/\D/g,"").slice(0,resetPinLen));setResetErr("");}} style={{...fi(resetErr),textAlign:"center",fontSize:24,letterSpacing:8,marginBottom:resetErr?6:16}} autoFocus/>
+            {resetErr&&<div style={{color:"#e74c3c",fontSize:12,marginBottom:10,textAlign:"center"}}>{resetErr}</div>}
+            <button style={{...G.sub,opacity:resetTempPin.length===resetPinLen?1:.5,cursor:resetTempPin.length===resetPinLen?"pointer":"not-allowed"}} disabled={resetTempPin.length!==resetPinLen} onClick={()=>{setResetErr("");setResetPinConfirm("");setResetStep("pin-confirm");}}>{t("cust_drawer.pin_enter")}</button>
           </>:null}
           {resetStep==="pin-confirm"?<>
             <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:10,textAlign:"center"}}>{t("cust_drawer.pin_confirm_title")}</div>
@@ -8527,6 +8551,19 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
   const[editPinConfirm,setEditPinConfirm]=useState("");
   const[editPinErr,setEditPinErr]=useState("");
   const[showLocPrompt,setShowLocPrompt]=useState(()=>!customer?.locationLat);
+  const saveEditPin=async()=>{
+    if(editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm)return;
+    try{
+      const res=await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:customer.id,pin:editTempPin})});
+      const d=await res.json().catch(()=>({}));
+      if(!res.ok){setEditPinErr(d.error||i18n.t('cust_drawer.pin_mismatch'));if(d.code==="err_same_pin"){setEditPinStep("enter");setEditTempPin("");}return;}
+      const customerIdStr=String(customer.id);
+      localStorage.setItem(`dork_customer_pin_${customerIdStr}`,await hashPin(editTempPin));
+      localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));
+      setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");
+      toast$&&toast$(i18n.t('ui.pin_updated'));
+    }catch(e){setEditPinErr(""+e.message);}
+  };
   if(!customer)return null;
 
   // حفظ موقع العميل
@@ -8917,13 +8954,14 @@ function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setS
               </div>
             </>:editPinStep==="enter"?<>
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t('ui.enter_new_pin',{length:editPinLength})}</div>
-              <input type="password" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editTempPin.length===editPinLength)setEditPinStep("confirm");}} />
+              <input type="password" maxLength={editPinLength} value={editTempPin} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditTempPin(val);setEditPinErr("");if(val.length===editPinLength)setTimeout(()=>setEditPinStep("confirm"),300);}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editTempPin.length===editPinLength)setEditPinStep("confirm");}} />
+              {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
             </>:editPinStep==="confirm"?<>
               <div style={{fontSize:16,fontWeight:700,color:"var(--p)",textAlign:"center",marginBottom:20}}>{t('ui.confirm_pin')}</div>
-              <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr(i18n.t('cust_drawer.pin_mismatch'));}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);hashPin(editTempPin).then(h=>{localStorage.setItem(`dork_customer_pin_${customerIdStr}`,h);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:customer.id,pin:editTempPin})}).catch(()=>{});setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");});}}} />
+              <input type="password" maxLength={editPinLength} value={editPinConfirm} onChange={(e)=>{const val=e.target.value.replace(/\D/g,"").slice(0,editPinLength);setEditPinConfirm(val);if(val.length===editPinLength&&editTempPin!==val){setEditPinErr(i18n.t('cust_drawer.pin_mismatch'));}else{setEditPinErr("");}}} style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${editPinErr?"#e74c3c":"var(--p)"}`,background:"var(--bg-input)",color:"var(--text-primary)",fontSize:18,fontFamily:"inherit",outline:"none",textAlign:"center",letterSpacing:"4px",fontWeight:700,direction:"ltr"}} placeholder="•••••" autoFocus onKeyDown={(e)=>{if(e.key==="Enter"&&editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm)saveEditPin();}} />
               {editPinErr&&<div style={{color:"#e74c3c",fontSize:12,textAlign:"center",marginTop:10}}>{editPinErr}</div>}
               <div style={{display:"flex",gap:8,marginTop:16}}>
-                <button onClick={()=>{if(editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm){const customerIdStr=String(customer.id);hashPin(editTempPin).then(h=>{localStorage.setItem(`dork_customer_pin_${customerIdStr}`,h);localStorage.setItem(`dork_customer_pin_length_${customerIdStr}`,String(editPinLength));fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:customer.id,pin:editTempPin})}).catch(()=>{});setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");toast$&&toast$(i18n.t('ui.pin_updated'));});}}} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
+                <button onClick={saveEditPin} disabled={editPinConfirm.length!==editPinLength||editTempPin!==editPinConfirm} style={{flex:1,padding:12,borderRadius:10,border:"none",background:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"var(--p)":"var(--border-ui)",color:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"#000":"#555",cursor:editPinConfirm.length===editPinLength&&editTempPin===editPinConfirm?"pointer":"not-allowed",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
                   حفظ
                 </button>
                 <button onClick={()=>{setEditPinStep(null);setEditPinLength(4);setEditTempPin("");setEditPinConfirm("");setEditPinErr("");}} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"rgba(255,255,255,.1)",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>
