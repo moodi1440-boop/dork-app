@@ -263,7 +263,7 @@ export default function CustomersPage() {
 
   const loadBlacklist = useCallback(async () => {
     setBlacklistLoading(true);
-    const data = await fetch("/api/customer-blacklist").then((r) => r.json()).catch(() => []);
+    const data = await fetch("/api/customer-blacklist", { cache: "no-store" }).then((r) => r.json()).catch(() => []);
     setBlacklist(Array.isArray(data) ? data : []);
     setBlacklistLoading(false);
   }, []);
@@ -321,6 +321,12 @@ export default function CustomersPage() {
           className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${showBlacklist ? "bg-gray-500/20 border-gray-500/40 text-gray-300" : "border-border text-gray-500 hover:border-gray-500/20"}`}>
           <EmojiIcon icon="🗑" size={14}/> المحذوفة والمحظورة ({blacklist.length})
         </button>
+        {(blockedOnly || showBlacklist) && (
+          <button onClick={() => { setBlockedOnly(false); setShowBlacklist(false); }}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-gold/30 text-gold hover:bg-gold/10 transition-all">
+            ✕ عرض كل العملاء
+          </button>
+        )}
       </div>
       {showBlacklist ? (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
