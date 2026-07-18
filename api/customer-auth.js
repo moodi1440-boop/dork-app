@@ -6,6 +6,21 @@ const { readJson } = require("./_lib/request");
 const MAX_FAILS = 5;
 const LOCK_MINUTES = 10;
 
+// نفس الأعمدة الآمنة المستخدمة تاريخياً بكل استعلامات العميل من App.jsx
+const SAFE_SELECT = "id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked";
+
+// يستخدَم لحالات ما زال العميل فيها بلا جلسة موثوقة مطابقة (auth_uid) بعد —
+// (by_email/google_login) — service_role يتجاوز RLS بأمان (Tier 2)، بدل
+// الاعتماد على مفتاح anon المكشوف بالكود المنشور.
+async function selfHealAuthUid(sb, customerId, accessToken) {
+  if (!accessToken) return;
+  try {
+    const { data } = await createAnonClient().auth.getUser(accessToken);
+    const uid = data?.user?.id;
+    if (uid) await sb.from("customers").update({ auth_uid: uid }).eq("id", customerId).is("auth_uid", null);
+  } catch { /* فشل صامت — لا يمنع تسجيل الدخول */ }
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "method not allowed" });
@@ -14,6 +29,81 @@ module.exports = async (req, res) => {
 
   try {
     const body = await readJson(req);
+
+    // بحث بالبريد لأجل "نسيت الرمز السري" — العميل بجلسة Supabase حقيقية
+    // فعلاً بهذي اللحظة (verifyOtp استدعي قبل هذا الطلب من الواجهة)، لكن
+    // ممكن auth_uid على صف العميل لسا فاضٍ لو هذي أول مرة، فنحتاج
+    // service_role للبحث + شفاء auth_uid بنفس الوقت
+    if (body.action === "by_email") {
+      const email = String(body.email || "").trim();
+      if (!email) { res.status(400).json({ error: "بيانات ناقصة" }); return; }
+      const sbLookup = createAdminClient();
+      const { data } = await sbLookup.from("customers").select(SAFE_SELECT).ilike("email", email).limit(1).maybeSingle();
+      if (data) await selfHealAuthUid(sbLookup, data.id, body.accessToken);
+      res.status(200).json({ customer: data || null });
+      return;
+    }
+
+    // فحص تكرار الجوال عند التسجيل — يصير قبل أي جلسة، لازم service_role
+    if (body.action === "phone_exists") {
+      const phone = String(body.phone || "").trim();
+      if (!phone) { res.status(400).json({ error: "بيانات ناقصة" }); return; }
+      const sbLookup = createAdminClient();
+      const { data } = await sbLookup.from("customers").select("id").eq("phone", phone).limit(1).maybeSingle();
+      res.status(200).json({ exists: !!data });
+      return;
+    }
+
+    // الدخول عبر Google يمر بـ Firebase Auth (هوية منفصلة تماماً عن Supabase
+    // Auth) — يعني ما فيه auth.uid() حقيقي متاح إطلاقاً من طرف العميل بهذا
+    // المسار. نبحث/ننشئ صف العميل هنا، ثم نصدر جلسة Supabase حقيقية بنفس
+    // بريد Google (نفس حيلة تسجيل الجلسة أدناه) عشان auth_uid ينضبط صح من
+    // أول تسجيل دخول، لا يفضل anon للأبد.
+    if (body.action === "google_login") {
+      const googleUid = String(body.googleUid || "").trim();
+      const name = String(body.name || "").trim();
+      const email = String(body.email || "").trim();
+      if (!googleUid) { res.status(400).json({ error: "بيانات ناقصة" }); return; }
+
+      const sbG = createAdminClient();
+      let { data: customer } = await sbG.from("customers").select(SAFE_SELECT).eq("google_uid", googleUid).limit(1).maybeSingle();
+
+      if (!customer) {
+        let isBlacklisted = false;
+        try {
+          const { data: bl } = await sbG.rpc("is_blacklisted", { p_phone: "", p_email: email });
+          isBlacklisted = bl || false;
+        } catch { /* فشل صامت — لا يمنع التسجيل عند خطأ تقني بالفحص نفسه */ }
+        if (isBlacklisted) { res.status(403).json({ error: "لا يمكن إنشاء حساب بهذه البيانات", code: "err_blacklisted" }); return; }
+
+        const { data: newRow, error: insErr } = await sbG.from("customers")
+          .insert({ name, phone: "", email, google_uid: googleUid, history: [], favs: [] })
+          .select(SAFE_SELECT).single();
+        if (insErr) { res.status(500).json({ error: insErr.message }); return; }
+        customer = newRow;
+      }
+
+      if (customer.blocked) { res.status(401).json({ error: "هذا الحساب محظور", code: "err_banned" }); return; }
+
+      let googleSessionTokens = null;
+      const googleAuthEmail = email && email.includes("@") ? email : `customer-${customer.id}@dork.internal`;
+      try {
+        const { data: linkData } = await sbG.auth.admin.generateLink({ type: "recovery", email: googleAuthEmail });
+        const otp = linkData?.properties?.email_otp;
+        if (otp) {
+          const { data: sessionData } = await createAnonClient().auth.verifyOtp({ email: googleAuthEmail, token: otp, type: "recovery" });
+          if (sessionData?.session) {
+            googleSessionTokens = { access_token: sessionData.session.access_token, refresh_token: sessionData.session.refresh_token };
+            if (!customer.auth_uid && sessionData.user?.id) {
+              await sbG.from("customers").update({ auth_uid: sessionData.user.id }).eq("id", customer.id);
+            }
+          }
+        }
+      } catch { /* فشل صامت — الجلسة المحلية تكفي لتسجيل الدخول حتى بدون توكن */ }
+
+      res.status(200).json({ customer, ...googleSessionTokens });
+      return;
+    }
 
     // تحديد الرمز السري (أول مرة أو تغييره) — العميل أصلاً بجلسة محلية موثوقة
     // بنفس مستوى الثقة الحالي بباقي عمليات التطبيق (id يُمرَّر من الواجهة)

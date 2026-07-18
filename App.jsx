@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L158";
+const APP_VERSION = "L159";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -6593,7 +6593,7 @@ function MessagesPanel({salon,toast$}){
   useEffect(()=>{loadMsgs();},[loadMsgs]);
 
   useEffect(()=>{
-    fetch("/api/mark-messages-read",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({salonId:salon.id})}).catch(()=>{});
+    fetch("/api/customer-messages?markAdminRead=1",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({salonId:salon.id})}).catch(()=>{});
   },[salon.id]);
 
   useEffect(()=>{
@@ -8015,7 +8015,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       setResetLoading(true);setResetErr("");
       const{data,error}=await supabase.auth.verifyOtp({email:resetEmail.trim(),token:otpClean,type:"email"});
       if(error){setResetErr(i18n.t('ui.code_wrong_check'));setResetOtp("");return;}
-      const lookupRes=await fetch("/api/customer-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"by_email",email:resetEmail.trim(),accessToken:data?.session?.access_token||null})});
+      const lookupRes=await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"by_email",email:resetEmail.trim(),accessToken:data?.session?.access_token||null})});
       const lookupData=await lookupRes.json().catch(()=>({}));
       if(!lookupRes.ok||!lookupData.customer){setResetErr(t("cust_login.err_not_found"));return;}
       const c=toAppCustomer(lookupData.customer);
@@ -8201,7 +8201,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         }
         return;
       }
-      const existsRes=await fetch("/api/customer-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"phone_exists",phone:phone.trim()})});
+      const existsRes=await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"phone_exists",phone:phone.trim()})});
       const existsData=await existsRes.json().catch(()=>({}));
       if(existsData.exists){setErr(t("cust_login.err_exists"));return;}
       let isBlacklisted=false;
@@ -8343,7 +8343,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               provider.setCustomParameters({prompt:"select_account"});
               const result=await fb.auth().signInWithPopup(provider);
               const gUser={name:result.user.displayName||"مستخدم",email:result.user.email||"",googleUid:result.user.uid};
-              const glRes=await fetch("/api/customer-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"google_login",googleUid:gUser.googleUid,name:gUser.name,email:gUser.email})});
+              const glRes=await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"google_login",googleUid:gUser.googleUid,name:gUser.name,email:gUser.email})});
               const glData=await glRes.json().catch(()=>({}));
               if(!glRes.ok||!glData.customer){toast$&&toast$(glData.error||i18n.t('ui.error_prefix'),"err");return;}
               if(glData.access_token&&glData.refresh_token){
