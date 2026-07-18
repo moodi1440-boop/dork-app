@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L157";
+const APP_VERSION = "L158";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
