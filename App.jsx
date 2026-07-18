@@ -6064,21 +6064,9 @@ function PromoPanel({salon,customers,toast$}){
     if(!c){setCodeError(i18n.t('ui.code_enter_first'));return;}
     setCheckingCode(true);
     try{
-      const rows=await sb("promo_codes","GET",null,`?code=eq.${c}&active=eq.true&select=id,code,active,code_type,wa_credits,duration_days,expires_at,max_uses,used_count&limit=1`);
-      if(!rows||rows.length===0){setCodeError(i18n.t('ui.code_invalid_expired'));setCodeApplied(false);return;}
-      const row=rows[0];
-      // تحقق من انتهاء الصلاحية
-      if(row.expires_at&&new Date(row.expires_at)<new Date()){setCodeError(i18n.t('ui.code_expired'));setCodeApplied(false);return;}
-      // تحقق من عدد الاستخدامات
-      if(row.max_uses!==null&&row.used_count>=row.max_uses){setCodeError(i18n.t('ui.code_fully_used'));setCodeApplied(false);return;}
-      // تحقق من نوع الكود مع الباقة
-      if(row.code_type==="whatsapp"&&pkg!=="gold"){setCodeError(i18n.t('ui.code_wa_only'));setCodeApplied(false);return;}
-      if(row.code_type==="app"&&pkg==="gold"){setCodeError(i18n.t('ui.code_app_only'));setCodeApplied(false);return;}
-      // بدء العداد: إذا الكود له مدة ولم يُفعَّل بعد، سجّل تاريخ انتهاء الصلاحية الآن
-      if(row.duration_days&&!row.expires_at){
-        const exp=new Date(Date.now()+row.duration_days*86400000).toISOString();
-        await sb("promo_codes","PATCH",{expires_at:exp},`?id=eq.${row.id}`).catch(()=>{});
-      }
+      const res=await fetch("/api/redeem-promo-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"check",code:c,pkg})});
+      const row=await res.json().catch(()=>({}));
+      if(!res.ok){setCodeError(row.error||i18n.t('ui.code_invalid_expired'));setCodeApplied(false);return;}
       // كود WhatsApp يحدد عدد عملاء مجانيين
       if(row.code_type==="whatsapp"&&row.wa_credits){setWaCredits(row.wa_credits);}
       setAppliedCodeRow(row);
@@ -6109,10 +6097,7 @@ function PromoPanel({salon,customers,toast$}){
         ends_at:ends.toISOString(),
       },"");
       if(appliedCodeRow?.id){
-        await sb("promo_codes","PATCH",
-          {used_count:(appliedCodeRow.used_count||0)+1},
-          `?id=eq.${appliedCodeRow.id}`
-        ).catch(()=>{});
+        await fetch("/api/redeem-promo-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"redeem",id:appliedCodeRow.id})}).catch(()=>{});
       }
       toast$(i18n.t('ui.promo_sent'));
       if(pkg==="bronze"){
@@ -8030,9 +8015,10 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       setResetLoading(true);setResetErr("");
       const{data,error}=await supabase.auth.verifyOtp({email:resetEmail.trim(),token:otpClean,type:"email"});
       if(error){setResetErr(i18n.t('ui.code_wrong_check'));setResetOtp("");return;}
-      const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&email=ilike.${encodeURIComponent(resetEmail.trim())}&limit=1`);
-      if(!rows.length){setResetErr(t("cust_login.err_not_found"));return;}
-      const c=toAppCustomer(rows[0]);
+      const lookupRes=await fetch("/api/customer-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"by_email",email:resetEmail.trim(),accessToken:data?.session?.access_token||null})});
+      const lookupData=await lookupRes.json().catch(()=>({}));
+      if(!lookupRes.ok||!lookupData.customer){setResetErr(t("cust_login.err_not_found"));return;}
+      const c=toAppCustomer(lookupData.customer);
       if(c.blocked){setResetErr(i18n.t('ui.account_banned'));return;}
       try{localStorage.removeItem(`dork_customer_pin_${c.id}`);}catch{}
       // نطلب رمز سري جديد فعلياً بدل تسجيل الدخول مباشرة — وإلا يبقى pin_hash
@@ -8215,8 +8201,9 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
         }
         return;
       }
-      const exists=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&phone=eq.${encodeURIComponent(phone.trim())}&limit=1`);
-      if(exists.length){setErr(t("cust_login.err_exists"));return;}
+      const existsRes=await fetch("/api/customer-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"phone_exists",phone:phone.trim()})});
+      const existsData=await existsRes.json().catch(()=>({}));
+      if(existsData.exists){setErr(t("cust_login.err_exists"));return;}
       let isBlacklisted=false;
       try{const bl=await supabase.rpc("is_blacklisted",{p_phone:phone.trim(),p_email:email.trim()});isBlacklisted=bl?.data||false;}catch{}
       if(isBlacklisted){setErr(i18n.t('ui.account_blacklisted'));return;}
@@ -8356,21 +8343,15 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               provider.setCustomParameters({prompt:"select_account"});
               const result=await fb.auth().signInWithPopup(provider);
               const gUser={name:result.user.displayName||"مستخدم",email:result.user.email||"",googleUid:result.user.uid};
-              const rows=await sb("customers","GET",null,`?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked&google_uid=eq.${gUser.googleUid}&limit=1`);
-              if(rows.length){
-                const c=toAppCustomer(rows[0]);
-                if(c.blocked){toast$&&toast$(i18n.t('ui.account_banned'),"err");return;}
-                setCustomerSession(c);setView("home");
-                localStorage.setItem("dork_biometric_id",String(c.id));
-              }else{
-                let blEmail=false;
-                try{const bl=await supabase.rpc("is_blacklisted",{p_phone:"",p_email:gUser.email});blEmail=bl?.data||false;}catch{}
-                if(blEmail){toast$&&toast$(i18n.t('ui.email_not_allowed'),"err");return;}
-                const newRows=await sb("customers","POST",{name:gUser.name,phone:"",email:gUser.email,google_uid:gUser.googleUid,history:[],favs:[]},"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked");
-                const nc=toAppCustomer(newRows[0]);
-                setCustomerSession(nc);setView("home");
-                localStorage.setItem("dork_biometric_id",String(nc.id));
+              const glRes=await fetch("/api/customer-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"google_login",googleUid:gUser.googleUid,name:gUser.name,email:gUser.email})});
+              const glData=await glRes.json().catch(()=>({}));
+              if(!glRes.ok||!glData.customer){toast$&&toast$(glData.error||i18n.t('ui.error_prefix'),"err");return;}
+              if(glData.access_token&&glData.refresh_token){
+                await supabase.auth.setSession({access_token:glData.access_token,refresh_token:glData.refresh_token}).catch(()=>{});
               }
+              const c=toAppCustomer(glData.customer);
+              setCustomerSession(c);setView("home");
+              localStorage.setItem("dork_biometric_id",String(c.id));
             }catch(e){setErr(e.message===i18n.t('ui.google_window_closed')?i18n.t('ui.window_closed'):i18n.t('ui.error_prefix')+e.message);}
           }}>
             <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
