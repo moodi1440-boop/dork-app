@@ -1,6 +1,33 @@
 const { createAdminClient } = require("./_lib/supabase-admin");
+const { readJson } = require("./_lib/request");
 
 module.exports = async (req, res) => {
+  // تعليم رسائل الإدارة (جدول messages، منفصل عن customer_messages) كمقروءة —
+  // مدمَج هنا لتقليل عدد ملفات api/ (حد Vercel Hobby: 12 دالة سيرفرلس كحد أقصى)
+  if (req.method === "POST" && req.query.markAdminRead === "1") {
+    try {
+      const body = await readJson(req);
+      const adminSalonId = Number(body.salonId);
+      if (!adminSalonId || isNaN(adminSalonId)) {
+        res.status(400).json({ error: "Invalid salonId" });
+        return;
+      }
+      const sb = createAdminClient();
+      const { error } = await sb
+        .from("messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("salon_id", adminSalonId)
+        .eq("from_admin", true)
+        .is("read_at", null);
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      res.status(200).json({ ok: true });
+    } catch (e) {
+      console.error("[customer-messages:markAdminRead] error:", e);
+      res.status(500).json({ error: "خطأ بالسيرفر" });
+    }
+    return;
+  }
+
   const salonId    = Number(req.query.salonId);
   const customerId = Number(req.query.customerId);
   const bookingId  = Number(req.query.bookingId) || null;
