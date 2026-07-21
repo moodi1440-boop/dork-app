@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L161";
+const APP_VERSION = "L162";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -3354,7 +3354,7 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
     {/* ── Bottom Sheet التقييمات ── */}
     {reviewsSheet&&(()=>{
       const id=Number(reviewsSheet.id);
-      const sRev=(reviews||[]).filter(r=>Number(r.salon_id)===id).map(r=>({name:r.customer_name||"عميل",rating:r.rating,comment:r.comment||"",date:r.booking_date||r.created_at?.split("T")[0]||""})).sort((a,b)=>b.date.localeCompare(a.date));
+      const sRev=(reviews||[]).filter(r=>Number(r.salon_id)===id).map(r=>({name:r.customer_name||"عميل",rating:r.rating,comment:r.comment||"",ownerReply:r.owner_reply||"",date:r.booking_date||r.created_at?.split("T")[0]||""})).sort((a,b)=>b.date.localeCompare(a.date));
       const avg=sRev.length?Math.round(sRev.reduce((s,r)=>s+r.rating,0)/sRev.length*10)/10:0;
       return(
         <>
@@ -3380,7 +3380,13 @@ function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,s
                     <div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(n=><IconStar key={n} size={12} color={n<=r.rating?"var(--gold)":"rgba(var(--gold-rgb),.18)"}/>)}</div>
                   </div>
                   {r.comment&&<div style={{fontSize:12,color:"var(--text-muted)",fontStyle:"italic",lineHeight:1.5,marginBottom:3}}>«{r.comment}»</div>}
-                  {r.date&&<div style={{fontSize:9,color:"var(--text-muted)",display:"flex",alignItems:"center",gap:3}}><IconCalendar size={9}/>{r.date}</div>}
+                  {r.date&&<div style={{fontSize:9,color:"var(--text-muted)",marginBottom:r.ownerReply?8:0,display:"flex",alignItems:"center",gap:3}}><IconCalendar size={9}/>{r.date}</div>}
+                  {r.ownerReply&&(
+                    <div style={{marginTop:6,padding:"8px 10px",background:"rgba(var(--gold-rgb),.07)",borderRight:"3px solid #d4a017",borderRadius:"0 8px 8px 0"}}>
+                      <div style={{fontSize:10,color:"var(--gold)",fontWeight:700,marginBottom:3}}>{t("salon_reviews.owner_reply_label")}</div>
+                      <div style={{fontSize:11,color:"var(--text-muted)",lineHeight:1.5}}>{r.ownerReply}</div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
