@@ -41,7 +41,7 @@ module.exports = async (req, res) => {
       let expiresAt = row.expires_at;
       if (row.duration_days && !row.expires_at) {
         expiresAt = new Date(Date.now() + row.duration_days * 86400000).toISOString();
-        await sb.from("promo_codes").update({ expires_at: expiresAt }).eq("id", row.id).catch(() => {});
+        try { await sb.from("promo_codes").update({ expires_at: expiresAt }).eq("id", row.id); } catch { /* فشل صامت — لا يمنع عرض الكود للمستخدم */ }
       }
 
       res.status(200).json({ ...row, expires_at: expiresAt });
