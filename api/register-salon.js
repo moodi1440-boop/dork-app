@@ -48,6 +48,22 @@ module.exports = async (req, res) => {
     }
 
     const sb = createAdminClient();
+
+    // فحص تكرار — نفس نمط phone_exists بتسجيل العميل، يمنع تسجيل عدة
+    // صالونات بنفس رقم الجوال (owner_phone أو phone) بدون أي رسالة منع
+    const ownerPhoneTrim = body.ownerPhone.trim();
+    const phoneTrim = body.phone.trim();
+    const { data: existing } = await sb
+      .from("salons")
+      .select("id")
+      .or(`owner_phone.eq.${ownerPhoneTrim},phone.eq.${phoneTrim},owner_phone.eq.${phoneTrim},phone.eq.${ownerPhoneTrim}`)
+      .limit(1)
+      .maybeSingle();
+    if (existing) {
+      res.status(409).json({ error: "يوجد صالون مسجَّل مسبقاً بنفس رقم الجوال", code: "err_duplicate" });
+      return;
+    }
+
     const { data: configRow } = await sb.from("admin_config").select("value").eq("key", "auto_approve_salons").single();
     const status = configRow?.value === true ? "approved" : "pending";
     const { data, error } = await sb.from("salons").insert(toDbSalon(body, status)).select("id").single();

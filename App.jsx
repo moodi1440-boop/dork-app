@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L163";
+const APP_VERSION = "L164";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -7532,6 +7532,8 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
   const[tempPin,setTempPin]=useState("");
   const[pinConfirm,setPinConfirm]=useState("");
   const[pinErr,setPinErr]=useState("");
+  const[showLocUrl,setShowLocUrl]=useState(false);
+  const[locUrlInput,setLocUrlInput]=useState("");
   const inp={width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"var(--bg-input)",color:"var(--text-primary)",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box",direction:"rtl"};
   const saveLocation=()=>{
     if(!navigator.geolocation){toast$&&toast$(i18n.t('ui.browser_no_geo'),"err");return;}
@@ -7552,6 +7554,18 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
       setCustomerSession(s=>({...s,locationLat:null,locationLng:null}));
       toast$&&toast$(i18n.t('ui.location_deleted'));
     }catch{toast$&&toast$(i18n.t('ui.location_delete_failed'),"err");}
+  };
+  const saveLocationFromUrl=async()=>{
+    const m=locUrlInput.match(/q=(-?\d+\.?\d*),(-?\d+\.?\d*)/)||locUrlInput.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if(!m){toast$&&toast$(i18n.t('ui.loc_url_invalid'),"err");return;}
+    const lat=parseFloat(m[1]),lng=parseFloat(m[2]);
+    try{
+      await sb("customers","PATCH",{location_lat:lat,location_lng:lng},`?id=eq.${customer.id}`);
+      setCustomers(prev=>prev.map(c=>c.id===customer.id?{...c,locationLat:lat,locationLng:lng}:c));
+      setCustomerSession(s=>({...s,locationLat:lat,locationLng:lng}));
+      setShowLocUrl(false);setLocUrlInput("");
+      toast$&&toast$(i18n.t('ui.location_saved'));
+    }catch{toast$&&toast$(i18n.t('ui.location_save_failed'),"err");}
   };
   const save=async()=>{
     if(!name.trim())return;
@@ -7608,6 +7622,13 @@ function CustEditDataView({customer,setCustomers,setCustomerSession,setView,setS
               <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:10}}>{t('ui.no_location_long')}</div>
               <button style={{width:"100%",padding:"10px",borderRadius:8,background:"transparent",border:"1.5px dashed rgba(var(--pr),.4)",color:"var(--p)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}} onClick={saveLocation}><IconPin size={12}/>{t('ui.save_location')}</button>
             </>
+          )}
+          <button type="button" onClick={()=>setShowLocUrl(v=>!v)} style={{width:"100%",marginTop:10,padding:0,border:"none",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:11,textDecoration:"underline"}}>{t('ui.loc_url_manual_toggle')}</button>
+          {showLocUrl&&(
+            <div style={{marginTop:8,display:"flex",gap:8}}>
+              <input style={{...inp,flex:1,fontSize:12,direction:"ltr",textAlign:"left"}} placeholder={t('ui.loc_url_ph')} value={locUrlInput} onChange={e=>setLocUrlInput(e.target.value)} dir="ltr"/>
+              <button type="button" onClick={saveLocationFromUrl} style={{flexShrink:0,padding:"0 14px",borderRadius:8,border:"none",background:"var(--p)",color:"var(--p-text)",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit"}}>{t('ui.loc_url_save')}</button>
+            </div>
           )}
         </div>
         <button style={{width:"100%",padding:"12px",borderRadius:10,border:"1.5px solid var(--p)",background:"transparent",color:"var(--p)",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit",marginBottom:10}} onClick={()=>setPinStep("select")}>{t("cust_drawer.change_pin")}</button>
