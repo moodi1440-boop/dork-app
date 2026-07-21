@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L159";
+const APP_VERSION = "L160";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -8173,6 +8173,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     if(verifying)return;
     if(!name.trim()||!phone.trim()){setErr(t("cust_login.err_name_phone"));return;}
     if(!email.trim()){setErr(t("cust_login.err_email"));return;}
+    if(!/^\d{6}$/.test(pin)){setErr(t("cust_login.err_6digits"));return;}
     if(!otpSent){setErr(t("cust_login.err_send_first"));return;}
     if(attempts>=5){setErr(t("cust_login.max_attempts"));return;}
     const otpClean=String(otpCode||"").replace(/\D/g,"").slice(0,6);
@@ -8210,6 +8211,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
       const authUid=data?.user?.id||null;
       const rows=await sb("customers","POST",{name:name.trim(),phone:phone.trim(),email:email.trim(),history:[],favs:[],auth_uid:authUid},"?select=id,name,phone,email,google_uid,history,favs,location_lat,location_lng,created_at,blocked");
       const nc=toAppCustomer(rows[0]);
+      await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_pin",customerId:nc.id,pin})}).catch(()=>{});
       setCustomerSession(nc);setView("home");
       localStorage.setItem("dork_biometric_id",String(nc.id));
       setOtpSent(false);setOtpCode("");setOtpTimer(0);setOtpExpired(false);
@@ -8303,6 +8305,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <SL>{t("cust_login.reg_title")}</SL>
           <F label={t("cust_login.name_label")}><input style={fi()} placeholder={t("cust_login.name_ph")} value={name} onChange={e=>setName(e.target.value)}/></F>
           <F label={t("cust_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
+          <F label={t("cust_login.pin_label")}><div style={{position:"relative"}}><input style={{...fi(),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
           <F label={t("cust_login.email_label")} error={err}><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
             <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(sending||resendTimer>0)?.6:1,cursor:(sending||resendTimer>0)?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending||resendTimer>0}>
@@ -8322,7 +8325,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
               {t("cust_login.edit_email")}
             </button>
           </>}
-          <button style={{...G.sub,opacity:(verifying||!otpSent)?.6:1,cursor:(verifying||!otpSent)?"not-allowed":"pointer"}} onClick={register} disabled={!otpSent||verifying||otpExpired}>
+          <button style={{...G.sub,opacity:(verifying||!otpSent||pin.length!==6)?.6:1,cursor:(verifying||!otpSent||pin.length!==6)?"not-allowed":"pointer"}} onClick={register} disabled={!otpSent||verifying||otpExpired||pin.length!==6}>
             {verifying?t("cust_login.verifying"):t("cust_login.reg_btn")}
           </button>
           <div style={{textAlign:"center",margin:"12px 0",color:"var(--text-muted)",fontSize:12}}>{t("cust_login.or")}</div>
