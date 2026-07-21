@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L160";
+const APP_VERSION = "L161";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -7957,6 +7957,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[email,setEmail]=useState(""); const[pass,setPass]=useState("");
   const[err,setErr]=useState("");
   const[pin,setPin]=useState(""); const[showPin,setShowPin]=useState(false);
+  const[pinConfirm,setPinConfirm]=useState("");
   const[phoneLoginLoading,setPhoneLoginLoading]=useState(false);
   const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
@@ -8121,6 +8122,8 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
 
  const sendOtpCode=async()=>{
   if(sending)return;
+  if(!/^\d{6}$/.test(pin)){setErr(t("cust_login.err_6digits"));return;}
+  if(pin!==pinConfirm){setErr(t("owner_login.reset_err_mismatch"));return;}
   if(!email.trim()){setErr(t("cust_login.err_email"));return;}
   const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if(!emailRegex.test(email.trim())){setErr(t("cust_login.err_email_invalid"));return;}
@@ -8174,6 +8177,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
     if(!name.trim()||!phone.trim()){setErr(t("cust_login.err_name_phone"));return;}
     if(!email.trim()){setErr(t("cust_login.err_email"));return;}
     if(!/^\d{6}$/.test(pin)){setErr(t("cust_login.err_6digits"));return;}
+    if(pin!==pinConfirm){setErr(t("owner_login.reset_err_mismatch"));return;}
     if(!otpSent){setErr(t("cust_login.err_send_first"));return;}
     if(attempts>=5){setErr(t("cust_login.max_attempts"));return;}
     const otpClean=String(otpCode||"").replace(/\D/g,"").slice(0,6);
@@ -8306,9 +8310,10 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           <F label={t("cust_login.name_label")}><input style={fi()} placeholder={t("cust_login.name_ph")} value={name} onChange={e=>setName(e.target.value)}/></F>
           <F label={t("cust_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={phone} onChange={e=>{setPhone(e.target.value);setErr("");}}/></F>
           <F label={t("cust_login.pin_label")}><div style={{position:"relative"}}><input style={{...fi(),paddingLeft:36}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6}/><button type="button" onClick={()=>setShowPin(v=>!v)} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",background:"transparent",border:"none",cursor:"pointer",color:"var(--text-muted)",display:"flex",alignItems:"center",padding:0}}>{showPin?<IconEyeOff size={17}/>:<IconEye size={17}/>}</button></div></F>
+          <F label={t("owner_login.reset_confirm_pin_label")} error={pinConfirm&&pin!==pinConfirm?t("owner_login.reset_err_mismatch"):""}><input style={{...fi(pinConfirm&&pin!==pinConfirm?"x":""),letterSpacing:4,textAlign:"center"}} type={showPin?"text":"password"} inputMode="numeric" placeholder="••••••" maxLength={6} value={pinConfirm} onChange={e=>{setPinConfirm(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}}/></F>
           <F label={t("cust_login.email_label")} error={err}><div style={{display:"flex",gap:8}}>
             <input style={{...fi(err),flex:1,direction:"ltr",textAlign:"left"}} placeholder="example@email.com" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} type="email" disabled={otpSent||sending} dir="ltr"/>
-            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(sending||resendTimer>0)?.6:1,cursor:(sending||resendTimer>0)?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending||resendTimer>0}>
+            <button style={{...G.sub,flex:0,padding:"12px 16px",fontSize:13,opacity:(sending||resendTimer>0||pin.length!==6||pin!==pinConfirm)?.6:1,cursor:(sending||resendTimer>0||pin.length!==6||pin!==pinConfirm)?"not-allowed":"pointer"}} onClick={sendOtpCode} disabled={sending||resendTimer>0||pin.length!==6||pin!==pinConfirm}>
               {sending?t("cust_login.sending"):resendTimer>0?`${Math.floor(resendTimer/60)}:${String(resendTimer%60).padStart(2,"0")}`:otpSent?t("cust_login.resend_btn"):t("cust_login.send_btn")}
             </button>
           </div></F>
