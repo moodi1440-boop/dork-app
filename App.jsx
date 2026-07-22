@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L164";
+const APP_VERSION = "L165";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -7985,6 +7985,12 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
   const[err,setErr]=useState("");
   const[pin,setPin]=useState(""); const[showPin,setShowPin]=useState(false);
   const[pinConfirm,setPinConfirm]=useState("");
+  const[googleStep,setGoogleStep]=useState(null);
+  const[gPhone,setGPhone]=useState("");
+  const[gPin,setGPin]=useState("");
+  const[gPinConfirm,setGPinConfirm]=useState("");
+  const[gErr,setGErr]=useState("");
+  const[gSaving,setGSaving]=useState(false);
   const[phoneLoginLoading,setPhoneLoginLoading]=useState(false);
   const[otpSent,setOtpSent]=useState(false);
   const[otpCode,setOtpCode]=useState("");
@@ -8306,6 +8312,32 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
           </button>
         </div>
         <button onClick={()=>setView("entry")} style={{width:"100%",marginTop:20,padding:"14px 0",borderRadius:12,border:"1.5px solid var(--pa25)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:15,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_login.back")}</button>
+      </>:googleStep?<>
+        {/* إضافة جوال + رمز سري اختيارية بعد أول تسجيل بجوجل — الاثنان معاً أو ولا شي */}
+        <div style={G.fc}>
+          <SL>{t('ui.google_phone_setup_title')}</SL>
+          <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:14,lineHeight:1.6}}>{t('ui.google_phone_setup_hint')}</div>
+          <F label={t("cust_login.phone_label")}><input style={fi()} type="tel" inputMode="numeric" placeholder="05XXXXXXXX" value={gPhone} onChange={e=>{setGPhone(e.target.value);setGErr("");}}/></F>
+          <F label={t("cust_login.pin_label")}><input style={{...fi(),direction:"ltr",textAlign:"center",letterSpacing:4}} type="password" inputMode="numeric" maxLength={6} placeholder="••••••" value={gPin} onChange={e=>{setGPin(e.target.value.replace(/\D/g,"").slice(0,6));setGErr("");}}/></F>
+          <F label={t("owner_login.reset_confirm_pin_label")} error={gErr}><input style={{...fi(gErr),direction:"ltr",textAlign:"center",letterSpacing:4}} type="password" inputMode="numeric" maxLength={6} placeholder="••••••" value={gPinConfirm} onChange={e=>{setGPinConfirm(e.target.value.replace(/\D/g,"").slice(0,6));setGErr("");}}/></F>
+          <button style={{...G.sub,opacity:gSaving?.6:1,cursor:gSaving?"not-allowed":"pointer"}} disabled={gSaving} onClick={async()=>{
+            if(!gPhone.trim()){setGErr(t("cust_login.err_name_phone"));return;}
+            if(!/^\d{6}$/.test(gPin)){setGErr(t("cust_login.err_6digits"));return;}
+            if(gPin!==gPinConfirm){setGErr(t("owner_login.reset_err_mismatch"));return;}
+            setGSaving(true);
+            try{
+              const res=await fetch("/api/customer-auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"set_google_phone_pin",customerId:googleStep.id,phone:gPhone.trim(),pin:gPin})});
+              const d=await res.json().catch(()=>({}));
+              if(!res.ok){setGErr(d.error||i18n.t('ui.error_prefix'));setGSaving(false);return;}
+              setCustomers(p=>p.map(c=>c.id===googleStep.id?{...c,phone:gPhone.trim()}:c));
+              setCustomerSession(s=>({...s,phone:gPhone.trim()}));
+              toast$&&toast$(t('ui.data_saved'));
+              setView("home");
+            }catch(e){setGErr(e.message);}
+            setGSaving(false);
+          }}>{gSaving?t("cust_login.verifying"):t('ui.save')}</button>
+          <button onClick={()=>setView("home")} style={{width:"100%",marginTop:10,padding:"10px 0",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13}}>{t('ui.skip')}</button>
+        </div>
       </>:<>
 
       {/* دخول بالبصمة */}
@@ -8385,8 +8417,9 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
                 await supabase.auth.setSession({access_token:glData.access_token,refresh_token:glData.refresh_token}).catch(()=>{});
               }
               const c=toAppCustomer(glData.customer);
-              setCustomerSession(c);setView("home");
+              setCustomerSession(c);
               localStorage.setItem("dork_biometric_id",String(c.id));
+              if(glData.isNewCustomer){setGoogleStep(c);}else{setView("home");}
             }catch(e){setErr(e.message===i18n.t('ui.google_window_closed')?i18n.t('ui.window_closed'):i18n.t('ui.error_prefix')+e.message);}
           }}>
             <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>

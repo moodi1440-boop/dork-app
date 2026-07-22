@@ -67,6 +67,7 @@ module.exports = async (req, res) => {
 
       const sbG = createAdminClient();
       let { data: customer } = await sbG.from("customers").select(SAFE_SELECT).eq("google_uid", googleUid).limit(1).maybeSingle();
+      const isNewCustomer = !customer;
 
       if (!customer) {
         let isBlacklisted = false;
@@ -101,7 +102,29 @@ module.exports = async (req, res) => {
         }
       } catch { /* فشل صامت — الجلسة المحلية تكفي لتسجيل الدخول حتى بدون توكن */ }
 
-      res.status(200).json({ customer, ...googleSessionTokens });
+      res.status(200).json({ customer, isNewCustomer, ...googleSessionTokens });
+      return;
+    }
+
+    // إضافة جوال + رمز سري لحساب Google (اختياري، عرض مرة وحدة بعد أول تسجيل)
+    // — الاثنان معاً إلزاميان إذا اختار المستخدم يكمّل، لأن رمز سري بلا
+    // جوال بلا فايدة (ما فيه طريقة يوصل له)، وجوال بلا رمز سري يعطي
+    // "لا يوجد رمز سري مضبوط" لاحقاً بدون أي فايدة فعلية
+    if (body.action === "set_google_phone_pin") {
+      const customerId = Number(body.customerId);
+      const phone = String(body.phone || "").trim();
+      const pin = String(body.pin || "").trim();
+      if (!customerId || !phone || !/^\d{6}$/.test(pin)) {
+        res.status(400).json({ error: "بيانات ناقصة" });
+        return;
+      }
+      const sbP = createAdminClient();
+      const { data: dup } = await sbP.from("customers").select("id").eq("phone", phone).neq("id", customerId).limit(1).maybeSingle();
+      if (dup) { res.status(409).json({ error: "هذا الرقم مسجّل بالفعل", code: "err_exists" }); return; }
+      const newHash = await hashCustomerPin(pin, String(customerId));
+      const { error: updErr } = await sbP.from("customers").update({ phone, pin_hash: newHash, pin_fails: 0, pin_locked_until: null }).eq("id", customerId);
+      if (updErr) { res.status(500).json({ error: updErr.message }); return; }
+      res.status(200).json({ ok: true });
       return;
     }
 
