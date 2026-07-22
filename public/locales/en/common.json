@@ -776,6 +776,10 @@
         "a": "Contact the salon directly via phone number."
       },
       {
+        "q": "How is my location saved to show the nearest salons first?",
+        "a": "Your location is saved automatically as soon as you create your account (after you allow the browser's location permission). If you travel to another city, tap the \"Nearest\" button on the home screen to re-sort instantly based on your current location. To update or delete your saved location, go to My Account → Edit Data → \"My Saved Location\" (you can also add a Google Maps link manually there if you declined the location permission)."
+      },
+      {
         "q": "How do I register my salon?",
         "a": "Tap the scissors icon in the top bar."
       },
