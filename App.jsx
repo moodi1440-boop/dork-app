@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 
 // رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
-const APP_VERSION = "L165";
+const APP_VERSION = "L166";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -8336,7 +8336,7 @@ function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$
             }catch(e){setGErr(e.message);}
             setGSaving(false);
           }}>{gSaving?t("cust_login.verifying"):t('ui.save')}</button>
-          <button onClick={()=>setView("home")} style={{width:"100%",marginTop:10,padding:"10px 0",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13}}>{t('ui.skip')}</button>
+          <button onClick={()=>setView("home")} style={{width:"100%",marginTop:10,padding:"10px 0",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13}}>{t('ui.google_phone_setup_skip')}</button>
         </div>
       </>:<>
 

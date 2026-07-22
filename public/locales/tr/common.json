@@ -869,6 +869,7 @@
     "skip": "Atla",
     "google_phone_setup_title": "Telefon numaranızı ve PIN'inizi ekleyin (isteğe bağlı)",
     "google_phone_setup_hint": "Hesabınız şu anda yalnızca Google'a bağlı. Onlarla da giriş yapabilmeniz için bir telefon numarası ve PIN ekleyin veya bu adımı atlayın.",
+    "google_phone_setup_skip": "Atla — yalnızca Google ile giriş",
     "cancel": "İptal",
     "close": "Kapat",
     "add": "+ Ekle",
