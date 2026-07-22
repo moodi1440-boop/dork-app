@@ -869,6 +869,7 @@
     "skip": "Skip",
     "google_phone_setup_title": "Add your phone number and PIN (optional)",
     "google_phone_setup_hint": "Your account is currently linked to Google only. Add a phone number and PIN so you can also log in with them, or skip this step.",
+    "google_phone_setup_skip": "Skip — Google sign-in only",
     "cancel": "Cancel",
     "close": "Close",
     "add": "+ Add",
