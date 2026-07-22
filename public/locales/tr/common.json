@@ -776,6 +776,10 @@
         "a": "Salonla doğrudan telefon numarasıyla iletişime geçin."
       },
       {
+        "q": "En yakın salonları göstermek için konumum nasıl kaydedilir?",
+        "a": "Konumunuz, hesabınızı oluşturduğunuz anda otomatik olarak kaydedilir (tarayıcının konum iznini verdikten sonra). Başka bir şehre giderseniz, ana ekrandaki \"En Yakın\" butonuna dokunarak mevcut konumunuza göre anında yeniden sıralayabilirsiniz. Kayıtlı konumunuzu güncellemek veya silmek için Hesabım → Verileri Düzenle → \"Kayıtlı Konumum\" bölümüne gidin (konum iznini reddettiyseniz oradan manuel olarak bir Google Haritalar bağlantısı da ekleyebilirsiniz)."
+      },
+      {
         "q": "Salonumu nasıl kaydederim?",
         "a": "Üst çubukta makas simgesine dokunun."
       },
