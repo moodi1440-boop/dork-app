@@ -1,5 +1,8 @@
 // ثوابت البيانات المشتركة — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 
+// رقم الإصدار الموحّد — نفسه في التطبيق والإدارة
+export const APP_VERSION = "L167";
+
 export const SLOT_STEP = 15;
 export const SLOT_MIN  = 40;
 export const BUFFER_MIN = 5;
