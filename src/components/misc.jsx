@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { G } from "../styles.js";
 import { IconStar } from "./icons.jsx";
+import { fi } from "./ui.jsx";
 
 export function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
   const inputRef=useRef(null);

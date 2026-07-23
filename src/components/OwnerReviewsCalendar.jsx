@@ -1,5 +1,5 @@
 // لوحة مراجعات صاحب الصالون وتقويم الحجوزات — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "../i18n.js";
 import { G } from "../styles.js";

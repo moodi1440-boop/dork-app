@@ -1,9 +1,9 @@
 // لوحة تحكم صاحب الصالون الرئيسية — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "../i18n.js";
 import { G } from "../styles.js";
-import { getTodayDateInRiyadh, to12h } from "../utils.js";
+import { getTodayDateInRiyadh, to12h, getSlotsForSalon } from "../utils.js";
 import { BookingCalendar, OwnerReviewsPanel } from "./OwnerReviewsCalendar.jsx";
 import { MessagesPanel } from "./Chat.jsx";
 import { NotifPanel, StatsPanel } from "./OwnerPanels.jsx";

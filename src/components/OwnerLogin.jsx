@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { G } from "../styles.js";
-import { F, fi } from "./ui.jsx";
+import { F, fi, SL } from "./ui.jsx";
 import { OtpInput } from "./misc.jsx";
 import { IconArrowRight, IconEye, IconEyeOff } from "./icons.jsx";
 import { supabase, registerPushSubForUser } from "../../App.jsx";

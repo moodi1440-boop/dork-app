@@ -3,13 +3,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "../i18n.js";
 import { G } from "../styles.js";
-import { DEFAULT_SOCIAL_LINKS, TONES } from "../constants.js";
-import { hashPin, optimizeImageUrl } from "../utils.js";
+import { DEFAULT_SOCIAL_LINKS, TONES, DEFAULT_SERVICES } from "../constants.js";
+import { hashPin, optimizeImageUrl, playTone, IMG_FMT } from "../utils.js";
 import {
   IconArrowRight, IconBarberPole, IconCamera, IconCheck, IconDragHandle, IconLock,
   IconPencil, IconPin, IconRefresh, IconSuccess, IconTrash, NotifIcon
 } from "./icons.jsx";
-import { sb } from "../../App.jsx";
+import { sb, ownerApi } from "../../App.jsx";
 
 export function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySec,setView,setShowSalonDrawer,setOwnerTab}){
   const{t}=useTranslation();

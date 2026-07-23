@@ -114,7 +114,7 @@ export function ChatProvider({ children }) {
   return <ChatCtx.Provider value={value}>{children}</ChatCtx.Provider>;
 }
 
-function useChat(key) {
+export function useChat(key) {
   const ctx = React.useContext(ChatCtx);
   const msgs = ctx?.chats[key] || [];
   const sm = ctx?.setMessages;
@@ -177,7 +177,7 @@ export async function sb(table, method, body, query = "", authToken = null) {
 }
 
 
-async function ownerApi(method, body) {
+export async function ownerApi(method, body) {
   const res = await fetch("/api/owner-salon", {
     method,
     headers: body ? { "Content-Type": "application/json" } : undefined,
@@ -308,7 +308,7 @@ async function requestNotifPermission(){
   return p==="granted";
 }
 
-const ntxt=(lang)=>NOTIF_TEXTS[lang]||NOTIF_TEXTS.ar;
+export const ntxt=(lang)=>NOTIF_TEXTS[lang]||NOTIF_TEXTS.ar;
 
 function sendNotif(title,body,icon="✂",targetType="all",targetId=null){
   // زيادة عداد الجرس

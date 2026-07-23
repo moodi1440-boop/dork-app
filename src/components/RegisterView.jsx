@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import i18n from "../i18n.js";
 import { G } from "../styles.js";
 import { DEFAULT_SERVICES, TONES } from "../constants.js";
-import { F, fi } from "./ui.jsx";
+import { playTone, IMG_FMT, optimizeImageUrl } from "../utils.js";
+import { F, fi, SL } from "./ui.jsx";
 import { IconArrowRight, IconClose, IconTrash, NotifIcon } from "./icons.jsx";
 import { sb } from "../../App.jsx";
 

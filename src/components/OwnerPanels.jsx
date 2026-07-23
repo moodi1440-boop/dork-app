@@ -1,5 +1,5 @@
 // لوحتا الإحصائيات والإشعارات لصاحب الصالون — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "../i18n.js";
 import { G } from "../styles.js";
@@ -8,7 +8,7 @@ import {
   IconBarberPole, IconCalendar, IconCheck, IconClose, IconMedal, IconRadioFilled,
   IconScissors, IconTrash, IconUser, NotifIcon, LabelWithIcon
 } from "./icons.jsx";
-import { sb, supabase } from "../../App.jsx";
+import { sb, supabase, ntxt } from "../../App.jsx";
 
 export function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarned=0,totalPaid=0}){
   const{t}=useTranslation();

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "../i18n.js";
 import { G } from "../styles.js";
+import { DorkLogoSvg } from "./ui.jsx";
 import {
   IconArrowLeft, IconArrowRight, IconCalendar, IconPin, IconScissors, IconStar,
   IconUser, NotifIcon

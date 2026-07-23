@@ -642,8 +642,8 @@ export function NotifIcon({icon,size=20}){
   if(icon==="🪨")return <IconPebble size={size}/>;
   if(icon==="🌅")return <IconReceipt size={size}/>;
   if(icon==="🔌")return <IconCircuitNodes size={size}/>;
-  if(icon==="‹")return <IconChevronLeft size={size} color={color}/>;
-  if(icon==="›")return <IconChevronRight size={size} color={color}/>;
+  if(icon==="‹")return <IconChevronLeft size={size}/>;
+  if(icon==="›")return <IconChevronRight size={size}/>;
   if(icon==="←")return <IconArrowLeft size={size}/>;
   if(icon==="→")return <IconArrowRight size={size}/>;
   if(icon==="↑")return <IconArrowUp size={size}/>;

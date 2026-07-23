@@ -1,5 +1,5 @@
 // شاشات اللغة والخصوصية والأسئلة الشائعة (صالون/عميل) — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18n, { SALON_LANGS, CLIENT_LANGS } from "../i18n.js";
 import { G } from "../styles.js";
