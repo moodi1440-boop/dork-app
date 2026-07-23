@@ -9,10 +9,11 @@ import {
   getSlotsForSalon, getSlotsForBarber,
 } from "../utils.js";
 import { F, fi, ShareBtn } from "./ui.jsx";
+import { NotifPanel, StatsPanel } from "./OwnerPanels.jsx";
 import {
   IconArrowRight, IconBarberPole, IconHeart, IconScissors, IconStar, IconUser, NotifIcon
 } from "./icons.jsx";
-import { sb, NotifPanel, StatsPanel } from "../../App.jsx";
+import { sb } from "../../App.jsx";
 
 export function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,reviews,refreshSalonBookings,rescheduleId,customer}){
   const{t}=useTranslation();
