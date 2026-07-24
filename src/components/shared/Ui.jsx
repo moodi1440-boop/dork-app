@@ -1,8 +1,8 @@
 // عناصر واجهة صغيرة مشتركة — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { G } from "../styles.js";
-import { IconError } from "./icons.jsx";
+import { G } from "../../styles.js";
+import { IconError } from "./Icons.jsx";
 
 export function DorkLogoSvg({size=40}){
   return(

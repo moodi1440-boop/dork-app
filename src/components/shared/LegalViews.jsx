@@ -1,11 +1,11 @@
 // شاشات اللغة والخصوصية والأسئلة الشائعة (صالون/عميل) — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import i18n, { SALON_LANGS, CLIENT_LANGS } from "../i18n.js";
-import { G } from "../styles.js";
-import { ALL_LANG_INFO } from "../constants.js";
-import { PrivacyPolicyContent, FAQItem } from "./misc.jsx";
-import { IconArrowRight, NotifIcon } from "./icons.jsx";
+import i18n, { SALON_LANGS, CLIENT_LANGS } from "../../i18n.js";
+import { G } from "../../styles.js";
+import { ALL_LANG_INFO } from "../../constants.js";
+import { PrivacyPolicyContent, FAQItem } from "./Misc.jsx";
+import { IconArrowRight, NotifIcon } from "./Icons.jsx";
 
 export function OwnerLangView({setView,setShowSalonDrawer,setOwnerTab}){
   const{t,i18n}=useTranslation();

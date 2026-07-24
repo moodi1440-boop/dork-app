@@ -1,12 +1,12 @@
 // عرض تقييمات الصالون وبطاقة الصالون — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { G } from "../styles.js";
-import { to12h, openMaps } from "../utils.js";
+import { G } from "../../styles.js";
+import { to12h, openMaps } from "../../utils.js";
 import {
   IconArrowRight, IconCalendar, IconChevronDown, IconFire, IconHeart, IconPin,
   IconScale, IconScissors, IconShare, IconStar, IconUser, NotifIcon
-} from "./icons.jsx";
+} from "./Icons.jsx";
 
 export function SalonReviewsView({salon,reviews,setView}){
   const{t,i18n}=useTranslation();

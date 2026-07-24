@@ -1,16 +1,16 @@
 // لوحة تحكم صاحب الصالون الرئيسية — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
-import { G } from "../styles.js";
-import { getTodayDateInRiyadh, to12h, getSlotsForSalon } from "../utils.js";
+import i18n from "../../i18n.js";
+import { G } from "../../styles.js";
+import { getTodayDateInRiyadh, to12h, getSlotsForSalon } from "../../utils.js";
 import { BookingCalendar, OwnerReviewsPanel } from "./OwnerReviewsCalendar.jsx";
-import { MessagesPanel } from "./Chat.jsx";
+import { MessagesPanel } from "../shared/Chat.jsx";
 import { NotifPanel, StatsPanel } from "./OwnerPanels.jsx";
 import { PromoPanel } from "./PromoPanel.jsx";
 import {
   IconArrowRight, IconCalendar, IconCheck, IconClose, IconFire, IconPin, IconStar, NotifIcon
-} from "./icons.jsx";
+} from "../shared/Icons.jsx";
 
 export function OwnerDash({salon,setView,setOwnerSession,updateBookingStatus,setSalons,toast$,refreshSalonBookings,reviews,setReviews,customers=[],socialLinks,setSocialLinks,ownerTab,setOwnerTab,showSalonDrawer,setShowSalonDrawer}){
   const{t,i18n}=useTranslation();
