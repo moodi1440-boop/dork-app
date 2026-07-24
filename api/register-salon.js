@@ -56,15 +56,14 @@ module.exports = async (req, res) => {
     // بعد ما المالك "حذف" حسابه.
     const ownerPhoneTrim = body.ownerPhone.trim();
     const phoneTrim = body.phone.trim();
-    const { data: existingRows, error: existingErr } = await sb
+    const { data: existingRows } = await sb
       .from("salons")
       .select("id,frozen")
       .or(`owner_phone.eq.${ownerPhoneTrim},phone.eq.${phoneTrim},owner_phone.eq.${phoneTrim},phone.eq.${ownerPhoneTrim}`)
       .limit(10);
     const existing = (existingRows || []).find((r) => !r.frozen);
     if (existing) {
-      // تشخيص مؤقت (بند 48) — يُحذف بعد تأكيد السبب
-      res.status(409).json({ error: "يوجد صالون مسجَّل مسبقاً بنفس رقم الجوال", code: "err_duplicate", _debug: { existingRows, existingErr, supabaseUrlHost: (process.env.SUPABASE_URL || "").replace(/^https?:\/\//, "").split(".")[0] || null } });
+      res.status(409).json({ error: "يوجد صالون مسجَّل مسبقاً بنفس رقم الجوال", code: "err_duplicate" });
       return;
     }
 
