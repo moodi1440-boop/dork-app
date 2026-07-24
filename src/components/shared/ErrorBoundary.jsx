@@ -1,7 +1,7 @@
 // حدود الأخطاء (Error Boundary) — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React from "react";
-import i18n from "../i18n.js";
-import { IconWarning } from "./icons.jsx";
+import i18n from "../../i18n.js";
+import { IconWarning } from "./Icons.jsx";
 
 export class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={err:null,info:null};}

@@ -1,13 +1,13 @@
 // الصفحة الرئيسية (بحث/فلاتر/قائمة الصالونات) — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
-import { G } from "../styles.js";
+import i18n from "../../i18n.js";
+import { G } from "../../styles.js";
 import { SalonCard } from "./SalonCard.jsx";
 import {
   IconCalendar, IconClose, IconFire, IconLightning, IconPin, IconSearch, IconStar,
   IconUser, NotifIcon
-} from "./icons.jsx";
+} from "./Icons.jsx";
 
 export function HomeView({displaySalons,approvedSalons,allLoc,fRegion,setFRegion,fGov,setFGov,fCenter,setFCenter,fVillage,setFVillage,govList,villageList,centerList2,showFavs,setShowFavs,favSet,toggleFav,setView,setSelSalon,customer,search,setSearch,sortBy,setSortBy,userLoc,setUserLoc,toast$,customers,salons,reviews,compareSalons,setCompareSalons,handlePullRefresh,pullRefreshing,loading,promotions,homeResetKey,setQuickBookSeed,fPriceMin,setFPriceMin,fPriceMax,setFPriceMax}){
   const{t}=useTranslation();

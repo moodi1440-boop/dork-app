@@ -1,18 +1,18 @@
 // لوحة تحكم العميل الرئيسية — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
-import { G } from "../styles.js";
-import { hashPin, to12h, buildICS, downloadICS, getCustomerClassification } from "../utils.js";
-import { AttendanceView } from "./AttendanceSettings.jsx";
-import { CustomerSalonChat } from "./Chat.jsx";
-import { InlineStarRating } from "./misc.jsx";
+import i18n from "../../i18n.js";
+import { G } from "../../styles.js";
+import { hashPin, to12h, buildICS, downloadICS, getCustomerClassification } from "../../utils.js";
+import { AttendanceView } from "../shared/AttendanceSettings.jsx";
+import { CustomerSalonChat } from "../shared/Chat.jsx";
+import { InlineStarRating } from "../shared/Misc.jsx";
 import {
   IconArrowRight, IconBell, IconBlocked, IconCalendar, IconChat, IconHeart, IconLock,
   IconPencil, IconPin, IconRefresh, IconScissors, IconStar, IconSuccess, IconTrash,
   IconWarning, NotifIcon, LabelWithIcon
-} from "./icons.jsx";
-import { sb, supabase, ntxt } from "../../App.jsx";
+} from "../shared/Icons.jsx";
+import { sb, supabase, ntxt } from "../../../App.jsx";
 
 export function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,refreshSalonBookings,toast$,initTab="settings",initSection=false,setShowDrawer}){
   const{t}=useTranslation();

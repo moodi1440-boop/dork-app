@@ -1,13 +1,13 @@
 // لوحة مراجعات صاحب الصالون وتقويم الحجوزات — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
-import { G } from "../styles.js";
-import { to12h } from "../utils.js";
+import i18n from "../../i18n.js";
+import { G } from "../../styles.js";
+import { to12h } from "../../utils.js";
 import {
   IconCalendar, IconClipboard, IconScissors, IconStar, IconUser, NotifIcon
-} from "./icons.jsx";
-import { sb } from "../../App.jsx";
+} from "../shared/Icons.jsx";
+import { sb } from "../../../App.jsx";
 
 export function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
   const{t}=useTranslation();

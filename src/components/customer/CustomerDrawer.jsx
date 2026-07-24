@@ -1,13 +1,13 @@
 // القائمة الجانبية للعميل — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
-import { APP_VERSION, THEMES, TONES } from "../constants.js";
-import { hashPin, getCustomerClassification } from "../utils.js";
-import { sb, supabase, initializeWebPushNotifications } from "../../App.jsx";
+import i18n from "../../i18n.js";
+import { APP_VERSION, THEMES, TONES } from "../../constants.js";
+import { hashPin, getCustomerClassification } from "../../utils.js";
+import { sb, supabase, initializeWebPushNotifications } from "../../../App.jsx";
 import {
   IconClose, IconChevronLeft, IconBell, IconWarning, IconTrash, NotifIcon, LabelWithIcon
-} from "./icons.jsx";
+} from "../shared/Icons.jsx";
 
 export function CustomerDrawer({open,onClose,customer,setCustomers,setCustomerSession,setView,setCustDashKey,setCustDashNav,activeDrawerItem,setActiveDrawerItem,settings,setSettings,darkMode,setDarkMode,themeMode,setThemeMode,persistUiToSupabase,toast$,salons,favSet}){
   const{t}=useTranslation();

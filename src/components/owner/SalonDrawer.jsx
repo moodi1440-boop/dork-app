@@ -1,11 +1,11 @@
 // القائمة الجانبية لصاحب الصالون — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { APP_VERSION } from "../constants.js";
-import { initializeWebPushNotifications } from "../../App.jsx";
+import { APP_VERSION } from "../../constants.js";
+import { initializeWebPushNotifications } from "../../../App.jsx";
 import {
   IconClose, IconChevronLeft, IconBell, IconWarning, NotifIcon, LabelWithIcon
-} from "./icons.jsx";
+} from "../shared/Icons.jsx";
 
 export function SalonDrawer({open,onClose,salon,ownerTab,setOwnerTab,view,setView,setOwnerSession,settings,setSettings,persistUiToSupabase,toast$,salonUnreadMsgs=0}){
   const[showLogout,setShowLogout]=useState(false);

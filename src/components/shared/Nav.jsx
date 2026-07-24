@@ -1,8 +1,8 @@
 // EntryView وTopBar — شاشتا الدخول وشريط التنقل العلوي — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { G } from "../styles.js";
-import { NotifIcon, IconUser } from "./icons.jsx";
+import { G } from "../../styles.js";
+import { NotifIcon, IconUser } from "./Icons.jsx";
 
 export function EntryView({setView}){
   const[showLang,setShowLang]=useState(false);

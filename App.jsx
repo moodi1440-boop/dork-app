@@ -17,7 +17,7 @@ import {
   IconArrowReturn, IconChevronLeft, IconChevronRight, IconChevronDown, IconSwapHorizontal, IconEye,
   IconEyeOff, IconRazor, IconMusicNote, IconMusicNotes, IconTrumpet, IconConfetti, IconSteam,
   IconWaterDrops, NotifIcon, LabelWithIcon
-} from "./src/components/icons.jsx";
+} from "./src/components/shared/Icons.jsx";
 import {
   APP_VERSION, SLOT_STEP, SLOT_MIN, BUFFER_MIN, DEFAULT_SOCIAL_LINKS, TONES, THEMES, BACKGROUNDS,
   BG_LIGHT_STYLES, NOTIF_TEXTS, BASE_LOC, DEFAULT_SERVICES, ALL_LANG_INFO
@@ -29,23 +29,23 @@ import {
   icsDateTime, buildICS, downloadICS, optimizeImageUrl, getCachedData
 } from "./src/utils.js";
 import { CSS, G } from "./src/styles.js";
-import { ErrorBoundary } from "./src/components/ErrorBoundary.jsx";
-import { DorkLogoSvg, ShareBtn, SL, F, fi } from "./src/components/ui.jsx";
-import { CustomerDrawer } from "./src/components/CustomerDrawer.jsx";
-import { SalonDrawer } from "./src/components/SalonDrawer.jsx";
-import { EntryView, TopBar } from "./src/components/nav.jsx";
-import { SalonReviewsView, SalonCard } from "./src/components/SalonCard.jsx";
-import { SalonPage, BookView } from "./src/components/SalonPage.jsx";
-import { AllReviewsView, NotifsView, CompareSalonsView, NearMapView } from "./src/components/MiscViews.jsx";
-import { OwnerLangView, CustLangView, OwnerPrivacyView, OwnerFaqView } from "./src/components/LegalViews.jsx";
-import { OwnerLogin } from "./src/components/OwnerLogin.jsx";
-import { OwnerDash } from "./src/components/OwnerDash.jsx";
-import { CustomerLogin } from "./src/components/CustomerLogin.jsx";
-import { OwnerSettings, CustEditDataView } from "./src/components/SettingsViews.jsx";
-import { SettingsView } from "./src/components/AttendanceSettings.jsx";
-import { HomeView } from "./src/components/HomeView.jsx";
-import { RegisterView } from "./src/components/RegisterView.jsx";
-import { CustomerDash } from "./src/components/CustomerDash.jsx";
+import { ErrorBoundary } from "./src/components/shared/ErrorBoundary.jsx";
+import { DorkLogoSvg, ShareBtn, SL, F, fi } from "./src/components/shared/Ui.jsx";
+import { CustomerDrawer } from "./src/components/customer/CustomerDrawer.jsx";
+import { SalonDrawer } from "./src/components/owner/SalonDrawer.jsx";
+import { EntryView, TopBar } from "./src/components/shared/Nav.jsx";
+import { SalonReviewsView, SalonCard } from "./src/components/shared/SalonCard.jsx";
+import { SalonPage, BookView } from "./src/components/shared/SalonPage.jsx";
+import { AllReviewsView, NotifsView, CompareSalonsView, NearMapView } from "./src/components/shared/MiscViews.jsx";
+import { OwnerLangView, CustLangView, OwnerPrivacyView, OwnerFaqView } from "./src/components/shared/LegalViews.jsx";
+import { OwnerLogin } from "./src/components/owner/OwnerLogin.jsx";
+import { OwnerDash } from "./src/components/owner/OwnerDash.jsx";
+import { CustomerLogin } from "./src/components/customer/CustomerLogin.jsx";
+import { OwnerSettings, CustEditDataView } from "./src/components/shared/SettingsViews.jsx";
+import { SettingsView } from "./src/components/shared/AttendanceSettings.jsx";
+import { HomeView } from "./src/components/shared/HomeView.jsx";
+import { RegisterView } from "./src/components/owner/RegisterView.jsx";
+import { CustomerDash } from "./src/components/customer/CustomerDash.jsx";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{

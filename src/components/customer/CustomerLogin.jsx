@@ -1,13 +1,13 @@
 // تسجيل دخول العميل (جوال+رمز/Google/تسجيل جديد/نسيت الرمز) — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
-import { G } from "../styles.js";
-import { hashPin, toAppCustomer } from "../utils.js";
-import { F, fi, SL } from "./ui.jsx";
-import { OtpInput } from "./misc.jsx";
-import { IconEye, IconEyeOff } from "./icons.jsx";
-import { sb, supabase } from "../../App.jsx";
+import i18n from "../../i18n.js";
+import { G } from "../../styles.js";
+import { hashPin, toAppCustomer } from "../../utils.js";
+import { F, fi, SL } from "../shared/Ui.jsx";
+import { OtpInput } from "../shared/Misc.jsx";
+import { IconEye, IconEyeOff } from "../shared/Icons.jsx";
+import { sb, supabase } from "../../../App.jsx";
 
 export function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$,setCustDashNav}){
   const{t}=useTranslation();

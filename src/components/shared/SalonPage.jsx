@@ -1,19 +1,19 @@
 // صفحة الصالون وسير عملية الحجز — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
-import { G } from "../styles.js";
-import { SLOT_STEP, SLOT_MIN, BUFFER_MIN } from "../constants.js";
+import i18n from "../../i18n.js";
+import { G } from "../../styles.js";
+import { SLOT_STEP, SLOT_MIN, BUFFER_MIN } from "../../constants.js";
 import {
   todayStr, to12h, toM, calcTotal, openMaps, optimizeImageUrl,
   getSlotsForSalon, getSlotsForBarber,
-} from "../utils.js";
-import { F, fi, ShareBtn } from "./ui.jsx";
-import { NotifPanel, StatsPanel } from "./OwnerPanels.jsx";
+} from "../../utils.js";
+import { F, fi, ShareBtn } from "./Ui.jsx";
+import { NotifPanel, StatsPanel } from "../owner/OwnerPanels.jsx";
 import {
   IconArrowRight, IconBarberPole, IconHeart, IconScissors, IconStar, IconUser, NotifIcon
-} from "./icons.jsx";
-import { sb } from "../../App.jsx";
+} from "./Icons.jsx";
+import { sb } from "../../../App.jsx";
 
 export function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,reviews,refreshSalonBookings,rescheduleId,customer}){
   const{t}=useTranslation();

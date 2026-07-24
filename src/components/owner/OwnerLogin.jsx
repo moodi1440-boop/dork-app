@@ -1,11 +1,11 @@
 // شاشة تسجيل دخول صاحب الصالون (PIN + نسيت الرمز) — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { G } from "../styles.js";
-import { F, fi, SL } from "./ui.jsx";
-import { OtpInput } from "./misc.jsx";
-import { IconArrowRight, IconEye, IconEyeOff } from "./icons.jsx";
-import { supabase, registerPushSubForUser } from "../../App.jsx";
+import { G } from "../../styles.js";
+import { F, fi, SL } from "../shared/Ui.jsx";
+import { OtpInput } from "../shared/Misc.jsx";
+import { IconArrowRight, IconEye, IconEyeOff } from "../shared/Icons.jsx";
+import { supabase, registerPushSubForUser } from "../../../App.jsx";
 
 export function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
   const{t}=useTranslation();

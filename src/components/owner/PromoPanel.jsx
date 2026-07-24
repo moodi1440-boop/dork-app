@@ -1,11 +1,11 @@
 // لوحة العروض الترويجية للصالون — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
+import i18n from "../../i18n.js";
 import {
   IconArrowRight, IconMedal, IconRocket, IconSuccess, IconSwapHorizontal, NotifIcon, LabelWithIcon
-} from "./icons.jsx";
-import { sb, supabase } from "../../App.jsx";
+} from "../shared/Icons.jsx";
+import { sb, supabase } from "../../../App.jsx";
 
 export function PromoPanel({salon,customers,toast$}){
   const{t}=useTranslation();

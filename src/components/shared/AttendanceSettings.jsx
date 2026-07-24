@@ -1,15 +1,15 @@
 // حضور العميل وإعدادات التطبيق العامة — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
-import { G } from "../styles.js";
-import { TONES, THEMES, BACKGROUNDS } from "../constants.js";
-import { playTone } from "../utils.js";
-import { PrivacyPolicyContent, FAQItem } from "./misc.jsx";
+import i18n from "../../i18n.js";
+import { G } from "../../styles.js";
+import { TONES, THEMES, BACKGROUNDS } from "../../constants.js";
+import { playTone } from "../../utils.js";
+import { PrivacyPolicyContent, FAQItem } from "./Misc.jsx";
 import {
   IconArrowRight, IconCheck, IconScissors, NotifIcon, LabelWithIcon
-} from "./icons.jsx";
-import { sb } from "../../App.jsx";
+} from "./Icons.jsx";
+import { sb } from "../../../App.jsx";
 
 export function AttendanceView({customer,salons}){
   const{t}=useTranslation();

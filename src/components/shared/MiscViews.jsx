@@ -1,14 +1,14 @@
 // صفحات: كل التقييمات، الإشعارات، المقارنة، الخريطة القريبة — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
-import { G } from "../styles.js";
-import { DorkLogoSvg } from "./ui.jsx";
+import i18n from "../../i18n.js";
+import { G } from "../../styles.js";
+import { DorkLogoSvg } from "./Ui.jsx";
 import {
   IconArrowLeft, IconArrowRight, IconCalendar, IconPin, IconScissors, IconStar,
   IconUser, NotifIcon
-} from "./icons.jsx";
-import { sb } from "../../App.jsx";
+} from "./Icons.jsx";
+import { sb } from "../../../App.jsx";
 
 export function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
   const{t,i18n}=useTranslation();

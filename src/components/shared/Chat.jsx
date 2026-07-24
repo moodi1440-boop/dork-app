@@ -1,10 +1,10 @@
 // المراسلة بين الصالون والعميل (لوحة المالك + نافذة العميل) — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "../i18n.js";
-import { G } from "../styles.js";
-import { IconArrowRight, IconChat, IconClose } from "./icons.jsx";
-import { sb, supabase, useChat } from "../../App.jsx";
+import i18n from "../../i18n.js";
+import { G } from "../../styles.js";
+import { IconArrowRight, IconChat, IconClose } from "./Icons.jsx";
+import { sb, supabase, useChat } from "../../../App.jsx";
 
 export function MessagesPanel({salon,toast$}){
   const{t}=useTranslation();
