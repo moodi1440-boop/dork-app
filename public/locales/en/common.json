@@ -947,6 +947,7 @@
     "login_first": "Please log in as a customer first",
     "error_prefix": "Error: ",
     "salon_reg_sent": "Salon registration request sent - awaiting admin approval",
+    "salon_reg_approved": "🎉 Your salon registration has been approved! You can log in now",
     "booking_sent": "🎉 Booking request sent!",
     "time_taken": "This time slot is taken, please choose another",
     "booking_accepted_toast": "Booking accepted",

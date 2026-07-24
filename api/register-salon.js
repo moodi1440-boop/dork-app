@@ -88,7 +88,7 @@ module.exports = async (req, res) => {
       } catch { /* فشل صامت — التسجيل يكتمل بدون auth_uid */ }
     }
 
-    res.status(200).json({ ok: true, id: data.id });
+    res.status(200).json({ ok: true, id: data.id, status });
   } catch (e) {
     logApiError("register-salon", e, req);
     res.status(500).json({ error: "خطأ بالسيرفر" });

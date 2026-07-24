@@ -947,6 +947,7 @@
     "login_first": "Lütfen önce müşteri olarak giriş yapın",
     "error_prefix": "Hata: ",
     "salon_reg_sent": "Salon kayıt talebi gönderildi - admin onayı bekleniyor",
+    "salon_reg_approved": "🎉 Salon kaydınız onaylandı! Şimdi giriş yapabilirsiniz",
     "booking_sent": "🎉 Rezervasyon isteği gönderildi!",
     "time_taken": "Bu zaman dilimi dolu, lütfen başka bir zaman seçin",
     "booking_accepted_toast": "Rezervasyon kabul edildi",
