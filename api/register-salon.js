@@ -50,15 +50,18 @@ module.exports = async (req, res) => {
     const sb = createAdminClient();
 
     // فحص تكرار — نفس نمط phone_exists بتسجيل العميل، يمنع تسجيل عدة
-    // صالونات بنفس رقم الجوال (owner_phone أو phone) بدون أي رسالة منع
+    // صالونات بنفس رقم الجوال (owner_phone أو phone) بدون أي رسالة منع.
+    // الصالونات المجمَّدة (حذف بقرار المالك عبر api/delete-salon.js — تجميد
+    // فقط وليس حذفاً فعلياً) تُستثنى، وإلا يبقى رقم الجوال محجوزاً للأبد
+    // بعد ما المالك "حذف" حسابه.
     const ownerPhoneTrim = body.ownerPhone.trim();
     const phoneTrim = body.phone.trim();
-    const { data: existing } = await sb
+    const { data: existingRows } = await sb
       .from("salons")
-      .select("id")
+      .select("id,frozen")
       .or(`owner_phone.eq.${ownerPhoneTrim},phone.eq.${phoneTrim},owner_phone.eq.${phoneTrim},phone.eq.${ownerPhoneTrim}`)
-      .limit(1)
-      .maybeSingle();
+      .limit(10);
+    const existing = (existingRows || []).find((r) => !r.frozen);
     if (existing) {
       res.status(409).json({ error: "يوجد صالون مسجَّل مسبقاً بنفس رقم الجوال", code: "err_duplicate" });
       return;
