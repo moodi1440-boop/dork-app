@@ -361,7 +361,7 @@ export function CustomerLogin({customers,setCustomers,setCustomerSession,setView
         </div>
         <button onClick={()=>setView("entry")} style={{width:"100%",marginTop:20,padding:"14px 0",borderRadius:12,border:"1.5px solid var(--pa25)",background:"transparent",color:"var(--p)",cursor:"pointer",fontFamily:"inherit",fontSize:15,fontWeight:700,WebkitAppearance:"none",appearance:"none"}}>{t("cust_login.back")}</button>
       </>:googleStep?<>
-        {/* إضافة جوال + رمز سري اختيارية بعد أول تسجيل بجوجل — الاثنان معاً أو ولا شي */}
+        {/* إضافة جوال + رمز سري إلزامية بعد أول تسجيل بجوجل — بدونها العميل يفقد طريقة الدخول لو ما قدر يستخدم جوجل لاحقاً (زر جوجل موجود بتبويب "تسجيل" فقط) */}
         <div style={G.fc}>
           <SL>{t('ui.google_phone_setup_title')}</SL>
           <div style={{fontSize:13,color:"var(--text-muted)",marginBottom:14,lineHeight:1.6}}>{t('ui.google_phone_setup_hint')}</div>
@@ -384,7 +384,6 @@ export function CustomerLogin({customers,setCustomers,setCustomerSession,setView
             }catch(e){setGErr(e.message);}
             setGSaving(false);
           }}>{gSaving?t("cust_login.verifying"):t('ui.save')}</button>
-          <button onClick={()=>setView("home")} style={{width:"100%",marginTop:10,padding:"10px 0",borderRadius:10,border:"1.5px solid var(--border-ui)",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontFamily:"inherit",fontSize:13}}>{t('ui.google_phone_setup_skip')}</button>
         </div>
       </>:<>
 
