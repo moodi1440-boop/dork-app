@@ -1,97 +1,12 @@
 // شاشات اللغة والخصوصية والأسئلة الشائعة (صالون/عميل) — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import i18n, { SALON_LANGS, CLIENT_LANGS } from "../../i18n.js";
+
 import { G } from "../../styles.js";
-import { ALL_LANG_INFO } from "../../constants.js";
-import { PrivacyPolicyContent, FAQItem } from "./Misc.jsx";
-import { IconArrowRight, NotifIcon } from "./Icons.jsx";
 
-export function OwnerLangView({setView,setShowSalonDrawer,setOwnerTab}){
-  const{t,i18n}=useTranslation();
-  const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
-  const LANGS=ALL_LANG_INFO.filter(l=>SALON_LANGS.includes(l.code));
-  return(
-    <div style={{...G.page,direction:dir}}>
-      <div style={G.fp}>
-        <div style={G.fh}>
-          <button style={G.bb} onClick={()=>{setOwnerTab&&setOwnerTab(null);setShowSalonDrawer&&setShowSalonDrawer(true);}}><IconArrowRight size={20}/></button>
-          <h2 style={{...G.ft,display:"flex",alignItems:"center",gap:8}}><NotifIcon icon="🌐" size={18}/> {t("salon_drawer.language")}</h2>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,paddingTop:8}}>
-          {LANGS.map(l=>{
-            const active=i18n.language===l.code;
-            return(
-              <button key={l.code} onClick={()=>i18n.changeLanguage(l.code)}
-                style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 18px",borderRadius:14,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa15)":"var(--surface-1)",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s"}}>
-                <span style={{fontSize:28,flexShrink:0}}>{l.flag}</span>
-                <div style={{flex:1,textAlign:dir==="rtl"?"right":"left"}}>
-                  <div style={{fontSize:16,fontWeight:700,color:active?"var(--p)":"var(--text-primary)"}}>{l.label}</div>
-                  <div style={{fontSize:12,color:"var(--text-muted)",marginTop:2}}>{l.sub}</div>
-                </div>
-                {active&&<div style={{width:10,height:10,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
+import { FAQItem } from "../shared/FAQItem.jsx";
+import { IconArrowRight } from "../shared/Icons.jsx";
 
-export function CustLangView({setView,setShowDrawer}){
-  const{t,i18n}=useTranslation();
-  const dir=['ar','ur'].includes(i18n.language)?'rtl':'ltr';
-  const LANGS=ALL_LANG_INFO.filter(l=>CLIENT_LANGS.includes(l.code));
-  return(
-    <div style={{...G.page,direction:dir}}>
-      <div style={G.fp}>
-        <div style={G.fh}>
-          <button style={G.bb} onClick={()=>{setView("home");setShowDrawer&&setShowDrawer(true);}}><IconArrowRight size={20}/></button>
-          <h2 style={{...G.ft,display:"flex",alignItems:"center",gap:8}}><NotifIcon icon="🌐" size={18}/> {t("cust_drawer.language")}</h2>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,paddingTop:8}}>
-          {LANGS.map(l=>{
-            const active=i18n.language===l.code;
-            return(
-              <button key={l.code} onClick={()=>i18n.changeLanguage(l.code)}
-                style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 18px",borderRadius:14,border:`1.5px solid ${active?"var(--p)":"var(--border-ui)"}`,background:active?"var(--pa15)":"var(--surface-1)",cursor:"pointer",fontFamily:"inherit",WebkitAppearance:"none",appearance:"none",transition:"all .2s"}}>
-                <span style={{fontSize:28,flexShrink:0}}>{l.flag}</span>
-                <div style={{flex:1,textAlign:dir==="rtl"?"right":"left"}}>
-                  <div style={{fontSize:16,fontWeight:700,color:active?"var(--p)":"var(--text-primary)"}}>{l.label}</div>
-                  <div style={{fontSize:12,color:"var(--text-muted)",marginTop:2}}>{l.sub}</div>
-                </div>
-                {active&&<div style={{width:10,height:10,borderRadius:"50%",background:"var(--p)",flexShrink:0}}/>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function OwnerPrivacyView({setView,setShowSalonDrawer}){
-  const{t}=useTranslation();
-  const box={background:"var(--surface-1)",borderRadius:13,padding:14,border:"1px solid var(--border-ui)",marginBottom:10};
-  const hdr={fontSize:12,fontWeight:700,color:"var(--p)",marginBottom:10,paddingBottom:6,borderBottom:"1px solid var(--border-ui)"};
-  const sections=t("settings.privacy_sections",{returnObjects:true})||[];
-  return(
-    <div style={G.page}><div style={G.fp}>
-      <div style={G.fh}><button style={G.bb} onClick={()=>{setShowSalonDrawer&&setShowSalonDrawer(true);setView("ownerDash");}}><IconArrowRight size={20}/></button><h2 style={G.ft}>{t("settings.privacy_header")}</h2></div>
-      <div style={box}>
-        <div style={hdr}>{t("settings.privacy_header")}</div>
-        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:12}}>{t("settings.privacy_updated")}</div>
-        {sections.map(({title,content},i)=>(
-          <div key={i} style={{marginBottom:14}}>
-            <div style={{fontSize:13,fontWeight:700,color:"var(--p)",marginBottom:5}}>{title}</div>
-            <div style={{fontSize:12,color:"var(--text-muted)",lineHeight:1.8}}>{content}</div>
-          </div>
-        ))}
-      </div>
-    </div></div>
-  );
-}
 
 export function OwnerFaqView({setView,setShowSalonDrawer,setOwnerTab}){
   const{t}=useTranslation();
@@ -136,4 +51,3 @@ export function OwnerFaqView({setView,setShowSalonDrawer,setOwnerTab}){
     </div></div>
   );
 }
-

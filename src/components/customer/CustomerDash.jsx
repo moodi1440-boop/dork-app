@@ -4,9 +4,9 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../i18n.js";
 import { G } from "../../styles.js";
 import { hashPin, to12h, buildICS, downloadICS, getCustomerClassification } from "../../utils.js";
-import { AttendanceView } from "../shared/AttendanceSettings.jsx";
-import { CustomerSalonChat } from "../shared/Chat.jsx";
-import { InlineStarRating } from "../shared/Misc.jsx";
+import { AttendanceView } from "./AttendanceView.jsx";
+import { CustomerSalonChat } from "./CustomerSalonChat.jsx";
+import { InlineStarRating } from "../shared/InlineStarRating.jsx";
 import {
   IconArrowRight, IconBell, IconBlocked, IconCalendar, IconChat, IconHeart, IconLock,
   IconPencil, IconPin, IconRefresh, IconScissors, IconStar, IconSuccess, IconTrash,

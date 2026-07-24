@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../i18n.js";
 import { G } from "../../styles.js";
 import { getTodayDateInRiyadh, to12h, getSlotsForSalon } from "../../utils.js";
-import { BookingCalendar, OwnerReviewsPanel } from "./OwnerReviewsCalendar.jsx";
-import { MessagesPanel } from "../shared/Chat.jsx";
-import { NotifPanel, StatsPanel } from "./OwnerPanels.jsx";
+import { BookingCalendar } from "./BookingCalendar.jsx";
+import { OwnerReviewsPanel } from "./OwnerReviewsPanel.jsx";
+import { MessagesPanel } from "./MessagesPanel.jsx";
+import { NotifPanel } from "./NotifPanel.jsx";
+import { StatsPanel } from "./StatsPanel.jsx";
 import { PromoPanel } from "./PromoPanel.jsx";
 import {
   IconArrowRight, IconCalendar, IconCheck, IconClose, IconFire, IconPin, IconStar, NotifIcon

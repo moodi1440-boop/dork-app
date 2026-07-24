@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { G } from "../../styles.js";
 import { F, fi, SL } from "../shared/Ui.jsx";
-import { OtpInput } from "../shared/Misc.jsx";
+import { OtpInput } from "../shared/OtpInput.jsx";
 import { IconArrowRight, IconEye, IconEyeOff } from "../shared/Icons.jsx";
 import { supabase } from "../../api.js";
 import { registerPushSubForUser } from "../../push.js";

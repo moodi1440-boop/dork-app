@@ -5,7 +5,7 @@ import i18n from "../../i18n.js";
 import { G } from "../../styles.js";
 import { hashPin, toAppCustomer } from "../../utils.js";
 import { F, fi, SL } from "../shared/Ui.jsx";
-import { OtpInput } from "../shared/Misc.jsx";
+import { OtpInput } from "../shared/OtpInput.jsx";
 import { IconEye, IconEyeOff } from "../shared/Icons.jsx";
 import { sb, supabase } from "../../api.js";
 
