@@ -9,7 +9,7 @@ import { PrivacyPolicyContent, FAQItem } from "./Misc.jsx";
 import {
   IconArrowRight, IconCheck, IconScissors, NotifIcon, LabelWithIcon
 } from "./Icons.jsx";
-import { sb } from "../../../App.jsx";
+import { sb } from "../../api.js";
 
 export function AttendanceView({customer,salons}){
   const{t}=useTranslation();

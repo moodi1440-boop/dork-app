@@ -8,7 +8,8 @@ import {
   IconBarberPole, IconCalendar, IconCheck, IconClose, IconMedal, IconRadioFilled,
   IconScissors, IconTrash, IconUser, NotifIcon, LabelWithIcon
 } from "../shared/Icons.jsx";
-import { sb, supabase, ntxt } from "../../../App.jsx";
+import { sb, supabase } from "../../api.js";
+import { ntxt } from "../../notifications.js";
 
 export function StatsPanel({salon,onUpdate,customers=[],refreshSalonBookings,totalEarned=0,totalPaid=0}){
   const{t}=useTranslation();

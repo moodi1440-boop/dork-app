@@ -5,7 +5,7 @@ import i18n from "../../i18n.js";
 import {
   IconArrowRight, IconMedal, IconRocket, IconSuccess, IconSwapHorizontal, NotifIcon, LabelWithIcon
 } from "../shared/Icons.jsx";
-import { sb, supabase } from "../../../App.jsx";
+import { sb, supabase } from "../../api.js";
 
 export function PromoPanel({salon,customers,toast$}){
   const{t}=useTranslation();

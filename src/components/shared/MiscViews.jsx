@@ -8,7 +8,7 @@ import {
   IconArrowLeft, IconArrowRight, IconCalendar, IconPin, IconScissors, IconStar,
   IconUser, NotifIcon
 } from "./Icons.jsx";
-import { sb } from "../../../App.jsx";
+import { sb } from "../../api.js";
 
 export function AllReviewsView({reviews,approvedSalons,setSelSalon,setView}){
   const{t,i18n}=useTranslation();

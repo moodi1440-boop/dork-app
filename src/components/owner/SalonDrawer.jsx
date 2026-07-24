@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { APP_VERSION } from "../../constants.js";
-import { initializeWebPushNotifications } from "../../../App.jsx";
+import { initializeWebPushNotifications } from "../../push.js";
 import {
   IconClose, IconChevronLeft, IconBell, IconWarning, NotifIcon, LabelWithIcon
 } from "../shared/Icons.jsx";

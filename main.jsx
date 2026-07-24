@@ -3,7 +3,9 @@ import ReactDOM from 'react-dom/client'
 import { I18nextProvider } from 'react-i18next'
 import { inject } from '@vercel/analytics'
 import * as Sentry from '@sentry/react'
-import App, { ErrorBoundary, ChatProvider } from './App.jsx'
+import App from './App.jsx'
+import { ErrorBoundary } from './src/components/shared/ErrorBoundary.jsx'
+import { ChatProvider } from './src/chat.jsx'
 import i18n from './src/i18n.js'
 
 inject()

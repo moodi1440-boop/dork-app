@@ -7,7 +7,7 @@ import { DEFAULT_SERVICES, TONES } from "../../constants.js";
 import { playTone, IMG_FMT, optimizeImageUrl } from "../../utils.js";
 import { F, fi, SL } from "../shared/Ui.jsx";
 import { IconArrowRight, IconClose, IconTrash, NotifIcon } from "../shared/Icons.jsx";
-import { sb } from "../../../App.jsx";
+import { sb } from "../../api.js";
 
 export function RegisterView({allLoc,addSalon,setView,addExtraLoc}){
   const{t}=useTranslation();

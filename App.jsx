@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { useTranslation } from 'react-i18next';
 import i18n, { SALON_LANGS, CLIENT_LANGS } from './src/i18n.js';
 import {
@@ -29,7 +28,6 @@ import {
   icsDateTime, buildICS, downloadICS, optimizeImageUrl, getCachedData
 } from "./src/utils.js";
 import { CSS, G } from "./src/styles.js";
-import { ErrorBoundary } from "./src/components/shared/ErrorBoundary.jsx";
 import { DorkLogoSvg, ShareBtn, SL, F, fi } from "./src/components/shared/Ui.jsx";
 import { CustomerDrawer } from "./src/components/customer/CustomerDrawer.jsx";
 import { SalonDrawer } from "./src/components/owner/SalonDrawer.jsx";
@@ -46,6 +44,10 @@ import { SettingsView } from "./src/components/shared/AttendanceSettings.jsx";
 import { HomeView } from "./src/components/shared/HomeView.jsx";
 import { RegisterView } from "./src/components/owner/RegisterView.jsx";
 import { CustomerDash } from "./src/components/customer/CustomerDash.jsx";
+import { supabase, sb, ownerApi } from "./src/api.js";
+import { initializeWebPushNotifications, registerPushSubForUser, smartPushRefresh } from "./src/push.js";
+import { requestNotifPermission, ntxt, sendNotif } from "./src/notifications.js";
+import { ChatProvider, useChat } from "./src/chat.jsx";
 
 // تحديث تلقائي عند وجود إصدار جديد
 (()=>{
@@ -65,267 +67,6 @@ import { CustomerDash } from "./src/components/customer/CustomerDash.jsx";
   }catch{}
 })();
 
-// ==============================================
-//  CHAT CONTEXT — يحتفظ بالرسائل في localStorage مع تنظيف 30 يوم
-// ==============================================
-const ChatCtx = React.createContext(null);
-const CHAT_STORAGE_KEY = "dork_chats";
-const THIRTY_DAYS_MS   = 30 * 24 * 60 * 60 * 1000;
-
-function loadChatsFromStorage() {
-  try {
-    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    const now = Date.now();
-    const cleaned = {};
-    for (const [key, msgs] of Object.entries(parsed)) {
-      const recent = (msgs || []).filter(m => (now - new Date(m.created_at).getTime()) < THIRTY_DAYS_MS);
-      if (recent.length > 0) cleaned[key] = recent;
-    }
-    return cleaned;
-  } catch { return {}; }
-}
-
-export function ChatProvider({ children }) {
-  const [chats, setChats] = React.useState(loadChatsFromStorage);
-
-  React.useEffect(() => {
-    try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chats)); } catch {}
-  }, [chats]);
-
-  const setMessages = React.useCallback((key, msgs) => {
-    setChats(prev => ({ ...prev, [key]: msgs }));
-  }, []);
-
-  const addMessage = React.useCallback((key, msg) => {
-    setChats(prev => {
-      const existing = prev[key] || [];
-      if (existing.some(m => m.id === msg.id)) return prev;
-      return { ...prev, [key]: [...existing, msg] };
-    });
-  }, []);
-
-  const value = React.useMemo(
-    () => ({ chats, setMessages, addMessage }),
-    [chats, setMessages, addMessage]
-  );
-
-  return <ChatCtx.Provider value={value}>{children}</ChatCtx.Provider>;
-}
-
-export function useChat(key) {
-  const ctx = React.useContext(ChatCtx);
-  const msgs = ctx?.chats[key] || [];
-  const sm = ctx?.setMessages;
-  const am = ctx?.addMessage;
-  const setMsgs = React.useCallback((m) => sm?.(key, m), [sm, key]);
-  const addMsg  = React.useCallback((m) => am?.(key, m), [am, key]);
-  return { msgs, setMsgs, addMsg };
-}
-
-// ==============================================
-//  SUPABASE CLIENT
-// ==============================================
-const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL  || "https://kowotztbxgoodvnjyxyq.supabase.co";
-const SUPABASE_ANON   = import.meta.env.VITE_SUPABASE_ANON || "sb_publishable_FZoSBhhAiKi8cefVUyg2eQ_GqUTlTg2";
-
-// Supabase JS client — autoRefreshToken يُجدّد JWT تلقائياً قبل انتهائه
-// إعدادات Dashboard المطلوبة: Auth → JWT expiry = 3600s، Enable reuse detection = ON
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
-  auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: false },
-});
-
-// Circuit Breaker — نقطة 25: توقف بعد 3 فشل متتاليين، انتظر 30 ثانية
-const _cb = { fails: 0, openUntil: 0 };
-
-export async function sb(table, method, body, query = "", authToken = null) {
-  if (_cb.openUntil > Date.now()) {
-    throw new Error("circuit_open");
-  }
-  if (!authToken) {
-    try {
-      const { data } = await supabase.auth.getSession();
-      authToken = data?.session?.access_token || null;
-    } catch {}
-  }
-  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
-  let res;
-  try {
-    res = await fetch(url, {
-      method,
-      headers: {
-        "apikey": SUPABASE_ANON,
-        "Authorization": `Bearer ${authToken || SUPABASE_ANON}`,
-        "Content-Type": "application/json",
-        "Prefer": method === "POST" ? "return=representation" : "return=minimal",
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  } catch (e) {
-    if (++_cb.fails >= 3) { _cb.openUntil = Date.now() + 30_000; _cb.fails = 0; }
-    throw e;
-  }
-  if (!res.ok) {
-    const err = await res.text();
-    if (++_cb.fails >= 3) { _cb.openUntil = Date.now() + 30_000; _cb.fails = 0; }
-    throw new Error(`Supabase ${method} ${table}: ${err}`);
-  }
-  _cb.fails = 0;
-  const text = await res.text();
-  return text ? JSON.parse(text) : [];
-}
-
-
-export async function ownerApi(method, body) {
-  const res = await fetch("/api/owner-salon", {
-    method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `owner-salon ${method} failed`);
-  return data;
-}
-
-// ========== Web Push Notifications (بدون Firebase) ==========
-
-const VAPID_PUBLIC_KEY = "BAiPrlWpzRxfgx_BJoi0SX46F6ZwuJNnl20nmPwO3KcCedIUq5ghPqE6qSDSpye3Ogx7OQT-51jAUwdibazE8g4";
-
-function urlBase64ToUint8Array(b64) {
-  const pad = '='.repeat((4 - b64.length % 4) % 4);
-  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
-  return Uint8Array.from(raw, c => c.charCodeAt(0));
-}
-
-async function _callRegisterPushSub(userType, userId, sub) {
-  if (!sub || !userType || !userId) return;
-  await supabase.functions.invoke("register-push-sub", {
-    body: { subscription: sub, user_type: userType, user_id: userId },
-  }).catch(() => {});
-}
-
-async function requestNotificationPermission() {
-  try {
-    if (Notification.permission === "granted") return true;
-    if (Notification.permission === "denied") {
-      localStorage.setItem("fcm_debug", "permission-denied");
-      return false;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      localStorage.setItem("fcm_debug", "permission-" + permission);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    localStorage.setItem("fcm_debug", "permission-error:" + err.message);
-    return false;
-  }
-}
-
-export async function initializeWebPushNotifications() {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
-  try {
-    const granted = await requestNotificationPermission();
-    if (!granted) return;
-
-    const swReg = await navigator.serviceWorker.register("/push-sw.js", { updateViaCache: "none", scope: "/" });
-    await navigator.serviceWorker.ready;
-
-    let sub = await swReg.pushManager.getSubscription();
-    if (sub) {
-      const expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-      const currentKey = sub.options?.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey) : null;
-      const keyMatches = currentKey && currentKey.length === expectedKey.length && currentKey.every((v, i) => v === expectedKey[i]);
-      if (!keyMatches) { await sub.unsubscribe().catch(() => {}); sub = null; }
-    }
-    if (!sub) {
-      localStorage.setItem("fcm_debug", "subscribing...");
-      sub = await swReg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
-    }
-
-    const subJson = sub.toJSON();
-    localStorage.setItem("fcm_debug", "ok:" + sub.endpoint.slice(-16));
-    localStorage.setItem("fcm_token", sub.endpoint);
-    localStorage.setItem("fcm_registered_at", String(Date.now()));
-
-    const ow = localStorage.getItem("dork_owner");
-    const cu = localStorage.getItem("dork_customer");
-    if (ow) await _callRegisterPushSub("salon", +ow, subJson);
-    if (cu) { try { const cp = JSON.parse(cu); await _callRegisterPushSub("customer", cp.id, subJson); } catch {} }
-
-  } catch (error) {
-    if (error.message?.includes("permission") || error.message?.includes("blocked")) {
-      localStorage.removeItem("fcm_token");
-    }
-    localStorage.setItem("fcm_debug", "ERROR:" + error.message);
-    console.error("Push Error:", error.message);
-  }
-}
-
-export async function registerPushSubForUser(userType, userId) {
-  try {
-    const swReg = await navigator.serviceWorker.getRegistration("/push-sw.js").catch(() => null);
-    if (!swReg) return;
-    const sub = await swReg.pushManager.getSubscription().catch(() => null);
-    if (!sub) return;
-    await _callRegisterPushSub(userType, userId, sub.toJSON());
-  } catch {}
-}
-
-async function smartPushRefresh() {
-  try {
-    const swReg = await navigator.serviceWorker.getRegistration("/push-sw.js").catch(() => null);
-    if (!swReg) return;
-    const sub = await swReg.pushManager.getSubscription().catch(() => null);
-    if (!sub) return;
-    const cachedEndpoint = localStorage.getItem("fcm_token");
-    const lastReg = parseInt(localStorage.getItem("fcm_registered_at") || "0");
-    const hoursSince = (Date.now() - lastReg) / 3_600_000;
-    if (sub.endpoint === cachedEndpoint && hoursSince < 24) return;
-    const subJson = sub.toJSON();
-    localStorage.setItem("fcm_token", sub.endpoint);
-    localStorage.setItem("fcm_registered_at", String(Date.now()));
-    const ow = localStorage.getItem("dork_owner");
-    const cu = localStorage.getItem("dork_customer");
-    if (ow) await _callRegisterPushSub("salon", +ow, subJson);
-    if (cu) { try { const cp = JSON.parse(cu); await _callRegisterPushSub("customer", cp.id, subJson); } catch {} }
-  } catch {}
-}
-
-// ==============================================
-//  PUSH NOTIFICATIONS
-// ==============================================
-
-async function requestNotifPermission(){
-  if(!("Notification" in window))return false;
-  if(Notification.permission==="granted")return true;
-  const p=await Notification.requestPermission();
-  return p==="granted";
-}
-
-export const ntxt=(lang)=>NOTIF_TEXTS[lang]||NOTIF_TEXTS.ar;
-
-function sendNotif(title,body,icon="✂",targetType="all",targetId=null){
-  // زيادة عداد الجرس
-  const count=parseInt(localStorage.getItem("dork_notif_count")||"0");
-  localStorage.setItem("dork_notif_count",String(count+1));
-  // حفظ الإشعار محلياً
-  try{
-    const notifs=JSON.parse(localStorage.getItem("dork_notifs")||"[]");
-    notifs.unshift({id:Date.now(),title,body,icon,time:new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit",hour12:true}),read:false});
-    localStorage.setItem("dork_notifs",JSON.stringify(notifs.slice(0,50)));
-  }catch{}
-  // حفظ الإشعار في Supabase لمزامنة الويب
-  sb("notifications","POST",{target_type:targetType,target_id:targetId,title,body,icon}).catch(()=>{});
-  if(!("Notification" in window)||Notification.permission!=="granted")return;
-  try{new Notification(`${icon} ${title}`,{body,icon:"/favicon.ico",dir:"rtl",lang:"ar"});}catch{}
-}
-
 // طلب الإذن عند تحميل التطبيق
 if(typeof window!=="undefined"){
   setTimeout(()=>requestNotifPermission(),3000);
@@ -334,7 +75,6 @@ if(typeof window!=="undefined"){
 // ==============================================
 //  ROOT
 // ==============================================
-export { ErrorBoundary };
 export default function App(){
   const[salons,setSalons]=useState(()=>{
     try{

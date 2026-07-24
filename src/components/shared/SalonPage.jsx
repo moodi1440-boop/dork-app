@@ -13,7 +13,7 @@ import { NotifPanel, StatsPanel } from "../owner/OwnerPanels.jsx";
 import {
   IconArrowRight, IconBarberPole, IconHeart, IconScissors, IconStar, IconUser, NotifIcon
 } from "./Icons.jsx";
-import { sb } from "../../../App.jsx";
+import { sb } from "../../api.js";
 
 export function SalonPage({salon,favSet,toggleFav,setView,addBooking,updateBookingStatus,ownerSession,customers,reviews,refreshSalonBookings,rescheduleId,customer}){
   const{t}=useTranslation();

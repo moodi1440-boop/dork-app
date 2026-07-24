@@ -9,7 +9,7 @@ import {
   IconArrowRight, IconBarberPole, IconCamera, IconCheck, IconDragHandle, IconLock,
   IconPencil, IconPin, IconRefresh, IconSuccess, IconTrash, NotifIcon
 } from "./Icons.jsx";
-import { sb, ownerApi } from "../../../App.jsx";
+import { sb, ownerApi } from "../../api.js";
 
 export function OwnerSettings({salon,setSalons,toast$,socialLinks,setSocialLinks,onlySec,setView,setShowSalonDrawer,setOwnerTab}){
   const{t}=useTranslation();

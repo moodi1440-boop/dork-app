@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../i18n.js";
 import { G } from "../../styles.js";
 import { IconArrowRight, IconChat, IconClose } from "./Icons.jsx";
-import { sb, supabase, useChat } from "../../../App.jsx";
+import { sb, supabase } from "../../api.js";
+import { useChat } from "../../chat.jsx";
 
 export function MessagesPanel({salon,toast$}){
   const{t}=useTranslation();

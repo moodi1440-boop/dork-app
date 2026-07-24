@@ -7,7 +7,7 @@ import { to12h } from "../../utils.js";
 import {
   IconCalendar, IconClipboard, IconScissors, IconStar, IconUser, NotifIcon
 } from "../shared/Icons.jsx";
-import { sb } from "../../../App.jsx";
+import { sb } from "../../api.js";
 
 export function OwnerReviewsPanel({salon,reviews,setReviews,toast$}){
   const{t}=useTranslation();

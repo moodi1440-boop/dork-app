@@ -5,7 +5,8 @@ import { G } from "../../styles.js";
 import { F, fi, SL } from "../shared/Ui.jsx";
 import { OtpInput } from "../shared/Misc.jsx";
 import { IconArrowRight, IconEye, IconEyeOff } from "../shared/Icons.jsx";
-import { supabase, registerPushSubForUser } from "../../../App.jsx";
+import { supabase } from "../../api.js";
+import { registerPushSubForUser } from "../../push.js";
 
 export function OwnerLogin({setOwnerSession,setOwnerTab,setView,toast$}){
   const{t}=useTranslation();

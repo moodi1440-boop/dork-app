@@ -12,7 +12,8 @@ import {
   IconPencil, IconPin, IconRefresh, IconScissors, IconStar, IconSuccess, IconTrash,
   IconWarning, NotifIcon, LabelWithIcon
 } from "../shared/Icons.jsx";
-import { sb, supabase, ntxt } from "../../../App.jsx";
+import { sb, supabase } from "../../api.js";
+import { ntxt } from "../../notifications.js";
 
 export function CustomerDash({customer,salons,setSalons,setView,setCustomerSession,setSelSalon,toggleFav,favSet,setCustomers,reviews,setReviews,setRescheduleId,loadData,refreshSalonBookings,toast$,initTab="settings",initSection=false,setShowDrawer}){
   const{t}=useTranslation();

@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import i18n from "../../i18n.js";
 import { APP_VERSION, THEMES, TONES } from "../../constants.js";
 import { hashPin, getCustomerClassification } from "../../utils.js";
-import { sb, supabase, initializeWebPushNotifications } from "../../../App.jsx";
+import { sb, supabase } from "../../api.js";
+import { initializeWebPushNotifications } from "../../push.js";
 import {
   IconClose, IconChevronLeft, IconBell, IconWarning, IconTrash, NotifIcon, LabelWithIcon
 } from "../shared/Icons.jsx";

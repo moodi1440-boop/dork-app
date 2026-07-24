@@ -7,7 +7,7 @@ import { hashPin, toAppCustomer } from "../../utils.js";
 import { F, fi, SL } from "../shared/Ui.jsx";
 import { OtpInput } from "../shared/Misc.jsx";
 import { IconEye, IconEyeOff } from "../shared/Icons.jsx";
-import { sb, supabase } from "../../../App.jsx";
+import { sb, supabase } from "../../api.js";
 
 export function CustomerLogin({customers,setCustomers,setCustomerSession,setView,toast$,setCustDashNav}){
   const{t}=useTranslation();
