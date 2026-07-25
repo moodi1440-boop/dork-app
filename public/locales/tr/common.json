@@ -872,7 +872,7 @@
     "ok": "Tamam",
     "skip": "Atla",
     "google_phone_setup_title": "Telefon numaranızı ve PIN'inizi ekleyin",
-    "google_phone_setup_hint": "Hesabınız şu anda yalnızca Google'a bağlı. Hesabınızı tamamlamak için bir telefon numarası ve PIN ekleyin — böylece Google ile giriş yapamadığınızda da giriş yapabilirsiniz.",
+    "google_phone_setup_hint": "Daha sonra giriş yapabilmek için bilgilerinizi tamamlayın.",
     "cancel": "İptal",
     "close": "Kapat",
     "add": "+ Ekle",
