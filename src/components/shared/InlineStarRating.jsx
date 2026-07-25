@@ -1,7 +1,7 @@
 // عناصر واجهة صغيرة إضافية: إدخال OTP، تقييم نجوم مضمّن، محتوى الخصوصية، عنصر أسئلة شائعة — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-
+import { G } from "../../styles.js";
 import { IconStar } from "./Icons.jsx";
 
 

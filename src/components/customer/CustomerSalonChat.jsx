@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "../../i18n.js";
-
+import { G } from "../../styles.js";
 import { IconChat, IconClose } from "../shared/Icons.jsx";
 import { sb, supabase } from "../../api.js";
 import { useChat } from "../../chat.jsx";

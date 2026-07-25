@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "../../i18n.js";
 import { G } from "../../styles.js";
-import { TONES, DEFAULT_SERVICES } from "../../constants.js";
+import { TONES, DEFAULT_SERVICES, DEFAULT_SOCIAL_LINKS } from "../../constants.js";
 import { optimizeImageUrl, playTone, IMG_FMT } from "../../utils.js";
 import { IconArrowRight, IconBarberPole, IconCamera, IconCheck, IconDragHandle, IconPencil, IconPin, IconRefresh, IconSuccess, IconTrash, NotifIcon } from "../shared/Icons.jsx";
 import { ownerApi } from "../../api.js";

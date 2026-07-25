@@ -1,6 +1,6 @@
 // عناصر واجهة صغيرة إضافية: إدخال OTP، تقييم نجوم مضمّن، محتوى الخصوصية، عنصر أسئلة شائعة — نُقلت من App.jsx (بند 28: مشروع تقسيم الملف)
 import React, { useRef } from "react";
-
+import { fi } from "./Ui.jsx";
 
 export function OtpInput({value,onChange,error,disabled=false,use6Boxes=false}){
   const inputRef=useRef(null);
