@@ -15,6 +15,9 @@ export const CSS=`
   @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   body{direction:rtl;font-family:'Cairo',sans-serif;background:var(--shell-bg);}
+  button{-webkit-tap-highlight-color:transparent;}
+  button:focus{outline:none;}
+  button:focus-visible{outline:2px solid var(--p);outline-offset:2px;}
   ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:var(--p);border-radius:4px;}
   .hcard{transition:transform .18s,box-shadow .18s;} .hcard:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(var(--pr),.18)!important;}
   html.dork-dark input[type=date]::-webkit-calendar-picker-indicator,
