@@ -365,6 +365,24 @@ export default function App(){
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
+  // نفس فحص صلاحية الجلسة أعلاه، لكن لحساب العميل — لو حسابه انحذف (من جهاز
+  // ثاني، أو بقرار إدارة) وجهازه هذا لسا محتفظ بجلسة قديمة محلياً، نرجّعه
+  // لتسجيل الدخول بدل ما يواجه خطأ قاعدة بيانات خام لما يحاول يحجز.
+  useEffect(()=>{
+    if(!customerSession?.id)return;
+    (async()=>{
+      try{
+        const rows=await sb("customers","GET",null,`?select=id&id=eq.${customerSession.id}&limit=1`);
+        if(!Array.isArray(rows)||!rows.length){
+          setCustomerSession(null);
+          setView("entry");
+          toast$(i18n.t('ui.session_expired'),"err");
+        }
+      }catch{}
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   // poll خلفي: عدد رسائل العملاء غير المقروءة (للصالون) — يُغذّي badge الدرج + toast
   const[salonMsgUnread,setSalonMsgUnread]=useState(0);
   const _prevSMUnreadRef=useRef(-1);
@@ -858,6 +876,10 @@ export default function App(){
     }catch(e){
       if(e.message&&(e.message.includes("23505")||e.message.includes("unique")||e.message.includes("duplicate")||e.message.includes("booking_overlap"))){
         toast$(i18n.t('ui.time_taken'),"err");
+      }else if(e.message&&(e.message.includes("23503")||e.message.includes("bookings_customer_id_fkey"))){
+        setCustomerSession(null);
+        setView("entry");
+        toast$(i18n.t('ui.session_expired'),"err");
       }else{
         toast$(i18n.t('ui.error_prefix')+e.message,"err");
       }
